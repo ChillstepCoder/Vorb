@@ -1391,7 +1391,7 @@ void BuildingBlueprintGenerator::roomCleanup(BuildingBlueprintGenerationContext&
 void BuildingBlueprintGenerator::computeRoomAABBs(BuildingBlueprintGenerationContext& context, VisualLog* visLog) {
     if (visLog) visLog->nextStep("Compute AABBs");
 
-    std::unordered_map<RoomNodeID, i32v4 /* xspan, yspan */ > roomBoundsLookup;
+    UnorderedFlatMap<RoomNodeID, i32v4 /* xspan, yspan */ > roomBoundsLookup;
     roomBoundsLookup.reserve(20);
 
     // Reserve
@@ -2230,7 +2230,7 @@ void BuildingBlueprintGenerator::postProcessBlueprint(BuildingBlueprintGeneratio
 BuildingBlueprintPtr BuildingBlueprintGenerator::finalizeBlueprint(BuildingBlueprintGenerationContext& context) {
     
     // Tally required items
-    boost::container::flat_map<ItemID, i32> requiredItems;
+    UnorderedFlatMap<ItemID, i32> requiredItems;
     requiredItems.reserve(32);
     TileRepository& tileRepo = TileRepository::get();
     ItemRepository& itemRepo = ItemRepository::get();

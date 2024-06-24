@@ -21,4 +21,4 @@ extern std::thread::id SIM_THREAD_ID;
 
 extern void setThreadName(const char* name);
 extern nString getThreadName(const std::thread::id& id);
-extern std::unordered_map<std::thread::id, nString> sThreadNames;
+extern UnorderedFlatMap<std::thread::id, nString> sThreadNames;

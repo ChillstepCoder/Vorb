@@ -18,7 +18,7 @@ private:
 
     World& mWorld;
 
-    std::unordered_map<TileContainerID, TileContainerVisibilityGraph> mVisibilityGraphs;
+    UnorderedFlatMap<TileContainerID, TileContainerVisibilityGraph> mVisibilityGraphs;
     TileContainerListeners mTileContainerEventListeners;
 };
 

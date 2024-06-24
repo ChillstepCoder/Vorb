@@ -45,8 +45,7 @@ private:
 
     // TODO: We really need to batch multiple fish models into a single VBO
     // One buffer per fish ID
-    //  TODO: Unordered_flat_map
-    boost::container::flat_map<AssetID, ui32> mFishInstanceDataIndexThisFrame;
+    FlatMap<AssetID, ui32> mFishInstanceDataIndexThisFrame;
     std::vector<FishInstanceData> mFishInstanceData;
     std::vector<ui32> mInstanceCountsThisFrame;
     GLsync mFence[3] = { 0 };

@@ -236,7 +236,7 @@ private:
     std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
     std::vector<ui16> mActiveDynamicTiles; // Iterate and update
 
-    boost::container::flat_map<TileIndex, TileDamageDataPtr> mDamagedTiles;
+    FlatMap<TileIndex, TileDamageDataPtr> mDamagedTiles;
 
     TileContainerHarvestableRegistry mHarvestableRegistry;
     TileContainerID mId;

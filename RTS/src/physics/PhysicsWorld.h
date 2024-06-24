@@ -73,7 +73,6 @@ public:
 
     int stepSimulation(f32 deltaTime);
 
-    DynamicCharacterController* addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw);
     btCollisionObject* addHeightField(const HeightmapPatch& patch);
 
     RigidBodyPair addRigidBody(entt::entity ownerEntity, const f32v3& position, CollisionShapes shapeType, const f32v3& halfExtents, f32 mass, CollisionGroup group, RigidBodyRotationType rotationType = RigidBodyRotationType::FULL);

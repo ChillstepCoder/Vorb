@@ -24,7 +24,7 @@ enum class SimChunkState : ui8 {
     Allocated // Tiles are loaded into memory
 };
 
-typedef boost::container::flat_map<ChunkTileIndex, SimTileData> SimTileDataMap;
+typedef UnorderedFlatMap<ChunkTileIndex, SimTileData> SimTileDataMap;
 
 constexpr i16 MAX_SIM_TILE_RESERVATIONS_PER_QUERY = 128;
 typedef FixedSizeVector<SimChunkTileReservationHandle, MAX_SIM_TILE_RESERVATIONS_PER_QUERY> SimChunkTileReservationHandleVector;
@@ -73,7 +73,6 @@ private:
                     harvestables[tileDef.harvestable].emplace_back(tileIndex);
                 }
             }
-            tileQuantities.shrink_to_fit();
         }
         else {
             assert(false); // TODO: I don't understand this case, why would we input twice?
@@ -95,8 +94,8 @@ private:
     SimTileDataMap tileIndexToTileData;
     TileWallContainer tileWalls; // Most chunks don't have walls
     // NOT SERIALIZED
-    boost::container::flat_map<TileID, ui32> tileQuantities;
-    boost::container::flat_map<TileHarvestable, std::vector<ChunkTileIndex>> harvestables;
+    FlatMap<TileID, ui32> tileQuantities;
+    FlatMap<TileHarvestable, std::vector<ChunkTileIndex>> harvestables;
 };
 
 class SimChunkItemData {
@@ -122,7 +121,7 @@ private:
     }
 
 private:
-    std::unordered_map<ItemID, std::vector<TileItemStack>> itemStacks;
+    FlatMap<ItemID, std::vector<TileItemStack>> itemStacks;
     std::atomic<TileItemUID> uniqueIdGenerator = 0;
 };
 
@@ -156,7 +155,7 @@ public:
     [[nodiscard]] TileID tryClearHarvestable(TileHarvestable expectedHarvestable, ChunkTileIndex tilePos);
 
     // Lock chunk mutex and get a copy of the current item data
-    [[nodiscard]] std::unordered_map<ItemID, std::vector<TileItemStack>> getItemDataCopy() const;
+    [[nodiscard]] FlatMap<ItemID, std::vector<TileItemStack>> getItemDataCopy() const;
 
     // Items
     // On fail returns INVALID_TILE_ITEM_UID

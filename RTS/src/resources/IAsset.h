@@ -79,3 +79,6 @@ struct AssetDescriptor {
     AssetID id = INVALID_ASSET_ID;
     AssetType assetType = AssetType::NONE;
 };
+inline size_t hash_value(const AssetDescriptor& o) {
+    return boost::hash<ui64>()((ui64)o.getUUID());
+};

@@ -105,7 +105,7 @@ private:
 
     std::unordered_map<ItemID, ItemStockpileRecord> mItemContents;
     std::vector<ItemStockpileTileStorage> mStorage;
-    std::unordered_set<ItemReservation*> mReservations;
+    std::set<ItemReservation*> mReservations;
 
     World& mWorld;
     TileContainerID mContainerDependencies[4] = {};

@@ -243,7 +243,7 @@ private:
 
 private:
 
-    std::unordered_map<AssetType, VGTexture> m_AssetIconMap;
+    UnorderedFlatMap<AssetType, VGTexture> m_AssetIconMap;
 
     ContentBrowserItemList m_CurrentItems;
     std::filesystem::path mRootPath;
@@ -255,9 +255,9 @@ private:
 
     SelectionStack m_CopiedAssets;
 
-    std::unordered_map<UniqueId64, std::shared_ptr<DirectoryInfo>> m_Directories;
+    UnorderedFlatMap<UniqueId64, std::shared_ptr<DirectoryInfo>> m_Directories;
 
-    std::unordered_map<AssetType, std::function<void(const AssetDescriptor&)>> m_ItemActivationCallbacks;
+    UnorderedFlatMap<AssetType, std::function<void(const AssetDescriptor&)>> m_ItemActivationCallbacks;
     
     char m_SearchBuffer[MAX_INPUT_BUFFER_LENGTH];
 

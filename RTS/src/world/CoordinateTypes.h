@@ -82,18 +82,13 @@ public:
     };
 };
 
-namespace std {
-    template<typename T>
-    class hash<CoordinateBase<T>> {
-    public:
-        size_t operator()(const CoordinateBase<T>& v) const {
-            size_t seed = 0;
-            boost::hash_combine(seed, v.x);
-            boost::hash_combine(seed, v.y);
-            return seed;
-        }
-    };
-}
+template<typename T>
+inline size_t hash_value(const CoordinateBase<T>& v) {
+    size_t seed = 0;
+    boost::hash_combine(seed, v.x);
+    boost::hash_combine(seed, v.y);
+    return seed;
+};
 
 class TileCoord;
 class DTileCoord;
@@ -157,15 +152,10 @@ public:
     inline ChunkID toChunkID(ui32 worldWidthChunks) const;
 };
 
-namespace std {
-    template<>
-    class hash<DTileCoord> {
-    public:
-        size_t operator()(const DTileCoord& v) const {
-            return std::hash<CoordinateBase<DTileCoord>>()(v);
-        }
-    };
-}
+
+inline size_t hash_value(const DTileCoord& c) {
+    return glm::hash_value(c.v);
+};
 
 // 8x8 tiles
 // Used by Biomes

@@ -3,7 +3,7 @@
 #include "world/WorldContextObject.h"
 #include "faction/Faction.h"
 
-typedef ui32v2 FactionIDPair;
+using FactionIDPair = ui32v2;
 constexpr i8 MAX_RELATION = 100;
 constexpr i8 MIN_RELATION = -100;
 

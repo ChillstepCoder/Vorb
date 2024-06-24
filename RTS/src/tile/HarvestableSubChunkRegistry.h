@@ -3,6 +3,6 @@
 #include "tile/TileHarvestable.h"
 
 struct HarvestableSubchunkRegistry {
-    boost::container::flat_map<TileIndex, TileHarvestable> mHarvestablePositions;
+    UnorderedFlatMap<TileIndex, TileHarvestable> mHarvestablePositions;
     ui32 mTotalHarvestables[e_cast(TileHarvestable::COUNT)] = {};
 };

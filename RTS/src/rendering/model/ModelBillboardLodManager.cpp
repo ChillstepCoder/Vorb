@@ -4,7 +4,7 @@
 #include "resources/TextureRepository.h"
 #include "resources/ModelRepository.h"
 
-ModelBillboardLodManager::ModelBillboardLodManager(const std::unordered_map<AssetID, GLTexture>& billboardTextures) :
+ModelBillboardLodManager::ModelBillboardLodManager(const UnorderedFlatMap<AssetID, GLTexture>& billboardTextures) :
     mBillboardTextures(billboardTextures) {
 
 }

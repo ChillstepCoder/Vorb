@@ -41,7 +41,7 @@ private:
     std::vector<CloudBatch> mCloudBatches;
     std::map<ui32, CloudBatch> mGeneratingBatches; // Use this so we dont need synchronization
     std::vector<i32v2> mCloudSpawnOffsets;
-    std::unordered_map<i32 /*yOffset*/, i32 /*xOffset*/> mCloudBoundsCheckMap;
+    UnorderedFlatMap<i32 /*yOffset*/, i32 /*xOffset*/> mCloudBoundsCheckMap;
     SpatialGrid2D mSpatialGrid2D;
     ChunkGenerator& mWorldGenerator;
     i32v2 mLastCenterPosition;

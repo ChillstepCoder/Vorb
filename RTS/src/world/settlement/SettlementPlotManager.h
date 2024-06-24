@@ -21,19 +21,13 @@ struct PlotSeed {
     DTileCoord pos;
     PlotSeedDir dir = PlotSeedDir::NONE;
 };
-namespace std {
-    template<>
-    struct hash<PlotSeed> {
-        size_t operator()(const PlotSeed& p) const {
-            size_t seed = 0;
-            boost::hash_combine(seed, p.pos.x);
-            boost::hash_combine(seed, p.pos.y);
-            boost::hash_combine(seed, p.dir);
-            return seed;
-        }
-    };
-}
-
+inline size_t hash_value(const PlotSeed& p) {
+    size_t seed = 0;
+    boost::hash_combine(seed, p.pos.x);
+    boost::hash_combine(seed, p.pos.y);
+    boost::hash_combine(seed, p.dir);
+    return seed;
+};
 class SettlementPlotManager {
 public:
     SettlementPlotManager(World& world, RandomGenerator& randomGenerator);

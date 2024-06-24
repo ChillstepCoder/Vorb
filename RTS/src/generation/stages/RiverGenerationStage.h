@@ -57,6 +57,6 @@ protected:
         };
         std::vector<PassData> passes;
     };
-    std::unordered_map<i32v2 /*vertexPosCorner*/, CellPassData> mCellPasses;
+    UnorderedFlatMap<i32v2 /*vertexPosCorner*/, CellPassData> mCellPasses;
 };
 

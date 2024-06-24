@@ -14,6 +14,6 @@ public:
 private:
     void registerNewContract(entt::registry& registry, std::unique_ptr<IContract>&& contract, entt::entity entityA, entt::entity entityB);
 
-    std::unordered_map<ContractID, std::unique_ptr<IContract>> sContracts;
+    UnorderedFlatMap<ContractID, std::unique_ptr<IContract>> sContracts;
 };
 

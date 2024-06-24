@@ -215,8 +215,8 @@ void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
         }
     }
 
-    // Shrink memory
-    chunkData.tileIndexToTileData.shrink_to_fit();
+    // Shrink memory TODO: Rehash?
+    //chunkData.tileIndexToTileData.shrink_to_fit();
     chunkData.tileQuantities.shrink_to_fit();
     chunkData.harvestables.shrink_to_fit();
     for (auto&& it : chunkData.harvestables) {

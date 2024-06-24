@@ -8,7 +8,7 @@ const AnimTransitionConditionDef& getAnimTransitionConditionDef(AnimTransitionCo
 #define CONDITION_DEF(token, func) {AnimTransitionConditionDefType::token, AnimTransitionConditionDef{ [](const AnimVariables& vars, AnimParam) func, CStrToken(#token)}}
 #define CONDITION_DEF_PARAM(token, defaultParam, func) {AnimTransitionConditionDefType::token, AnimTransitionConditionDef{ [](const AnimVariables& vars, AnimParam p) func, defaultParam, CStrToken(#token)}}
 
-    static const boost::container::flat_map<AnimTransitionConditionDefType, AnimTransitionConditionDef> conditions = {
+    static const UnorderedFlatMap<AnimTransitionConditionDefType, AnimTransitionConditionDef> conditions = {
         CONDITION_DEF(is_in_air, {
             return vars.locomotionMode == CharacterLocomotionMode::JUMPING ||
                     vars.locomotionMode == CharacterLocomotionMode::FALLING;

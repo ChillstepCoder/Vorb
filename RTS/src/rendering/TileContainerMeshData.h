@@ -7,7 +7,10 @@ struct TileContainerMeshData {
     TileContainerMeshData();
     ~TileContainerMeshData();
 
-    VORB_NON_COPYABLE_BUT_MOVABLE(TileContainerMeshData);
+    TileContainerMeshData(TileContainerMeshData&& other) noexcept;
+    TileContainerMeshData& operator=(TileContainerMeshData&& other) noexcept;
+
+    VORB_NON_COPYABLE(TileContainerMeshData);
 
     std::unique_ptr<Mesh> mStaticMesh;
     std::unique_ptr<Mesh> mDynamicMesh;

@@ -253,7 +253,7 @@ void MarkupGenerationStage::generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPer
     RandomGenerator gen(mWorldData->worldSeed * jobIndex);
 
     // Allows us to count the number of bodies in each chunk
-    boost::container::flat_map<ui32 /*body index*/, ui32 /*count*/> bodyCounts;
+    FlatMap<ui32 /*body index*/, ui32 /*count*/> bodyCounts;
     bodyCounts.reserve(4); // This is more than we will need in almost every case
 
     PreciseTimer timer;
@@ -323,7 +323,7 @@ void MarkupGenerationStage::generateBodyMarkup(ui32 bodyIndex) {
     WorldBodyMarkupData& bodyData = mMarkupGrid->getBodyDataForGeneration(bodyIndex);
     const ui32 widthVerts = mMarkupGrid->getWidthVertices();
     std::vector<i16v2>& borderSet = mBodyBorderSets[bodyIndex];
-    boost::container::flat_map<ui32 /*body index*/, ui32 /*count*/> neighborBodyCounts;
+    FlatMap<ui32 /*body index*/, ui32 /*count*/> neighborBodyCounts;
     neighborBodyCounts.reserve(6); // This is more than we will need in almost every case
     boost::container::flat_set<ChunkID> borderChunks;
     borderChunks.reserve(16);

@@ -8,7 +8,7 @@ struct RiverPath {
     std::vector<f32v2> splinePath;
     std::vector<i16v2> visited;
     // Compute will batch all vertices into local groups
-    std::unordered_map<i32v2 /*vertexPosCorner*/, std::vector<f32v4> /*segments*/> affectedLocalGroups;
+    UnorderedFlatMap<i32v2 /*vertexPosCorner*/, std::vector<f32v4> /*segments*/> affectedLocalGroups;
     i16v2 startPoint;
     bool isValid = false;
 };

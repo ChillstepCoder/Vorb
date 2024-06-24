@@ -22,12 +22,12 @@ private:
     i8 getDefaultFactionRelation(FactionIDPair factions);
 
     std::shared_mutex mFactionsMutex;
-    std::unordered_map<FactionID, Faction> mFactions;
+    UnorderedFlatMap<FactionID, Faction> mFactions;
     std::vector<FactionID> mActiveFactions;
     std::unique_ptr<RandomGenerator> mRandomGenerator;
 
     std::shared_mutex mFactionRelationsMutex;
-    std::unordered_map<FactionIDPair, i8> mFactionRelations; //[-100, 100]
+    UnorderedFlatMap<FactionIDPair, i8> mFactionRelations; //[-100, 100]
     FactionID mNextFactionID = 0; // TODO: Serialize this / Control on host?
 };
 

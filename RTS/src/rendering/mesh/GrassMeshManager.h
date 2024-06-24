@@ -17,18 +17,12 @@ class GrassMesh;
 
 typedef std::pair<TileContainerEventDispatcher::Handle, ChunkEventDispatcher::Handle> GrassEventPair;
 
-// Specialize std::hash for std::pair<ChunkID, i16v2>
-namespace std {
-    template<>
-    struct hash<std::pair<ChunkID, i16v2>> {
-        size_t operator()(const std::pair<ChunkID, i16v2>& p) const {
-            size_t seed = 0;
-            boost::hash_combine(seed, std::hash<ChunkID>()(p.first));
-            boost::hash_combine(seed, std::hash<i16v2>()(p.second));
-            return seed;
-        }
-    };
-}
+inline size_t hash_value(const std::pair<ChunkID, i16v2>& o) {
+    size_t seed = 0;
+    boost::hash_combine(seed, boost::hash<ChunkID>()(o.first));
+    boost::hash_combine(seed, glm::hash_value(o.second));
+    return seed;
+};
 
 // Shared by game + render thread
 class GrassMeshManager
@@ -65,7 +59,7 @@ private:
 
     std::vector<TrackedChunk> mTrackedChunks;
     std::mutex mTrackedChunksMutex;
-    std::unordered_map<ChunkID, TrackedChunkLookupData> mTrackedChunksLookup;
+    UnorderedFlatMap<ChunkID, TrackedChunkLookupData> mTrackedChunksLookup;
 
     World& mWorld;
     moodycamel::ConcurrentQueue<std::pair<ChunkID, bool /*startTracking*/>> mChunkTrackChanges;

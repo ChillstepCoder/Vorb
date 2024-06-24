@@ -79,7 +79,7 @@ private:
 
     std::vector<RoadSegment> mRoadSegments;
     // Represents road segments that should connect to other cities or extend to more districts
-    boost::container::flat_map<RoadSegmentID, std::pair<bool, bool>> mExternalRoadSegments;
+    UnorderedFlatMap<RoadSegmentID, std::pair<bool, bool>> mExternalRoadSegments;
     std::map<RoadSegmentID, std::vector<ExternalRoadSegmentBlockedTile>[2]> mExternalRoadSegmentBlockedTiles;
     World& mWorld;
     RandomGenerator& mRandomGenerator;

@@ -71,7 +71,7 @@ protected:
     std::vector<std::unique_ptr<WorkerThread>> mWorkers; ///< All the worker threads
 
     std::mutex mDependencyMapMutex;
-    boost::container::flat_map<AssetHandleBundle*, AssetLoadTaskPtr> mTasksWaitingDependencies;
+    UnorderedFlatMap<AssetHandleBundle*, AssetLoadTaskPtr> mTasksWaitingDependencies;
 
     inline static std::unique_ptr<AssetLoader> sInstance = nullptr;
 };

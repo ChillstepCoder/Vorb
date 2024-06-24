@@ -85,7 +85,7 @@ protected:
         mLockedByAssetLoader = locked;
     }
 
-    boost::container::flat_map<AssetDescriptor, int> mContainedAssetDescriptors;
+    FlatMap<AssetDescriptor, int> mContainedAssetDescriptors;
     std::vector<AssetHandleBasePtr> mHandles;
     mutable ui32 mLoadedCount = 0;
     bool mLockedByAssetLoader = false;

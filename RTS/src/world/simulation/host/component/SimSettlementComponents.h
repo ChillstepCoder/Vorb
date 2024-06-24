@@ -92,7 +92,7 @@ struct SettlementPeopleComponent {
 struct SettlementQuartermasterComponent {
     entt::entity quartermasterCharacter = entt::null;
     std::vector<BuildingID> storageStructures;
-    boost::container::flat_map<ItemID, ui32v2> itemCountsVsDesired;
+    UnorderedFlatMap<ItemID, ui32v2> itemCountsVsDesired;
 };
 
 struct SettlementWorkOrdersComponent {

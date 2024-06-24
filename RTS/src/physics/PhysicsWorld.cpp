@@ -17,7 +17,6 @@
 
 #include "debugging/PhysicsDebugDrawer.h"
 
-#include "physics/DynamicCharacterController.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
 
 #include "terrain/HeightmapPatch.h"
@@ -144,14 +143,6 @@ int PhysicsWorld::stepSimulation(f32 elapsedSec) {
     }
 
     return stepCount;
-}
-
-DynamicCharacterController* PhysicsWorld::addDynamicCharacterController(entt::entity ownerEntity, btRigidBody* rigidBody, f32 rotationYaw) {
-    ASSERT_GAME_THREAD();
-    assert(rigidBody->getCollisionShape()->getShapeType() == BroadphaseNativeTypes::CAPSULE_SHAPE_PROXYTYPE);
-    DynamicCharacterController* dynamicCharacterController = new DynamicCharacterController(rigidBody, (btCapsuleShape*)rigidBody->getCollisionShape());
-    mDynamicsWorld->addAction(dynamicCharacterController);
-    return dynamicCharacterController;
 }
 
 btCollisionObject* PhysicsWorld::addHeightField(const HeightmapPatch& patch)

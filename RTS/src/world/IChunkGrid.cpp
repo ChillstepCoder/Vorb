@@ -309,7 +309,7 @@ bool IChunkGrid::isChunkXYInBounds(const i32v2& xy) {
 
 void IChunkGrid::onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions) {
     PROFILE_FUNCTION();
-    boost::container::flat_map<GridIdType, std::vector<TileCoord>> tilePositionsNeedingUpdate;
+    UnorderedFlatMap<GridIdType, std::vector<TileCoord>> tilePositionsNeedingUpdate;
     {
         constexpr ui32 MAX_TILES_CHANGED_PER_POSITION = SQ(HEIGHTMAP_QUAD_SIZE * HEIGHTMAP_QUAD_SIZE);
         tilePositionsNeedingUpdate.reserve(modifiedPositions.size() * MAX_TILES_CHANGED_PER_POSITION);

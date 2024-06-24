@@ -9,7 +9,7 @@ class World;
 class BuildingBlueprint;
 class Building;
 
-typedef std::unordered_map<BuildingID, std::unique_ptr<Building>> BuildingMap;
+typedef UnorderedFlatMap<BuildingID, std::unique_ptr<Building>> BuildingMap;
 
 struct ChunkBuildingData {
 public:

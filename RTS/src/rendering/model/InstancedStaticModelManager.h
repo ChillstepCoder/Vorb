@@ -34,7 +34,8 @@ struct PendingModelInstance {
     ui8 variantIndex;
 };
 
-typedef boost::container::flat_map<StaticModelInstanceID, ui32 /*instanceIndex*/> InstanceIDToIndexMap;
+typedef FlatMap<StaticModelInstanceID, ui32 /*instanceIndex*/> InstanceIDToIndexMap;
+//  std::unordered_map For pointer stability
 typedef std::unordered_map<ModelID, InstanceIDToIndexMap> LooseStaticModelInstanceMap;
 
 // Currently only supports one model instance per tile
@@ -88,13 +89,13 @@ private:
     void increfModelDef(ModelID modelId, int incCount);
     void decrefModelDef(ModelID modelId, int decCount);
 
-    boost::container::flat_map<LiteTileHandle, StaticMeshAnimation> mAnimatedTileInstances;
+    FlatMap<LiteTileHandle, StaticMeshAnimation> mAnimatedTileInstances;
     ModelBatchMap mModelBatches;
     std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerTrackedModels;
     GLBuffer mGpuCullingUniformBuffer;
 
     // Refcount ModelDefs
-    std::unordered_map<ModelID, ModelDefRef> mModelDefRefs;
+    UnorderedFlatMap<ModelID, ModelDefRef> mModelDefRefs;
 
     AssetHandlePtr<MaterialShaderDef> mCullingComputeShader;
 
@@ -113,6 +114,6 @@ private:
     LooseStaticModelInstanceMap mLooseStaticModelInstances;
 
     std::mutex mLooseInstanceIDMutex;
-    boost::container::flat_map<ModelID, StaticModelInstanceID> mNextLooseInstanceIDs;
+    UnorderedFlatMap<ModelID, StaticModelInstanceID> mNextLooseInstanceIDs;
 };
 

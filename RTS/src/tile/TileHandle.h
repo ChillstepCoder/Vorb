@@ -73,15 +73,12 @@ struct std::less<LiteTileHandle>
     }
 };
 
-class LiteTileHandleHash {
-public:
-    size_t operator()(const LiteTileHandle& v) const {
-        size_t h = 0;
-        boost::hash_combine(h, v.containerId);
-        boost::hash_combine(h, v.index);
-        return h;
-    }
-};
+inline size_t hash_value(const LiteTileHandle& v) {
+    size_t h = 0;
+    boost::hash_combine(h, v.containerId);
+    boost::hash_combine(h, v.index);
+    return h;
+}
 
 // DOES NOT PROVIDE THREAD SAFE READ/WRITE
 struct TileRef {

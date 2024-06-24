@@ -3,3 +3,4 @@
 ./vcpkg install zstd
 ./vcpkg install spdlog
 ./vcpkg install joltphysics --overlay-ports=../vcpkg-ports
+./vcpkg install boost

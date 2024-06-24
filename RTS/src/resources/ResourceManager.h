@@ -105,7 +105,7 @@ private:
     std::unique_ptr<CollisionShapeRepository> mCollisionShapeRepository;
 
     std::vector<IAssetRepositoryBase*> mAssetRepositories;
-    std::unordered_map<StrToken, IAssetRepositoryBase*> mExtensionToAssetRepository;
+    UnorderedFlatMap<StrToken, IAssetRepositoryBase*> mExtensionToAssetRepository;
     AssetHandleBundle mPreloadAssetsBundle;
 
     // TODO: Replace with std::filesystem?

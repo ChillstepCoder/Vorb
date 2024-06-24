@@ -105,7 +105,7 @@ public:
 
 private:
     FineNodeHeap mPriorityHeap; // For O(log(n)) remove first
-    std::unordered_set<LiteTileHandle, LiteTileHandleHash> mLookup; // For o(1) membership test
+    UnorderedFlatSet<LiteTileHandle> mLookup; // For o(1) membership test
 };
 
 // http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html
@@ -219,7 +219,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
     // the closed list
     // TODO: Static representation?
     FineNodeList openList;
-    std::unordered_map<LiteTileHandle, FineNodeData, LiteTileHandleHash> nodeLookup;
+    UnorderedFlatMap<LiteTileHandle, FineNodeData> nodeLookup;
     openList.reserve(MAX_FINE_OPEN_LIST_SIZE);
     nodeLookup.reserve(MAX_FINE_OPEN_LIST_SIZE);
 
@@ -570,7 +570,7 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 go
     if (startNavNodeIndex == INVALID_NAV_NODE_INDEX) {
         constexpr i32 MAX_OPEN_SIZE = 1024;
         f32v3 openList[MAX_OPEN_SIZE];
-        std::unordered_set<f32v3, f32v3hash> closedList;
+        UnorderedFlatSet<f32v3> closedList;
         closedList.reserve(MAX_OPEN_SIZE);
         i32 openListFront = 0;
         i32 openListBack = 1;
@@ -843,7 +843,7 @@ void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const
         if (edge.isExternalEdge()) {
             // With external edges we have to look up the adjacent nav nodes
             typedef std::pair<TileContainerID, ui32 /*navNode*/> EdgeKey;
-            std::unordered_map<EdgeKey, TileIndex, EdgeNodeHash> edgeNodes;
+            UnorderedFlatMap<EdgeKey, TileIndex, EdgeNodeHash> edgeNodes;
             edgeNodes.reserve(4); // Usually quite small, can we use a better data structure?
             i32v3 edgeStartPosWorld = navData.worldPos + navData.getTileXYZOffsetWithZScale(edge.startPos);
             // Collect all valid external nodes along this edge

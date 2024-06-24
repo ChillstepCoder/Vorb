@@ -44,6 +44,6 @@ public:
 private:
     inline static bool hasLoaded = false;
     inline static std::vector<AssetHandlePtr<TextureDef>*> allResources;
-    inline static std::unordered_map<AssetType, const AssetHandlePtr<TextureDef>*> assetIconLookup;
+    inline static FlatMap<AssetType, const AssetHandlePtr<TextureDef>*> assetIconLookup;
 };
 

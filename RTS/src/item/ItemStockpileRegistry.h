@@ -19,8 +19,8 @@ private:
     void removeStockpileFromAreaLookup(ItemStockpile& stockpile);
 
     World& mWorld;
-    std::unordered_map<ItemStockpileID, std::unique_ptr<ItemStockpile>> mAllStockpiles;
+    UnorderedFlatMap<ItemStockpileID, std::unique_ptr<ItemStockpile>> mAllStockpiles;
 
-    std::unordered_map<TileContainerID, std::vector<ItemStockpile*>> mAreaLookup;
+    UnorderedFlatMap<TileContainerID, std::vector<ItemStockpile*>> mAreaLookup;
 };
 

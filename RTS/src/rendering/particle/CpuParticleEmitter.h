@@ -175,7 +175,7 @@ protected:
     // Inputs
     ParticleSystemInputs* mInputs = nullptr;
 
-    std::unordered_set<MaterialID> mContainedMaterials;
+    UnorderedFlatSet<MaterialID> mContainedMaterials;
 
     AssetID mShaderID;
 

@@ -7,7 +7,7 @@ class World;
 
 #include "definitions/FishDef.h"
 
-typedef boost::container::flat_map<AssetID, int> FishPopulationMap;
+typedef FlatMap<AssetID, int> FishPopulationMap;
 
 template <typename T>
 class RenderStateManager;
@@ -84,7 +84,7 @@ struct FishRenderState {
     f32v2 mChunkCenter;
 };
 
-typedef boost::container::flat_map<ChunkID, FishRenderState> FishChunkRenderStateMap;
+typedef UnorderedFlatMap<ChunkID, FishRenderState> FishChunkRenderStateMap;
 
 class FishEcosystem
 {
@@ -117,20 +117,20 @@ private:
     void addTrackedFishPopulation(AssetID fishId, ChunkID chunkId);
     void removeTrackedFishPopulation(AssetID fishId, ChunkID chunkId);
 
-    boost::container::flat_map<ChunkID, FishChunkPtr> mActiveFishChunks;
+    UnorderedFlatMap<ChunkID, FishChunkPtr> mActiveFishChunks;
 
     std::mutex mDormantMutex; // TODO: Everything is on game thread???
-    boost::container::flat_map<ChunkID, DormantFishChunk> mDormantFishChunks;
+    UnorderedFlatMap<ChunkID, DormantFishChunk> mDormantFishChunks;
 
     std::mutex mGenerationMutex; // TODO: Everything is on game thread???
-    boost::container::flat_map<ChunkID, FishChunkPtr> mGeneratedFishChunks;
+    UnorderedFlatMap<ChunkID, FishChunkPtr> mGeneratedFishChunks;
 
     // Population tracking
     FishPopulationMap mTotalFishPopulation;
-    boost::container::flat_map<ChunkID, FishPopulationMap> mChunkFishPopulations;
+    UnorderedFlatMap<ChunkID, FishPopulationMap> mChunkFishPopulations;
 
     // Asset handles
-    boost::container::flat_map<AssetID, AssetHandlePtr<FishDef>> mFishAssetHandles;
+    UnorderedFlatMap<AssetID, AssetHandlePtr<FishDef>> mFishAssetHandles;
 
     World& mWorld;
 

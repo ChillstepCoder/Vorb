@@ -34,7 +34,7 @@ protected:
 template<typename T>
 struct GlobalYmlMap {
     std::mutex mMutex;
-    boost::container::flat_map<nString, std::unique_ptr<T>> mMap;
+    UnorderedFlatMap<nString, std::unique_ptr<T>> mMap;
 };
 
 namespace yml {
@@ -54,7 +54,7 @@ namespace yml {
     }
 
     template<typename T>
-    inline const boost::container::flat_map<nString, std::unique_ptr<T>>& getAllObjects() {
+    inline const UnorderedFlatMap<nString, std::unique_ptr<T>>& getAllObjects() {
         return objectMap<T>().mMap;
     }
 

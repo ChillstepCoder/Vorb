@@ -11,7 +11,7 @@ class Camera3D;
 class MaterialShaderDef;
 
 // Stores all specific instances of a given model in the world
-typedef std::unordered_map<ModelID, DynamicModelBatchData> DynamicModelBatchMap;
+typedef UnorderedFlatMap<ModelID, DynamicModelBatchData> DynamicModelBatchMap;
 
 class InstancedDynamicModelRenderer
 {

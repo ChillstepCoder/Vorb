@@ -145,7 +145,7 @@ void StrToken::initFromStrInternal(const char* str, size_t sz) {
         mTokenHigh |= strTokenEncodeChar(str[i]) << ((i - 20) * 6ull);
     }
 #ifdef DEBUG
-    static thread_local std::unordered_map<StrToken, nString> sStrTokenMap;
+    static thread_local UnorderedFlatMap<StrToken, nString> sStrTokenMap;
     auto&& it = sStrTokenMap.find(*this);
     if (it != sStrTokenMap.end()) {
         DEBUG_STR = it->second.data();

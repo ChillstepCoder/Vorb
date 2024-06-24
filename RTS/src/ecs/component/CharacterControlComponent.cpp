@@ -4,8 +4,9 @@
 #include "options/DebugOptions.h"
 
 #include "ecs/component/PhysicsComponent.h"
-#include "physics/DynamicCharacterController.h"
 #include "physics/PhysicsConst.h"
+
+#include <BulletDynamics/Dynamics/btRigidBody.h>
 
 constexpr float JUMP_VELOCITY = 4.0f;
 

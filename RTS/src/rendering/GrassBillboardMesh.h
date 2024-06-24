@@ -79,7 +79,7 @@ public:
 
     const GrassBillboardMesh& getMesh() const { return mMesh; }
     void addGrassAsset(TileGrassID id) { mGrassAssets.emplace(id); }
-    const std::unordered_set<TileGrassID>& getGrassAssets() const { return mGrassAssets; }
+    const UnorderedFlatSet<TileGrassID>& getGrassAssets() const { return mGrassAssets; }
 private:
     void initBuffers(int bufferIndex);
 
@@ -87,5 +87,5 @@ private:
     std::vector<GrassBillboardInstanceData> mInstanceData[e_count(TileGrassMeshType)]; // TODO: Recycle?
     std::vector<f32v3> mPositionData[e_count(TileGrassMeshType)]; // TODO: Recycle?
     std::vector<ui8v2> mNormalData[e_count(TileGrassMeshType)]; // TODO: Recycle?
-    std::unordered_set<TileGrassID> mGrassAssets;
+    UnorderedFlatSet<TileGrassID> mGrassAssets;
 };

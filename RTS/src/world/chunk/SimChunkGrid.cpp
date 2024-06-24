@@ -108,7 +108,7 @@ SortedIntCoordDistanceSqMap SimChunkGrid::getClosestUnreservedHarvestablesToPoin
     ChunkCoord chunkCoord(worldPos);
     // Breadth first search
     // TODO: boost flat
-    std::unordered_set<ChunkID> closedList;
+    UnorderedFlatSet<ChunkID> closedList;
     closedList.reserve(MAX_ITERATIONS);
 
     // Stack allocated for efficiency

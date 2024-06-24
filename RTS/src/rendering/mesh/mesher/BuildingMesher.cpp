@@ -90,7 +90,7 @@ void meshRoomUndercarriage(ContainerMeshBuilders& meshBuilders, const RoofStyle&
 //    }
 //};
 
-thread_local std::unordered_map<f32v2, f32, f32v2hash> sHeightMap;
+thread_local UnorderedFlatMap<f32v2, f32> sHeightMap;
 thread_local std::vector<TriangulationPoint> sRoofFacePoints;
 thread_local Polygon_2 sCgalPoly;
 
@@ -179,7 +179,7 @@ bool collideExtrudeWalls(const i32v2& start, const i32v2& end, ui32 axis, const 
     return false;
 }
 
-void computeGablePointsAndExtrudePositions(const BitArray& floorOwnedTiles, const TileSpatialGrid& spatialGrid, ui32 floor, f32 zPos, std::unordered_map<f32v2, GableVertexInfo, f32v2hash>& gableVertexInfo, std::unordered_map<f32v2, ContourVertexInfo, f32v2hash>& contourVertexInfo, SsPtr iss, VisualLog* visLog) {
+void computeGablePointsAndExtrudePositions(const BitArray& floorOwnedTiles, const TileSpatialGrid& spatialGrid, ui32 floor, f32 zPos, UnorderedFlatMap<f32v2, GableVertexInfo>& gableVertexInfo, UnorderedFlatMap<f32v2, ContourVertexInfo>& contourVertexInfo, SsPtr iss, VisualLog* visLog) {
     gableVertexInfo.reserve(10);
     contourVertexInfo.reserve(30);
 
@@ -570,13 +570,13 @@ std::vector<SsPtr> buildRoofStraightSkeletons(const BitArray& floorRoofedTiles, 
 
 void buildMeshFromStraightSkeleton(const BitArray& floorRoofedTiles, SsPtr iss, const TileSpatialGrid& spatialGrid, ProceduralMeshBuilder& meshBuilder, std::vector<RoofContourEdgeInfo>& contourEdges, const RoofStyle& roofStyle, ui32 floor, f32 zPos, VisualLog* visLog) {
     // For bisector board placement
-    std::unordered_set<std::pair<f32v3, f32v3>, f32v3pairhash> bisectorBoardPositions;
+    UnorderedFlatSet<std::pair<f32v3, f32v3>> bisectorBoardPositions;
     bisectorBoardPositions.reserve(20);
 
     // ========================== Gables and Extrudes ===============================
     // Map gable and contour vertex points so we can move all connected verts
-    std::unordered_map<f32v2, GableVertexInfo, f32v2hash> gableVertexInfo;
-    std::unordered_map<f32v2, ContourVertexInfo, f32v2hash> contourVertexInfo;
+    UnorderedFlatMap<f32v2, GableVertexInfo> gableVertexInfo;
+    UnorderedFlatMap<f32v2, ContourVertexInfo> contourVertexInfo;
     computeGablePointsAndExtrudePositions(floorRoofedTiles, spatialGrid, floor, zPos, gableVertexInfo, contourVertexInfo, iss, visLog);
 
 

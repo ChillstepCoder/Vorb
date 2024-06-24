@@ -336,9 +336,6 @@
     <ClCompile Include="src\debugging\PhysicsDebugDrawer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\physics\DynamicCharacterController.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\physics\CollisionShapes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1566,9 +1563,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\terrain\HeightmapPatch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\physics\DynamicCharacterController.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\physics\CollisionShapes.h">

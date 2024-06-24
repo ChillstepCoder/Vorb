@@ -46,21 +46,29 @@ void bindCircleMeshVertexAttribs(VGVertexArray vao) {
 struct IntPairHasher
 {
     std::size_t operator()(const std::pair<i32, i32>& k) const {
-        return std::hash<i32>()(k.first) ^ std::hash<i32>()(k.second);
+        size_t seed = 0;
+        boost::hash_combine(seed, boost::hash<i32>()(k.first));
+        boost::hash_combine(seed, boost::hash<i32>()(k.second));
+        return seed;
+    }
+};
+struct IntPairEqual {
+    bool operator()(const std::pair<int, int>& lhs, const std::pair<int, int>& rhs) const {
+        return lhs.first == rhs.first && lhs.second == rhs.second;
     }
 };
 
 std::vector<SimpleMesh> sDebugMeshes;
 std::vector<SimpleMesh> sDebugCircleMeshes;
-std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugLine>, IntPairHasher> sNewLines;
-std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugQuad>, IntPairHasher> sNewQuads;
-std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugCircle>, IntPairHasher> sNewCircles;
+UnorderedFlatMap<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugLine>, IntPairHasher, IntPairEqual> sNewLines;
+UnorderedFlatMap<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugQuad>, IntPairHasher, IntPairEqual> sNewQuads;
+UnorderedFlatMap<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugCircle>, IntPairHasher, IntPairEqual> sNewCircles;
 
 std::mutex sNewLinesThreadSafeMutex;
-std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugLine>, IntPairHasher> sNewLinesThreadSafe;
+UnorderedFlatMap<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugLine>, IntPairHasher, IntPairEqual> sNewLinesThreadSafe;
 
 std::mutex sNew3DQuadsThreadSafeMutex;
-std::unordered_map<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugQuad3D>, IntPairHasher> sNew3DQuadsThreadSafe;
+UnorderedFlatMap<std::pair<i32, i32> /*lifetime,id*/, std::vector<DebugQuad3D>, IntPairHasher, IntPairEqual> sNew3DQuadsThreadSafe;
 
 
 const float rotVal = glm::radians(30.0f);

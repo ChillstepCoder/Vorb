@@ -357,7 +357,6 @@
     <ClCompile Include="src\pathfinding\PathFinder.cpp" />
     <ClCompile Include="src\physics\CollisionShapeRepository.cpp" />
     <ClCompile Include="src\physics\CollisionShapes.cpp" />
-    <ClCompile Include="src\physics\DynamicCharacterController.cpp" />
     <ClCompile Include="src\physics\NewPhysicsWorld.cpp" />
     <ClCompile Include="src\physics\PhysicsWorld.cpp" />
     <ClCompile Include="src\physics\StaticPhysicsMesh.cpp" />
@@ -801,7 +800,6 @@
     <ClInclude Include="src\pathfinding\PathFinder.h" />
     <ClInclude Include="src\physics\CollisionShapeRepository.h" />
     <ClInclude Include="src\physics\CollisionShapes.h" />
-    <ClInclude Include="src\physics\DynamicCharacterController.h" />
     <ClInclude Include="src\physics\NewPhysicsWorld.h" />
     <ClInclude Include="src\physics\PhysHitResult.h" />
     <ClInclude Include="src\physics\PhysicsConst.h" />

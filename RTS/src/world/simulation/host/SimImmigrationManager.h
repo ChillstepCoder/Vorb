@@ -36,6 +36,6 @@ private:
     WorldMarkupGrid& mMarkupGrid;
     TimestampMs mLastImmigrationTimestamp = 0;
     SimWorldAnalytics& mWorldAnalytics;
-    boost::container::flat_map<BodyID, BodyImmigrationData> mImmigrationData;
+    FlatMap<BodyID, BodyImmigrationData> mImmigrationData;
 };
 

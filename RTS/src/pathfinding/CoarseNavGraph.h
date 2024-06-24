@@ -70,7 +70,7 @@ public:
 private:
     BitArray mHarvestablesTest;
     // TODO: test flatSet?
-    boost::container::flat_map<std::pair<ui32 /*nodeIndex*/, TileHarvestable>, std::set<TileIndex>> mHarvestablePositions;
+    FlatMap<std::pair<ui32 /*nodeIndex*/, TileHarvestable>, std::set<TileIndex>> mHarvestablePositions;
 };
 
 struct CoarseNavGraph {

@@ -42,7 +42,7 @@ private:
     void initEventHandlers(World& world);
     void updateTileContainerMesh(TileContainer& tileContainer);
     // Mesh management
-    std::unordered_map<TileContainerID, TileContainerMeshData> mTileContainerMeshData;
+    UnorderedFlatMap<TileContainerID, TileContainerMeshData> mTileContainerMeshData;
     moodycamel::ConcurrentQueue<TileContainerID> mTileContainersToRemove;
 
     // Mesh lists

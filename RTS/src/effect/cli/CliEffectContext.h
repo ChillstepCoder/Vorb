@@ -55,8 +55,8 @@ private:
 
     moodycamel::ConcurrentQueue<std::pair<EffectAssetRef, PendingEffectInstanceData>> mRenderThreadQueue;
 
-    std::unordered_map<EffectAssetRef, PendingEffectData> mPendingAssetLoadEffects;
+    FlatMap<EffectAssetRef, PendingEffectData> mPendingAssetLoadEffects;
     std::vector<EffectInstance> mEffectInstances;
-    std::unordered_map<const EffectDef*, std::pair<int, AssetHandlePtr<EffectDef>>> mEffectReferences;
+    FlatMap<const EffectDef*, std::pair<int, AssetHandlePtr<EffectDef>>> mEffectReferences;
 };
 

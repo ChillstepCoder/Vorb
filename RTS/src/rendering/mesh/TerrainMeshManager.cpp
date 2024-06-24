@@ -60,7 +60,8 @@ void TerrainMeshManager::onTerrainModified(const boost::container::flat_set<i32v
     const f32v2 ROOT_HALF_DIMSF = HeightmapTerrainQuadtree::LOD_DIMS[0].xy / 2u;
     const i32v2 LEAF_DIMS = HeightmapTerrainQuadtree::LOD_DIMS[HeightmapTerrainQuadtree::HIGHEST_LOD].xy;
     // Condense all updates to just the leaf positions
-    boost::container::flat_map<ui32 /*terrainTreeIndex*/, std::vector<f32v2>> modifiedLeafNodePositions;
+    UnorderedFlatMap<ui32 /*terrainTreeIndex*/, std::vector<f32v2>> modifiedLeafNodePositions;
+    modifiedLeafNodePositions.reserve(4);
     for (const i32v2& modifiedPos : modifiedPositions) {
         const i32v2 rootPosition = modifiedPos / ROOT_DIMS;
         const i32v2 leafPosition = modifiedPos / LEAF_DIMS;

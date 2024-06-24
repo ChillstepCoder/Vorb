@@ -20,8 +20,6 @@
 #include <map>
 #include <queue>
 #include <set>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 /************************************************************************/
 /* Other                                                                */
@@ -37,7 +35,17 @@
 /* Boost Containers                                                     */
 /************************************************************************/
 #include <boost/container/flat_map.hpp>
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <boost/unordered/unordered_flat_set.hpp>
 
+template <class Key, class Value, class Compare = std::less<Key>>
+using FlatMap = boost::container::flat_map<Key, Value, Compare>;
+
+template <class Key, class Value, class Hasher = boost::hash<Key>, class KeyEqual = std::equal_to<Key>, class Allocator = std::allocator<std::pair<const Key, Value>>>
+using UnorderedFlatMap = boost::unordered_flat_map<Key, Value, Hasher, KeyEqual, Allocator>;
+
+template <class Key, class Hasher = boost::hash<Key>, class KeyEqual = std::equal_to<Key>, class Allocator = std::allocator<Key>>
+using UnorderedFlatSet = boost::unordered_flat_set<Key, Hasher, KeyEqual, Allocator>;
 
 // TODO: Distribute OpenGL from this location
 #include <GL/glew.h>
@@ -54,16 +62,14 @@
 #include <Vorb/decorators.h>
 #include <Vorb/colors.h>
 
-#include <entt/entt.hpp>
-constexpr entt::entity INVALID_ENTITY = (entt::null);
-typedef std::vector<entt::entity> EntityVector;
-
-
 // Types
 #include "types/IdTypes.h"
 #include "util/TypeHash.h"
 #include "util/GridIdUtil.h"
 
+#include <entt/entt.hpp>
+constexpr entt::entity INVALID_ENTITY = (entt::null);
+typedef std::vector<entt::entity> EntityVector;
 
 typedef f64 TimeStampSec;
 typedef f64 TimeSpanSec;

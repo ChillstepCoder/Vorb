@@ -208,7 +208,7 @@ private:
     EVENT_DISPATCHER_DEF(World);
 
     inline static std::shared_mutex sWorldsMutex;
-    inline static std::unordered_map<WorldID, World*> sWorlds;
+    inline static UnorderedFlatMap<WorldID, World*> sWorlds;
 };
 
 extern std::unique_ptr<World> sGameWorld;

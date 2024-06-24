@@ -97,6 +97,14 @@ public:
 
     NET_SERIALIZE_DECL();
 
+    size_t hash() const {
+        size_t seed = 0;
+        boost::hash_combine(seed, boost::hash<ui64>()(mTokenLow));
+        boost::hash_combine(seed, boost::hash<ui64>()(mTokenMid));
+        boost::hash_combine(seed, boost::hash<ui64>()(mTokenHigh));
+        return seed;
+    }
+
 protected:
     ui64 mTokenLow;  // Lower 64 bits
     ui64 mTokenMid; // Upper 64 bits
@@ -105,9 +113,9 @@ protected:
     // Debug str only works for constexpr strings since we cant own the string data
     const char* DEBUG_STR = DEBUG_STR_EMPTY;
 #endif
-    friend struct std::hash<StrToken>;
 
     void initFromStrInternal(const char* str, size_t sz);
+
 
 };
 #ifdef DEBUG
@@ -116,18 +124,9 @@ static_assert(sizeof(StrToken) == 32);
 static_assert(sizeof(StrToken) == 24);
 #endif
 
-namespace std {
-    template <>
-    struct hash<StrToken> {
-        auto operator()(const StrToken& token) const -> size_t {
-            size_t seed = 0;
-            boost::hash_combine(seed, std::hash<ui64>()(token.mTokenLow));
-            boost::hash_combine(seed, std::hash<ui64>()(token.mTokenMid));
-            boost::hash_combine(seed, std::hash<ui64>()(token.mTokenHigh));
-            return seed;
-        }
-    };
-}
+inline size_t hash_value(const StrToken& o) {
+    return o.hash();
+};
 
 // Guarenteed consteval initialization
 template<size_t N>

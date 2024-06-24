@@ -39,9 +39,9 @@ private:
     // ====================================================================
     // For batch send to game thread
     HostSimContext& mContext;
-    std::unordered_map<ChunkID, ChunkFullTransitionData> mQueuedFullTransitions;
+    UnorderedFlatMap<ChunkID, ChunkFullTransitionData> mQueuedFullTransitions;
 
-    // Guarantee pointer stability for entity bindings
+    // Guarantee pointer stability for entity bindings via std::unordered_map
     std::unordered_map<entt::entity, SimFullEntityBinding> mFullEntityBindings;
 };
 

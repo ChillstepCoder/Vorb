@@ -11,7 +11,7 @@
 
 #include "world/settlement/SettlementDebugHelpers.inl"
 
-static std::unordered_set<i32> sClosedSeedSet;
+static UnorderedFlatSet<i32> sClosedSeedSet;
 
 SettlementPlotManager::SettlementPlotManager(World& world, RandomGenerator& randomGenerator) : mWorld(world), mRandomGenerator(randomGenerator) {
 

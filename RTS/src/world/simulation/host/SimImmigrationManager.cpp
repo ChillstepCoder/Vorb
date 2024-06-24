@@ -49,6 +49,7 @@ void SimImmigrationManager::init() {
             }
         }
     }
+    // TODO: Evaluate rehashing
     mImmigrationData.shrink_to_fit();
 }
 

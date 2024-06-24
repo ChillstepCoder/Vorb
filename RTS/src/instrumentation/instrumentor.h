@@ -52,7 +52,7 @@ struct InstrumentorDebugOutputData {
     std::map<std::thread::id, std::vector<InstrumentorDebugStrings>> data;
 };
 
-typedef std::unordered_map<std::thread::id, std::map<const char*, InstrumentTimeInfo>> DebugInstrumentationDataMap;
+typedef FlatMap<std::thread::id, std::map<const char*, InstrumentTimeInfo>> DebugInstrumentationDataMap;
 
 class Instrumentor
 {
@@ -145,7 +145,7 @@ public:
         long long start = std::chrono::time_point_cast<std::chrono::microseconds>(m_StartTimepoint).time_since_epoch().count();
         long long end = std::chrono::time_point_cast<std::chrono::microseconds>(endTimepoint).time_since_epoch().count();
 
-        uint32_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
+        uint32_t threadID = std::hash<std::thread::id>()(std::this_thread::get_id());
         Instrumentor::sTimerStack.pop_back();
         size_t stackSize = Instrumentor::sTimerStack.size();
         Instrumentor::get().writeProfile({ m_Name, start, end, threadID, (unsigned)stackSize, stackSize ? Instrumentor::sTimerStack.back() : nullptr});

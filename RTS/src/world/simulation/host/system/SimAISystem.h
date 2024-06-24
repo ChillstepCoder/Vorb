@@ -49,6 +49,6 @@ private:
     RandomGenerator* mRandomGen = nullptr;
 
     FamilyID mFamilyIDGen = 0;
-    std::unordered_map<FamilyID, SimFamily> mFamilies;
+    UnorderedFlatMap<FamilyID, SimFamily> mFamilies;
 };
 

@@ -95,7 +95,7 @@ struct ChunkFullTransitionData {
     VORB_NON_COPYABLE_BUT_MOVABLE(ChunkFullTransitionData);
 
     std::vector<EntityFullTransitionData> entities;
-    std::unordered_map<ItemID, std::vector<TileItemStack>> itemStacks;
+    FlatMap<ItemID, std::vector<TileItemStack>> itemStacks;
 };
 
 struct ChunkSimTransitionData {

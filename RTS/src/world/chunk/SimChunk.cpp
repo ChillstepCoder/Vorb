@@ -235,7 +235,7 @@ TileID SimChunk::tryClearHarvestable(TileHarvestable expectedHarvestable, ChunkT
     return id;
 }
 
-std::unordered_map<ItemID, std::vector<TileItemStack>> SimChunk::getItemDataCopy() const {
+FlatMap<ItemID, std::vector<TileItemStack>> SimChunk::getItemDataCopy() const {
     std::lock_guard lock(mMutex);
     return mItemData.itemStacks;
 }

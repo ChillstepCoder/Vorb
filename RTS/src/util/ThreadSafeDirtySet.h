@@ -42,13 +42,13 @@ public:
     }
     
     // Will fill outObjects with all currently dirty objects and clear
-    void aquireAllDirtyObjects(std::unordered_set<T>& outObjects) {
+    void aquireAllDirtyObjects(UnorderedFlatSet<T>& outObjects) {
         std::lock_guard lock(mMutex);
         std::swap(outObjects, mDirtyObjects);
     }
 private:
     std::mutex mMutex;
-    std::unordered_set<T> mDirtyObjects;
+    UnorderedFlatSet<T> mDirtyObjects;
 };
 
 // Intended to flush dirty objects to another thread once per frame
@@ -112,7 +112,7 @@ private:
 template <typename K, typename V>
 class GameThreadBatchedDirtyMapSet
 {
-    typedef boost::container::flat_map<K, boost::container::flat_set<V>> MapType;
+    typedef FlatMap<K, boost::container::flat_set<V>> MapType;
 public:
     // Returns false if already dirty
     bool gameThreadTryDirtyObject(K key, const V& val) {

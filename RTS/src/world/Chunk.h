@@ -57,7 +57,7 @@ class ChunkTileContainersLookup {
 public:
 	TileContainerID structureContainers[CHUNK_SIZE];
 	TileContainerID chunkContainerID;
-	std::unordered_map<TileContainerID, TileContainerRef> structureContainerRefs;
+	FlatMap<TileContainerID, TileContainerRef> structureContainerRefs;
 };
 
 

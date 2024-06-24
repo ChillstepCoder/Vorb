@@ -35,7 +35,7 @@ public:
     STATIC_EVENT_LISTENER_FUNCS(EditorSelectionManager, SelectionEvent, EDITOR_SELECTION_EVENT_TYPE::SelectionChanged, EditorSelectionEvent&);
 
 private:
-    inline static std::unordered_map<EditorSelectionContext, std::vector<UniqueId64>> sContexts;
+    inline static UnorderedFlatMap<EditorSelectionContext, std::vector<UniqueId64>> sContexts;
 
     STATIC_EVENT_DISPATCHER_DEF(EditorSelectionManager);
 };

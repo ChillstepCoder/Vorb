@@ -20,7 +20,7 @@ struct RegionPatchDesc {
 };
 
 struct RegionPendingWriteData {
-    boost::container::flat_map<RegionPatchIndex, BBuffer> pendingWrites;
+    UnorderedFlatMap<RegionPatchIndex, BBuffer> pendingWrites;
     ui32 incomingWrites = 0;
 };
 

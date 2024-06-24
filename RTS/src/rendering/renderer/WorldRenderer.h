@@ -99,7 +99,7 @@ private:
     // World Data
     WorldRenderDataManager* mCurrentWorldRenderDataManager = nullptr;
     mutable std::mutex mRenderDataManagersMutex;
-    std::unordered_map<const World*, std::unique_ptr<WorldRenderDataManager>> mRenderDataManagers;
+    UnorderedFlatMap<const World*, std::unique_ptr<WorldRenderDataManager>> mRenderDataManagers;
     std::unique_ptr<Mesh> mHorizonQuad;
     std::unique_ptr<Skybox> mSkyBox;
 

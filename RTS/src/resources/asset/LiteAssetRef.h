@@ -11,7 +11,7 @@ public:
     void setAssetID(AssetID id) { mId = id; }
 
     std::size_t hash() const {
-        return std::hash<AssetID>{}(mId);
+        return boost::hash<AssetID>{}(mId);
     }
 
 protected:
@@ -76,6 +76,9 @@ public:
     bool operator==(const LiteAssetRef& other) const {
         return mId == other.mId;
     }
+    bool operator<(const LiteAssetRef& other) const {
+        return mId < other.mId;
+    }
 
     auto operator<=>(const LiteAssetRef&) const = default;
 };
@@ -114,11 +117,7 @@ ASSET_REF_DECL(Building);
 ASSET_REF_DECL(Room);
 static_assert(e_count(AssetType) == 22, "Add AssetRef");
 
-namespace std {
-    template <AssetType assetType>
-    struct hash<LiteAssetRef<assetType>> {
-        std::size_t operator()(const LiteAssetRef<assetType>& ref) const noexcept {
-            return ref.hash();
-        }
-    };
-}
+template <AssetType assetType>
+inline size_t hash_value(const LiteAssetRef<assetType>& ref) {
+    return ref.hash();
+};

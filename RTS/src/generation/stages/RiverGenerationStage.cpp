@@ -165,7 +165,7 @@ bool RiverGenerationStage::update() {
         if (mAllGpuGenerationsFinished) {
             if (mFinishedHeightDownloads == mPendingHeightDownloads) {
                 // Free unused memory
-                std::unordered_map<i32v2 /*vertexPosCorner*/, CellPassData>().swap(mCellPasses);
+                UnorderedFlatMap<i32v2 /*vertexPosCorner*/, CellPassData>().swap(mCellPasses);
                 return true;
             }
             return false;
@@ -280,7 +280,7 @@ void RiverGenerationStage::generateRiverPath(size_t riverIndex) {
 
     constexpr size_t MAX_CHECKS = 65536;
 
-    std::unordered_map<i16v2, NodeInfo> allNodes;
+    UnorderedFlatMap<i16v2, NodeInfo> allNodes;
     allNodes.reserve(16384);
 
     RiverPath& path = mBlackboard.mRiverPaths[riverIndex];

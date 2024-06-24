@@ -121,8 +121,7 @@ typedef std::vector<ChunkBuildingEdge> ChunkBuildingEdgeList;
 typedef std::vector<std::pair<TileIndex, Cartesian>> ChunkBuildingEdgeListOutput;
 // Stores external edges mapped to chunk locations
 typedef std::map<ChunkID, ChunkBuildingEdgeListOutput> ChunkBuildingExternalEdgeListOutput;
-// TODO: Vector of Vector may be better here for memory footprint + iteration?
-typedef std::unordered_map<TileContainerID, ChunkBuildingEdgeListOutput> ContainerTerrainDependentEdges;
+
 struct ContainerNavData {
     ContainerNavData() = default;
     ContainerNavData(
@@ -250,9 +249,10 @@ private:
 
     // TODO: We need to destroy these on chunk destruct
     moodycamel::ConcurrentQueue<NavGraphBuildTaskData> mFinishedNavGraphBuildTasks;
+    // std::unordered_map for pointer stability
     std::unordered_map<TileContainerID, ContainerNavData> mNavGraphs;
     bgi::rtree<ContainerNavRegion, bgi::quadratic<16>> mSpatialLookup;
-    mutable boost::container::flat_map<LiteTileHandle, TimeStampSec> mReservedHarvestables;
+    mutable FlatMap<LiteTileHandle, TimeStampSec> mReservedHarvestables;
 
     enum class ChunkDependencyFlags : ui8 {
         CHUNK_DEPENDENCY_0 = BIT(0),

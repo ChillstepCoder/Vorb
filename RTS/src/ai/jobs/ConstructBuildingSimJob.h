@@ -64,8 +64,8 @@ public:
     Building& building;
 private:
 	// Reversed vectors for efficient pop_back
-	boost::container::flat_map<ItemID, std::vector<BuildContextTargetData>> mItemsToTileTargets;
-    boost::container::flat_map<ItemID, ReservedItems> mReservedItems;
+	FlatMap<ItemID, std::vector<BuildContextTargetData>> mItemsToTileTargets;
+	FlatMap<ItemID, ReservedItems> mReservedItems;
 	std::queue<BuildContextTargetData> mTilesToConstruct;
     BitArray mTilesNeedingFlatten;
 	std::vector<f32v2> mInteractPositions;

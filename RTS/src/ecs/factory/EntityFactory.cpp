@@ -142,11 +142,6 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
         static_assert(e_cast(ComponentType::COUNT) == 12, "Update component construction");
     }
 
-    // Post load
-     // OLD BULLET CONTROLLER
-    // if (charControlCmp) {
-   //     charControlCmp->mController = physWorld.addDynamicCharacterController(newEntity, registry.get<PhysicsComponent>(newEntity).mRigidBody, 0.0f);
-   // }
     world.dispatchOnEntityCreated(WorldEntityEvent(world, newEntity));
 
     return newEntity;

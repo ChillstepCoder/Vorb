@@ -401,7 +401,7 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(entt::entity settlement, RoadSe
     std::vector<RoadPointNeedingConstruct> roadVertsThisEdge;
     roadVertsThisEdge.reserve(128);
 
-    std::unordered_set<DTileCoord> coveredPlotSeeds;
+    UnorderedFlatSet<DTileCoord> coveredPlotSeeds;
     coveredPlotSeeds.reserve(32);
 
     const f32 baseWidthf(newSegment.widthTiles[0]);
@@ -512,7 +512,7 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(entt::entity settlement, RoadSe
         mPlotManager->removePlotSeed(coveredSeed);
     }
 
-    std::unordered_set<PlotSeed> possiblePlotSeeds;
+    UnorderedFlatSet<PlotSeed> possiblePlotSeeds;
     possiblePlotSeeds.reserve(newSegment.length * (glm::max(newSegment.widthTiles[0], newSegment.widthTiles[1])) + 1);
 
     // Used for determining which direction to branch

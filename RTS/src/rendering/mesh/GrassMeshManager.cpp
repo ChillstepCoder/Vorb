@@ -55,7 +55,7 @@ void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
     }
 
     constexpr f32 LEAF_DIM = ChunkGrassQuadtree::LOD_DIMS[ChunkGrassQuadtree::HIGHEST_LOD].x;
-    std::unordered_set<std::pair<ChunkID, i16v2>> dirtyObjects;
+    UnorderedFlatSet<std::pair<ChunkID, i16v2>> dirtyObjects;
     mDirtyPositions.aquireAllDirtyObjects(dirtyObjects);
     for (auto& [chunkId, xyOffset] : dirtyObjects) {
         auto&& it = mTrackedChunksLookup.find(chunkId);

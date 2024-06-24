@@ -19,6 +19,6 @@ public:
     entt::entity getEntityFromSrvEntity(entt::entity srvEntity);
 
 private:
-    std::unordered_map<entt::entity, entt::entity> mSrvToCliEntityLookup;
+    UnorderedFlatMap<entt::entity, entt::entity> mSrvToCliEntityLookup;
 };
 

@@ -108,7 +108,6 @@ void CharacterRenderer::playOneShotAnimation(entt::entity entityId, AssetID anim
         const AnimationDef* animDef = AnimationRepository::get().tryGetLoadedAsset(animationId);
         if (!animDef) panic("Tried to play one shot anim {} that was not loaded", animationId);
         it->second->mAnimInstance.tryPlayOneShot(*animDef);
-        LOG_CRITICAL("TODO: HANDLE ONE SHOT");
     }
 }
 

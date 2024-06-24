@@ -12,7 +12,7 @@ static_assert(sizeof(ModelBillboardData) == 24);
 
 class ModelBillboardLodManager {
 public:
-    ModelBillboardLodManager(const std::unordered_map<AssetID, GLTexture>& billboardTextures);
+    ModelBillboardLodManager(const UnorderedFlatMap<AssetID, GLTexture>& billboardTextures);
     ~ModelBillboardLodManager();
 
     void frameBegin();
@@ -21,7 +21,7 @@ public:
 
 private:
 
-    const std::unordered_map<AssetID, GLTexture>& mBillboardTextures;
+    const UnorderedFlatMap<AssetID, GLTexture>& mBillboardTextures;
 };
 
 class ModelBillboardLodBuilder {
@@ -29,9 +29,9 @@ public:
 
     void initTextureForModel(AssetID modelID);
 
-    const std::unordered_map<AssetID, GLTexture>& getBillboardTextures() const { return mBillboardTextures; }
+    const UnorderedFlatMap<AssetID, GLTexture>& getBillboardTextures() const { return mBillboardTextures; }
 private:
 
     // Maps models to billboards
-    std::unordered_map<AssetID, GLTexture> mBillboardTextures;
+    UnorderedFlatMap<AssetID, GLTexture> mBillboardTextures;
 };

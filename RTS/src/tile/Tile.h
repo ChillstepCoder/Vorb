@@ -92,7 +92,7 @@ struct ContainerMeshDataCopy {
     std::vector<Tile> tiles;
     TileWallContainer walls;
     TileSpatialGrid spatialGrid;
-    boost::container::flat_map<TileIndex, TileDamageData> damageData;
+    FlatMap<TileIndex, TileDamageData> damageData;
 };
 
 struct ContainerNavDataCopy {
