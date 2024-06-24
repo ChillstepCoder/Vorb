@@ -6,5 +6,5 @@ materials:
 texture_method: vertical
 shape: window
 recipe:
-  - item: wood_raw
+  - item: wood_log
     count: 2

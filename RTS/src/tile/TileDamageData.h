@@ -11,7 +11,7 @@ struct TileDamageResistances {
     f32 outer = 5.0f;
     f32 inner = 0.0f;
     f32 blendExponent = 2.0f;
-    i32 shellDegradeMultiplier = 1; // Larger = faster shell degrade
+    f32 shellDegradeMultiplier = 2.5f; // Larger = faster shell degrade
 };
 
 class TileDamageData {

@@ -4,5 +4,5 @@ materials:
 col: box
 texture_method: vertical
 recipe:
-  - item: wood_raw
+  - item: wood_log
     count: 2

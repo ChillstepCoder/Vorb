@@ -43,7 +43,7 @@ void EditorWorldInterfaceController::update()
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_Y)) {
         // TODO: ITEMFactory
         GameThreadTasks::getInstance().addGenericTask([this]() {
-            ItemID id = ItemRepository::get().getAssetID(CStrToken("wood_raw"));
+            ItemID id = ItemRepository::get().getAssetID(CStrToken("wood_log_birch"));
             ItemStack newStack(id, 1);
             f32v3 velocity = f32v3(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f, 4.0f);
             EntityFactory::createItemProjectile(*mWorld, mWorld->getECS().getLocalPlayerPosition() + f32v3(0.0f, 0.0f, 1.0f), velocity, newStack);
@@ -331,21 +331,6 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
         else if (result & INTERACT_MENU_RESULT_INSPECT) {
             // grass
             UIContext::getInstance().activateTileInspectionPanel(mSelectedScreenPos, mSelectedTileHandle);
-        }
-        else if (result & INTERACT_MENU_RESULT_DEBUG_ADD_25_WOOD) {
-            // grass
-            WorldObjectQueryPtr& worldObjects = mRightClickInteractPopup->getWorldObjects();
-            ItemStockpile* stockPile = worldObjects->getStockpile();
-            assert(stockPile);
-            ItemStack woodPile;
-            // TODO: AssetHandle?
-            woodPile.id = ItemRepository::get().getAssetID(CStrToken("wood_raw"));
-            woodPile.count = 25;
-            if (std::unique_ptr<ItemReservation> itemPromise = stockPile->tryPromiseItemStack(woodPile, 1)) {
-                while (!itemPromise->isFinished()) {
-                    itemPromise->fulfillCurrentTarget(woodPile);
-                }
-            }
         }
         else if (result & INTERACT_MENU_RESULT_DEBUG_DESTROY_STOCK) {
             // grass

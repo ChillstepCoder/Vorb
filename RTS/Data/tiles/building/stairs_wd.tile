@@ -4,5 +4,5 @@ texture_method: world_tiling
 shape: stairs
 layer: 1
 recipe:
-  - item: wood_raw
+  - item: wood_log
     count: 2

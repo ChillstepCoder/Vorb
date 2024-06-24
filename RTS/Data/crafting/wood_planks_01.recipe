@@ -1,6 +1,6 @@
 wood_planks_01:
   inputs:
-    - item: wood_raw
+    - item: wood_log
       count: 1
   output: 
     item: wood_planks

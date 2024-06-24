@@ -58,6 +58,7 @@ public:
 
     // Editor function which will register and create a default asset of this type
     virtual AssetHandleBasePtr editorTryAddNewAssetBase(StrToken name) = 0;
+    virtual bool assetExists(StrToken assetName) const = 0;
     virtual AssetID getAssetID(StrToken assetName) const = 0;
 
     virtual bool saveAsset(AssetID assetId) = 0;
@@ -142,7 +143,7 @@ protected:
     nString readFileToString(const vio::Path& path);
 
     vio::IOManager& mIoManager;
-    std::map<StrToken, AssetID> mAssetLookup;
+    FlatMap<StrToken, AssetID> mAssetLookup;
     std::vector<AssetMetadata> mAssetRegistry;
     std::vector<std::unique_ptr<ExclusiveCacheLine<std::atomic_int>>> mAssetRefCounts;
     std::vector<std::unique_ptr<ExclusiveCacheLine<std::atomic_bool>>> mLoadedAssets;
@@ -259,6 +260,9 @@ public:
     }
     inline bool isAssetLoaded(AssetID id) { return mLoadedAssets[id]->load(); }
 
+    bool assetExists(StrToken assetName) const override {
+        return mAssetLookup.find(assetName) != mAssetLookup.end();
+    }
     AssetID getAssetID(StrToken assetName) const override {
         auto&& it = mAssetLookup.find(assetName);
         if (it == mAssetLookup.end()) {

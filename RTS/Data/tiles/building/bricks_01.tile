@@ -3,5 +3,5 @@ materials:
   - bricks1
 shape: floor
 recipe:
-  - item: wood_raw
+  - item: wood_log
     count: 1

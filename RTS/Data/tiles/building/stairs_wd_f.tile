@@ -3,5 +3,5 @@ materials:
 texture_method: world_tiling
 layer: 1
 recipe:
-  - item: wood_raw
+  - item: wood_log
     count: 2

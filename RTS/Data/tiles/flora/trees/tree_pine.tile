@@ -8,7 +8,7 @@ destroy_effect: tree_explode
 model: tree_pine
 model_variants:
   - 0
-max_health: 300
+max_health: 200
 layer: 1
 shape: model
 path_weight: 0
@@ -18,6 +18,6 @@ name: ''
 item_drops:
   rand: []
   guar:
-    - val: wood_raw
+    - val: wood_log
       count: [40,50]
 recipe: []

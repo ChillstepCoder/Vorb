@@ -107,9 +107,10 @@ void TileContainerHarvestableRegistry::debugDraw() const {
     constexpr f32 ALPHA = 1.0f;
     const color4 colors[e_cast(TileHarvestable::COUNT)] = {
         color4(0.8f, 0.25f, 0.25f, ALPHA), // WOOD
+        color4(0.5f, 0.75f, 0.25f, ALPHA), // WOOD BIRCH
         color4(0.4f, 0.4f, 0.4f, ALPHA) // STONE
     };
-    static_assert(e_cast(TileHarvestable::COUNT) == 2);
+    static_assert(e_cast(TileHarvestable::COUNT) == 3);
 
     for (ui32 i = 0; i < mRegistryCount; ++i) {
         for (auto&& it : mRegistries[i].mHarvestablePositions) {

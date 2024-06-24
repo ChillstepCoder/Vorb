@@ -107,6 +107,9 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
     // Default Material dependencies
     mFbxSdkMutex.lock();
     std::shared_ptr<FBXLoadContext> loadContextPtr = std::make_shared<FBXLoadContext>(modelPath.getCString());
+    if (!loadContextPtr) {
+        panic("Failed to load fbx file: {}", modelPath.getCString());
+    }
     mFbxSdkMutex.unlock();
     const int materialCount = loadContextPtr->sceneLoader.scene()->GetMaterialCount();
     rawMeshPtr->mMaterials.resize(materialCount);

@@ -1,0 +1,13 @@
+texture: 
+models:
+  - wood_log_1
+  - wood_log_2
+  - wood_log_3
+type: material
+shape: plank
+harvest: wood
+value: 0.2
+weight: 0.4
+stack_size: 60
+stack_dims: [1,5,5]
+inv_bag: resources

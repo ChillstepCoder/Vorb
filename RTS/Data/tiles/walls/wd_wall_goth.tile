@@ -3,5 +3,5 @@ materials:
 texture_method: vertical
 shape: wall
 recipe:
-  - item: wood_raw
+  - item: wood_log
     count: 2

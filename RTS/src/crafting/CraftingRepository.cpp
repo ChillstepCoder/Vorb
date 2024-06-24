@@ -52,6 +52,7 @@ void CraftingRepository::loadRecipeFile(const vio::Path& filePath) {
         assert(recipe.mNumInputs < MAX_CRAFTING_RECIPE_INPUTS);
         for (size_t i = 0; i < def.inputs.size(); ++i) {
             const ItemStackDef& itemStackDef = def.inputs[i];
+            assert(itemRepo.assetExists(StrToken(itemStackDef.itemName)));
             recipe.mInputItem[i].id = itemRepo.getAssetID(StrToken(itemStackDef.itemName));
             recipe.mInputItem[i].count = itemStackDef.count;
         }
