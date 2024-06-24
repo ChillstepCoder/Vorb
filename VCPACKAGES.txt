@@ -10,3 +10,4 @@
 ./vcpkg install boost-heap
 ./vcpkg install boost-geometry
 ./vcpkg install boost-foreach
+./vcpkg install boost-graph
