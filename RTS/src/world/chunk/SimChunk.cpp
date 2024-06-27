@@ -3,6 +3,9 @@
 
 #include "world/Chunk.h"
 
+// Check for mismatches in harvestables and tiles
+#define ENABLE_DEBUG_VALIDATE 0
+
 void SimChunkTileData::incrementTileQuantity(TileID id, ui32 quantity) {
     assert(id != TILE_ID_NONE);
     auto&& qit = tileQuantities.find(id);
@@ -37,6 +40,7 @@ void SimChunkTileData::removeTile(ChunkTileIndex pos) {
     SimTileData& data = it->second;
     onTileRemoved(data.tileId, pos);
     tileIndexToTileData.erase(it);
+    debugValidateHarvestables();
 }
 
 SimTileDataMap::iterator SimChunkTileData::removeTileDuringIter(SimTileDataMap::iterator iter) {
@@ -71,6 +75,7 @@ void SimChunkTileData::changeTile(ChunkTileIndex pos, TileID id, ui8 variant) {
             it->second = SimTileData{ .tileId = id, .variant = variant };
         }
     }
+    debugValidateHarvestables();
 }
 
 const SimTileData* SimChunkTileData::tryGetTileData(ChunkTileIndex pos) const {
@@ -81,11 +86,29 @@ const SimTileData* SimChunkTileData::tryGetTileData(ChunkTileIndex pos) const {
     return nullptr;
 }
 
+void SimChunkTileData::debugValidateHarvestables() {
+#if defined(DEBUG) && ENABLE_DEBUG_VALIDATE
+    for (auto&& it : harvestables) {
+        for (size_t i = 0; i < it.second.size(); ++i) {
+            ChunkTileIndex index = it.second[i];
+            auto&& tileData = tileIndexToTileData.find(index);
+            assert(tileData != tileIndexToTileData.end());
+            assert(TileRepository::get().getLoadedOrUnloadedAsset(tileData->second.tileId).harvestable == it.first);
+            for (size_t j = i + 1; j < it.second.size(); ++j) {
+                assert(it.second[i] != it.second[j]);
+            }
+        }
+    }
+#endif // DEBUG
+}
+
 void SimChunkTileData::onTileAdded(TileID id, ChunkTileIndex pos) {
     incrementTileQuantity(id, 1);
     TileHarvestable harvestable = TileRepository::get().getLoadedOrUnloadedAsset(id).harvestable;
     if (harvestable != TileHarvestable::None) {
         harvestables[harvestable].emplace_back(pos);
+
+        debugValidateHarvestables();
     }
 }
 
@@ -210,7 +233,9 @@ TileID SimChunk::tryClearHarvestable(TileHarvestable expectedHarvestable, ChunkT
     if (hit == mTileData->harvestables.end()) {
         return TILE_ID_NONE;
     }
-    
+
+    mTileData->debugValidateHarvestables();
+
     bool found = false;
     for (size_t i = 0; i < hit->second.size(); ++i) {
         if (hit->second[i] == tileIndex) {
@@ -232,6 +257,9 @@ TileID SimChunk::tryClearHarvestable(TileHarvestable expectedHarvestable, ChunkT
     mTileData->decrementTileQuantity(id, 1);
 
     mTileData->tileIndexToTileData.erase(it);
+
+    mTileData->debugValidateHarvestables();
+
     return id;
 }
 

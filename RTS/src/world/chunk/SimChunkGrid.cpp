@@ -48,7 +48,7 @@ SimChunkGrid::SimChunkGrid(ui32 worldWidthTiles) {
 }
 
 SimChunkGrid::~SimChunkGrid() {
-
+    LOG_INFO("Shutting down SimChunkGrid");
 }
 
 void SimChunkGrid::setWorld(World* world) {
@@ -62,7 +62,11 @@ ui32 SimChunkGrid::getApproxMemoryUsageBytes() const {
 
 SimTileDataWriteReservationPtr SimChunkGrid::tryReserveTileDataAtPosIfNotEmpty(ChunkID chunkId, TileIndex tileIndex) {
     SimChunk& container = mChunkData[chunkId];
-    assert(container.isAllocated()); // TODO: Allow allocation later?
+    if (!container.isAllocated()) {
+        // TODO: Investigate this case, it only happens on new world
+        LOG_WARN("SimChunkGrid::tryReserveTileDataAtPosIfNotEmpty: Chunk {} not allocated", (int)chunkId);
+        return nullptr;
+    }
 
     { // Critical section
         std::unique_lock lock(container.mMutex);

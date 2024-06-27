@@ -80,10 +80,14 @@ private:
         for (auto&& it : harvestables) {
             it.second.shrink_to_fit();
         }
+        debugValidateHarvestables();
     }
     BINARY_SERIALIZE_OUTPUT() {
         sharedSerialize(s);
     }
+
+    // FOR FINDING ERRORS
+    void debugValidateHarvestables();
 private:
     // Internal use only
     void onTileAdded(TileID id, ChunkTileIndex pos);

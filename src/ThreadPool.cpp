@@ -51,6 +51,7 @@ void vcore::ThreadPool::workerThreadFunc(WorkerThread* thisThread) {
     };
     while (!thisThread->mStop.load()) {
         mTaskSemaphore.acquire();
+        --COUNTER;
         ++mRunningThreads;
         if (mTasks[(int)TaskPriority::High].try_dequeue(ctok[(int)TaskPriority::High], task)) {
             task();
@@ -60,6 +61,13 @@ void vcore::ThreadPool::workerThreadFunc(WorkerThread* thisThread) {
         }
         else if (mTasks[(int)TaskPriority::Low].try_dequeue(ctok[(int)TaskPriority::Low], task)) {
             task();
+        }
+        else if (!thisThread->mStop.load()) {
+            // Rare case, someone grabbed our task as we were in the middle of checking,
+            // which means we should be grabbing a higher priority one.
+            // One semaphore count = one task, so we HAVE to release it.
+            mTaskSemaphore.release();
+            ++COUNTER;
         }
         --mRunningThreads;
     }

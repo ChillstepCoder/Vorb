@@ -182,6 +182,9 @@ void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
     SimChunkTileData& chunkData = *chunk.mTileData;
     const i32v2 chunkPosWorld = mSpatialGrid->getWorldPosXYFromID(id);
 
+    assert(chunkData.harvestables.empty());
+    assert(chunkData.tileIndexToTileData.empty());
+
     ui32 totalTiles = 0;
     for (ui32 i = 0; i < CHUNK_SIZE; ++i) {
         const ui32 x = i & TILE_INDEX_X_MASK;
@@ -206,7 +209,8 @@ void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
             SimTileData tileData;
             tileData.tileId = tile.mainLayer;
             tileData.variant = tile.mainLayerVariant;
-            chunkData.tileIndexToTileData.emplace((ui16)i, tileData);
+            chunkData.tileIndexToTileData.emplace((ChunkTileIndex)i, tileData);
+            chunkData.debugValidateHarvestables();
             const TileDef& def = tileRepo.getLoadedOrUnloadedAsset(tile.mainLayer);
             if (def.harvestable != TileHarvestable::None) {
                 chunkData.harvestables[def.harvestable].emplace_back(i);
@@ -223,14 +227,7 @@ void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
         it.second.shrink_to_fit();
     }
 
-    for (auto&& it : chunkData.harvestables) {
-        for (ChunkTileIndex tileIndex : it.second) {
-            if (!chunkData.tileIndexToTileData.contains(tileIndex)) {
-                LOG_CRITICAL("Failure");
-                panic("AHHH");
-            }
-        }
-    }
+    chunkData.debugValidateHarvestables();
 
     //LOG_DEBUG("Generated simchunk in {} ms {} {} {}", timer.stop(), totalTiles, (f32)totalTiles / CHUNK_SIZE, chunkData.tileIndexToTileData.size());
 }

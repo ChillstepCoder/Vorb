@@ -157,6 +157,9 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     // Initialize world data
     mChunkGrid->setWorldAndAllocateChunks(*this);
     mHeightmapGrid->setWorld(*this);
+    if (mSimChunkGrid) {
+        mSimChunkGrid->setWorld(this);
+    }
 
     LOG_DEBUG("Chunks allocated in {}", timer.stop());
     LOG_DEBUG("Finished allocating world {} net mode {}", (void*)this, e_cast(netMode));
@@ -171,12 +174,10 @@ World::~World() {
 void World::onWorldBeginGame(const f32v2& loadCenter) {
     ASSERT_GAME_THREAD();
 
-    // Host specific init
+    // Host specific nav init
     if (mNetMode == WorldNetMode::Host) {
         mNavWorld = std::make_unique<NavWorld>(*this);
         Services::NavThread::ref().init(*mNavWorld);
-
-        mSimChunkGrid->setWorld(this);
     }
 
 

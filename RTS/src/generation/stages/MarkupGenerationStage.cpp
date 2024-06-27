@@ -292,7 +292,6 @@ void MarkupGenerationStage::generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPer
                     if (it.second > highestLandCount) {
                         chunkMarkup.mainLandBodyID = it.first;
                         highestLandCount = it.second;
-                        mWorldPtr->getWorldGenerator().generateSimChunk(mWorldPtr->getSimChunkGrid().getChunkForGeneration(chunkID), *mWorldPtr);
                     }
                 }
                 else {
@@ -301,6 +300,11 @@ void MarkupGenerationStage::generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPer
                         highestWaterCount = it.second;
                     }
                 }
+            }
+
+            // Only generate chunk if we have a land chunk
+            if (chunkMarkup.mainLandBodyID != UINT32_MAX) {
+                mWorldPtr->getWorldGenerator().generateSimChunk(mWorldPtr->getSimChunkGrid().getChunkForGeneration(chunkID), *mWorldPtr);
             }
 
             if (chunkMarkup.mainLandBodyID != UINT32_MAX) {

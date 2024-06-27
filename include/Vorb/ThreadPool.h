@@ -45,7 +45,7 @@ namespace vorb {
         class ThreadPool {
         public:
             // If we exceed this, we have problems
-            static constexpr ui32 MAX_TASKS = 65536;
+            static constexpr ui32 MAX_TASKS = 1048576;
 
             ThreadPool(ui32 size);
             ~ThreadPool();
@@ -58,6 +58,8 @@ namespace vorb {
             inline void addTask(std::function<void()> workerProc, TaskPriority priority = TaskPriority::Normal) {
                 mTasks[(int)priority].enqueue(workerProc);
                 mTaskSemaphore.release();
+                ++COUNTER;
+                assert(COUNTER < mTaskSemaphore.max());
             }
 
             /// Add an array of tasks to the task queue
@@ -117,6 +119,7 @@ namespace vorb {
             std::vector<std::unique_ptr<WorkerThread>> mDeadWorkers; // Workers we have released
             std::atomic_int mActiveThreads = 0;
             std::atomic_int mRunningThreads = 0;
+            std::atomic_int COUNTER = 0;
         };
 
     }

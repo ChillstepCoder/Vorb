@@ -161,6 +161,7 @@ private:
     std::unique_ptr<TileContainerRepository> mTileContainerRepository;
     // Loader
     std::unique_ptr<TileContainerLoader> mTileContainerLoader;
+    // TODO: All of these shared_ptr can be unique_ptr via release()?
     // Terrain
     std::shared_ptr<IHeightmapGrid> mHeightmapGrid;
     // Biome
