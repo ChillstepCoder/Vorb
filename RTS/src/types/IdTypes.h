@@ -61,7 +61,7 @@ constexpr ui32 INVALID_FAMILY_ID = std::numeric_limits<FamilyID>::max();
 typedef ui16 ItemID;
 constexpr ItemID INVALID_ITEM_ID = std::numeric_limits<ItemID>::max();
 
-typedef ui32 TileItemUID;
+typedef ui64 TileItemUID;
 constexpr TileItemUID INVALID_TILE_ITEM_UID = std::numeric_limits<TileItemUID>::max();
 
 typedef ui32 StaticModelInstanceID;

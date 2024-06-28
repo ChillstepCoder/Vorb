@@ -27,7 +27,7 @@ private:
     ItemStack itemStack;
     TileItemUID tileItemUID = INVALID_TILE_ITEM_UID;
 };
-static_assert(sizeof(TileItemComponent) == 16, "Keep small");
+static_assert(sizeof(TileItemComponent) == 24, "Keep small");
 
 struct SimpleItemComponent {
     ItemStack itemStack;

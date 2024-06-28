@@ -126,7 +126,8 @@ private:
 
 private:
     FlatMap<ItemID, std::vector<TileItemStack>> itemStacks;
-    std::atomic<TileItemUID> uniqueIdGenerator = 0;
+    // TODO: Serialize this
+    inline static std::atomic<TileItemUID> sUniqueIdGenerator = 0;
 };
 
 class SimChunk {

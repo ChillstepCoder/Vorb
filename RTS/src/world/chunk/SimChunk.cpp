@@ -353,7 +353,7 @@ void SimChunk::freeTileReservation(ChunkTileIndex tileIndex) {
 
 TileItemUID SimChunkItemData::generateNextItemUID() {
     // Increment by one
-    return uniqueIdGenerator.fetch_add(1, std::memory_order_relaxed) + 1;
+    return sUniqueIdGenerator.fetch_add(1, std::memory_order_relaxed) + 1;
 }
 
 SimChunkTileItemReservationPtr SimChunkItemData::tryReserveItemStackOnTile(ChunkTileIndex tileIndex, ItemID itemId, ui16 quantity, SimChunk& owner) {
