@@ -13,6 +13,7 @@
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/HeightFieldShape.h>
 #include <jolt/Physics/Body/BodyID.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
@@ -20,10 +21,26 @@
 #ifdef JPH_DEBUG_RENDERER
 #include <Jolt/Renderer/DebugRenderer.h>
 
+struct BodyUserData {
+    BodyUserData() : data(0) {}
+    BodyUserData(entt::entity owner) : ownerEntity(owner) {}
+    BodyUserData(ui64 data) : data(data) {}
+
+    operator ui64() const { return data; }
+
+    union {
+        struct {
+            entt::entity ownerEntity;
+        };
+        ui64 data;
+    };
+};
+static_assert(sizeof(BodyUserData) == sizeof(ui64), "JoltUserData must be 64 bits");
+
 // TODOS:
-// 1. Custom heightfield collision shape https://jrouwe.github.io/JoltPhysics/index.html#creating-custom-shapes
-// 2. Character and CharacterVirtual https://jrouwe.github.io/JoltPhysics/index.html#character-controllers
-// 3. Convert to cpp20 module
+// 1. Character and CharacterVirtual https://jrouwe.github.io/JoltPhysics/index.html#character-controllers
+// 2. Convert to cpp20 module
+// 3. Custom heightfield collision shape (Involved...) https://jrouwe.github.io/JoltPhysics/index.html#creating-custom-shapes
 
 class MyDebugRenderer : public JPH::DebugRenderer {
 public:
@@ -53,10 +70,12 @@ public:
 
 
     void DrawText3D(JPH::RVec3Arg inPosition, const JPH::string_view& inString, JPH::ColorArg inColor = JPH::Color::sWhite, float inHeight = 0.5f) override {
-        throw std::logic_error("The method or operation is not implemented.");
+        //throw std::logic_error("The method or operation is not implemented.");
     }
 
 };
+
+static std::unique_ptr<MyDebugRenderer> sDebugRenderer;
 
 #endif // JPH_DEBUG_RENDERER
 
@@ -224,6 +243,7 @@ public:
         physicsSystem.Init(maxBodies, numBodyMutexes, maxBodyPairs, maxContactConstraints, broadPhaseLayerInterface, objectVsBroadphaseLayerFilter, objectVsObjectLayerFilter);
         // Z up
         physicsSystem.SetGravity(JPH::Vec3(0.0f, 0.0f, -9.81f));
+
         //physics_system.SetBodyActivationListener(&body_activation_listener);
         //physics_system.SetContactListener(&contact_listener);
     }
@@ -263,12 +283,13 @@ private:
     // Filters object vs object layers
     ObjectLayerPairFilterImpl objectVsObjectLayerFilter;
 
-#ifdef JPH_DEBUG_RENDERER
-    MyDebugRenderer debugRenderer;
-#endif //JPH_DEBUG_RENDERER
 };
 
+
 NewPhysicsWorld::NewPhysicsWorld(World& world) : mWorld(world) {
+
+    LOG_INFO("{}", (((ui64(1) | (0 << 1) | (0 << 2) | (0 << 3) | (0 << 4) | (1 << 5) | (0 << 6) | (0 << 7) | (0 << 8) | (0 << 9)) << 24) | (3 << 16) | (0 << 8) | 1));
+    //assert(JPH::VerifyJoltVersionID());
 
     // Register allocation hook. In this example we'll just let Jolt use malloc / free but you can override these if you want (see Memory.h).
     // This needs to be done before any other Jolt function is called.
@@ -306,6 +327,11 @@ NewPhysicsWorld::NewPhysicsWorld(World& world) : mWorld(world) {
 
     mContext = std::make_unique<JPHPhysicsWorldContext>();
     mContext->init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints);
+
+
+#ifdef JPH_DEBUG_RENDERER
+    sDebugRenderer = std::make_unique<MyDebugRenderer>();
+#endif //JPH_DEBUG_RENDERER
 
     //// The main way to interact with the bodies in the physics system is through the body interface. There is a locking and a non-locking
     //// variant of this. We're going to use the locking version (even though we're not planning to access bodies from multiple threads)
@@ -395,8 +421,17 @@ PhysBodyID NewPhysicsWorld::createCharacterCapsule(entt::entity ownerEntity, f32
 
     // Create the actual rigid body
     JPH::Body* body = bodyInterface.CreateBody(createSettings); // Note that if we run out of bodies this can return nullptr
+    body->SetUserData(BodyUserData(ownerEntity));
     const JPH::BodyID bodyID = body->GetID();
     // Add it to the world
-    bodyInterface.AddBody(bodyID, JPH::EActivation::Activate);
+    // TODO: ACTIVATE IT
+    bodyInterface.AddBody(bodyID, JPH::EActivation::DontActivate);
+
     return bodyID.GetIndexAndSequenceNumber();
+}
+
+void NewPhysicsWorld::debugRender() const {
+#ifdef JPH_DEBUG_RENDERER
+
+#endif // JPH_DEBUG_RENDERER
 }

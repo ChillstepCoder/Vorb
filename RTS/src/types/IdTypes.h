@@ -67,6 +67,9 @@ constexpr TileItemUID INVALID_TILE_ITEM_UID = std::numeric_limits<TileItemUID>::
 typedef ui32 StaticModelInstanceID;
 constexpr StaticModelInstanceID INVALID_STATIC_MODEL_INSTANCE_ID = std::numeric_limits<StaticModelInstanceID>::max();
 
+using PhysBodyID = ui32;
+constexpr PhysBodyID INVALID_PHYS_BODY_ID = std::numeric_limits<PhysBodyID>::max();
+
 using NavPathID = ui16;
 constexpr NavPathID INVALID_NAV_PATH_ID = 0;
 

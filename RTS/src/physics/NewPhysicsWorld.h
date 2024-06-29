@@ -6,14 +6,6 @@ class HeightmapPatch;
 
 #include "physics/CollisionShapes.h"
 
-using PhysBodyID = ui32;
-
-enum class RigidBodyRotationType {
-    FULL,
-    NO_ROTATE,
-    NO_ROTATE_XY,
-};
-
 class NewPhysicsWorld {
 public:
     NewPhysicsWorld(World& world);

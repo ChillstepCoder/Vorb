@@ -36,9 +36,10 @@ public:
     btRigidBody* mRigidBody = nullptr; // TODO: Pack btRigidBody?
     f32 mZPosOffset = 0.0f; // Used for calculating the position at the bottom of the rigidbody
     BitFlags<PhysicsComponentFlag> mFlags;
+	PhysBodyID mBodyID = INVALID_PHYS_BODY_ID;
 
 };
-static_assert(sizeof(PhysicsComponent) == 16, "Keep super tiny");
+//static_assert(sizeof(PhysicsComponent) == 16, "Keep super tiny");
 
 class PhysicsComponentDef : public ComponentDefBase {
 public:

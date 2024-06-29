@@ -20,12 +20,14 @@
 #include <ozz/animation/runtime/animation.h>
 #include "world/World.h"
 #include "physics/PhysicsWorld.h"
+#include "physics/NewPhysicsWorld.h"
 
 #include "math/Random.h"
 
 entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken typeToken) {
     ASSERT_GAME_THREAD();
     PhysicsWorld& physWorld = world.getPhysicsWorld();
+    NewPhysicsWorld& physicsWorld = world.getNewPhysicsWorld();
     IFullECS& ecs = world.getECS();
 
     entt::registry& registry = ecs.mRegistry;
@@ -116,6 +118,7 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                 RigidBodyPair rbp = physWorld.addRigidBody(newEntity, position, cdef.colliderShape, cdef.halfExtents, cdef.massKg, CollisionGroup::CHARACTER, rotType);
                 physics.mRigidBody = rbp.first;
                 physics.mZPosOffset = -rbp.second;
+                physics.mBodyID = physicsWorld.createCharacterCapsule(newEntity, position, cdef.halfExtents);
                 break;
             }
             case ComponentType::Profession: {

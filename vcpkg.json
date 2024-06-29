@@ -1,0 +1,23 @@
+{
+  "name": "anima-mundi",
+  "version-string": "0.1.0",
+  "builtin-baseline": "000d1bda1ffa95a73e0b40334fa4103d6f4d3d48",
+  "dependencies": [
+    "tinyspline",
+    "bitsery",
+    "zstd",
+    "spdlog",
+    {
+      "name": "joltphysics",
+      "version>=": "5.0.0"
+    },
+    "boost-container",
+    "boost-unordered",
+    "boost-pool",
+    "boost-circular-buffer",
+    "boost-heap",
+    "boost-geometry",
+    "boost-foreach",
+    "boost-graph"
+  ]
+}
