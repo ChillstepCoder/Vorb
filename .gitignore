@@ -203,3 +203,4 @@ RTS/errorlog.txt
 RTS/saves/
 include/vendor/imgui
 _cache/
+vcpkg_installed/
