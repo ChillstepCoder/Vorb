@@ -12,6 +12,7 @@
 #include "rendering/ChunkGrassQuadtree.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "physics/PhysicsWorld.h"
+#include "physics/NewPhysicsWorld.h"
 
 #include "world/World.h"
 #include "world/IChunkGrid.h"
@@ -80,6 +81,10 @@ IHeightmapGrid::~IHeightmapGrid() {
 
 }
 
+void IHeightmapGrid::onWorldBegin() {
+    initChunkGridEvents();
+}
+
 void IHeightmapGrid::tickShared() {
     ASSERT_GAME_THREAD();
     PROFILE_FUNCTION();
@@ -93,6 +98,15 @@ void IHeightmapGrid::tickShared() {
         editEvent.mModifiedVerts = &mModifiedVertsThisTick;
         dispatchEditVerts(editEvent);
         mModifiedVertsThisTick.clear();
+
+        NewPhysicsWorld& physWorld = mWorld->getNewPhysicsWorld();
+        for (HeightmapPatchID id : mModifiedPatchesThisTick) {
+            HeightmapPatch& patch = mHeightData[id];
+            if (patch.physBodyID != INVALID_PHYS_BODY_ID) {
+                physWorld.updateTerrainBody(patch);
+            }
+        }
+        mModifiedPatchesThisTick.clear();
     }
 }
 
@@ -242,6 +256,7 @@ void IHeightmapGrid::markVertexDirty(HeightmapPatchID id, i32 vertIndex) {
     worldPos.x += x * HEIGHTMAP_QUAD_SIZE;
     worldPos.y += y * HEIGHTMAP_QUAD_SIZE;
     mModifiedVertsThisTick.insert(worldPos);
+    mModifiedPatchesThisTick.insert(id);
     mHeightData[id].isSaveUpToDate.clear();
 }
 
@@ -364,7 +379,7 @@ void IHeightmapGrid::computeTileCorners(TileCoord worldTilePos, OUT f32 corners[
 bool IHeightmapGrid::areTrianglesFlippedAtTile(const TileHandle& tileHandle) const {
     ASSERT_GAME_THREAD();
     i32v2 heightmapXY = tileHandle.getWorldPos2D() / (i32)HEIGHTMAP_QUAD_SIZE;
-    return (heightmapXY.x + heightmapXY.y) % 2 == 1;
+    return ((heightmapXY.x + heightmapXY.y) % 2 == 1) && !DISABLE_TERRAIN_TRIANGLE_FLIP;
 }
 
 f32 IHeightmapGrid::computeMinHeightAtTile(TileCoord worldTilePos) const {
@@ -417,10 +432,38 @@ void IHeightmapGrid::initInternal() {
     mTotalPatches = SQ(mWidthPatches);
     mHeightData = std::make_unique<HeightmapPatch[]>(mTotalPatches);
     for (HeightmapPatchID id = 0; id < mTotalPatches; ++id) {
-        mHeightData[id].init(id);
+        HeightmapPatch& patch = mHeightData[id];
+        patch.init(id);
+        patch.aabb.x = (id % mWidthPatches) * HEIGHTMAP_PATCH_WIDTH_TILES;
+        patch.aabb.y = (id / mWidthPatches) * HEIGHTMAP_PATCH_WIDTH_TILES;
+        patch.aabb.dims.x = HEIGHTMAP_PATCH_WIDTH_TILES;
+        patch.aabb.dims.y = HEIGHTMAP_PATCH_WIDTH_TILES;
     }
     mSpatialGrid2D.init(HEIGHTMAP_PATCH_WIDTH_TILES, mWidthPatches);
     mMaxCoordinate = mWidthPatches * HEIGHTMAP_PATCH_WIDTH_TILES - 1;
+
+}
+
+void IHeightmapGrid::initChunkGridEvents() {
+    mWorld->getChunkGrid().registerChunkGridListeners(mChunkGridListeners);
+    mWorld->getChunkGrid().addBeginActivateListener(mChunkGridListeners, [this](ChunkGridEvent& evnt) {
+        i32 patchId = mSpatialGrid2D.getIDAtWorldPos(evnt.chunk.getWorldPosCenter2D());
+        HeightmapPatch& patch = mHeightData[patchId];
+        if (++patch.mNumActiveChunksThisPatch == 1) {
+            // Need to activate physics
+            mWorld->getNewPhysicsWorld().updateTerrainBody(patch);
+        }
+    });
+    mWorld->getChunkGrid().addDeactivatedListener(mChunkGridListeners, [this](ChunkGridEvent& evnt) {
+        i32 patchId = mSpatialGrid2D.getIDAtWorldPos(evnt.chunk.getWorldPosCenter2D());
+        HeightmapPatch& patch = mHeightData[patchId];
+        assert(mHeightData[patchId].mNumActiveChunksThisPatch > 0);
+        if (--mHeightData[patchId].mNumActiveChunksThisPatch == 0) {
+            // Need to deactivate physics
+            mWorld->getNewPhysicsWorld().removeBody(patch.physBodyID);
+            patch.physBodyID = INVALID_PHYS_BODY_ID;
+        }
+    });
 }
 
 void IHeightmapGrid::setHeightAtInternal(HeightmapPatchID id, i32 vertIndex, f32 height, TerrainHeightSetDirection dir) {
@@ -530,7 +573,7 @@ f32 IHeightmapGrid::interpolateHeightAndNormalAtWorldPos(f32v2 worldPos, OUT f32
         }
     }
     // Select which triangle we are looking at, taking into account orientation
-    if ((quadXYIndices.x + quadXYIndices.y) % 2 == 0) {
+    if (((quadXYIndices.x + quadXYIndices.y) % 2 == 0) || DISABLE_TERRAIN_TRIANGLE_FLIP) {
         // This shape
         // **********
         // *     ** *
@@ -690,7 +733,7 @@ f32 IHeightmapGrid::interpolateHeightAtWorldPos(f32v2 worldPos) const {
     }
     //const HeightmapPatchData* blPatch = mHeightData[rootId].mHeightData;
     // Select which triangle we are looking at, taking into account orientation
-    if ((quadXYIndices.x + quadXYIndices.y) % 2 == 0) {
+    if (((quadXYIndices.x + quadXYIndices.y) % 2 == 0) || DISABLE_TERRAIN_TRIANGLE_FLIP) {
         // This shape
         // **********
         // *     ** *

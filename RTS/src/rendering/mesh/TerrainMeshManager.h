@@ -23,7 +23,7 @@ public:
     void addTerrainWaterMesh(const TerrainMesh* mesh) { ASSERT_RENDER_THREAD(); mTerrainWaterMeshes.insert(mesh); }
     void removeTerrainWaterMesh(const TerrainMesh* mesh) { ASSERT_RENDER_THREAD(); mTerrainWaterMeshes.erase(mesh); }
 
-    const std::vector<HeightmapTerrainQuadtree>& getTerrainQuadtrees() const { ASSERT_GAME_THREAD(); return mTerrainTrees; }
+    const std::vector<HeightmapTerrainQuadtree>& getTerrainQuadtrees() const { ASSERT_RENDER_THREAD(); return mTerrainTrees; }
 
     const boost::container::flat_set<const TerrainMesh*>& getTerrainMeshes() const { ASSERT_RENDER_THREAD(); return mTerrainMeshes; }
     const boost::container::flat_set<const TerrainMesh*>& getTerrainWaterMeshes() const { ASSERT_RENDER_THREAD(); return mTerrainWaterMeshes; }

@@ -55,9 +55,11 @@ public:
     BoundingSphere boundingSphere;
     f32AABB3 aabb;
     HeightmapPatchID id;
+    PhysBodyID physBodyID = INVALID_PHYS_BODY_ID;
 private:
     mutable std::shared_mutex mMutex;
     mutable std::atomic_flag isSaveUpToDate = ATOMIC_FLAG_INIT;
+    i32 mNumActiveChunksThisPatch = 0;
 
     BINARY_SERIALIZE() {
         s.container2b(data);

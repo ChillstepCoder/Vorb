@@ -52,7 +52,9 @@ public:
     void EndFrame();
 
     struct RenderSettings {
+        bool showCollision = false;
         float alpha = 0.7f;
+        bool wireframe = false;
     } mRenderSettings;
 
 private:

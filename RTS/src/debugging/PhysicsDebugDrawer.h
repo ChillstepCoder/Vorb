@@ -1,7 +1,7 @@
 #pragma once
 #include "LinearMath/btIDebugDraw.h"
 
-
+// TODO: Delete me
 class PhysicsDebugDrawer : public btIDebugDraw
 {
 public:

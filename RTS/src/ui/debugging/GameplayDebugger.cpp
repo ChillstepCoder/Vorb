@@ -265,12 +265,9 @@ PhysicsDebugger::~PhysicsDebugger() = default;
 
 void PhysicsDebugger::updateAndRenderImGui() {
     if (ImGui::Begin("Physics Debugger", &sGameplayDebugOptions.showPhysicsDebugger, ImGuiWindowFlags_NoDocking)) {
-        ImGui::Checkbox("Show Collision", &sDebugOptions.mShowCollision);
 
-        ImGui::Spacing();
-        ImGui::SeparatorText("Stats");
-        ImGui::Text(" Dynamic Bodies: %d", sGameWorld->getNewPhysicsWorld().getBodyCount(PhysicsObjectLayer::Dynamic));
-        ImGui::Text(" Static Bodies: %d", sGameWorld->getNewPhysicsWorld().getBodyCount(PhysicsObjectLayer::Static));
+        sGameWorld->getNewPhysicsWorld().updateAndRenderImguiDebugControls();
+
         ImGui::End();
     }
 }

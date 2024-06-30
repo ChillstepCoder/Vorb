@@ -10,6 +10,7 @@
 
 // For debug rendering
 #include "world/simulation/host/HostSimContext.h"
+#include "world/HeightmapTerrainQuadtree.h"
 
 #include "debugging/DebugRenderer.h"
 #include "rendering/CharacterRenderer.h"
@@ -496,6 +497,18 @@ void WorldRenderer::renderDebug() {
     const std::vector<DebugWireQuadState>& debugQuads = mRenderState->getDebugQuads();
     for (const DebugWireQuadState& quad : debugQuads) {
         AM::DebugRenderer::drawWireQuad(quad.origin, quad.dims, quad.color);
+    }
+
+    // Terrain debug rendering
+    if (sDebugOptions.mDebugTerrainLod) {
+        std::vector<DebugWireQuadState> terrainQuads;
+        terrainQuads.reserve(128);
+        for (auto&& terrainQuadtree : mCurrentWorldRenderDataManager->getTerrainMeshManager().getTerrainQuadtrees()) {
+            terrainQuadtree.getDebugQuads(terrainQuads);
+        }
+        for (const DebugWireQuadState& quad : terrainQuads) {
+            AM::DebugRenderer::drawWireQuad(quad.origin, quad.dims, quad.color);
+        }
     }
 
     // Grass

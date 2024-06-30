@@ -9,6 +9,8 @@
 
 #include "util/SpatialGrid2D.h"
 
+#include "world/ChunkGridEvent.h"
+
 #include <mutex>
 
 class World;
@@ -66,6 +68,8 @@ public:
     ~IHeightmapGrid();
 
     VORB_NON_COPYABLE(IHeightmapGrid);
+
+    void onWorldBegin();
 
     void tickShared();
 
@@ -131,6 +135,7 @@ public:
 
 protected:
     void initInternal();
+    void initChunkGridEvents();
     void setHeightAtInternal(HeightmapPatchID id, i32 vertIndex, f32 height, TerrainHeightSetDirection dir);
     void computeRequiredPaddedIDs(HeightmapPatchID id, OUT HeightmapPatchID requiredIds[9]) const;
 
@@ -146,10 +151,13 @@ protected:
     f32 mMaxCoordinate;
 
     World* mWorld = nullptr;
+
+    ChunkGridListeners mChunkGridListeners;
     //std::mutex mMutex;
 
     // TODO: Server only
     boost::container::flat_set<i32v2> mModifiedVertsThisTick;
+    boost::container::flat_set<HeightmapPatchID> mModifiedPatchesThisTick;
     // Events
     EVENT_DISPATCHER_DEF(IHeightmapGrid);
 

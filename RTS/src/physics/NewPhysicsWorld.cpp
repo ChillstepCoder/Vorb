@@ -22,6 +22,11 @@
 #include "physics/StaticPhysicsMeshBuilder.h"
 #include "physics/CollisionShapeRepository.h"
 
+#include "world/World.h"
+#include "world/IHeightmapGrid.h"
+
+#include "terrain/HeightmapPatch.h"
+
 #include "options/DebugOptions.h"
 
 
@@ -230,7 +235,11 @@ public:
     }
 
     JPH::BodyInterface& getBodyInterface() {
-        return physicsSystem.GetBodyInterfaceNoLock();
+        return physicsSystem.GetBodyInterface();
+    }
+
+    const JPH::BodyLockInterface& getBodyLockInterface() {
+        return physicsSystem.GetBodyLockInterface();
     }
 
     void update(float deltaTime, int numCollisionSteps) {
@@ -262,8 +271,11 @@ public:
 
 #ifdef JPH_DEBUG_RENDERER
     void debugDraw(const Camera3D& camera) {
-        if (sDebugOptions.mShowCollision) {
+        if (sDebugRenderer->mRenderSettings.showCollision) {
+
             JPH::BodyManager::DrawSettings settings;
+            settings.mDrawShapeWireframe = sDebugRenderer->mRenderSettings.wireframe;
+
             sDebugRenderer->PrepareFrame(camera);
             // Only update static when static changes
             if (mDirtyStaticDebugRender) {
@@ -283,7 +295,20 @@ public:
     bool mDirtyStaticDebugRender = true;
 #endif
 
+    void updateShape(BodyID id, const JPH::Shape* newShape, bool updateMass, JPH::EActivation activateMode) {
+        ASSERT_GAME_THREAD();
+        JPH::BodyInterface& bodyInterface = getBodyInterface();
+
+        bodyInterface.SetShape(JPH::BodyID(id), newShape, updateMass, activateMode);
+#if ENABLE_PHYSICS_ANALYTICS == 1
+        if (bodyInterface.GetMotionType(JPH::BodyID(id)) == JPH::EMotionType::Static) {
+            mDirtyStaticDebugRender = true;
+        }
+#endif
+    }
+
     JPH::Body& createBody(const JPH::BodyCreationSettings& createSettings, JPH::EActivation inActivationMode, CollisionShapeID shapeId) {
+        ASSERT_GAME_THREAD();
         JPH::BodyInterface& bodyInterface = getBodyInterface();
         JPH::Body* body = bodyInterface.CreateBody(createSettings);
         if (body == nullptr) {
@@ -300,6 +325,10 @@ public:
 #endif
 
         return *body;
+    }
+
+    void removeBody(PhysBodyID id) {
+        getBodyInterface().RemoveBody(JPH::BodyID(id));
     }
 
 
@@ -408,6 +437,76 @@ int NewPhysicsWorld::stepSimulation(f32 deltaTime) {
     return collisionSteps;
 }
 
+void NewPhysicsWorld::updateTerrainBody(HeightmapPatch& patch) {
+    PROFILE_FUNCTION();
+
+    // Adding an additional edge on right and north side to fill gap, which means we have to do
+    constexpr i32 PADDED_WIDTH = HEIGHTMAP_VERT_WIDTH_PER_PATCH + 1;
+    constexpr i32 PADDED_SIZE = SQ(PADDED_WIDTH);
+
+    const f32v3 cornerPos = patch.aabb.pos;
+    const f32v2 centerPos = patch.aabb.getCenter();
+    const f32 offsetToEdge = centerPos.x - cornerPos.x;
+
+    // More efficient to manually construct settings so we avoid a full array copy
+    JPH::HeightFieldShapeSettings settings;
+    settings.mOffset = JPH::Vec3Arg(-offsetToEdge, 0.0f, -offsetToEdge);
+    settings.mScale = JPH::Vec3Arg(HEIGHTMAP_QUAD_SIZE, HEIGHT_STEP /*This will uncompress*/, HEIGHTMAP_QUAD_SIZE);
+    settings.mSampleCount = PADDED_WIDTH;
+    settings.mHeightSamples.resize(PADDED_SIZE);
+    auto& heights = settings.mHeightSamples;
+
+    IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
+    const HeightmapPatch* rightPatch = heightGrid.getHeightDataAt(patch.id + 1);
+    const HeightmapPatch* up = heightGrid.getHeightDataAt(patch.id + heightGrid.getWidthPatches());
+    const HeightmapPatch* upRight = heightGrid.getHeightDataAt(patch.id + heightGrid.getWidthPatches() + 1);
+    {
+        PROFILE_SCOPE("Copy Height");
+        for (int y = 0; y < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++y) {
+            int yOffset = (PADDED_WIDTH - y - 1) * PADDED_WIDTH;
+            for (int x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
+                // Need to flip Y due to handedness change
+                const int i = yOffset + x;
+                heights[yOffset + x] = (f32)patch.getCompressedHeightAt<true>(y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + x);
+            }
+            // Right side grabs from neighbor
+            if (rightPatch) [[likely]] {
+                heights[yOffset + HEIGHTMAP_VERT_WIDTH_PER_PATCH] = (f32)rightPatch->getCompressedHeightAt<true>(y * HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+            }
+            else {
+                heights[yOffset + HEIGHTMAP_VERT_WIDTH_PER_PATCH] = heights[yOffset + HEIGHTMAP_VERT_WIDTH_PER_PATCH - 1];
+            }
+        }
+        // Up patch
+        if (up) [[likely]] {
+            for (int x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
+                heights[x] = (f32)up->getCompressedHeightAt<true>(x);
+            }
+        }
+        else {
+            for (int x = 0; x < HEIGHTMAP_VERT_WIDTH_PER_PATCH; ++x) {
+                heights[x] = heights[x - PADDED_WIDTH];
+            }
+        }
+        // UpRight
+        if (upRight) [[likely]] {
+            heights[HEIGHTMAP_VERT_WIDTH_PER_PATCH] = (f32)upRight->getCompressedHeightAt<true>(0);
+        }
+        else {
+            heights[HEIGHTMAP_VERT_WIDTH_PER_PATCH] = heights[HEIGHTMAP_VERT_WIDTH_PER_PATCH - 1];
+        }
+    }
+
+    JPH::ShapeSettings::ShapeResult newShape = settings.Create();
+    // Remove old body
+    if (patch.physBodyID != INVALID_PHYS_BODY_ID) {
+        mContext->updateShape(patch.physBodyID, newShape.Get(), false, JPH::EActivation::DontActivate);
+    }
+    else {
+        patch.physBodyID = createTerrainBody(f32v3(centerPos.x, centerPos.y, 0.0f), newShape.Get());
+    }
+}
+
 PhysBodyID NewPhysicsWorld::createCharacterCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
     CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
 
@@ -418,6 +517,8 @@ PhysBodyID NewPhysicsWorld::createCharacterCapsule(entt::entity ownerEntity, f32
 }
 
 std::unique_ptr<JPH::Character> NewPhysicsWorld::createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
+    ASSERT_GAME_THREAD();
+
     CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
     JPH::ShapeSettings& shapeSettings = mShapeRepo.getJoltShapeSettings(shapeId);
     JPH::ShapeRefC shape = shapeSettings.Create().Get();
@@ -470,6 +571,35 @@ void NewPhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilde
     }
 }
 
+void NewPhysicsWorld::removeBody(PhysBodyID id) {
+    assert(id != INVALID_PHYS_BODY_ID);
+    mContext->removeBody(id);
+}
+
+void NewPhysicsWorld::updateAndRenderImguiDebugControls() {
+
+#ifdef JPH_DEBUG_RENDERER
+    if (ImGui::Checkbox("Show Collision", &sDebugRenderer->mRenderSettings.showCollision)) {
+        mContext->mDirtyStaticDebugRender = true;
+    }
+
+    if (sDebugRenderer->mRenderSettings.showCollision) {
+        if (ImGui::Checkbox("Wireframe", &sDebugRenderer->mRenderSettings.wireframe)) {
+            mContext->mDirtyStaticDebugRender = true;
+        }
+
+        if (ImGui::SliderFloat("Alpha", &sDebugRenderer->mRenderSettings.alpha, 0.0f, 1.0f)) {
+            mContext->mDirtyStaticDebugRender = true;
+        }
+    }
+#endif
+
+    ImGui::Spacing();
+    ImGui::SeparatorText("Stats");
+    ImGui::Text(" Dynamic Bodies: %d", getBodyCount(PhysicsObjectLayer::Dynamic));
+    ImGui::Text(" Static Bodies: %d", getBodyCount(PhysicsObjectLayer::Static));
+}
+
 void NewPhysicsWorld::debugRender(const Camera3D& camera) const {
 #ifdef JPH_DEBUG_RENDERER
     PROFILE_FUNCTION();
@@ -486,22 +616,26 @@ int NewPhysicsWorld::getBodyCount(PhysicsObjectLayer layer) const {
 }
 #endif
 
-JPH::BodyCreationSettings NewPhysicsWorld::makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer) {
-
-    // Create a rotation quaternion to orient along the Z-axis
-    static JPH::Quat orientation = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f);
-
-    JPH::ShapeSettings& shapeSettings = mShapeRepo.getJoltShapeSettings(shapeId);
-    JPH::ShapeRefC shape = shapeSettings.Create().Get();
-
+JPH::BodyCreationSettings NewPhysicsWorld::makeBodyCreateSettings(f32v3 position, const JPH::Shape* shape, JPH::EMotionType motionType, PhysicsObjectLayer layer) {
     // Adjust the position to account for the Z-up orientation
     JPH::RVec3 adjustedPosition(position.x, position.y, position.z/* + halfExtents.y*/);
+
+    // Create a rotation quaternion to orient along the Z-axis
+    static const JPH::Quat orientation = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f);
 
     // Create the settings for the body itself
     return JPH::BodyCreationSettings(shape, adjustedPosition, orientation, motionType, e_cast(layer));
 }
 
+JPH::BodyCreationSettings NewPhysicsWorld::makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer) {
+    JPH::ShapeSettings& shapeSettings = mShapeRepo.getJoltShapeSettings(shapeId);
+    JPH::ShapeRefC shape = shapeSettings.Create().Get();
+
+    return makeBodyCreateSettings(position, shape, motionType, layer);
+}
+
 PhysBodyID NewPhysicsWorld::createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId) {
+    ASSERT_GAME_THREAD();
    
     JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::Activate, shapeId);
     body.SetUserData(PhysicsBodyUserData(ownerEntity));
@@ -510,11 +644,21 @@ PhysBodyID NewPhysicsWorld::createEntityBody(const JPH::BodyCreationSettings& cr
 }
 
 PhysBodyID NewPhysicsWorld::createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId) {
+    ASSERT_GAME_THREAD();
 
     JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Static, PhysicsObjectLayer::Static);
 
     JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, shapeId);
     body.SetUserData(PhysicsBodyUserData(containerId, tileIndex));
+
+    return body.GetID().GetIndexAndSequenceNumber();
+}
+
+PhysBodyID NewPhysicsWorld::createTerrainBody(f32v3 position, const JPH::Shape* terrainShape) {
+    ASSERT_GAME_THREAD();
+    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, terrainShape, JPH::EMotionType::Static, PhysicsObjectLayer::Static);
+
+    JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, 696969 /*Cheeky terrain number for debug output*/);
 
     return body.GetID().GetIndexAndSequenceNumber();
 }

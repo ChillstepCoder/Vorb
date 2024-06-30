@@ -26,7 +26,7 @@ void TerrainMeshBuilder::initStaticIBO() {
             // Compute index of back left vertex
             ui32 vertIndex = y * TERRAIN_MESH_WIDTH_VERTS + x;
             // Change triangle orientation based on odd or even
-            if ((x + y) % 2) {
+            if (((x + y) % 2) || DISABLE_TERRAIN_TRIANGLE_FLIP) {
                 indices[index++] = vertIndex + 1;
                 indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS + 1;
                 indices[index++] = vertIndex + TERRAIN_MESH_WIDTH_VERTS;

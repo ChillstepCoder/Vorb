@@ -5,6 +5,7 @@ class JPHPhysicsWorldContext;
 class HeightmapPatch;
 class StaticPhysicsMeshBuilder;
 class TrackedStaticRigidBodyGatherer;
+class HeightmapPatch;
 
 #include "physics/CollisionShapes.h"
 
@@ -77,14 +78,19 @@ public:
     // Body Creation
     // ===========================================================================
 
+    void updateTerrainBody(HeightmapPatch& patch);
+
     PhysBodyID createCharacterCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
     std::unique_ptr<JPH::Character> createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
 
     void updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder);
 
+    void removeBody(PhysBodyID id);
+
     // ===========================================================================
     // Debugging
     // ===========================================================================
+    void updateAndRenderImguiDebugControls();
     void debugRender(const Camera3D& camera) const;
 
 #if ENABLE_PHYSICS_ANALYTICS == 1
@@ -92,9 +98,11 @@ public:
 #endif
 
 private:
+    JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, const JPH::Shape* shape, JPH::EMotionType motionType, PhysicsObjectLayer layer);
     JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer);
     PhysBodyID createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId);
     PhysBodyID createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId);
+    PhysBodyID createTerrainBody(f32v3 position, const JPH::Shape* terrainShape);
     void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
 
     World& mWorld;

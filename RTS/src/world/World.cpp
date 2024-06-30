@@ -192,6 +192,8 @@ void World::onWorldBeginGame(const f32v2& loadCenter) {
         mLoadCenter = loadCenter;
     }
 
+    mHeightmapGrid->onWorldBegin();
+
     // Register for rendering
     GameRenderStateManager::getInstance().setActiveWorld(this);
 
@@ -528,15 +530,6 @@ void World::updateDebugRenderState(WorldRenderState& renderState) {
     PROFILE_FUNCTION();
 
     renderState.mDebugQuads.clear();
-    // Terrain debug rendering
-    if (sDebugOptions.mDebugTerrainLod) {
-        assert(false); // Move to render thread
-        WorldRenderDataManager& manager = RenderContext::getInstance().getRenderDataManagerForWorld(*this);
-        for (auto&& terrainQuadtree : manager.getTerrainMeshManager().getTerrainQuadtrees()) {
-            terrainQuadtree.getDebugQuads(renderState.mDebugQuads);
-        }
-    }
-
     // Chunk debug rendering
     if (sDebugOptions.mChunkBoundaries) {
         const IChunkGrid& chunkGrid = getChunkGrid();
