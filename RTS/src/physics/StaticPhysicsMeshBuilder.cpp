@@ -2,6 +2,7 @@
 #include "StaticPhysicsMeshBuilder.h"
 
 #include "physics/PhysicsWorld.h"
+#include "physics/NewPhysicsWorld.h"
 #include "physics/StaticPhysicsMesh.h"
 
 #include "BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h"
@@ -141,6 +142,11 @@ bool StaticPhysicsMeshBuilder::hasAnyCollision() {
 }
 
 void StaticPhysicsMeshBuilder::finish(PhysicsWorld& physicsWorld) {
-    // This is thread safe
-    physicsWorld.addStaticMeshFromBuilder(*this);
+    if (hasAnyCollision()) {
+        physicsWorld.addStaticMeshFromBuilder(*this);
+    }
+}
+
+void StaticPhysicsMeshBuilder::finish(NewPhysicsWorld& physicsWorld) {
+    physicsWorld.updateTileContainerMeshFromBuilder(*this);
 }

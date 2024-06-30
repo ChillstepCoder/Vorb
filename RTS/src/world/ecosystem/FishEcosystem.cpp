@@ -498,10 +498,10 @@ bool FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
                 if (ai.mPeckCountRemaining == 0) {
                     ai.mAIState = FishAIState::GrabBobber;
                     followFishingCmp.onBobberGrabbed(entity);
-                    DebugRenderer::drawWireQuadThreadSafe(position.mPosition, f32v2(0.5f), color::Green, 60);
+                    AM::DebugRenderer::drawWireQuadThreadSafe(position.mPosition, f32v2(0.5f), color::Green, 60);
                 }
                 else {
-                    DebugRenderer::drawWireQuadThreadSafe(position.mPosition, f32v2(0.5f), color::Red, 60);
+                    AM::DebugRenderer::drawWireQuadThreadSafe(position.mPosition, f32v2(0.5f), color::Red, 60);
                     ai.mAIState = FishAIState::PeckCooldown;
                     ai.mPeckCooldownRemaining = Random::xorshf96f() * (MAX_PECK_COOLDOWN_TIME - MIN_PECK_COOLDOWN_TIME) + MIN_PECK_COOLDOWN_TIME;
                     --ai.mPeckCountRemaining;

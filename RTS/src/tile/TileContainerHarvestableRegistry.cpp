@@ -115,7 +115,7 @@ void TileContainerHarvestableRegistry::debugDraw() const {
     for (ui32 i = 0; i < mRegistryCount; ++i) {
         for (auto&& it : mRegistries[i].mHarvestablePositions) {
             f32v3 centerPos = mOwner->getTileCenterWorldPosition(it.first);
-            DebugRenderer::drawWireQuad(centerPos - f32v3(0.5f, 0.5f, 0.0f), f32v2(1.0f), colors[(int)it.second], DEBUG_DURATION);
+            AM::DebugRenderer::drawWireQuad(centerPos - f32v3(0.5f, 0.5f, 0.0f), f32v2(1.0f), colors[(int)it.second], DEBUG_DURATION);
         }
     }
 

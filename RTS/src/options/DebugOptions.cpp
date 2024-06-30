@@ -109,6 +109,7 @@ DebugOptions::DebugOptions() :
     mShowStaticPhysics(false),
     mShowDynamicPhysics(false),
     mShowPhysicsActions(false),
+    mShowCollision(false),
     mShowBusinessDebug(true),
     mShowSettlementDebug(false),
     mShowEditor(false),

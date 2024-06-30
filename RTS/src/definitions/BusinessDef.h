@@ -1,6 +1,5 @@
 #pragma once
 
-#include "tile/TileConst.h"
 #include "tile/TileHarvestable.h"
 
 typedef ui32 BusinessTypeID;

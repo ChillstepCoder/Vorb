@@ -144,10 +144,10 @@ void BuildingGrid::debugRender() {
             const Building* s = it.second.get();
             switch (s->mState) {
                 case BuildingState::ACTIVE:
-                    DebugRenderer::drawAABB(s->mTileAABB, ACTIVE_COLOR, LIFETIME_FRAMES);
+                    AM::DebugRenderer::drawAABB(s->mTileAABB, ACTIVE_COLOR, LIFETIME_FRAMES);
                     break;
                 case BuildingState::SIM:
-                    DebugRenderer::drawAABB(s->mTileAABB, DORMANT_COLOR, LIFETIME_FRAMES);
+                    AM::DebugRenderer::drawAABB(s->mTileAABB, DORMANT_COLOR, LIFETIME_FRAMES);
                     break;
                 default:
                     assert(false);

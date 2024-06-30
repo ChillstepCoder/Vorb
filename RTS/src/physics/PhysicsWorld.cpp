@@ -709,7 +709,7 @@ int PhysicsWorld::queryObjectsInAABB(f32v3 min, f32v3 max, PhysicsQueryResult* o
     };
 
     if (sDebugOptions.mShowPhysicsQueries) {
-        DebugRenderer::drawAABBThreadSafe(f32AABB3(min, max - min), DEBUG_COLOR_QUERIES, DEBUG_LIFETIME_QUERIES);
+        AM::DebugRenderer::drawAABBThreadSafe(f32AABB3(min, max - min), DEBUG_COLOR_QUERIES, DEBUG_LIFETIME_QUERIES);
     }
 
     AabbCallback callback(mWorld, outResults, maxResults);

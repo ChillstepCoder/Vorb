@@ -280,7 +280,7 @@ void CloudMeshManager::spawnNewCloudWaveX(i32 dir) {
         i32v2 pos(mLastCenterPosition.x + -dir * it.x, mLastCenterPosition.y + it.y);
         tryGenerateCloudBatchAt(pos);
         if (sDebugOptions.mDebugClouds) {
-            DebugRenderer::drawFilledQuad(f32v3(pos.x * CLOUD_BATCH_WIDTH + mDx, pos.y * CLOUD_BATCH_WIDTH + mDy, 1.0f), f32v2(CLOUD_BATCH_WIDTH), color4(0.0f, 1.0f, 0.0f, 0.5f), CLOUD_DEBUG_DRAW_TIME);
+            AM::DebugRenderer::drawFilledQuad(f32v3(pos.x * CLOUD_BATCH_WIDTH + mDx, pos.y * CLOUD_BATCH_WIDTH + mDy, 1.0f), f32v2(CLOUD_BATCH_WIDTH), color4(0.0f, 1.0f, 0.0f, 0.5f), CLOUD_DEBUG_DRAW_TIME);
         }
     }
 }
@@ -292,7 +292,7 @@ void CloudMeshManager::spawnNewCloudWaveY(i32 dir) {
         i32v2 pos(mLastCenterPosition.x + it.y, mLastCenterPosition.y + -dir * it.x);
         tryGenerateCloudBatchAt(pos);
         if (sDebugOptions.mDebugClouds) {
-            DebugRenderer::drawFilledQuad(f32v3(pos.x * CLOUD_BATCH_WIDTH + mDx, pos.y * CLOUD_BATCH_WIDTH + mDy, 1.0f), f32v2(CLOUD_BATCH_WIDTH), color4(1.0f, 0.0f, 0.0f, 0.5f), CLOUD_DEBUG_DRAW_TIME);
+            AM::DebugRenderer::drawFilledQuad(f32v3(pos.x * CLOUD_BATCH_WIDTH + mDx, pos.y * CLOUD_BATCH_WIDTH + mDy, 1.0f), f32v2(CLOUD_BATCH_WIDTH), color4(1.0f, 0.0f, 0.0f, 0.5f), CLOUD_DEBUG_DRAW_TIME);
         }
     }
 }

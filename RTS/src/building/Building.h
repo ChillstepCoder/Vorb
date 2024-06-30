@@ -1,6 +1,5 @@
 #pragma once
 
-#include "tile/TileConst.h"
 #include "tile/TileFlags.h"
 #include "tile/TileContainer.h"
 #include "tile/TileHandle.h"

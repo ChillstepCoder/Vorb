@@ -69,20 +69,18 @@ void GameThreadTasks::addHideLocalPlayerModelTask(World& world, bool hide) {
     });
 }
 
-void GameThreadTasks::addTileContainerStaticPhysicsMeshInitTask(const TileContainer* container, StaticPhysicsMeshBuilder&& meshBuilder) {
+void GameThreadTasks::addTileContainerStaticPhysicsMeshUpdateTask(const TileContainer* container, StaticPhysicsMeshBuilder&& meshBuilder) {
     typedef std::tuple<World*, const TileContainer*, StaticPhysicsMeshBuilder> TaskData;
-    TaskData* taskData;
-    taskData = new TaskData{ &container->getWorld(), container, std::move(meshBuilder) };
-    mGameThreadFuncProcs.enqueue([taskData]() {
-        StaticPhysicsMeshBuilder& builder = std::get<2>(*taskData);
-        World* world = std::get<0>(*taskData);
-        builder.finish(world->getPhysicsWorld());
+    // TODO: Figure out how to not have new here (deleted copy constructor issue?)
+    StaticPhysicsMeshBuilder* builderData = new StaticPhysicsMeshBuilder(std::move(meshBuilder));
+    mGameThreadFuncProcs.enqueue([world = &container->getWorld(), container, builderData]() mutable {
+        builderData->finish(world->getPhysicsWorld());
+        builderData->finish(world->getNewPhysicsWorld());
         // Release
-        const TileContainer* container = std::get<1>(*taskData);
         //assert(container->getState() == TileContainerState::WAITING_MESH_AND_PHYSICS);
         container->setDidInitPhysics();
         container->decRef();
-        delete taskData;
+        delete builderData;
     });
 }
 

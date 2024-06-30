@@ -112,6 +112,7 @@ struct DebugOptions {
     bool mShowStaticPhysics;
     bool mShowDynamicPhysics;
     bool mShowPhysicsActions;
+    bool mShowCollision;
     bool mShowBusinessDebug;
     bool mShowSettlementDebug;
     bool mShowEditor;

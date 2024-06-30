@@ -210,17 +210,17 @@ void SettlementLayoutManager::debugDraw() const {
     const f32v3 WIDTH(3.0f, 3.0f, 0.0f);
     const ui32 FRAME_COUNT = 32;
     // Center
-    DebugRenderer::drawWireQuadThreadSafe(rootWorldPos - WIDTH * 0.5f, WIDTH, color::Green, FRAME_COUNT);
+    AM::DebugRenderer::drawWireQuadThreadSafe(rootWorldPos - WIDTH * 0.5f, WIDTH, color::Green, FRAME_COUNT);
 
     // Chunk borders
     const auto& ownedChunks = registry.get<ChunkOwnershipComponent>(mSettlementEntity).ownedChunks;
     constexpr f32 DEFAULT_Z = 1.0f;
     constexpr i32 chunkRowLengthDTiles = DTileCoord::getRowLengthPerChunk();
-    DebugRenderer::reserveLinesThreadSafe(SQ(chunkRowLengthDTiles) * ownedChunks.size() * 4, FRAME_COUNT);
+    AM::DebugRenderer::reserveLinesThreadSafe(SQ(chunkRowLengthDTiles) * ownedChunks.size() * 4, FRAME_COUNT);
     for (ui32 chunkId : ownedChunks) {
         TileCoord worldPos = mWorld->getChunkWorldPos(chunkId);
         DTileCoord dTileCoord(worldPos);
-        DebugRenderer::drawWireQuadThreadSafe(f32v3(worldPos.v.x, worldPos.v.y, DEFAULT_Z), f32v2(CHUNK_WIDTH), color4(1.0f, 1.0f, 1.0f, 0.5f), FRAME_COUNT);
+        AM::DebugRenderer::drawWireQuadThreadSafe(f32v3(worldPos.v.x, worldPos.v.y, DEFAULT_Z), f32v2(CHUNK_WIDTH), color4(1.0f, 1.0f, 1.0f, 0.5f), FRAME_COUNT);
         // Debug ownership types
         for (i32 y = 0; y < chunkRowLengthDTiles; ++y) {
             for (i32 x = 0; x < chunkRowLengthDTiles; ++x) {
@@ -274,7 +274,7 @@ void SettlementLayoutManager::debugDraw() const {
                     }
                     static_assert(e_count(DTileOwnerObjectType) == 6);
 
-                    DebugRenderer::drawWireQuadThreadSafe(aabbWorldPos, f32v2(aabb.z, aabb.w), dcolor, FRAME_COUNT);
+                    AM::DebugRenderer::drawWireQuadThreadSafe(aabbWorldPos, f32v2(aabb.z, aabb.w), dcolor, FRAME_COUNT);
                 }
             }
         }
@@ -283,7 +283,7 @@ void SettlementLayoutManager::debugDraw() const {
     // Sector centers
     for (auto& sector : mSectors) {
         f32v3 sectorWorldPos = helperGetWorldPosFromDTileCoord(sector.center, mWorld);
-        DebugRenderer::drawWireQuadThreadSafe(sectorWorldPos - WIDTH * 0.5f, WIDTH, getSettlementZoneDebugColor(sector.zone), FRAME_COUNT);
+        AM::DebugRenderer::drawWireQuadThreadSafe(sectorWorldPos - WIDTH * 0.5f, WIDTH, getSettlementZoneDebugColor(sector.zone), FRAME_COUNT);
     }
     
     // Roads
@@ -292,12 +292,12 @@ void SettlementLayoutManager::debugDraw() const {
         f32v3 worldPosA = helperGetWorldPosFromDTileCoord(segment.segmentVerts[0], mWorld);
         f32v3 worldPosB = helperGetWorldPosFromDTileCoord(segment.segmentVerts.back(), mWorld);
         f32v3 infiniteRayOffset(segment.direction.x, segment.direction.y, 0.0f);
-        DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosB, color::Yellow, FRAME_COUNT);
+        AM::DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosB, color::Yellow, FRAME_COUNT);
         if (segment.infiniteEdges[0]) {
-            DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosA - infiniteRayOffset, color::Cyan, FRAME_COUNT);
+            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosA - infiniteRayOffset, color::Cyan, FRAME_COUNT);
         }
         if (segment.infiniteEdges[1]) {
-            DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosB, worldPosB + infiniteRayOffset, color::Cyan, FRAME_COUNT);
+            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosB, worldPosB + infiniteRayOffset, color::Cyan, FRAME_COUNT);
         }
         ++i;
     }
@@ -308,11 +308,11 @@ void SettlementLayoutManager::debugDraw() const {
         const f32v3 infiniteRayOffset(segment.direction.x * 2.0f, segment.direction.y * 2.0f, 0.0f);
         if (edges.first) {
             const f32v3 worldPosA = helperGetWorldPosFromDTileCoord(segment.segmentVerts[0], mWorld);
-            DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosA - infiniteRayOffset, color::OrangeRed, FRAME_COUNT);
+            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosA, worldPosA - infiniteRayOffset, color::OrangeRed, FRAME_COUNT);
         }
         if (edges.second) {
             const f32v3 worldPosB = helperGetWorldPosFromDTileCoord(segment.segmentVerts.back(), mWorld);
-            DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosB, worldPosB + infiniteRayOffset, color::OrangeRed, FRAME_COUNT);
+            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(worldPosB, worldPosB + infiniteRayOffset, color::OrangeRed, FRAME_COUNT);
         }
     }
 
@@ -321,7 +321,7 @@ void SettlementLayoutManager::debugDraw() const {
     for (const SettlementPlot& plot : plots) {
         DTileCoord root(plot.aabbDTile.pos);
         const f32v3 worldPosA = helperGetWorldPosFromDTileCoord(root, mWorld);
-        DebugRenderer::drawWireQuadThreadSafe(worldPosA, f32v2(plot.aabbDTile.dims) * (f32)DTILE_WIDTH, color::Magenta, FRAME_COUNT);
+        AM::DebugRenderer::drawWireQuadThreadSafe(worldPosA, f32v2(plot.aabbDTile.dims) * (f32)DTILE_WIDTH, color::Magenta, FRAME_COUNT);
     }
 }
 

@@ -4,7 +4,6 @@
 #include "definitions/TileDef.h"
 
 // TODO: Too many includes?
-#include "TileConst.h"
 #include "tile/TileFlags.h"
 #include "tile/TileDamageData.h"
 #include "item/ItemStack.h"

@@ -3,7 +3,6 @@
 
 // Jolt Documentation
 // https://jrouwe.github.io/JoltPhysics/index.html
-#include <Jolt/Jolt.h>
 
 #include <Jolt/RegisterTypes.h>
 #include <Jolt/Core/Factory.h>
@@ -18,68 +17,46 @@
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 
-#ifdef JPH_DEBUG_RENDERER
-#include <Jolt/Renderer/DebugRenderer.h>
+#include "physics/PhysicsDebugRenderer.h"
+#include "physics/StaticPhysicsMeshBuilder.h"
+#include "physics/CollisionShapeRepository.h"
 
-struct BodyUserData {
-    BodyUserData() : data(0) {}
-    BodyUserData(entt::entity owner) : ownerEntity(owner) {}
-    BodyUserData(ui64 data) : data(data) {}
+#include "options/DebugOptions.h"
 
-    operator ui64() const { return data; }
 
-    union {
-        struct {
-            entt::entity ownerEntity;
-        };
-        ui64 data;
-    };
-};
-static_assert(sizeof(BodyUserData) == sizeof(ui64), "JoltUserData must be 64 bits");
+PhysicsBodyUserData::PhysicsBodyUserData(entt::entity owner) {
+    data = e_cast(PhysicsBodyUserDataType::Entity) << 62 | static_cast<ui64>(owner);
+}
+
+PhysicsBodyUserData::PhysicsBodyUserData(TileContainerID tileContainer, TileIndex tileIndex) {
+    assert(tileIndex <= 0x3FFFFFFF); // 30 bits
+    data = e_cast(PhysicsBodyUserDataType::Tile) << 62 | (static_cast<ui64>(tileIndex) << 32) | static_cast<ui64>(tileContainer);
+}
+
+PhysicsBodyUserDataType PhysicsBodyUserData::getType() const {
+    return static_cast<PhysicsBodyUserDataType>(data >> 62);
+}
+
+std::pair<TileContainerID, TileIndex> PhysicsBodyUserData::getTileData() const {
+    assert(getType() == PhysicsBodyUserDataType::Tile);
+    std::pair<TileContainerID, TileIndex> result;
+    result.first = static_cast<TileContainerID>(data & 0xFFFFFFFF);
+    result.second = static_cast<TileIndex>((data >> 32) & 0x3FFFFFFF);
+    return result;
+}
+
+entt::entity PhysicsBodyUserData::getEntity() const {
+    assert(getType() == PhysicsBodyUserDataType::Entity);
+    return static_cast<entt::entity>(data & 0x3FFFFFFFFFFFFFFF);
+}
 
 // TODOS:
 // 1. Character and CharacterVirtual https://jrouwe.github.io/JoltPhysics/index.html#character-controllers
 // 2. Convert to cpp20 module
 // 3. Custom heightfield collision shape (Involved...) https://jrouwe.github.io/JoltPhysics/index.html#creating-custom-shapes
 
-class MyDebugRenderer : public JPH::DebugRenderer {
-public:
-    void DrawLine(JPH::RVec3Arg inFrom, JPH::RVec3Arg inTo, JPH::ColorArg inColor) override {
-        throw std::logic_error("The method or operation is not implemented.");
-    }
 
-
-    void DrawTriangle(JPH::RVec3Arg inV1, JPH::RVec3Arg inV2, JPH::RVec3Arg inV3, JPH::ColorArg inColor, ECastShadow inCastShadow = ECastShadow::Off) override {
-        throw std::logic_error("The method or operation is not implemented.");
-    }
-
-
-    Batch CreateTriangleBatch(const Triangle* inTriangles, int inTriangleCount) override {
-        throw std::logic_error("The method or operation is not implemented.");
-    }
-
-
-    Batch CreateTriangleBatch(const Vertex* inVertices, int inVertexCount, const ui32* inIndices, int inIndexCount) override {
-        throw std::logic_error("The method or operation is not implemented.");
-    }
-
-
-    void DrawGeometry(JPH::RMat44Arg inModelMatrix, const JPH::AABox& inWorldSpaceBounds, float inLODScaleSq, JPH::ColorArg inModelColor, const GeometryRef& inGeometry, ECullMode inCullMode = ECullMode::CullBackFace, ECastShadow inCastShadow = ECastShadow::On, EDrawMode inDrawMode = EDrawMode::Solid) override {
-        throw std::logic_error("The method or operation is not implemented.");
-    }
-
-
-    void DrawText3D(JPH::RVec3Arg inPosition, const JPH::string_view& inString, JPH::ColorArg inColor = JPH::Color::sWhite, float inHeight = 0.5f) override {
-        //throw std::logic_error("The method or operation is not implemented.");
-    }
-
-};
-
-static std::unique_ptr<MyDebugRenderer> sDebugRenderer;
-
-#endif // JPH_DEBUG_RENDERER
-
-// If you want your code to compile using single or double precision write 0.0_r to get a Real value that compiles to double or float depending if JPH_DOUBLE_PRECISION is set or not.
+// Write 0.0_r to get a Real value that compiles to double or float depending if JPH_DOUBLE_PRECISION is set or not.
 using namespace JPH::literals;
 
 // Callback for traces, connect this to your own trace function if you have one
@@ -108,15 +85,6 @@ static bool AssertFailedImpl(const char* inExpression, const char* inMessage, co
 
 #endif // JPH_ENABLE_ASSERTS
 
-// Layer that objects can be in, determines which other objects it can collide with
-// Typically you at least want to have 1 layer for moving bodies and 1 layer for static bodies, but you can have more
-// layers if you want. E.g. you could have a layer for high detail collision (which is not used by the physics simulation
-// but only if you do collision testing).
-namespace ObjectLayers {
-    constexpr JPH::ObjectLayer Static(0);
-    constexpr JPH::ObjectLayer Dynamic(1);
-    constexpr JPH::ObjectLayer COUNT(2);
-};
 
 /// Class that determines if two object layers can collide
 class ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter
@@ -126,9 +94,9 @@ public:
     {
         switch (inObject1)
         {
-            case ObjectLayers::Static:
-                return inObject2 == ObjectLayers::Dynamic; // Non moving only collides with moving
-            case ObjectLayers::Dynamic:
+            case e_cast(PhysicsObjectLayer::Static):
+                return inObject2 == e_cast(PhysicsObjectLayer::Dynamic); // Non moving only collides with moving
+            case e_cast(PhysicsObjectLayer::Dynamic):
                 return true; // Moving collides with everything
             default:
                 JPH_ASSERT(false);
@@ -156,8 +124,8 @@ class BPLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface
 public:
     BPLayerInterfaceImpl() {
         // Create a mapping table from object to broad phase layer
-        mObjectToBroadPhase[ObjectLayers::Static] = BroadPhaseLayers::Static;
-        mObjectToBroadPhase[ObjectLayers::Dynamic] = BroadPhaseLayers::Dynamic;
+        mObjectToBroadPhase[e_cast(PhysicsObjectLayer::Static)] = BroadPhaseLayers::Static;
+        mObjectToBroadPhase[e_cast(PhysicsObjectLayer::Dynamic)] = BroadPhaseLayers::Dynamic;
     }
 
     virtual uint GetNumBroadPhaseLayers() const override {
@@ -165,7 +133,7 @@ public:
     }
 
     virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override {
-        JPH_ASSERT(inLayer < ObjectLayers::COUNT);
+        JPH_ASSERT(inLayer < e_cast(PhysicsObjectLayer::COUNT));
         return mObjectToBroadPhase[inLayer];
     }
 
@@ -181,7 +149,7 @@ public:
 #endif // JPH_EXTERNAL_PROFILE || JPH_PROFILE_ENABLED
 
 private:
-    JPH::BroadPhaseLayer mObjectToBroadPhase[ObjectLayers::COUNT];
+    JPH::BroadPhaseLayer mObjectToBroadPhase[e_cast(PhysicsObjectLayer::COUNT)];
 };
 
 /// Class that determines if an object layer can collide with a broadphase layer
@@ -189,9 +157,9 @@ class ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFil
 public:
     virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override {
         switch (inLayer1) {
-            case ObjectLayers::Static:
+            case e_cast(PhysicsObjectLayer::Static):
                 return inLayer2 == BroadPhaseLayers::Dynamic;
-            case ObjectLayers::Dynamic:
+            case e_cast(PhysicsObjectLayer::Dynamic):
                 return true;
             default:
                 JPH_ASSERT(false);
@@ -253,15 +221,62 @@ public:
     }
 
     void update(float deltaTime, int numCollisionSteps) {
+        static constexpr int OPTIMIZATION_THRESHOLD = 10;
+        static constexpr float OPTIMIZATION_INTERVAL = 2.0f;
+        bool shouldOptimize = false;
 
-        // Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
-        // You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
-        // Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
-        // TODO: Make smarter
-        physicsSystem.OptimizeBroadPhase();
+        // Check if we've reached the threshold of new bodies
+        if (mNewBodiesWithoutBroadphaseOptimize >= OPTIMIZATION_THRESHOLD) {
+            shouldOptimize = true;
+        }
+
+        // Check if enough time has passed since last optimization
+        mTimeSinceLastOptimization += deltaTime;
+        if (mTimeSinceLastOptimization >= OPTIMIZATION_INTERVAL) {
+            shouldOptimize = true;
+        }
+
+        // Optimize if necessary
+        if (shouldOptimize) {
+            PROFILE_SCOPE("Optimize Broadphase");
+            physicsSystem.OptimizeBroadPhase();
+            mNewBodiesWithoutBroadphaseOptimize = 0;
+            mTimeSinceLastOptimization = 0.0f;
+        }
 
         physicsSystem.Update(deltaTime, numCollisionSteps, &tempAllocator, &jobSystem);
     }
+
+#ifdef JPH_DEBUG_RENDERER
+    void debugDraw(const Camera3D& camera) {
+        if (sDebugOptions.mShowCollision) {
+            JPH::BodyManager::DrawSettings settings;
+            sDebugRenderer->PrepareFrame(camera);
+            physicsSystem.DrawBodies(settings, sDebugRenderer.get());
+        }
+    }
+#endif
+
+    JPH::Body& createBody(const JPH::BodyCreationSettings& createSettings, JPH::EActivation inActivationMode, CollisionShapeID shapeId) {
+        JPH::BodyInterface& bodyInterface = getBodyInterface();
+        JPH::Body* body = bodyInterface.CreateBody(createSettings);
+        if (body == nullptr) {
+            panic("Failed to create entity body with shape ID {}", (int)shapeId);
+        }
+        bodyInterface.AddBody(body->GetID(), inActivationMode);
+        ++mNewBodiesWithoutBroadphaseOptimize;
+
+#if ENABLE_PHYSICS_ANALYTICS == 1
+        ++mBodyCounts[createSettings.mObjectLayer];
+#endif
+
+        return *body;
+    }
+
+
+#if ENABLE_PHYSICS_ANALYTICS == 1
+    std::atomic_int mBodyCounts[e_count(PhysicsObjectLayer)] = {};
+#endif
 
 private:
     // Now we can create the actual physics system.
@@ -283,31 +298,13 @@ private:
     // Filters object vs object layers
     ObjectLayerPairFilterImpl objectVsObjectLayerFilter;
 
+    i32 mNewBodiesWithoutBroadphaseOptimize = 0;
+    float mTimeSinceLastOptimization = 0.0f;
 };
 
 
-NewPhysicsWorld::NewPhysicsWorld(World& world) : mWorld(world) {
-
-    LOG_INFO("{}", (((ui64(1) | (0 << 1) | (0 << 2) | (0 << 3) | (0 << 4) | (1 << 5) | (0 << 6) | (0 << 7) | (0 << 8) | (0 << 9)) << 24) | (3 << 16) | (0 << 8) | 1));
-    //assert(JPH::VerifyJoltVersionID());
-
-    // Register allocation hook. In this example we'll just let Jolt use malloc / free but you can override these if you want (see Memory.h).
-    // This needs to be done before any other Jolt function is called.
-    JPH::RegisterDefaultAllocator();
-
-    // Install trace and assert callbacks
-    JPH::Trace = TraceImpl;
-    JPH_IF_ENABLE_ASSERTS(JPH::AssertFailed = AssertFailedImpl;)
-
-    // Create a factory, this class is responsible for creating instances of classes based on their name or hash and is mainly used for deserialization of saved data.
-    // It is not directly used in this example but still required.
-    assert(!JPH::Factory::sInstance);
-    JPH::Factory::sInstance = new JPH::Factory();
-
-    // Register all physics types with the factory and install their collision handlers with the CollisionDispatch class.
-    // If you have your own custom shape types you probably need to register their handlers with the CollisionDispatch before calling this function.
-    // If you implement your own default material (PhysicsMaterial::sDefault) make sure to initialize it before this function or else this function will create one for you.
-    JPH::RegisterTypes();
+NewPhysicsWorld::NewPhysicsWorld(World& world, CollisionShapeRepository& shapeRepo) : mWorld(world), mShapeRepo(shapeRepo) {
+    assert(JPH::Factory::sInstance);
 
     // This is the max amount of rigid bodies that you can add to the physics system. If you try to add more you'll get an error.
     const uint cMaxBodies = 65536;
@@ -327,56 +324,6 @@ NewPhysicsWorld::NewPhysicsWorld(World& world) : mWorld(world) {
 
     mContext = std::make_unique<JPHPhysicsWorldContext>();
     mContext->init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints);
-
-
-#ifdef JPH_DEBUG_RENDERER
-    sDebugRenderer = std::make_unique<MyDebugRenderer>();
-#endif //JPH_DEBUG_RENDERER
-
-    //// The main way to interact with the bodies in the physics system is through the body interface. There is a locking and a non-locking
-    //// variant of this. We're going to use the locking version (even though we're not planning to access bodies from multiple threads)
-    //JPH::BodyInterface& body_interface = mContext->getBodyInterface();
-
-    //// Next we can create a rigid body to serve as the floor, we make a large box
-    //// Create the settings for the collision volume (the shape).
-    //// Note that for simple shapes (like boxes) you can also directly construct a BoxShape.
-    //JPH::BoxShapeSettings floor_shape_settings(JPH::Vec3(100.0f, 1.0f, 100.0f));
-    //floor_shape_settings.SetEmbedded(); // A ref counted object on the stack (base class RefTarget) should be marked as such to prevent it from being freed when its reference count goes to 0.
-
-    //// Create the shape
-    //JPH::ShapeSettings::ShapeResult floor_shape_result = floor_shape_settings.Create();
-    //JPH::ShapeRefC floor_shape = floor_shape_result.Get(); // We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
-
-    //// Create the settings for the body itself. Note that here you can also set other properties like the restitution / friction.
-    //JPH::BodyCreationSettings floor_settings(floor_shape, JPH::RVec3(0.0_r, -1.0_r, 0.0_r), JPH::Quat::sIdentity(), JPH::EMotionType::Static, ObjectLayers::Static);
-
-    //// Create the actual rigid body
-    //JPH::Body* floor = body_interface.CreateBody(floor_settings); // Note that if we run out of bodies this can return nullptr
-
-    //// Add it to the world
-    //body_interface.AddBody(floor->GetID(), JPH::EActivation::DontActivate);
-
-    //// Now create a dynamic body to bounce on the floor
-    //// Note that this uses the shorthand version of creating and adding a body to the world
-    //JPH::BodyCreationSettings sphere_settings(new JPH::SphereShape(0.5f), JPH::RVec3(0.0_r, 2.0_r, 0.0_r), JPH::Quat::sIdentity(), JPH::EMotionType::Dynamic, ObjectLayers::Dynamic);
-    //JPH::BodyID sphere_id = body_interface.CreateAndAddBody(sphere_settings, JPH::EActivation::Activate);
-
-    //// Now you can interact with the dynamic body, in this case we're going to give it a velocity.
-    //// (note that if we had used CreateBody then we could have set the velocity straight on the body before adding it to the physics system)
-    //body_interface.SetLinearVelocity(sphere_id, JPH::Vec3(0.0f, -5.0f, 0.0f));
-
-
-
-    //// Remove the sphere from the physics system. Note that the sphere itself keeps all of its state and can be re-added at any time.
-    //body_interface.RemoveBody(sphere_id);
-
-    //// Destroy the sphere. After this the sphere ID is no longer valid.
-    //body_interface.DestroyBody(sphere_id);
-
-    //// Remove and destroy the floor
-    //body_interface.RemoveBody(floor->GetID());
-    //body_interface.DestroyBody(floor->GetID());
-
 }
 
 NewPhysicsWorld::~NewPhysicsWorld() {
@@ -389,7 +336,30 @@ NewPhysicsWorld::~NewPhysicsWorld() {
     JPH::Factory::sInstance = nullptr;
 }
 
+void NewPhysicsWorld::initializeJPH() {
+    assert(JPH::VerifyJoltVersionID());
+
+    // Register allocation hook. In this example we'll just let Jolt use malloc / free but you can override these if you want (see Memory.h).
+    // This needs to be done before any other Jolt function is called.
+    JPH::RegisterDefaultAllocator();
+
+    // Install trace and assert callbacks
+    JPH::Trace = TraceImpl;
+    JPH_IF_ENABLE_ASSERTS(JPH::AssertFailed = AssertFailedImpl;)
+
+    // Create a factory, this class is responsible for creating instances of classes based on their name or hash and is mainly used for deserialization of saved data.
+    // It is not directly used in this example but still required.
+    assert(!JPH::Factory::sInstance);
+    JPH::Factory::sInstance = new JPH::Factory();
+
+    // Register all physics types with the factory and install their collision handlers with the CollisionDispatch class.
+    // If you have your own custom shape types you probably need to register their handlers with the CollisionDispatch before calling this function.
+    // If you implement your own default material (PhysicsMaterial::sDefault) make sure to initialize it before this function or else this function will create one for you.
+    JPH::RegisterTypes();
+}
+
 int NewPhysicsWorld::stepSimulation(f32 deltaTime) {
+    PROFILE_FUNCTION();
 
     // Fixed timestep
     constexpr f32 PHYSICS_TIMESTEP = 1.0f / 60.0f;
@@ -407,31 +377,101 @@ int NewPhysicsWorld::stepSimulation(f32 deltaTime) {
 }
 
 PhysBodyID NewPhysicsWorld::createCharacterCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
-
-    JPH::BodyInterface& bodyInterface = mContext->getBodyInterface();
-
-    // TODO: Cache shape settings
-    JPH::CapsuleShapeSettings shapeSettings(halfExtents.y, halfExtents.x);
-
-    JPH::ShapeSettings::ShapeResult capsuleShapeResult = shapeSettings.Create();
-    JPH::ShapeRefC capsuleShape = capsuleShapeResult.Get(); // We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
-
-    // Create the settings for the body itself. Note that here you can also set other properties like the restitution / friction.
-    JPH::BodyCreationSettings createSettings(capsuleShape, JPH::RVec3(position.x, position.y, position.z + halfExtents.y), JPH::Quat::sIdentity(), JPH::EMotionType::Dynamic, ObjectLayers::Dynamic);
-
-    // Create the actual rigid body
-    JPH::Body* body = bodyInterface.CreateBody(createSettings); // Note that if we run out of bodies this can return nullptr
-    body->SetUserData(BodyUserData(ownerEntity));
-    const JPH::BodyID bodyID = body->GetID();
-    // Add it to the world
-    // TODO: ACTIVATE IT
-    bodyInterface.AddBody(bodyID, JPH::EActivation::DontActivate);
-
-    return bodyID.GetIndexAndSequenceNumber();
+    CollisionShapeID id = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
+    return createEntityBody(ownerEntity, position, id, PhysicsObjectLayer::Dynamic);
 }
 
-void NewPhysicsWorld::debugRender() const {
-#ifdef JPH_DEBUG_RENDERER
+void NewPhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder) {
+    PROFILE_FUNCTION();
+    ASSERT_GAME_THREAD();
 
-#endif // JPH_DEBUG_RENDERER
+    auto&& it = mTileContainerPhysicsData.find(meshBuilder.getOwnerTileContainerID());
+
+    // Remove old collision
+    if (!meshBuilder.hasAnyCollision()) {
+        if (it != mTileContainerPhysicsData.end()) {
+            for (auto& [key, physBodyID] : it->second->mTileKeyToPhysBodyID) {
+                mContext->getBodyInterface().RemoveBody(JPH::BodyID(physBodyID));
+            }
+        }
+        mTileContainerPhysicsData.erase(it);
+        return;
+    }
+
+    if (it == mTileContainerPhysicsData.end()) {
+        // Simply creating brand new collision
+        NewTileContainerPhysicsData& newData = *mTileContainerPhysicsData.emplace(meshBuilder.getOwnerTileContainerID(), std::make_unique<NewTileContainerPhysicsData>()).first->second;
+        addTrackedStaticRigidBodiesFromGatherer(meshBuilder.mTrackedRigidBodyGatherer, newData);
+    }
+    else {
+        // May remove some old collision
+        NewTileContainerPhysicsData& data = *it->second;
+        panic("TODO: IMPLEMENT  NewPhysicsWorld::updateTileContainerMeshFromBuilder");
+    }
+}
+
+void NewPhysicsWorld::debugRender(const Camera3D& camera) const {
+#ifdef JPH_DEBUG_RENDERER
+    PROFILE_FUNCTION();
+    if (!sDebugRenderer) {
+        sDebugRenderer = std::make_unique<PhysicsDebugRenderer>();
+    }
+    mContext->debugDraw(camera);
+#endif //JPH_DEBUG_RENDERER
+}
+
+#if ENABLE_PHYSICS_ANALYTICS == 1
+int NewPhysicsWorld::getBodyCount(PhysicsObjectLayer layer) const {
+    return mContext->mBodyCounts[e_cast(layer)];
+}
+#endif
+
+JPH::Body& NewPhysicsWorld::createBodyInternal(f32v3 position, CollisionShapeID shapeId, PhysicsObjectLayer layer) {
+
+    // Create a rotation quaternion to orient along the Z-axis
+    static JPH::Quat orientation = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f);
+
+    JPH::ShapeSettings& shapeSettings = mShapeRepo.getJoltShapeSettings(shapeId);
+    JPH::ShapeRefC shape = shapeSettings.Create().Get();
+
+    // Adjust the position to account for the Z-up orientation
+    JPH::RVec3 adjustedPosition(position.x, position.y, position.z/* + halfExtents.y*/);
+
+    // Create the settings for the body itself
+    JPH::BodyCreationSettings createSettings(shape, adjustedPosition, orientation, JPH::EMotionType::Dynamic, e_cast(layer));
+
+    // Create the actual rigid body
+    return mContext->createBody(createSettings, JPH::EActivation::DontActivate, shapeId);
+}
+
+PhysBodyID NewPhysicsWorld::createEntityBody(entt::entity ownerEntity, f32v3 position, CollisionShapeID shapeId, PhysicsObjectLayer objectLayer) {
+   
+    JPH::Body& body = createBodyInternal(position, shapeId, objectLayer);
+    body.SetUserData(PhysicsBodyUserData(ownerEntity));
+
+    return body.GetID().GetIndexAndSequenceNumber();
+}
+
+PhysBodyID NewPhysicsWorld::createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId) {
+
+    JPH::Body& body = createBodyInternal(position, shapeId, PhysicsObjectLayer::Static);
+    body.SetUserData(PhysicsBodyUserData(containerId, tileIndex));
+
+    return body.GetID().GetIndexAndSequenceNumber();
+}
+
+void NewPhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
+    if (gatherer.mRigidBodiesToAdd.empty()) {
+        return;
+    }
+    PROFILE_FUNCTION();
+
+    for (auto& it : gatherer.mRigidBodiesToAdd) {
+        const TileKey key = TileKey{ it.ownerTilePosition, it.tileId, it.layer };
+        auto&& pit = physicsData.mTileKeyToPhysBodyID.find(key);
+        // Only add if it doesn't already exist
+        if (pit == physicsData.mTileKeyToPhysBodyID.end()) {
+            physicsData.mTileKeyToPhysBodyID.emplace(key, createTileBody(gatherer.mContainerId, it.ownerTilePosition, it.position, it.shapeId));
+        }
+    }
 }

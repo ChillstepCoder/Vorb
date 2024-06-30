@@ -140,7 +140,7 @@ private:
     std::vector<btCollisionObject*> mFreeStaticCollisionObjects;
     moodycamel::ConcurrentQueue<StaticPhysicsMesh> mStaticPhysicsMeshesToDelete;
 
-    std::map<TileContainerID, TileContainerPhysicsData> mTileContainerPhysicsData; // Model colliders and such
+    std::map<TileContainerID, TileContainerPhysicsData> mTileContainerPhysicsData;
 
     World& mWorld;
 

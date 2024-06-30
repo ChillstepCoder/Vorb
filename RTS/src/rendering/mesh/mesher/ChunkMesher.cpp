@@ -16,5 +16,5 @@ void ChunkMesher::initMeshAndPhysicsAsync(TileContainer& tileContainer) {
     const CompressedHeight* srcData = world.getHeightmapGrid().getHeightDataAtWorldPos(tileContainer.getWorldPos())->getData();
     memcpy(heightData, srcData, sizeof(CompressedHeight) * HEIGHTMAP_VERT_SIZE_PER_PATCH);
 
-    initMeshAndPhysicsAsyncInternal(tileContainer, heightData, true, 512 /*reserveCount*/, nullptr);
+    buildMeshAndPhysicsAsyncInternal(tileContainer, heightData, true, 512 /*reserveCount*/, nullptr);
 }

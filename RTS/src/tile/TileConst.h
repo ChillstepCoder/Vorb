@@ -16,3 +16,20 @@ inline bool isTileValid(TileID tile) { return tile < TILE_ID_NONE; }
 constexpr int TILE_LAYER_GROUND = 0;
 constexpr int TILE_LAYER_MAIN = 1;
 constexpr int TILE_LAYER_COUNT = 2;
+
+// For looking up tile by unique identifier in a tile container
+// Does not store containerID so container must be known
+struct TileKey {
+    TileIndex tileIndex;
+    TileID tileId;
+    ui8 tileLayer;
+
+    auto operator<=>(const TileKey&) const = default;
+};
+inline size_t hash_value(const TileKey& v) {
+    size_t seed = 0;
+    boost::hash_combine(seed, v.tileIndex);
+    boost::hash_combine(seed, v.tileId);
+    boost::hash_combine(seed, v.tileLayer);
+    return seed;
+}

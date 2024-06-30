@@ -40,7 +40,7 @@ constexpr f32 MIN_BLUEPRINT_INTERACT_RADIUS = 0.5f;
 void debugFullEntityPosition(World& world, entt::registry& registry, entt::entity agent, color4 color, int lifetime) {
     f32v2 pos2D = registry.get<PositionComponent>(agent).mPosition;
     f32v3 pos3D(pos2D.x, pos2D.y, world.getTerrainHeightAtPoint(pos2D));
-    DebugRenderer::drawWireQuadThreadSafe(pos3D, f32v2(1.0f), color, lifetime);
+    AM::DebugRenderer::drawWireQuadThreadSafe(pos3D, f32v2(1.0f), color, lifetime);
 }
 
 void debugDrawFullEntityPathTarget(World& world, entt::registry& registry, entt::entity agent, f32v2 pathTarget, color4 color, int lifetime) {
@@ -48,7 +48,7 @@ void debugDrawFullEntityPathTarget(World& world, entt::registry& registry, entt:
     f32v3 pos3D(pos2D.x, pos2D.y, world.getTerrainHeightAtPoint(pos2D));
     f32v2 pathTarget2D = pathTarget + f32v2(0.5f);
     f32v3 pathTarget3D(pathTarget2D.x, pathTarget2D.y, world.getTerrainHeightAtPoint(pathTarget2D));
-    DebugRenderer::drawLineBetweenPointsThreadSafe(pos3D, pathTarget3D, color, lifetime);
+    AM::DebugRenderer::drawLineBetweenPointsThreadSafe(pos3D, pathTarget3D, color, lifetime);
 }
 
 ConstructBuildingSimTask::ConstructBuildingSimTask(

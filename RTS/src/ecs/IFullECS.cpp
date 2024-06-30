@@ -149,7 +149,7 @@ void IFullECS::createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransiti
             entt::entity newEntity = EntityFactory::createItemOnGround(mWorld, pos3, stack.toItemStack(itemID), stack.uniqueId);
 
             // TODO: DELETE ME
-           DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Magenta, 2000);
+           AM::DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Magenta, 2000);
         }
     }
 }

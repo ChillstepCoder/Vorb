@@ -354,7 +354,7 @@ void computeGablePointsAndExtrudePositions(const BitArray& floorOwnedTiles, cons
 
 
 void BuildingMesher::buildMeshAndPhysicsAsync(const Building& building) const {
-    initMeshAndPhysicsAsyncInternal(*building.getTileContainer(), nullptr, false, 10000 /*reserveCount*/, nullptr);
+    buildMeshAndPhysicsAsyncInternal(*building.getTileContainer(), nullptr, false, 10000 /*reserveCount*/, nullptr);
 }
 
 void BuildingMesher::addCustomMeshData(ContainerMeshBuilders& meshBuilders, StaticPhysicsMeshBuilder& physicsBuilder, const void* userData) const {

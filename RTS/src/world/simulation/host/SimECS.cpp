@@ -252,7 +252,7 @@ void SimECS::debugRender(f32v3 cameraPos) const {
             drawAgents = mDebugDrawAgents[0];
         }
         for (DebugDrawSimAgentData drawData : drawAgents) {
-            DebugRenderer::drawWireQuad(drawData.pos - f32v3(0.4f, 0.4f, 0.0f), f32v2(0.8f), drawData.color);
+            AM::DebugRenderer::drawWireQuad(drawData.pos - f32v3(0.4f, 0.4f, 0.0f), f32v2(0.8f), drawData.color);
         }
     }
 }

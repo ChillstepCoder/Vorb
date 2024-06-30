@@ -8,7 +8,6 @@
 #include "city/business_jobs/IBusinessJob.h"
 
 #include "tile/TileHandle.h"
-#include "tile/TileConst.h"
 
 #include <boost/circular_buffer.hpp>
 

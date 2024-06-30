@@ -5,7 +5,7 @@
 #include <Vorb/graphics/ShaderManager.h>
 
 namespace {
-    const cString SIMPLE_VERT_SRC = R"(
+    static const cString SIMPLE_VERT_SRC = R"(
 // Uniforms
 uniform mat4 unWVP;
 uniform vec3 CameraPos;
@@ -18,7 +18,7 @@ void main() {
   gl_Position = unWVP * (vPosition - vec4(CameraPos, 0.0));
 }
 )";
-    const cString SIMPLE_FRAG_SRC = R"(
+    static const cString SIMPLE_FRAG_SRC = R"(
 in vec4 fColor;
 // Output
 out vec4 pColor;
@@ -27,7 +27,7 @@ void main() {
 }
 )";
 
-    const cString VERT_CIRCLE_SRC = R"(
+    static const cString VERT_CIRCLE_SRC = R"(
 // Uniforms
 uniform mat4 unWVP;
 uniform vec3 CameraPos;
@@ -46,7 +46,7 @@ void main() {
   gl_Position = unWVP * (vPosition - vec4(CameraPos, 0.0));
 }
 )";
-    const cString FRAG_CIRCLE_SRC = R"(
+    static const cString FRAG_CIRCLE_SRC = R"(
 in vec4 fColor;
 in float fRadius;
 in vec2 fOffset;

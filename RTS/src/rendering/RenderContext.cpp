@@ -144,6 +144,7 @@ void APIENTRY glDebugOutput(GLenum source,
     } ss << std::endl;
     ss << std::endl;
     LOG_CRITICAL("{}", ss.str());
+    __debugbreak();
     //panic(ss.str()); //  Dont want to crash on program link errors
     //assert(false);
 }
@@ -505,7 +506,7 @@ void RenderContext::renderPassWorldDebug(const Camera3D& camera) const {
     mWorldRenderer->renderDebug();
 
     // Debug
-    DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());
+    AM::DebugRenderer::render(camera.getPosition(), camera.getVPMatrix());
 
     // Visual logger
     if (sDebugOptions.mEnableVisualLogs) {

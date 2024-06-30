@@ -1114,10 +1114,10 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
                 pointB.z = heightGrid.computeHeightAtPoint<true>(f32v2(pointB));
             }
             if (edge.isExternalEdge()) {
-                DebugRenderer::drawLineBetweenPoints(pointA, pointB, color2, lifetime, debugId);
+                AM::DebugRenderer::drawLineBetweenPoints(pointA, pointB, color2, lifetime, debugId);
             }
             else {
-                DebugRenderer::drawLineBetweenPoints(pointA, pointB, color1, lifetime, debugId);
+                AM::DebugRenderer::drawLineBetweenPoints(pointA, pointB, color1, lifetime, debugId);
             }
             f32v3 midpoint(worldPos.x + offset.x * 0.5f, worldPos.y + offset.y * 0.5f, (pointA.z + pointB.z) * 0.5f);
             if (isTerrain) {
@@ -1126,7 +1126,7 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
             }
             f32v3 third(midpoint.x + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].x, midpoint.y + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].y, midpoint.z);
             // TODO: Combine above
-            DebugRenderer::drawLineBetweenPoints(midpoint, third, color3, lifetime, debugId);
+            AM::DebugRenderer::drawLineBetweenPoints(midpoint, third, color3, lifetime, debugId);
 
             for (ui32 j = i + 1; j < edgeCount; ++j) {
                 const CoarseNavNodeEdge& edge2 = graph.edges[node.edgesStart + j];
@@ -1146,7 +1146,7 @@ void NavWorld::debugDrawCoarseNavGraphForContainer(const TileContainer& tileCont
                     HeightmapPatchID patchId(heightGrid.getSpatialGrid2D().getIDAtWorldPos(tileContainer.getWorldPos()));
                     midpoint2.z = heightGrid.computeHeightAtPoint<true>(f32v2(midpoint2));
                 }
-                DebugRenderer::drawLineBetweenPoints(midpoint, midpoint2, color4, lifetime, debugId);
+                AM::DebugRenderer::drawLineBetweenPoints(midpoint, midpoint2, color4, lifetime, debugId);
             }
         }
     }
@@ -1216,17 +1216,17 @@ void NavWorld::debugDrawFineNavGraphForContainer(const TileContainer& tileContai
                     TileFineNavEdgeType edgeType = navData.getEdgeType(cart4);
                     if (cart4 == Cartesian::NONE || edgeType != TileFineNavEdgeType::EXTERIOR) {
                         if (edgeType == TileFineNavEdgeType::DOWN) {
-                            DebugRenderer::drawLineBetweenPoints(edgePos, offsetPos, downColor, lifetime, debugId);
+                            AM::DebugRenderer::drawLineBetweenPoints(edgePos, offsetPos, downColor, lifetime, debugId);
                         }
                         else if (edgeType == TileFineNavEdgeType::UP) {
-                            DebugRenderer::drawLineBetweenPoints(edgePos, offsetPos, upColor, lifetime, debugId);
+                            AM::DebugRenderer::drawLineBetweenPoints(edgePos, offsetPos, upColor, lifetime, debugId);
                         }
                         else {
-                            DebugRenderer::drawLineBetweenPoints(edgePos, offsetPos, interiorColor, lifetime, debugId);
+                            AM::DebugRenderer::drawLineBetweenPoints(edgePos, offsetPos, interiorColor, lifetime, debugId);
                         }
                     }
                     else {
-                        DebugRenderer::drawLineBetweenPoints(edgePos, offsetPos, exteriorColor, lifetime, debugId);
+                        AM::DebugRenderer::drawLineBetweenPoints(edgePos, offsetPos, exteriorColor, lifetime, debugId);
                     }
                 }
             }
@@ -1235,12 +1235,12 @@ void NavWorld::debugDrawFineNavGraphForContainer(const TileContainer& tileContai
             f32v3 worldPos3 = worldPos + f32v3(1.0f, 1.0f, 0.0f);
             f32v3 worldPos4 = worldPos + f32v3(0.0f, 1.0f, 0.0f);
             if (navNodeIndex != INVALID_NAV_NODE_INDEX) {
-                DebugRenderer::drawFilledQuad(worldPos, f32v2(1.0f), COARSE_NAV_COLORS[colorIndex], lifetime, debugId);
+                AM::DebugRenderer::drawFilledQuad(worldPos, f32v2(1.0f), COARSE_NAV_COLORS[colorIndex], lifetime, debugId);
             }
-            DebugRenderer::drawLineBetweenPoints(worldPos, worldPos2, whiteColor, lifetime, debugId);
-            DebugRenderer::drawLineBetweenPoints(worldPos2, worldPos3, whiteColor, lifetime, debugId);
-            DebugRenderer::drawLineBetweenPoints(worldPos3, worldPos4, whiteColor, lifetime, debugId);
-            DebugRenderer::drawLineBetweenPoints(worldPos4, worldPos, whiteColor, lifetime, debugId);
+            AM::DebugRenderer::drawLineBetweenPoints(worldPos, worldPos2, whiteColor, lifetime, debugId);
+            AM::DebugRenderer::drawLineBetweenPoints(worldPos2, worldPos3, whiteColor, lifetime, debugId);
+            AM::DebugRenderer::drawLineBetweenPoints(worldPos3, worldPos4, whiteColor, lifetime, debugId);
+            AM::DebugRenderer::drawLineBetweenPoints(worldPos4, worldPos, whiteColor, lifetime, debugId);
         }
     }
 }
@@ -1299,10 +1299,10 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, ui32 lifetim
             pointB.z = heightGrid.computeHeightAtPoint<true>(f32v2(pointB));
         }
         if (edge.isExternalEdge()) {
-            DebugRenderer::drawLineBetweenPoints(pointA, pointB, color2, lifetime, debugId);
+            AM::DebugRenderer::drawLineBetweenPoints(pointA, pointB, color2, lifetime, debugId);
         }
         else {
-            DebugRenderer::drawLineBetweenPoints(pointA, pointB, color1, lifetime, debugId);
+            AM::DebugRenderer::drawLineBetweenPoints(pointA, pointB, color1, lifetime, debugId);
         }
         f32v3 midpoint(worldPos.x + offset.x * 0.5f, worldPos.y + offset.y * 0.5f, (pointA.z + pointB.z) * 0.5f);
         if (isTerrain) {
@@ -1310,7 +1310,7 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, ui32 lifetim
         }
         f32v3 third(midpoint.x + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].x, midpoint.y + CARTESIAN_NORMALS_2D[e_cast(edge.dir)].y, midpoint.z);
         // TODO: Combine above
-        DebugRenderer::drawLineBetweenPoints(midpoint, third, color3, lifetime, debugId);
+        AM::DebugRenderer::drawLineBetweenPoints(midpoint, third, color3, lifetime, debugId);
 
         for (ui32 j = i + 1; j < edgeCount; ++j) {
             const CoarseNavNodeEdge& edge2 = graph.edges[node.edgesStart + j];
@@ -1329,7 +1329,7 @@ void NavWorld::debugDrawCoarseNavNode(const TileHandle& tileHandle, ui32 lifetim
                 HeightmapPatchID patchId = heightGrid.getSpatialGrid2D().getIDAtWorldPos(tileHandle.container->getWorldPos());
                 midpoint2.z = heightGrid.computeHeightAtPoint<true>(f32v2(midpoint2));
             }
-            DebugRenderer::drawLineBetweenPoints(midpoint, midpoint2, color4, lifetime, debugId);
+            AM::DebugRenderer::drawLineBetweenPoints(midpoint, midpoint2, color4, lifetime, debugId);
         }
     }
 }

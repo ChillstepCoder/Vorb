@@ -292,7 +292,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                             builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, getTileModelRotationAtPosition(worldPos), variantIndex, std::move(damageData));
                         }
                         if (tileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
-                            physics.addTrackedStaticRigidBody(index, worldPos, tileData.collisionShapeID);
+                            physics.addTrackedStaticRigidBody(index, layerTile, layerIndex, worldPos, tileData.collisionShapeID);
                         }
                     }
                 }

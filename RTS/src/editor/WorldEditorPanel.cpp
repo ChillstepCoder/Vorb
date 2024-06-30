@@ -145,12 +145,12 @@ void WorldEditorPanel::renderBrushDecals (const Camera3D& camera) const {
     if (mCurrentBrushSettings) {
         f32v3 origin = mHitResult.mPosition - f32v3(mCurrentBrushSettings->brushSize, mCurrentBrushSettings->brushSize, 0.0f);
         f32v2 dims(mCurrentBrushSettings->brushSize * 2.0f);
-        DebugRenderer::drawWireQuad(origin, dims, color4(0.0f, 0.0f, 1.0f, 0.9f));
+        AM::DebugRenderer::drawWireQuad(origin, dims, color4(0.0f, 0.0f, 1.0f, 0.9f));
     }
     else {
         f32v3 origin = f32v3((int)mHitResult.mPosition.x, (int)mHitResult.mPosition.y, mHitResult.mPosition.z);
         f32v2 dims(1.0f);
-        DebugRenderer::drawWireQuad(origin, dims, color4(0.0f, 0.0f, 1.0f, 0.9f));
+        AM::DebugRenderer::drawWireQuad(origin, dims, color4(0.0f, 0.0f, 1.0f, 0.9f));
     }
 }
 // Use the manual it rocks
@@ -795,7 +795,7 @@ void WorldEditorPanel::editHeightVertex(HeightmapPatchID id, DTileCoord vertPos,
         f32v2 chunkPos = heightmapGrid.getSpatialGrid2D().getWorldPosXYFromID(id);
         f32v2 dims(0.5f);
         f32v3 worldPos(chunkPos.x + vertPos.x * HEIGHTMAP_QUAD_SIZE - dims.x * 0.5f, chunkPos.y + vertPos.y * HEIGHTMAP_QUAD_SIZE - dims.y * 0.5f, heightmapGrid.getHeightAtVert(id, vertPos) + adjust);
-        DebugRenderer::drawWireQuadThreadSafe(worldPos, dims, color4(1.0f, 0.0f, 1.0f, abs(strength)), 3);
+        AM::DebugRenderer::drawWireQuadThreadSafe(worldPos, dims, color4(1.0f, 0.0f, 1.0f, abs(strength)), 3);
     }
 }
 

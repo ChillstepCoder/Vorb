@@ -8,7 +8,8 @@
 class Camera3D;
 
 struct GameplayDebugOptions {
-    bool showAIDebugger = true;
+    bool showAIDebugger = false;
+    bool showPhysicsDebugger = false;
 };
 // Managed by GameplayDebugger singleton
 inline static GameplayDebugOptions sGameplayDebugOptions;
@@ -41,6 +42,14 @@ private:
     std::vector<AIDebugEntityUpdateHandlePtr> mEntityUpdateHandles;
 };
 
+class PhysicsDebugger {
+public:
+    PhysicsDebugger();
+    ~PhysicsDebugger();
+
+    void updateAndRenderImGui();
+};
+
 // Singleton managed by UIContext
 class GameplayDebugger
 {
@@ -57,5 +66,6 @@ public:
 private:
 
     AIDebugger mAIDebugger;
+    PhysicsDebugger mPhysicsDebugger;
 };
 

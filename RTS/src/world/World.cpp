@@ -138,7 +138,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     mStructureGrid = std::make_unique<BuildingGrid>(*this);
     // Physics
     mPhysWorld = std::make_unique<PhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
-    mPhysicsWorld = std::make_unique<NewPhysicsWorld>(*this);
+    mPhysicsWorld = std::make_unique<NewPhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
     // Generation
     mChunkGenerator = std::make_unique<ChunkGenerator>(*this);
     // Combat

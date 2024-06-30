@@ -18,7 +18,7 @@
 #include "tile/TileContainer.h"
 
 
-void ITileContainerMesher::initMeshAndPhysicsAsyncInternal(const TileContainer& container, const CompressedHeight* heightData, bool staticMeshIsOnlyQuads, ui32 reserveStaticVertexCount, const void* userData) const {
+void ITileContainerMesher::buildMeshAndPhysicsAsyncInternal(const TileContainer& container, const CompressedHeight* heightData, bool staticMeshIsOnlyQuads, ui32 reserveStaticVertexCount, const void* userData) const {
     ASSERT_GAME_THREAD(); // Game thread makes the request
 
     // Always incref, will be decrefed in the task
@@ -51,10 +51,12 @@ void ITileContainerMesher::initMeshAndPhysicsAsyncInternal(const TileContainer& 
 
         mMeshManager.updateMeshFromBuilders(&container, std::move(builders));
 
-        if (physicsBuilder.hasAnyCollision()) {
-            GameThreadTasks::getInstance().addTileContainerStaticPhysicsMeshInitTask(&container, std::move(physicsBuilder));
+        // If we have already initialized physics before, always send the task so it can delete old physics
+        if (container.didInitMeshPhysics() || physicsBuilder.hasAnyCollision()) {
+            GameThreadTasks::getInstance().addTileContainerStaticPhysicsMeshUpdateTask(&container, std::move(physicsBuilder));
         }
         else {
+            // This is an init and we dont already have collision, so do nothing
             container.setDidInitPhysics();
             container.decRef();
         }

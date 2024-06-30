@@ -136,13 +136,13 @@ void FishingComponentSystem::updateFishing(World& world, entt::registry& registr
             }
 
             fishingCmp.mTargetPosition = getCastTarget(fishingCmp, physCmp, controlCmp);
-            DebugRenderer::drawWireQuadThreadSafe(fishingCmp.mTargetPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color4(1.0f - fishingCmp.mCastCharge / MAX_CAST_DISTANCE, fishingCmp.mCastCharge / MAX_CAST_DISTANCE, 0.0f), 2);
+            AM::DebugRenderer::drawWireQuadThreadSafe(fishingCmp.mTargetPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color4(1.0f - fishingCmp.mCastCharge / MAX_CAST_DISTANCE, fishingCmp.mCastCharge / MAX_CAST_DISTANCE, 0.0f), 2);
             break;
         }
         case FishingComponentState::Casted: {
             fishingCmp.mBobberVelocity.z += BOBBER_GRAVITY * mTimeStep;
             fishingCmp.mBobberPosition += fishingCmp.mBobberVelocity * mTimeStep;
-            DebugRenderer::drawWireQuadThreadSafe(fishingCmp.mBobberPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color4(1.0f - fishingCmp.mCastCharge / MAX_CAST_DISTANCE, fishingCmp.mCastCharge / MAX_CAST_DISTANCE, 0.0f), 2);
+            AM::DebugRenderer::drawWireQuadThreadSafe(fishingCmp.mBobberPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color4(1.0f - fishingCmp.mCastCharge / MAX_CAST_DISTANCE, fishingCmp.mCastCharge / MAX_CAST_DISTANCE, 0.0f), 2);
             // Water impact
             // TODO: True water plane position
             if (fishingCmp.mBobberPosition.z <= 0.0f) {
@@ -201,7 +201,7 @@ void FishingComponentSystem::updateFishing(World& world, entt::registry& registr
                 return;
             }
 
-            DebugRenderer::drawWireQuadThreadSafe(fishingCmp.mBobberPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color4(1.0f - fishingCmp.mCastCharge / MAX_CAST_DISTANCE, fishingCmp.mCastCharge / MAX_CAST_DISTANCE, 0.0f), 2);
+            AM::DebugRenderer::drawWireQuadThreadSafe(fishingCmp.mBobberPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color4(1.0f - fishingCmp.mCastCharge / MAX_CAST_DISTANCE, fishingCmp.mCastCharge / MAX_CAST_DISTANCE, 0.0f), 2);
             break;
         }
         case FishingComponentState::FishGrabbed: {
@@ -261,7 +261,7 @@ void FishingComponentSystem::updateFishing(World& world, entt::registry& registr
             // TODO: Ground collision
             const f32 zPos = (-2 + tugOfWarValue) * 0.3f;
             fishingCmp.mBobberPosition = MathUtil::lerpWithDeltaTime(fishingCmp.mBobberPosition, f32v3(fishingCmp.mTargetPosition.x + bobberOffset.x, fishingCmp.mTargetPosition.y + bobberOffset.y, zPos), 0.99, elapsedSec);
-            DebugRenderer::drawWireQuadThreadSafe(fishingCmp.mBobberPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color::White, 2);
+            AM::DebugRenderer::drawWireQuadThreadSafe(fishingCmp.mBobberPosition - f32v3(RETICLE_DIMS * 0.5f, RETICLE_DIMS * 0.5f, 0.0f), f32v2(RETICLE_DIMS), color::White, 2);
             break;
         }
         case FishingComponentState::Success: {

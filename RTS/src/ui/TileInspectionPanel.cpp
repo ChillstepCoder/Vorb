@@ -80,19 +80,19 @@ void TileInspectionPanel::updateAndRender() {
     // Debug tile cursor
     f32v3 worldPos3D = mTileHandle.getWorldPos3D();
     if (mTileHandle.getTile().getGroundZOffset()) {
-        DebugRenderer::drawWireQuad(worldPos3D, f32v2(1.0f), color4(255, 128, 128, 180));
+        AM::DebugRenderer::drawWireQuad(worldPos3D, f32v2(1.0f), color4(255, 128, 128, 180));
         worldPos3D.z += mTileHandle.getTile().getGroundZOffset();
     }
     if (isOwned) {
-        DebugRenderer::drawWireQuad(worldPos3D, f32v2(1.0f), COLOR_WHITE);
+        AM::DebugRenderer::drawWireQuad(worldPos3D, f32v2(1.0f), COLOR_WHITE);
     }
     else {
-        DebugRenderer::drawWireQuad(worldPos3D, f32v2(1.0f), COLOR_RED);
+        AM::DebugRenderer::drawWireQuad(worldPos3D, f32v2(1.0f), COLOR_RED);
     }
     {
         constexpr f32 AXIS_THICKNESS = 0.1f;
-        DebugRenderer::drawLine(worldPos3D + f32v3(1.0f, 0.5f, 0.0f), f32v3(AXIS_THICKNESS, 0.0f, 0.0f), COLOR_RED);
-        DebugRenderer::drawLine(worldPos3D + f32v3(0.5f, 1.0f, 0.0f), f32v3(0.0f, AXIS_THICKNESS, 0.0f), COLOR_GREEN);
+        AM::DebugRenderer::drawLine(worldPos3D + f32v3(1.0f, 0.5f, 0.0f), f32v3(AXIS_THICKNESS, 0.0f, 0.0f), COLOR_RED);
+        AM::DebugRenderer::drawLine(worldPos3D + f32v3(0.5f, 1.0f, 0.0f), f32v3(0.0f, AXIS_THICKNESS, 0.0f), COLOR_GREEN);
     }
 
     ImGui::Begin("Inspect Tile", nullptr, ImGuiWindowFlags_NoCollapse);

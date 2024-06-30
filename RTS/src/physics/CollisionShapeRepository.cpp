@@ -6,9 +6,15 @@
 #include "BulletCollision/CollisionShapes/btBoxShape.h"
 #include "BulletCollision/CollisionShapes/btSphereShape.h"
 
-CollisionShapeRepository::~CollisionShapeRepository()
-{
-}
+#include <Jolt/Jolt.h>
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <Jolt/Physics/Collision/Shape/CylinderShape.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
+
+
+CollisionShapeRepository::CollisionShapeRepository() = default;
+CollisionShapeRepository::~CollisionShapeRepository() = default;
 
 CollisionShapeID CollisionShapeRepository::getOrAddCollisionShape(CollisionShapes shapeType, const f32v3& halfExtents) {
     assert(IS_GAME_THREAD() || IS_RENDER_THREAD()); // Render thread does this on startup
@@ -42,6 +48,8 @@ CollisionShapeID CollisionShapeRepository::getOrAddCapsuleCollisionShape(f32 rad
     // Insert new
     const CollisionShapeID id = mAllShapes.size();
     mAllShapes.emplace_back(std::make_unique<btCapsuleShapeZ>(radius, halfHeight * 2.0f));
+    std::unique_ptr< JPH::CapsuleShapeSettings> data = std::make_unique<JPH::CapsuleShapeSettings>(halfHeight, radius);
+    mAllJoltShapes.emplace_back(std::move(data));
     mCapsuleShapes[key] = id;
     return id;
 }
@@ -57,6 +65,7 @@ CollisionShapeID CollisionShapeRepository::getOrAddCylinderCollisionShape(const 
     // Insert new
     const CollisionShapeID id = mAllShapes.size();
     mAllShapes.emplace_back(std::make_unique<btCylinderShapeZ>(btVector3(halfExtents.x, halfExtents.y, halfExtents.z)));
+    mAllJoltShapes.emplace_back(std::make_unique<JPH::CylinderShapeSettings>(halfExtents.y, halfExtents.x));
     mCylinderShapes[halfExtents] = id;
     return id;
 }
@@ -72,6 +81,9 @@ CollisionShapeID CollisionShapeRepository::getOrAddBoxCollisionShape(const f32v3
     // Insert new
     const CollisionShapeID id = mAllShapes.size();
     mAllShapes.emplace_back(std::make_unique<btBoxShape>(btVector3(halfExtents.x, halfExtents.y, halfExtents.z)));
+    mAllJoltShapes.emplace_back(
+        std::make_unique<JPH::BoxShapeSettings>(JPH::Vec3Arg(halfExtents.x, halfExtents.y, halfExtents.z))
+    );
     mBoxShapes[halfExtents] = id;
     return id;
 }
@@ -87,6 +99,7 @@ CollisionShapeID CollisionShapeRepository::getOrAddSphereCollisionShape(f32 radi
     // Insert new
     const CollisionShapeID id = mAllShapes.size();
     mAllShapes.emplace_back(std::make_unique<btSphereShape>(radius));
+    mAllJoltShapes.emplace_back(std::make_unique<JPH::SphereShapeSettings>(radius));
     mSphereShapes[radius] = id;
     return id;
 }

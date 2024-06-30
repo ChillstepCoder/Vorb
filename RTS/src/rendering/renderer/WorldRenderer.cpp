@@ -49,6 +49,7 @@
 
 #include "camera/Camera3D.h"
 #include "physics/PhysicsWorld.h"
+#include "physics/NewPhysicsWorld.h"
 
 #include "tile/TileContainerRepository.h"
 
@@ -392,7 +393,7 @@ void WorldRenderer::renderDebug() {
     mEcsRenderer->renderBusinessDebug(*mActiveWorld, *mCamera);
 
     if (sDebugOptions.mChunkBoundaries) {
-        DebugRenderer::reserveLines(mRenderState->getDebugChunks().size() * 16);
+        AM::DebugRenderer::reserveLines(mRenderState->getDebugChunks().size() * 16);
         for (const auto& chunkDebugState : mRenderState->getDebugChunks()) {
             color4 color = COLOR_WHITE;
             if (chunkDebugState.mList == DebugChunkListIndex::DESTROYING) {
@@ -436,25 +437,25 @@ void WorldRenderer::renderDebug() {
             f32v3 worldPosA, worldPosB;
             worldPosA = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos, mActiveWorld);
             worldPosB = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos + i32v2(CHUNK_WIDTH, 0.0f), mActiveWorld);
-            DebugRenderer::drawLineBetweenPoints(worldPosA, worldPosB, color);
+            AM::DebugRenderer::drawLineBetweenPoints(worldPosA, worldPosB, color);
 
             worldPosA = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos + i32v2(CHUNK_WIDTH, 0.0f), mActiveWorld);
             worldPosB = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos + i32v2(CHUNK_WIDTH, CHUNK_WIDTH), mActiveWorld);
-            DebugRenderer::drawLineBetweenPoints(worldPosA, worldPosB, color);
+            AM::DebugRenderer::drawLineBetweenPoints(worldPosA, worldPosB, color);
 
             worldPosA = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos + i32v2(CHUNK_WIDTH, CHUNK_WIDTH), mActiveWorld);
             worldPosB = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos + i32v2(0.0f, CHUNK_WIDTH), mActiveWorld);
-            DebugRenderer::drawLineBetweenPoints(worldPosA, worldPosB, color);
+            AM::DebugRenderer::drawLineBetweenPoints(worldPosA, worldPosB, color);
 
             worldPosA = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos + i32v2(0.0f, CHUNK_WIDTH), mActiveWorld);
             worldPosB = helperGetWorldPosWithHeight(chunkDebugState.mWorldPos, mActiveWorld);
-            DebugRenderer::drawLineBetweenPoints(worldPosA, worldPosB, color);
+            AM::DebugRenderer::drawLineBetweenPoints(worldPosA, worldPosB, color);
           
             // Count refs
             constexpr f32 REF_BOX_WIDTH = 1.0f;
             constexpr ui32 REF_ROW_WIDTH = (CHUNK_WIDTH - 1) / (ui32)REF_BOX_WIDTH;
             for (int i = 0; i < chunkDebugState.mRefCount; ++i) {
-                DebugRenderer::drawWireQuad(f32v2(chunkDebugState.mWorldPos) + f32v2(REF_BOX_WIDTH) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(1.0f, 0.0f, 1.0f));
+                AM::DebugRenderer::drawWireQuad(f32v2(chunkDebugState.mWorldPos) + f32v2(REF_BOX_WIDTH) + f32v2(i % REF_ROW_WIDTH, (i / REF_ROW_WIDTH) * 2) * REF_BOX_WIDTH, f32v2(REF_BOX_WIDTH), color4(1.0f, 0.0f, 1.0f));
             }
         }
     }
@@ -471,7 +472,7 @@ void WorldRenderer::renderDebug() {
     if (sDebugOptions.mShowNavGraph) {
         if (!wasRenderingNavGraph) {
             ScopedTimer timer("Debug Draw Navgraph");
-            DebugRenderer::reserveLines(mActiveWorld->getChunkGrid().getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+            AM::DebugRenderer::reserveLines(mActiveWorld->getChunkGrid().getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
             const auto& containers = mActiveWorld->getTileContainerRepository().getTileContainers();
             for (auto&& it : containers) {
                 const f32v3 containerCenter = it.second->getTileSpatialGrid().getWorldPosCenter();
@@ -488,13 +489,13 @@ void WorldRenderer::renderDebug() {
     }
     else if (wasRenderingNavGraph) {
         wasRenderingNavGraph = 0;
-        DebugRenderer::clearAllMeshesWithId(NAVGRAPH_ID);
+        AM::DebugRenderer::clearAllMeshesWithId(NAVGRAPH_ID);
     }
 
     // Debug Shapes
     const std::vector<DebugWireQuadState>& debugQuads = mRenderState->getDebugQuads();
     for (const DebugWireQuadState& quad : debugQuads) {
-        DebugRenderer::drawWireQuad(quad.origin, quad.dims, quad.color);
+        AM::DebugRenderer::drawWireQuad(quad.origin, quad.dims, quad.color);
     }
 
     // Grass
@@ -507,20 +508,21 @@ void WorldRenderer::renderDebug() {
             }
         }
         for (const DebugWireQuadState& quad : newDebugQuads) {
-            DebugRenderer::drawWireQuad(quad.origin, quad.dims, quad.color);
+            AM::DebugRenderer::drawWireQuad(quad.origin, quad.dims, quad.color);
         }
     }
 
     // Axis labels
     if (sDebugOptions.mShowDevHud) {
         const f32v3 axisOrigin = mCamera->getPosition() + mCamera->getFrontVector() * 5.0f + mCamera->getRightVector() * -5.0f + mCamera->getUpVector() * 2.5f;
-        DebugRenderer::drawLine(axisOrigin, f32v3(1.0f, 0.0f, 0.0f), color4(1.0f, 0.0f, 0.0f)); //X
-        DebugRenderer::drawLine(axisOrigin, f32v3(0.0f, 1.0f, 0.0f), color4(0.0f, 1.0f, 0.0f)); //Y
-        DebugRenderer::drawLine(axisOrigin, f32v3(0.0f, 0.0f, 1.0f), color4(0.0f, 0.0f, 1.0f)); //Z
+        AM::DebugRenderer::drawLine(axisOrigin, f32v3(1.0f, 0.0f, 0.0f), color4(1.0f, 0.0f, 0.0f)); //X
+        AM::DebugRenderer::drawLine(axisOrigin, f32v3(0.0f, 1.0f, 0.0f), color4(0.0f, 1.0f, 0.0f)); //Y
+        AM::DebugRenderer::drawLine(axisOrigin, f32v3(0.0f, 0.0f, 1.0f), color4(0.0f, 0.0f, 1.0f)); //Z
     }
 
     // Physics
     mActiveWorld->getPhysicsWorld().debugRender();
+    mActiveWorld->getNewPhysicsWorld().debugRender(*mCamera);
 }
 
 WorldRenderDataManager& WorldRenderer::getRenderDataManagerForWorld(const World& world) {

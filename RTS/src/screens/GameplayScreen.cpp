@@ -35,6 +35,7 @@
 
 #include "physics/PhysHitResult.h"
 #include "physics/PhysicsWorld.h"
+#include "physics/NewPhysicsWorld.h"
 
 #include "pathfinding/NavWorld.h"
 #include "rendering/RenderContext.h"
@@ -102,6 +103,8 @@ i32 GameplayScreen::getPreviousScreen() const {
 }
 
 void GameplayScreen::build() {
+
+    NewPhysicsWorld::initializeJPH();
 
     mResourceManager.setResourceRoot("data", "_cache");
 

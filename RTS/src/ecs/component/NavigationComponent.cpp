@@ -125,7 +125,7 @@ void NavigationSystem::requestFinePathToPoint(World& world, NavigationComponent&
 
 			RenderThreadTasks::getInstance().addGenericTask([](RenderContext&, void* vPathHandle) {
 				std::vector<f32v3>* pathHandle = static_cast<std::vector<f32v3>*>(vPathHandle);
-				DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), 200);
+				AM::DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), 200);
 				delete pathHandle;
 			}, pointsHandle);
 		});
@@ -283,7 +283,7 @@ void NavigationComponent::setSimpleLinearTargetPoint(f32v3 targetPoint) {
 	mFinePath.reset();
 
 	if (sDebugOptions.mShowPaths) {
-		DebugRenderer::drawWireQuadThreadSafe(targetPoint, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 0.8f), 50);
+		AM::DebugRenderer::drawWireQuadThreadSafe(targetPoint, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 0.8f), 50);
 	}
 }
 

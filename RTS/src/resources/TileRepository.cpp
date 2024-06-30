@@ -23,7 +23,6 @@ void TileRepository::onRegisteredAsset(AssetID id) {
     // Copy all data
     assert(def.layer < TILE_LAYER_COUNT);
   
-    // TODO: Change when bullet is replaced
     if (def.collisionShapeType != CollisionShapes::NONE) {
         assert(def.collisionHalfExtents.x == def.collisionHalfExtents.y); // TODO: Support oblong?
         def.collisionShapeID = mCollisionShapeCache.getOrAddCollisionShape(def.collisionShapeType, def.collisionHalfExtents);

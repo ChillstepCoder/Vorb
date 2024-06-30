@@ -251,7 +251,7 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
         // Debug render
         if (sDebugOptions.mShowPaths) {
             const ui8 r = (ui8)(g % 256);
-            DebugRenderer::drawWireQuadThreadSafe(containerNavData.getTileWorldPos(handle.index), f32v2(1.0f), color4(r, 0ui8, (ui8)(255ui8 - r), 128ui8), DEBUG_DURATION);
+            AM::DebugRenderer::drawWireQuadThreadSafe(containerNavData.getTileWorldPos(handle.index), f32v2(1.0f), color4(r, 0ui8, (ui8)(255ui8 - r), 128ui8), DEBUG_DURATION);
         }
 
         // Precompute collision weights and points for neighbors
@@ -403,19 +403,19 @@ bool PathFinder::generateFinePathSynchronous(const f32v3 start, const f32v3 goal
                 const f32v3 pos = navData.getTileWorldPos(handleIt.index);
                 if (c == 0) {
                     zero = pos;
-                    DebugRenderer::drawWireQuadThreadSafe(pos + f32v3(0.0f, 0.0f, 1.0f), f32v2(1.0f), COLOR_CYAN, DEBUG_DURATION * 64);
+                    AM::DebugRenderer::drawWireQuadThreadSafe(pos + f32v3(0.0f, 0.0f, 1.0f), f32v2(1.0f), COLOR_CYAN, DEBUG_DURATION * 64);
                 }
                 else {
-                    DebugRenderer::drawWireQuadThreadSafe(pos, f32v2(1.0f), COLOR_MAGENTA, DEBUG_DURATION);
+                    AM::DebugRenderer::drawWireQuadThreadSafe(pos, f32v2(1.0f), COLOR_MAGENTA, DEBUG_DURATION);
                 }
                 ++c;
             }
-            DebugRenderer::drawWireQuadThreadSafe(start + f32v3(0.0f, 0.0f, 1.0f), f32v2(1.0f), COLOR_GREEN, DEBUG_DURATION * 64);
+            AM::DebugRenderer::drawWireQuadThreadSafe(start + f32v3(0.0f, 0.0f, 1.0f), f32v2(1.0f), COLOR_GREEN, DEBUG_DURATION * 64);
             if (c != 0) {
-                DebugRenderer::drawLineBetweenPointsThreadSafe(zero, start, color::Red, DEBUG_DURATION * 64);
+                AM::DebugRenderer::drawLineBetweenPointsThreadSafe(zero, start, color::Red, DEBUG_DURATION * 64);
             }
             else {
-                DebugRenderer::drawFilledQuadThreadSafe(start + f32v3(0.0f, 0.0f, 1.0f), f32v2(1.1f), COLOR_YELLOW, DEBUG_DURATION * 64);
+                AM::DebugRenderer::drawFilledQuadThreadSafe(start + f32v3(0.0f, 0.0f, 1.0f), f32v2(1.1f), COLOR_YELLOW, DEBUG_DURATION * 64);
             }
                  
         }
@@ -511,7 +511,7 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 go
         // Reversed on purpose
         LOG_WARN("Failed to find coarse path due to invalid start navnode index at tile handle {}", goalHandle.index);
         const f32v3 pos = goalNavData->getTileWorldPos(goalHandle.index);
-        DebugRenderer::drawFilledQuadThreadSafe(pos, f32v2(1.0f), color::Red, DEBUG_DURATION * 64);
+        AM::DebugRenderer::drawFilledQuadThreadSafe(pos, f32v2(1.0f), color::Red, DEBUG_DURATION * 64);
         path.finishedGenerating.store(true);
         return false;
     }
@@ -564,7 +564,7 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 go
    
 
     if (sDebugOptions.mShowPaths) {
-        DebugRenderer::drawWireQuadThreadSafe(goal, f32v2(1.0f), COLOR_CYAN, DEBUG_DURATION);
+        AM::DebugRenderer::drawWireQuadThreadSafe(goal, f32v2(1.0f), COLOR_CYAN, DEBUG_DURATION);
     }
     // Since we reverse pathfind, this is the target, and may be inside something. Need to BFS spread to the closest valid node
     if (startNavNodeIndex == INVALID_NAV_NODE_INDEX) {
@@ -597,7 +597,7 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 go
             const f32v3 currentPos = openList[openListFront++];
             startHandle = mNavWorld.getTileHandleAndNavDataAtWorldPos(glm::floor(currentPos), &startNavData);
             if (!startHandle.isValid()) {
-                DebugRenderer::drawFilledQuadThreadSafe(currentPos, f32v2(1.1f), COLOR_CYAN, DEBUG_DURATION * 64);
+                AM::DebugRenderer::drawFilledQuadThreadSafe(currentPos, f32v2(1.1f), COLOR_CYAN, DEBUG_DURATION * 64);
                 break;
             }
             startNavNodeIndex = startNavData->coarseNavGraph.tileCoarseNavIndices[startHandle.index];
@@ -605,21 +605,21 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 go
                 const f32v3 truePos = startNavData->getTileWorldPos(startHandle.index);
                 if (glm::length2(truePos - goal) < targetRadiusSQ) {
                     if (sDebugOptions.mShowPaths) {
-                        DebugRenderer::drawWireQuadThreadSafe(truePos, f32v2(1.0f), COLOR_GREEN, DEBUG_DURATION);
+                        AM::DebugRenderer::drawWireQuadThreadSafe(truePos, f32v2(1.0f), COLOR_GREEN, DEBUG_DURATION);
                     }
                     break;
                 }
                 else {
                     // If this one is out of range, just continue, dont add neighbors
                     if (sDebugOptions.mShowPaths) {
-                        DebugRenderer::drawWireQuadThreadSafe(truePos, f32v2(1.0f), COLOR_RED, DEBUG_DURATION);
+                        AM::DebugRenderer::drawWireQuadThreadSafe(truePos, f32v2(1.0f), COLOR_RED, DEBUG_DURATION);
                     }
                     continue;
                 }
             }
 
             if (sDebugOptions.mShowPaths) {
-                DebugRenderer::drawWireQuadThreadSafe(currentPos, f32v2(1.0f), COLOR_YELLOW, DEBUG_DURATION);
+                AM::DebugRenderer::drawWireQuadThreadSafe(currentPos, f32v2(1.0f), COLOR_YELLOW, DEBUG_DURATION);
             }
             for (Cartesian c : cartesians) {
                 const f32v3 newPos = currentPos + f32v3(CARTESIAN_NORMALS_2D[e_cast(c)].x, CARTESIAN_NORMALS_2D[e_cast(c)].y, 0.0f);
@@ -907,7 +907,7 @@ void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const
                 newAstarNode.g = prevG + glm::length(f32v3(nextPos - tilePos));
                 newAstarNode.h = getEuclideanHeuristicAtPosition(nextPos, goalPos);
                 if (sDebugOptions.mShowPaths) {
-                    DebugRenderer::drawLineBetweenPointsThreadSafe(nextPos, tilePos, color4(((int)newAstarNode.g % 255) / 255.0f, ((int)newAstarNode.h % 255) / 255.0f, 0.0f, 0.5f), DEBUG_DURATION);
+                    AM::DebugRenderer::drawLineBetweenPointsThreadSafe(nextPos, tilePos, color4(((int)newAstarNode.g % 255) / 255.0f, ((int)newAstarNode.h % 255) / 255.0f, 0.0f, 0.5f), DEBUG_DURATION);
                 }
                 newAstarNode.parentIndex = parentId;
                 mOpenList.push(std::make_pair(newAstarNode.getScore(), newId));
@@ -941,7 +941,7 @@ void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const
             newAstarNode.g = prevG + glm::length(f32v3(nextPos - tilePos));
             newAstarNode.h = getEuclideanHeuristicAtPosition(nextPos, goalPos);
             if (sDebugOptions.mShowPaths) {
-                DebugRenderer::drawLineBetweenPointsThreadSafe(nextPos, tilePos, color4(((int)newAstarNode.g % 255) / 255.0f, ((int)newAstarNode.h % 255) / 255.0f, 1.0f, 0.5f), DEBUG_DURATION);
+                AM::DebugRenderer::drawLineBetweenPointsThreadSafe(nextPos, tilePos, color4(((int)newAstarNode.g % 255) / 255.0f, ((int)newAstarNode.h % 255) / 255.0f, 1.0f, 0.5f), DEBUG_DURATION);
             }
             newAstarNode.parentIndex = parentId;
             mOpenList.push(std::make_pair(newAstarNode.getScore(), newId));
@@ -995,7 +995,7 @@ void PathFinder::finishCoarsePath(LiteTileHandle startHandle, LiteTileHandle goa
         for (ui32 i = 1; i < path.numPoints; ++i) {
             const f32v3& pa = path.points[i - 1];
             const f32v3& pb = path.points[i];
-            DebugRenderer::drawLineBetweenPointsThreadSafe(pa, pb, color4(1.0f, 1.0f, 0.0f, 0.6f), DEBUG_DURATION);
+            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(pa, pb, color4(1.0f, 1.0f, 0.0f, 0.6f), DEBUG_DURATION);
         }
     }
     path.finishedGenerating.store(true);

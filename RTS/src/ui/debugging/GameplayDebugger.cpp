@@ -4,6 +4,8 @@
 #include "world/World.h"
 #include "ecs/IFullECS.h"
 
+#include "physics/NewPhysicsWorld.h"
+
 #include "ui/UIContext.h"
 #include "debugging/DebugRenderer.h"
 #include "item/ItemRepository.h"
@@ -36,14 +38,28 @@ GameplayDebugger* GameplayDebugger::tryGetInstance() {
 }
 
 void GameplayDebugger::updateAndRenderImGui(const Camera3D& camera) {
-    if (ImGui::Begin("Gameplay Debugger")) {
-        ImGui::Checkbox("Show AI Debugger", &sGameplayDebugOptions.showAIDebugger);
-
+    ui32v2 windowDims = UIContext::getInstance().getWindowDims();
+    ImGui::SetNextWindowSize(ImVec2(windowDims.x, 0));
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    if (ImGui::Begin("Gameplay Debugger", 0, 
+        ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
+        if (ImGui::BeginMenuBar()) {
+            if (ImGui::BeginMenu("Panels")) {
+                ImGui::Checkbox("AI Debugger", &sGameplayDebugOptions.showAIDebugger);
+                ImGui::Checkbox("Physics Debugger", &sGameplayDebugOptions.showPhysicsDebugger);
+                ImGui::EndMenu();
+            }
+            ImGui::EndMenuBar();
+        }
         ImGui::End();
     }
 
     if (sGameplayDebugOptions.showAIDebugger) {
         mAIDebugger.updateAndRenderImGui(camera);
+    }
+
+    if (sGameplayDebugOptions.showPhysicsDebugger) {
+        mPhysicsDebugger.updateAndRenderImGui();
     }
 }
 
@@ -52,9 +68,7 @@ AIDebugger::AIDebugger() = default;
 AIDebugger::~AIDebugger() = default;
 
 void AIDebugger::updateAndRenderImGui(const Camera3D& camera) {
-    if (ImGui::Begin("AI Debugger")) {
-        ImGui::Text("AI Debugger");
-        ImGui::Checkbox("Show AI Debugger", &sGameplayDebugOptions.showAIDebugger);
+    if (ImGui::Begin("AI Debugger"), &sGameplayDebugOptions.showAIDebugger, ImGuiWindowFlags_NoDocking) {
         ImGui::Spacing();
         ImGui::Checkbox("Debug Paths", &sDebugOptions.mShowPaths);
         ImGui::Checkbox("Debug Sim Characters", &sDebugOptions.mDebugSimCharacters);
@@ -122,7 +136,7 @@ void AIDebugger::updateAndRenderImGui(const Camera3D& camera) {
     for (auto it = mEntityUpdateHandles.begin(); it != mEntityUpdateHandles.end();) {
         AIDebugEntityUpdateHandlePtr& handle = *it;
         AIDebugData data = handle->getDataCopy();
-        DebugRenderer::drawWireQuad(data.position - f32v3(0.5f, 0.5f, 0.0f), f32v2(1.0f), color::LightGreen);
+        AM::DebugRenderer::drawWireQuad(data.position - f32v3(0.5f, 0.5f, 0.0f), f32v2(1.0f), color::LightGreen);
         ImGui::PushID(i);
 
         const i32v2 cellCoords(i % maxCellCountsBeforeShrink.x, i / maxCellCountsBeforeShrink.x);
@@ -148,7 +162,7 @@ void AIDebugger::updateAndRenderImGui(const Camera3D& camera) {
             f32v2 screenPosAttach = ((f32v2(screenPos) + f32v2(0.5f * cellDims.x, cellDims.y)) / f32v2(avail)) * 2.0f - 1.0f;
             screenPosAttach.y = -screenPosAttach.y;
             const f32v3 pickRay = camera.getPickRayWorldSpace(screenPosAttach) * 10.0f;
-            DebugRenderer::drawLineBetweenPoints(data.position, camera.getPosition() + pickRay, color::LightGreen);
+            AM::DebugRenderer::drawLineBetweenPoints(data.position, camera.getPosition() + pickRay, color::LightGreen);
         }
 
 
@@ -176,14 +190,14 @@ void AIDebugger::updateAndRenderImGui(const Camera3D& camera) {
             if (data.finePath) {
                 for (i32 i = 1; i < data.finePath->getNumPoints(); ++i) {
                     if (i >= data.currentFineNode) {
-                        DebugRenderer::drawLineBetweenPoints(data.finePath->getPoint(i - 1), data.finePath->getPoint(i), color::LightGreen);
-                        DebugRenderer::drawFilledQuad(
+                        AM::DebugRenderer::drawLineBetweenPoints(data.finePath->getPoint(i - 1), data.finePath->getPoint(i), color::LightGreen);
+                        AM::DebugRenderer::drawFilledQuad(
                             data.finePath->getPoint(i) - f32v3(POINT_RADIUS, POINT_RADIUS, 0.0f),
                             f32v2(POINT_RADIUS * 2.0f, POINT_RADIUS * 2.0f), color::LightGreen);
                     }
                     else {
-                        DebugRenderer::drawLineBetweenPoints(data.finePath->getPoint(i - 1), data.finePath->getPoint(i), color::Red);
-                        DebugRenderer::drawFilledQuad(
+                        AM::DebugRenderer::drawLineBetweenPoints(data.finePath->getPoint(i - 1), data.finePath->getPoint(i), color::Red);
+                        AM::DebugRenderer::drawFilledQuad(
                             data.finePath->getPoint(i) - f32v3(POINT_RADIUS, POINT_RADIUS, 0.0f),
                             f32v2(POINT_RADIUS * 2.0f, POINT_RADIUS * 2.0f), color::Red);
                     }
@@ -193,14 +207,14 @@ void AIDebugger::updateAndRenderImGui(const Camera3D& camera) {
             if (data.coarsePath) {
                 for (i32 i = 1; i < data.coarsePath->getNumPoints(); ++i) {
                     if (i >= data.currentCoarseNode) {
-                        DebugRenderer::drawLineBetweenPoints(data.coarsePath->getPoint(i - 1), data.coarsePath->getPoint(i), color4(0.0f, 1.0f, 0.0f, 0.5f));
-                        DebugRenderer::drawFilledQuad(
+                        AM::DebugRenderer::drawLineBetweenPoints(data.coarsePath->getPoint(i - 1), data.coarsePath->getPoint(i), color4(0.0f, 1.0f, 0.0f, 0.5f));
+                        AM::DebugRenderer::drawFilledQuad(
                             data.coarsePath->getPoint(i) - f32v3(POINT_RADIUS, POINT_RADIUS, 0.0f),
                             f32v2(POINT_RADIUS * 2.0f, POINT_RADIUS * 2.0f), color4(0.0f, 1.0f, 0.0f, 0.5f));
                     }
                     else {
-                        DebugRenderer::drawLineBetweenPoints(data.coarsePath->getPoint(i - 1), data.coarsePath->getPoint(i), color4(1.0f, 0.0f, 0.0f, 0.5f));
-                        DebugRenderer::drawFilledQuad(
+                        AM::DebugRenderer::drawLineBetweenPoints(data.coarsePath->getPoint(i - 1), data.coarsePath->getPoint(i), color4(1.0f, 0.0f, 0.0f, 0.5f));
+                        AM::DebugRenderer::drawFilledQuad(
                             data.coarsePath->getPoint(i) - f32v3(POINT_RADIUS, POINT_RADIUS, 0.0f),
                             f32v2(POINT_RADIUS * 2.0f, POINT_RADIUS * 2.0f), color4(1.0f, 0.0f, 0.0f, 0.5f));
                     }
@@ -243,5 +257,20 @@ void AIDebugger::updateAndRenderImGui(const Camera3D& camera) {
 
         ++i;
         ImGui::PopID();
+    }
+}
+
+PhysicsDebugger::PhysicsDebugger() = default;
+PhysicsDebugger::~PhysicsDebugger() = default;
+
+void PhysicsDebugger::updateAndRenderImGui() {
+    if (ImGui::Begin("Physics Debugger", &sGameplayDebugOptions.showPhysicsDebugger, ImGuiWindowFlags_NoDocking)) {
+        ImGui::Checkbox("Show Collision", &sDebugOptions.mShowCollision);
+
+        ImGui::Spacing();
+        ImGui::SeparatorText("Stats");
+        ImGui::Text(" Dynamic Bodies: %d", sGameWorld->getNewPhysicsWorld().getBodyCount(PhysicsObjectLayer::Dynamic));
+        ImGui::Text(" Static Bodies: %d", sGameWorld->getNewPhysicsWorld().getBodyCount(PhysicsObjectLayer::Static));
+        ImGui::End();
     }
 }

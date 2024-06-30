@@ -54,8 +54,8 @@ void debugDrawArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 arcRotationR
     const f32v3 arcHeight3D(0.0f, 0.0f, arcHeight);
 
     // Sides
-    DebugRenderer::drawFilledQuadThreadSafe(arcOrigin, start3D, start3D + arcHeight3D, arcOrigin + arcHeight3D, color, lifeTime);
-    DebugRenderer::drawFilledQuadThreadSafe(arcOrigin, end3D, end3D + arcHeight3D, arcOrigin + arcHeight3D, color, lifeTime);
+    AM::DebugRenderer::drawFilledQuadThreadSafe(arcOrigin, start3D, start3D + arcHeight3D, arcOrigin + arcHeight3D, color, lifeTime);
+    AM::DebugRenderer::drawFilledQuadThreadSafe(arcOrigin, end3D, end3D + arcHeight3D, arcOrigin + arcHeight3D, color, lifeTime);
 
     constexpr f32 STEP = DEG_TO_RAD(5.0f);
 
@@ -65,12 +65,12 @@ void debugDrawArc(f32v3 arcOrigin, f32 radius, f32 arcAngleRad, f32 arcRotationR
     for (; angle <= arcAngleRad; angle += STEP) {
         const f32v2 next2D = origin2D + glm::vec2(radius * std::cos(arcRotationRad + angle), radius * std::sin(arcRotationRad + angle));
         const f32v3 next3D(next2D.x, next2D.y, arcOrigin.z);
-        DebugRenderer::drawFilledQuadThreadSafe(point, next3D, next3D + arcHeight3D, point + arcHeight3D, color, lifeTime);
+        AM::DebugRenderer::drawFilledQuadThreadSafe(point, next3D, next3D + arcHeight3D, point + arcHeight3D, color, lifeTime);
         point = next3D;
     }
     // Last quad if we didnt evenly end up there
     if (angle != arcAngleRad) {
-        DebugRenderer::drawFilledQuadThreadSafe(point, end3D, end3D + arcHeight3D, point + arcHeight3D, color, lifeTime);
+        AM::DebugRenderer::drawFilledQuadThreadSafe(point, end3D, end3D + arcHeight3D, point + arcHeight3D, color, lifeTime);
     }
 
 }

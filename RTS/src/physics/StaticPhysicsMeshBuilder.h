@@ -3,10 +3,12 @@
 #include "physics/TrackedStaticRigidBodyGatherer.h"
 
 class PhysicsWorld;
+class NewPhysicsWorld;
 
 class StaticPhysicsMeshBuilder
 {
     friend class PhysicsWorld;
+    friend class NewPhysicsWorld;
 public:
     StaticPhysicsMeshBuilder(TileContainerID tileContainerOwner) : mTrackedRigidBodyGatherer(tileContainerOwner) {};
     ~StaticPhysicsMeshBuilder();
@@ -20,11 +22,12 @@ public:
     void addQuadBetweenPoints(const f32v3 vertPoints[4]);
     void addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3);
     void addTriangleBetweenPoints(const f32v3 vertPoints[3]);
-    void addTrackedStaticRigidBody(TileIndex ownerTilePosition, const f32v3& pos, CollisionShapeID shapeId) { mTrackedRigidBodyGatherer.addRigidBody(ownerTilePosition, pos, shapeId); }
+    void addTrackedStaticRigidBody(TileIndex ownerTilePosition, TileID id, ui8 layer, const f32v3& pos, CollisionShapeID shapeId) { mTrackedRigidBodyGatherer.addRigidBody(ownerTilePosition, id, layer, pos, shapeId); }
     TileContainerID getOwnerTileContainerID() const { return mTrackedRigidBodyGatherer.getOwnerTileContainerID(); }
 
     bool hasAnyCollision();
     void finish(PhysicsWorld& physicsWorld);
+    void finish(NewPhysicsWorld& physicsWorld);
 
 private:
     TrackedStaticRigidBodyGatherer mTrackedRigidBodyGatherer;

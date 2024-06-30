@@ -93,16 +93,16 @@ ItemStockpile::~ItemStockpile() {
 void ItemStockpile::renderDebug() const {
     ui32 index = 0;
     f32v2 cornerPos = f32v2(mAABB.pos);
-    DebugRenderer::drawAABB(mAABB, mZPos, color4(1.0f, 0.0f, 0.0f));
-    DebugRenderer::reserveFilledQuads(mAABB.dims.x * mAABB.dims.y);
+    AM::DebugRenderer::drawAABB(mAABB, mZPos, color4(1.0f, 0.0f, 0.0f));
+    AM::DebugRenderer::reserveFilledQuads(mAABB.dims.x * mAABB.dims.y);
     for (ui32 y = 0; y < mAABB.dims.y; ++y) {
         for (ui32 x = 0; x < mAABB.dims.x; ++x) {
             if (mStorage[index].stack.id != INVALID_STOCKPILE_INDEX) {
                 if (mStorage[index].stack.isNull()) {
-                    DebugRenderer::drawFilledQuad(f32v3(cornerPos.x + x, cornerPos.y + y, mZPos), f32v2(1.0f), color4(0.5f, 0.5f, 0.0f, 0.4f));
+                    AM::DebugRenderer::drawFilledQuad(f32v3(cornerPos.x + x, cornerPos.y + y, mZPos), f32v2(1.0f), color4(0.5f, 0.5f, 0.0f, 0.4f));
                 }
                 else {
-                    DebugRenderer::drawFilledQuad(f32v3(cornerPos.x + x, cornerPos.y + y, mZPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.4f));
+                    AM::DebugRenderer::drawFilledQuad(f32v3(cornerPos.x + x, cornerPos.y + y, mZPos), f32v2(1.0f), color4(1.0f, 1.0f, 0.0f, 0.4f));
                 }
             }
             ++index;
