@@ -34,6 +34,10 @@ UIContext::UIContext(const f32v2& screenResolution, SDL_Window* window) : mScree
     // TODO: Not in shipping?
     mEditorRoot = std::make_unique<EditorRoot>();
     mMinigameContext = std::make_unique<LocalMinigameContext>();
+
+#ifdef DEBUG
+    toggleGameplayDebugger(); // Gameplay debugger by default in debug builds
+#endif
 }
 
 UIContext::~UIContext() {

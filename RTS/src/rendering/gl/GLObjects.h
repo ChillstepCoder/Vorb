@@ -35,6 +35,7 @@ public:
     void allocate(GLsizeiptr size, const void* data, GLbitfield flags);
     void updateSubData(GLintptr offset, GLsizeiptr size, const void* data);
     void destroy();
+    void bindAsVertexArrayVertexBuffer(VGBuffer targetVao, GLuint bindingIndex, GLintptr offset, GLsizei stride);
 
     GLuint getHandle() const { return mHandle; }
     ui32 getCapacity() const { return mCapacity; }

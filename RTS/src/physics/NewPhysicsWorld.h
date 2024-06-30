@@ -10,6 +10,9 @@ class TrackedStaticRigidBodyGatherer;
 
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Collision/ObjectLayer.h>
+#include <Jolt/Physics/EActivation.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Body/MotionType.h>
 
 #define ENABLE_PHYSICS_ANALYTICS 1
 
@@ -18,6 +21,7 @@ class CollisionShapeRepository;
 
 namespace JPH {
     class Body;
+    class Character;
 }
 
 enum class PhysicsObjectLayer : JPH::ObjectLayer {
@@ -74,6 +78,7 @@ public:
     // ===========================================================================
 
     PhysBodyID createCharacterCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
+    std::unique_ptr<JPH::Character> createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
 
     void updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder);
 
@@ -87,8 +92,8 @@ public:
 #endif
 
 private:
-    JPH::Body& createBodyInternal(f32v3 position, CollisionShapeID shapeId, PhysicsObjectLayer layer);
-    PhysBodyID createEntityBody(entt::entity ownerEntity, f32v3 position, CollisionShapeID shapeId, PhysicsObjectLayer layer);
+    JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer);
+    PhysBodyID createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId);
     PhysBodyID createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId);
     void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
 

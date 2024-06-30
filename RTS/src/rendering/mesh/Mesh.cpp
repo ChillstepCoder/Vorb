@@ -31,8 +31,8 @@ void Mesh::bindStaticModelAttribs() const {
         glEnableVertexArrayAttrib(mGpuData.mVao, 10);
         glVertexArrayAttribFormat(mGpuData.mVao, 7, 4, GL_FLOAT, GL_FALSE, 0);
         glVertexArrayAttribFormat(mGpuData.mVao, 8, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4));
-        glVertexArrayAttribFormat(mGpuData.mVao, 9, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 2.0f);
-        glVertexArrayAttribFormat(mGpuData.mVao, 10, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 3.0f);
+        glVertexArrayAttribFormat(mGpuData.mVao, 9, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 2);
+        glVertexArrayAttribFormat(mGpuData.mVao, 10, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 3);
         glVertexArrayAttribBinding(mGpuData.mVao, 7, MODEL_TRANSFORMS_BINDING_POINT);
         glVertexArrayAttribBinding(mGpuData.mVao, 8, MODEL_TRANSFORMS_BINDING_POINT);
         glVertexArrayAttribBinding(mGpuData.mVao, 9, MODEL_TRANSFORMS_BINDING_POINT);

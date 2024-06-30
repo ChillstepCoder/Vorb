@@ -121,6 +121,10 @@ void GLBuffer::destroy() {
     mCapacity = 0;
 }
 
+void GLBuffer::bindAsVertexArrayVertexBuffer(VGBuffer targetVao, GLuint bindingIndex, GLintptr offset, GLsizei stride) {
+    glVertexArrayVertexBuffer(targetVao, bindingIndex, mHandle, offset, stride);
+}
+
 void GLDrawCommandBuffer::uploadDrawCommands() {
     mIndirectBuffer.flushDataAndIncrementFrame(mNumActiveCommands);
 }

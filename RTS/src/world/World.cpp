@@ -228,7 +228,7 @@ void World::tick(f32 elapsedSec) {
     // Update pending assets
     AssetLoader::getInstance().update();
 
-    // Chunks
+    // Chunkswd
     mChunkGrid->tick(mLoadCenter);
 
     // Structures

@@ -68,7 +68,7 @@ AIDebugger::AIDebugger() = default;
 AIDebugger::~AIDebugger() = default;
 
 void AIDebugger::updateAndRenderImGui(const Camera3D& camera) {
-    if (ImGui::Begin("AI Debugger"), &sGameplayDebugOptions.showAIDebugger, ImGuiWindowFlags_NoDocking) {
+    if (ImGui::Begin("AI Debugger", &sGameplayDebugOptions.showAIDebugger, ImGuiWindowFlags_NoDocking)) {
         ImGui::Spacing();
         ImGui::Checkbox("Debug Paths", &sDebugOptions.mShowPaths);
         ImGui::Checkbox("Debug Sim Characters", &sDebugOptions.mDebugSimCharacters);

@@ -16,6 +16,7 @@
 #include <jolt/Physics/Body/BodyID.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
+#include <Jolt/Physics/Character/Character.h>
 
 #include "physics/PhysicsDebugRenderer.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
@@ -52,9 +53,7 @@ entt::entity PhysicsBodyUserData::getEntity() const {
 
 // TODOS:
 // 1. Character and CharacterVirtual https://jrouwe.github.io/JoltPhysics/index.html#character-controllers
-// 2. Convert to cpp20 module
-// 3. Custom heightfield collision shape (Involved...) https://jrouwe.github.io/JoltPhysics/index.html#creating-custom-shapes
-
+// 2. Custom heightfield collision shape (Involved...) https://jrouwe.github.io/JoltPhysics/index.html#creating-custom-shapes
 
 // Write 0.0_r to get a Real value that compiles to double or float depending if JPH_DOUBLE_PRECISION is set or not.
 using namespace JPH::literals;
@@ -205,6 +204,20 @@ public:
 //    }
 //};
 
+class DynamicBodyFilter : public JPH::BodyDrawFilter {
+public:
+    bool ShouldDraw(const JPH::Body& inBody) const {
+        return inBody.GetMotionType() == JPH::EMotionType::Dynamic;
+    }
+};
+
+class StaticBodyFilter : public JPH::BodyDrawFilter {
+public:
+    bool ShouldDraw(const JPH::Body& inBody) const {
+        return inBody.GetMotionType() == JPH::EMotionType::Static;
+    }
+};
+
 class JPHPhysicsWorldContext {
 public:
     void init(ui32 maxBodies, ui32 numBodyMutexes, ui32 maxBodyPairs, ui32 maxContactConstraints) {
@@ -252,9 +265,22 @@ public:
         if (sDebugOptions.mShowCollision) {
             JPH::BodyManager::DrawSettings settings;
             sDebugRenderer->PrepareFrame(camera);
-            physicsSystem.DrawBodies(settings, sDebugRenderer.get());
+            // Only update static when static changes
+            if (mDirtyStaticDebugRender) {
+                StaticBodyFilter staticFilter;
+                sDebugRenderer->PreDraw(true);
+                physicsSystem.DrawBodies(settings, sDebugRenderer.get(), &staticFilter);
+                mDirtyStaticDebugRender = false;
+            }
+            // Always update dynamic
+            DynamicBodyFilter dynamicFilter;
+            sDebugRenderer->PreDraw(false);
+            physicsSystem.DrawBodies(settings, sDebugRenderer.get(), &dynamicFilter);
+            sDebugRenderer->EndFrame();
         }
     }
+
+    bool mDirtyStaticDebugRender = true;
 #endif
 
     JPH::Body& createBody(const JPH::BodyCreationSettings& createSettings, JPH::EActivation inActivationMode, CollisionShapeID shapeId) {
@@ -268,6 +294,9 @@ public:
 
 #if ENABLE_PHYSICS_ANALYTICS == 1
         ++mBodyCounts[createSettings.mObjectLayer];
+        if (createSettings.mMotionType == JPH::EMotionType::Static) {
+            mDirtyStaticDebugRender = true;
+        }
 #endif
 
         return *body;
@@ -278,6 +307,9 @@ public:
     std::atomic_int mBodyCounts[e_count(PhysicsObjectLayer)] = {};
 #endif
 
+    JPH::PhysicsSystem& getSystem() {
+        return physicsSystem;
+    }
 private:
     // Now we can create the actual physics system.
     JPH::PhysicsSystem physicsSystem;
@@ -377,8 +409,36 @@ int NewPhysicsWorld::stepSimulation(f32 deltaTime) {
 }
 
 PhysBodyID NewPhysicsWorld::createCharacterCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
-    CollisionShapeID id = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
-    return createEntityBody(ownerEntity, position, id, PhysicsObjectLayer::Dynamic);
+    CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
+
+    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Dynamic, PhysicsObjectLayer::Dynamic);
+    createSettings.mAllowedDOFs = JPH::EAllowedDOFs::TranslationX | JPH::EAllowedDOFs::TranslationY | JPH::EAllowedDOFs::RotationZ;
+
+    return createEntityBody(createSettings, ownerEntity, shapeId);
+}
+
+std::unique_ptr<JPH::Character> NewPhysicsWorld::createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
+    CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
+    JPH::ShapeSettings& shapeSettings = mShapeRepo.getJoltShapeSettings(shapeId);
+    JPH::ShapeRefC shape = shapeSettings.Create().Get();
+
+    PhysBodyID standingShapeID = createCharacterCapsule(ownerEntity, position, halfExtents);
+
+    JPH::CharacterSettings settings;
+    settings.mMaxSlopeAngle = JPH::DegreesToRadians(45.0f);
+    settings.mLayer = e_cast(PhysicsObjectLayer::Dynamic);
+    settings.mShape = shape;
+    settings.mFriction = 0.5f;
+    settings.mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisZ(), -halfExtents.y); // Accept contacts that touch the lower sphere of the capsule
+    std::unique_ptr<JPH::Character> newCharacter = std::make_unique<JPH::Character>(
+        &settings,
+        JPH::RVec3::sZero(),
+        JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f),
+        PhysicsBodyUserData(ownerEntity),
+        &mContext->getSystem()
+    );
+    newCharacter->AddToPhysicsSystem(JPH::EActivation::Activate);
+    return newCharacter;
 }
 
 void NewPhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder) {
@@ -426,7 +486,7 @@ int NewPhysicsWorld::getBodyCount(PhysicsObjectLayer layer) const {
 }
 #endif
 
-JPH::Body& NewPhysicsWorld::createBodyInternal(f32v3 position, CollisionShapeID shapeId, PhysicsObjectLayer layer) {
+JPH::BodyCreationSettings NewPhysicsWorld::makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer) {
 
     // Create a rotation quaternion to orient along the Z-axis
     static JPH::Quat orientation = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f);
@@ -438,15 +498,12 @@ JPH::Body& NewPhysicsWorld::createBodyInternal(f32v3 position, CollisionShapeID 
     JPH::RVec3 adjustedPosition(position.x, position.y, position.z/* + halfExtents.y*/);
 
     // Create the settings for the body itself
-    JPH::BodyCreationSettings createSettings(shape, adjustedPosition, orientation, JPH::EMotionType::Dynamic, e_cast(layer));
-
-    // Create the actual rigid body
-    return mContext->createBody(createSettings, JPH::EActivation::DontActivate, shapeId);
+    return JPH::BodyCreationSettings(shape, adjustedPosition, orientation, motionType, e_cast(layer));
 }
 
-PhysBodyID NewPhysicsWorld::createEntityBody(entt::entity ownerEntity, f32v3 position, CollisionShapeID shapeId, PhysicsObjectLayer objectLayer) {
+PhysBodyID NewPhysicsWorld::createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId) {
    
-    JPH::Body& body = createBodyInternal(position, shapeId, objectLayer);
+    JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::Activate, shapeId);
     body.SetUserData(PhysicsBodyUserData(ownerEntity));
 
     return body.GetID().GetIndexAndSequenceNumber();
@@ -454,7 +511,9 @@ PhysBodyID NewPhysicsWorld::createEntityBody(entt::entity ownerEntity, f32v3 pos
 
 PhysBodyID NewPhysicsWorld::createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId) {
 
-    JPH::Body& body = createBodyInternal(position, shapeId, PhysicsObjectLayer::Static);
+    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Static, PhysicsObjectLayer::Static);
+
+    JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, shapeId);
     body.SetUserData(PhysicsBodyUserData(containerId, tileIndex));
 
     return body.GetID().GetIndexAndSequenceNumber();

@@ -43,7 +43,7 @@ void EditorWorldInterfaceController::update()
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_Y)) {
         // TODO: ITEMFactory
         GameThreadTasks::getInstance().addGenericTask([this]() {
-            ItemID id = ItemRepository::get().getAssetID(CStrToken("wood_log_birch"));
+            ItemID id = Random::getCachedRandom() % 2 ? ItemRepository::get().getAssetID(CStrToken("wood_log")) : ItemRepository::get().getAssetID(CStrToken("wood_log_birch"));
             ItemStack newStack(id, 1);
             f32v3 velocity = f32v3(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f, 4.0f);
             EntityFactory::createItemProjectile(*mWorld, mWorld->getECS().getLocalPlayerPosition() + f32v3(0.0f, 0.0f, 1.0f), velocity, newStack);
