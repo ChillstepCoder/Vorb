@@ -60,6 +60,8 @@ struct HeightmapPickResult {
 };
 
 // TODO: Lookat alternate mountain gen https://www.youtube.com/watch?v=gsJHzBTPG0Y
+// Game thread can read lockless but must lock to write.
+// Other threads must use thread-safe template argument
 class IHeightmapGrid
 {
     friend class WorldSaveContext;

@@ -220,7 +220,7 @@ void World::tick(f32 elapsedSec) {
     entt::entity localPlayer = mEcs->getLocalPlayer();
     if (localPlayer != entt::null) {
         PhysicsComponent& physCmp = mEcs->mRegistry.get<PhysicsComponent>(localPlayer);
-        const f32v3 localPlayerPos = physCmp.getPosition();
+        const f32v3 localPlayerPos = physCmp.getBottomPosition();
         {
             std::lock_guard lock(mLoadCenterMutex);
             mLoadCenter = localPlayerPos;
@@ -471,7 +471,7 @@ void World::updateRenderState() {
     f32v3 cameraEntityPos = f32v3(0.0f);
     entt::entity playerEntity = getECS().getLocalPlayer();
     if (playerEntity != INVALID_ENTITY) {
-        cameraEntityPos = getECS().mRegistry.get<PhysicsComponent>(playerEntity).getInterpolatedPosition();
+        cameraEntityPos = getECS().mRegistry.get<PositionComponent>(playerEntity).mPosition;
         renderState.mIsCameraOwned = true;
     }
 
@@ -501,10 +501,10 @@ void World::updateEntitiesRenderState(WorldRenderState& renderState) {
 
         for (auto entity : view) {
             CharacterControlComponent& controlCmp = view.get<CharacterControlComponent>(entity);
-            if (!controlCmp.mFlags.isBitSet(CharacterControlComponentFlags::HIDE_MODEL)) [[likely]] {
+            if (!controlCmp.mFlags.isBitSet(CharacterControlComponentFlags::HideModel)) [[likely]] {
                 PositionComponent& posCmp = view.get<PositionComponent>(entity);
                 PhysicsComponent& physCmp = view.get<PhysicsComponent>(entity);
-                renderState.mCharacters.emplace_back(CharacterRenderState{ entity, posCmp.mPosition, physCmp.getLinearVelocity2D(), controlCmp.mControllerAngle, controlCmp.mLocomotionMode });
+                renderState.mCharacters.emplace_back(CharacterRenderState{ entity, posCmp.mPosition, physCmp.getLinearVelocity(), controlCmp.mControllerAngleRad, controlCmp.mLocomotionMode });
             }
         };
     }

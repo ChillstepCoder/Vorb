@@ -22,10 +22,17 @@
 #include "physics/PhysicsWorld.h"
 #include "physics/NewPhysicsWorld.h"
 
+#include <Jolt/Physics/Character/Character.h>
+
 #include "math/Random.h"
 
 entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken typeToken) {
     ASSERT_GAME_THREAD();
+
+    // We only support creating entities in the game world for now,
+    // due to physics component doing singleton lookup
+    assert(&world == sGameWorld.get());
+
     PhysicsWorld& physWorld = world.getPhysicsWorld();
     NewPhysicsWorld& physicsWorld = world.getNewPhysicsWorld();
     IFullECS& ecs = world.getECS();
@@ -45,8 +52,11 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
     positionCmp.mPosition = position;
     positionCmp.chunkId = world.getChunkIDAtWorldPos(position);
 
+    bool hasCharacterControl = false;
+
     // Initialize components
     // TODO: Use groups
+    // TODO: WE NEED TO VALIDATE ORDER! PHYSICS MUST BE AFTER CHARACTER CONTROL!
     for (const ComponentDefinitionInstance& defInst : edef.components) {
         switch (defInst.type) {
             case ComponentType::CharacterModel: {
@@ -59,12 +69,14 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
             }
             case ComponentType::CharacterControl: {
                 assert(defInst.componentDef);
+                assert(!registry.all_of<PhysicsComponent>(newEntity) && "Character control component must come BEFORE physics!");
                 CharacterControlComponentDef& cdef = static_cast<CharacterControlComponentDef&>(*defInst.componentDef);
                 auto& cmp = registry.emplace<CharacterControlComponent>(newEntity);
                 cmp.mSpeedRun = cdef.mSpeed;
                 charControlCmp = &cmp;
                 // Character control begets navigation always
                 registry.get_or_emplace<NavigationComponent>(newEntity);
+                hasCharacterControl = true;
                 break;
             }
             case ComponentType::Combat: {
@@ -115,10 +127,19 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                     rotType = RigidBodyRotationType::NO_ROTATE_XY;
                 }
                 // TODO: allow collision group specify
-                RigidBodyPair rbp = physWorld.addRigidBody(newEntity, position, cdef.colliderShape, cdef.halfExtents, cdef.massKg, CollisionGroup::CHARACTER, rotType);
-                physics.mRigidBody = rbp.first;
-                physics.mZPosOffset = -rbp.second;
-                physics.mBodyID = physicsWorld.createCharacterCapsule(newEntity, position, cdef.halfExtents);
+                physics.mHalfHeight = cdef.halfExtents.y;
+                if (hasCharacterControl) {
+                    // TODO: Use?
+                    UNUSED(cdef.massKg);
+                    UNUSED(cdef.colliderShape);
+                    CharacterControlComponent& controlCmp = registry.get<CharacterControlComponent>(newEntity);
+                    controlCmp.mCharacterController = physicsWorld.createSimpleCharacter(newEntity, f32v3(position.x, position.y, position.z + cdef.halfExtents.y), cdef.halfExtents);
+                    physics.mBodyID = static_cast<JPH::Character&>(*controlCmp.mCharacterController).GetBodyID().GetIndexAndSequenceNumber();
+                }
+                else {
+                    assert(cdef.colliderShape == CollisionShapes::CAPSULE && "Only capsule physics supported for now");
+                    physics.mBodyID = physicsWorld.createCharacterCapsule(newEntity, position, cdef.halfExtents);
+                }
                 break;
             }
             case ComponentType::Profession: {
@@ -232,7 +253,7 @@ void EntityFactory::destroyEntity(World& world, entt::entity entity) {
     entt::registry& registry = ecs.mRegistry;
 
     if (PhysicsComponent* cmp = registry.try_get<PhysicsComponent>(entity)) {
-        world.getPhysicsWorld().deleteRigidBody(cmp->mRigidBody);
+        world.getNewPhysicsWorld().removeBody(cmp->mBodyID);
     }
 
     if (StaticModelComponent* cmp = registry.try_get<StaticModelComponent>(entity)) {

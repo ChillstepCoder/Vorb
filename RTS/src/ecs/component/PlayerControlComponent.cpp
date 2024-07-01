@@ -114,10 +114,10 @@ void PlayerControlSystem::updateComponent(World& world, entt::entity entity, Pla
 
 	//  Update movement
     characterControlCmp.mMoveDirection = getMovementDir(inputs, cameraYaw);
-    characterControlCmp.mFlags.clearBit(CharacterControlComponentFlags::ORIENT_TO_MOVEMENT);
+    characterControlCmp.mFlags.clearBit(CharacterControlComponentFlags::OrientToMovement);
 
     // Update controller rotation
-    characterControlCmp.mControllerAngle = cameraYaw; // glm::rotate(f32v2(0.0f, 1.0f), -cameraYaw);
+    characterControlCmp.mControllerAngleRad = cameraYaw; // glm::rotate(f32v2(0.0f, 1.0f), -cameraYaw);
 
     if (characterControlCmp.mMoveDirection.x != 0.0f || characterControlCmp.mMoveDirection.y != 0.0f) {
         // Remove any navigation component if we are applying movement input

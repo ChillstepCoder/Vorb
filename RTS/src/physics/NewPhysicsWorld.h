@@ -22,7 +22,10 @@ class CollisionShapeRepository;
 
 namespace JPH {
     class Body;
+    class CharacterBase;
     class Character;
+    class BodyLockInterface;
+    class BodyInterface;
 }
 
 enum class PhysicsObjectLayer : JPH::ObjectLayer {
@@ -64,7 +67,10 @@ struct alignas(8) PhysicsBodyUserData {
 };
 static_assert(sizeof(PhysicsBodyUserData) == sizeof(ui64), "JoltUserData must be 64 bits");
 
+class PhysicsWorldBodyInterface;
+
 class NewPhysicsWorld {
+    friend class PhysicsWorldBodyInterface;
 public:
     NewPhysicsWorld(World& world, CollisionShapeRepository& shapeRepo);
     ~NewPhysicsWorld();
@@ -81,7 +87,7 @@ public:
     void updateTerrainBody(HeightmapPatch& patch);
 
     PhysBodyID createCharacterCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
-    std::unique_ptr<JPH::Character> createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
+    std::unique_ptr<JPH::CharacterBase> createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
 
     void updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder);
 
@@ -98,6 +104,9 @@ public:
 #endif
 
 private:
+    // ===========================================================================
+    // Private API
+    // ===========================================================================
     JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, const JPH::Shape* shape, JPH::EMotionType motionType, PhysicsObjectLayer layer);
     JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer);
     PhysBodyID createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId);
@@ -106,6 +115,19 @@ private:
     void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
     void updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
 
+    // ===========================================================================
+    // PhysicsWorldBodyInterface
+    // ===========================================================================
+    // Use this to query the body in a thread safe manner
+    const JPH::BodyLockInterface& getBodyLockInterface() const;
+    // Use this when bodyLockInterface does not suffice due to broadphase manipulation (mutating positions)
+    JPH::BodyInterface& getBodyInterface() const;
+    // Use this on game thread as we only mutate bodies on game thread
+    const JPH::BodyInterface& getBodyInterfaceNonLocking() const;
+
+    // ===========================================================================
+    // Data
+    // ===========================================================================
     World& mWorld;
     CollisionShapeRepository& mShapeRepo;
     std::unique_ptr<JPHPhysicsWorldContext> mContext;
@@ -115,3 +137,18 @@ private:
     UnorderedFlatMap<TileContainerID, std::unique_ptr<NewTileContainerPhysicsData>> mTileContainerPhysicsData;
 };
 
+extern NewPhysicsWorld* sGamePhysicsWorld;
+
+
+// Trusted classes may use these private members
+class PhysicsWorldBodyInterface {
+    friend class PhysicsComponent; // TRUSTED
+
+    PhysicsWorldBodyInterface() = delete;
+    // Use this to query the body in a thread safe manner
+    inline static const JPH::BodyLockInterface& getBodyLockInterface(NewPhysicsWorld& physicsWorld) { return physicsWorld.getBodyLockInterface(); }
+    // Use this when bodyLockInterface does not suffice due to broadphase manipulation (mutating positions)
+    inline static JPH::BodyInterface& getBodyInterface(NewPhysicsWorld& physicsWorld) { return physicsWorld.getBodyInterface(); }
+    // Use this on game thread as we only mutate bodies on game thread
+    inline static const JPH::BodyInterface& getBodyInterfaceNonLocking(NewPhysicsWorld& physicsWorld) { return physicsWorld.getBodyInterfaceNonLocking(); }
+};

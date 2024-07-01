@@ -7,6 +7,8 @@
 #include "physics/NewPhysicsWorld.h"
 
 #include "ui/UIContext.h"
+#include "ui/debugging/MovementDebugger.h"
+
 #include "debugging/DebugRenderer.h"
 #include "item/ItemRepository.h"
 
@@ -19,23 +21,19 @@
 constexpr ui32 AI_DEBUG_UPDATE_CODE = 2532;
 
 
-static GameplayDebugger* sGameplayDebugger = nullptr;
-
-GameplayDebugger::GameplayDebugger()
-{
-    if (sGameplayDebugger) {
+GameplayDebugger::GameplayDebugger() {
+    if (sInstance) {
         panic("GameplayDebugger already exists");
     }
-    sGameplayDebugger = this;
+    sInstance = this;
+
+    mMovementDebugger = std::make_unique<MovementDebugger>();
 }
 
 GameplayDebugger::~GameplayDebugger() {
-    sGameplayDebugger = nullptr;
+    sInstance = nullptr;
 }
 
-GameplayDebugger* GameplayDebugger::tryGetInstance() {
-    return sGameplayDebugger;
-}
 
 void GameplayDebugger::updateAndRenderImGui(const Camera3D& camera) {
     ui32v2 windowDims = UIContext::getInstance().getWindowDims();
@@ -44,9 +42,10 @@ void GameplayDebugger::updateAndRenderImGui(const Camera3D& camera) {
     if (ImGui::Begin("Gameplay Debugger", 0, 
         ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
         if (ImGui::BeginMenuBar()) {
-            if (ImGui::BeginMenu("Panels")) {
-                ImGui::Checkbox("AI Debugger", &sGameplayDebugOptions.showAIDebugger);
-                ImGui::Checkbox("Physics Debugger", &sGameplayDebugOptions.showPhysicsDebugger);
+            if (ImGui::BeginMenu("Debug Panels")) {
+                ImGui::Checkbox("AI", &sGameplayDebugOptions.showAIDebugger);
+                ImGui::Checkbox("Physics", &sGameplayDebugOptions.showPhysicsDebugger);
+                ImGui::Checkbox("Movement", &sGameplayDebugOptions.showMovementDebugger);
                 ImGui::EndMenu();
             }
             ImGui::EndMenuBar();
@@ -60,6 +59,10 @@ void GameplayDebugger::updateAndRenderImGui(const Camera3D& camera) {
 
     if (sGameplayDebugOptions.showPhysicsDebugger) {
         mPhysicsDebugger.updateAndRenderImGui();
+    }
+
+    if (sGameplayDebugOptions.showMovementDebugger) {
+        mMovementDebugger->updateAndRenderImGui(&sGameplayDebugOptions.showMovementDebugger);
     }
 }
 

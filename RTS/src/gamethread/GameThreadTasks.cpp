@@ -50,7 +50,7 @@ void GameThreadTasks::addCameraPickTeleportTask(World& world, const f32v3& camPo
         if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.getLocalPlayer())) {
             PhysHitResult hitResult = data->world->getPhysicsWorld().pick(data->camPos, data->camPos + data->camDir * 3000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
             if (hitResult.didHit()) {
-                phys->teleportToPoint(hitResult.mPosition);
+                phys->teleportBottomToPoint(hitResult.mPosition);
             }
         }
         delete data;
@@ -61,10 +61,10 @@ void GameThreadTasks::addHideLocalPlayerModelTask(World& world, bool hide) {
     mGameThreadFuncProcs.enqueue([world = &world, hide]() {
         IFullECS& ecs = world->getECS();
         if (hide) {
-            ecs.mRegistry.get<CharacterControlComponent>(ecs.getLocalPlayer()).mFlags.setBit(CharacterControlComponentFlags::HIDE_MODEL);
+            ecs.mRegistry.get<CharacterControlComponent>(ecs.getLocalPlayer()).mFlags.setBit(CharacterControlComponentFlags::HideModel);
         }
         else {
-            ecs.mRegistry.get<CharacterControlComponent>(ecs.getLocalPlayer()).mFlags.clearBit(CharacterControlComponentFlags::HIDE_MODEL);
+            ecs.mRegistry.get<CharacterControlComponent>(ecs.getLocalPlayer()).mFlags.clearBit(CharacterControlComponentFlags::HideModel);
         }
     });
 }

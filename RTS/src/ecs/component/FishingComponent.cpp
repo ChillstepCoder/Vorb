@@ -85,7 +85,7 @@ void FishingComponentSystem::update(World& world, entt::registry& registry, f32 
 
 f32v3 getCastTarget(FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterControlComponent& controlCmp) {
     const f32v2 controllerDir = controlCmp.getControllerDir();
-    f32v3 castTarget = physCmp.getPosition();
+    f32v3 castTarget = physCmp.getBottomPosition();
     castTarget.z = 0.0f;
     castTarget.x += controllerDir.x * fishCmp.mCastCharge;
     castTarget.y += controllerDir.y * fishCmp.mCastCharge;
@@ -100,7 +100,7 @@ void castLine(FishingComponent& fishCmp, PhysicsComponent& physCmp, CharacterCon
 
 
     // Starting the launch position a bit up in the air and a bit forward from the player (Z is up)
-    fishCmp.mBobberPosition = physCmp.getPosition() + f32v3(playerDir.x, playerDir.y, 1.1f);
+    fishCmp.mBobberPosition = physCmp.getBottomPosition() + f32v3(playerDir.x, playerDir.y, 1.1f);
 
     // Compute initial velocities using equation of motion
     fishCmp.mBobberVelocity = MathUtil::computeInitialProjectileVelocityToTarget(fishCmp.mBobberPosition, castTargetPosition, totalCastTimeSec, BOBBER_GRAVITY);
@@ -167,7 +167,7 @@ void FishingComponentSystem::updateFishing(World& world, entt::registry& registr
             fishingCmp.mBobberVelocity *= BOBBER_DRAG;
             // Reeling
             if (fishingCmp.mIsCastInputPressed) {
-                f32v2 distanceVec = physCmp.getPosition() - fishingCmp.mBobberPosition;
+                f32v2 distanceVec = physCmp.getBottomPosition() - fishingCmp.mBobberPosition;
                 f32v2 pullNormal = glm::normalize(distanceVec);
                 fishingCmp.mBobberVelocity += f32v3(pullNormal.x, pullNormal.y, 0.0f) * PULL_ACCELLERATION * mTimeStep;
                 const f32 bobberSpeed = glm::length(fishingCmp.mBobberVelocity);
@@ -256,7 +256,7 @@ void FishingComponentSystem::updateFishing(World& world, entt::registry& registr
                 bobberOffset = mLocalPlayerMinigameGameThreadData->mBobberOffset;
                 tugOfWarValue = mLocalPlayerMinigameGameThreadData->mTugOfWarValue;
             }
-            const f32 playerAngle = controlCmp.mControllerAngle;
+            const f32 playerAngle = controlCmp.mControllerAngleRad;
             bobberOffset = MathUtil::rotateVector2DRad(bobberOffset, -playerAngle) * 2.5f;
             // TODO: Ground collision
             const f32 zPos = (-2 + tugOfWarValue) * 0.3f;

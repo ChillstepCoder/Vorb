@@ -79,7 +79,7 @@ void IFullECS::tick(f32 elapsedSec) {
 
 void IFullECS::tickPhysics(f32 elapsedSec) {
 	mPhysicsSystem.update(mWorld, mRegistry, elapsedSec);
-	mCharacterControlSystem.update(mRegistry);
+	mCharacterControlSystem.update(mWorld, mRegistry, elapsedSec);
 }
 
 void IFullECS::addPendingEntitiesToChunk(Chunk& chunk, ChunkFullTransitionData&& data) {
@@ -186,7 +186,7 @@ ChunkSimTransitionData IFullECS::deactivateEntitiesForChunk(Chunk& chunk) {
 	return rv;
 }
 
-void IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunkID, ChunkID newChunkID) {
+bool IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunkID, ChunkID newChunkID) {
     ASSERT_GAME_THREAD();
 
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
@@ -205,18 +205,18 @@ void IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunkID, C
 
                 // We will remove from mEntitiesbyChunk in the destroy listener
                 destroyEntity(entity);
-                return;
+                return true;
             }
             else {
                 // If we get here (rare), we are in the process of activating, so pretend we are still in the old chunk and retry next time
                 mRegistry.get<PositionComponent>(entity).chunkId = prevChunkID;
-                return;
+                return false;
             }
         }
         else if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(entity)) {
             // Items destroy, will remove from mEntitiesbyChunk in the destroy listener
             destroyEntity(entity);
-            return;
+            return true;
         } else {
             // Non sim entity such as player, just add to the entities by chunk
             mEntitiesByChunk[newChunkID].emplace_back(entity);
@@ -256,6 +256,7 @@ void IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunkID, C
             panic("Failed to find entity for enter new chunk, type {}", (int)cmp->type);
         }
     }
+    return false;
 }
 
 entt::entity IFullECS::getLocalPlayerThreadSafe() const {

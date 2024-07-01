@@ -148,6 +148,7 @@ const HeightmapPatch* IHeightmapGrid::getHeightDataAtWorldPos(const i32v2 worldP
 }
 
 const HeightmapPatch* IHeightmapGrid::getHeightDataAt(HeightmapPatchID id) const {
+    ASSERT_GAME_THREAD();
     const HeightmapPatch& patch = mHeightData[id];
     return &patch;
 }
@@ -178,7 +179,6 @@ void IHeightmapGrid::setHeightAtChunkId(ChunkID id, i32 vertIndex, f32 height, T
 }
 
 void IHeightmapGrid::setHeightAtWorldPos(f32v2 worldPos, f32 height, TerrainHeightSetDirection dir /*= TerrainHeightSetDirection::ANY*/) {
-
     ASSERT_GAME_THREAD();
     const HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldPos);
     const i32v2 offset = i32v2(worldPos) - mSpatialGrid2D.getWorldPosXYFromID(id);
@@ -277,6 +277,7 @@ void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
 
 template <bool THREAD_SAFE>
 f32 IHeightmapGrid::getHeightAtVert(DTileCoord vertPos) const {
+    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
     HeightmapPatchID id = mSpatialGrid2D.getIDfromGridXY(vertPos.v / HEIGHTMAP_VERT_WIDTH_PER_PATCH);
     vertPos.x = vertPos.x % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
     vertPos.y = vertPos.y % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
@@ -293,6 +294,7 @@ f32 IHeightmapGrid::getHeightAtVert(HeightmapPatchID id, DTileCoord vertPos) con
 
 template<bool THREAD_SAFE>
 CompressedHeight IHeightmapGrid::getCompressedHeightAtVert(DTileCoord vertPos) const {
+    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
     HeightmapPatchID id = mSpatialGrid2D.getIDfromGridXY(vertPos.v / HEIGHTMAP_VERT_WIDTH_PER_PATCH);
     vertPos.x = vertPos.x % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
     vertPos.y = vertPos.y % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
@@ -302,7 +304,6 @@ DECL_BOOL_TEMPLATE(CompressedHeight IHeightmapGrid::getCompressedHeightAtVert, (
 
 template <bool THREAD_SAFE>
 f32 IHeightmapGrid::computeHeightAtPoint(const f32v2 worldPos) const {
-    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
     return interpolateHeightAtWorldPos<THREAD_SAFE>(worldPos);
 }
 DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeHeightAtPoint, (const f32v2 worldPos) const)
@@ -320,21 +321,18 @@ f32 IHeightmapGrid::getHeightAtVertexForGeneration(const i32v2 worldVertexOffset
 
 template <bool THREAD_SAFE>
 f32 IHeightmapGrid::computeHeightAndNormalAtPoint(const f32v2 worldPos, OUT f32v3* outNormal) const {
-    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
     return interpolateHeightAndNormalAtWorldPos<THREAD_SAFE>(worldPos, outNormal);
 }
 DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeHeightAndNormalAtPoint, (const f32v2 worldPos, OUT f32v3* outNormal) const)
 
 template <bool THREAD_SAFE>
 f32 IHeightmapGrid::computeCenterHeightAtTile(TileCoord worldTilePos) const {
-    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
     return interpolateHeightAtWorldPos<THREAD_SAFE>(f32v2(worldTilePos.v) + f32v2(0.5f));
 }
 DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeCenterHeightAtTile, (TileCoord worldTilePos) const)
 
 template <bool THREAD_SAFE>
 f32 IHeightmapGrid::computeCenterHeightAndNormalAtTile(TileCoord worldTilePos, OUT f32v3* outNormal) const {
-    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
     return interpolateHeightAndNormalAtWorldPos<THREAD_SAFE>(f32v2(worldTilePos.v) + f32v2(0.5f), outNormal);
 }
 DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeCenterHeightAndNormalAtTile, (TileCoord worldTilePos, OUT f32v3* outNormal) const)
@@ -518,6 +516,7 @@ void IHeightmapGrid::computeRequiredPaddedIDs(HeightmapPatchID id, OUT Heightmap
 
 template <bool THREAD_SAFE>
 f32 IHeightmapGrid::interpolateHeightAndNormalAtWorldPos(f32v2 worldPos, OUT f32v3* outNormal) const {
+    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
     worldPos = glm::clamp(worldPos, 0.0f, mMaxCoordinate);
 
     // Get the position and ID of this patch
@@ -678,6 +677,7 @@ DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::interpolateHeightAndNormalAtWorldPos, (f3
 
 template <bool THREAD_SAFE>
 f32 IHeightmapGrid::interpolateHeightAtWorldPos(f32v2 worldPos) const {
+    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
     worldPos = glm::clamp(worldPos, 0.0f, mMaxCoordinate);
     // Get the position and ID of this patch
     const i32v2 patchGridCoords(i32(worldPos.x) / HEIGHTMAP_PATCH_WIDTH_TILES, i32(worldPos.y) / HEIGHTMAP_PATCH_WIDTH_TILES);

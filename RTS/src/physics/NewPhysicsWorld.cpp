@@ -29,6 +29,8 @@
 
 #include "options/DebugOptions.h"
 
+NewPhysicsWorld* sGamePhysicsWorld = nullptr;
+
 PhysicsBodyUserData::PhysicsBodyUserData(entt::entity owner) {
     data = e_cast(PhysicsBodyUserDataType::Entity) << 62 | static_cast<ui64>(owner);
 }
@@ -237,6 +239,11 @@ public:
         return physicsSystem.GetBodyInterface();
     }
 
+    const JPH::BodyInterface& getBodyInterfaceNonLocking() const {
+        ASSERT_GAME_THREAD();
+        return physicsSystem.GetBodyInterfaceNoLock();
+    }
+
     const JPH::BodyLockInterface& getBodyLockInterface() {
         return physicsSystem.GetBodyLockInterface();
     }
@@ -366,6 +373,12 @@ private:
 NewPhysicsWorld::NewPhysicsWorld(World& world, CollisionShapeRepository& shapeRepo) : mWorld(world), mShapeRepo(shapeRepo) {
     assert(JPH::Factory::sInstance);
 
+    // PhysicsComponent relies on this
+    if (mWorld.getNetMode() != WorldNetMode::Editor) {
+        assert(!sGamePhysicsWorld);
+        sGamePhysicsWorld = this;
+    }
+
     // This is the max amount of rigid bodies that you can add to the physics system. If you try to add more you'll get an error.
     const uint cMaxBodies = 65536;
 
@@ -387,6 +400,10 @@ NewPhysicsWorld::NewPhysicsWorld(World& world, CollisionShapeRepository& shapeRe
 }
 
 NewPhysicsWorld::~NewPhysicsWorld() {
+
+    if (sGamePhysicsWorld == this) {
+        sGamePhysicsWorld = nullptr;
+    }
 
     // Unregisters all types with the factory and cleans up the default material
     JPH::UnregisterTypes();
@@ -510,29 +527,27 @@ PhysBodyID NewPhysicsWorld::createCharacterCapsule(entt::entity ownerEntity, f32
     CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
 
     JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Dynamic, PhysicsObjectLayer::Dynamic);
-    createSettings.mAllowedDOFs = JPH::EAllowedDOFs::TranslationX | JPH::EAllowedDOFs::TranslationY | JPH::EAllowedDOFs::RotationZ;
+    createSettings.mAllowedDOFs = JPH::EAllowedDOFs::TranslationX | JPH::EAllowedDOFs::TranslationY | JPH::EAllowedDOFs::TranslationZ;
 
     return createEntityBody(createSettings, ownerEntity, shapeId);
 }
 
-std::unique_ptr<JPH::Character> NewPhysicsWorld::createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
+std::unique_ptr<JPH::CharacterBase> NewPhysicsWorld::createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
     ASSERT_GAME_THREAD();
 
     CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
     JPH::ShapeSettings& shapeSettings = mShapeRepo.getJoltShapeSettings(shapeId);
     JPH::ShapeRefC shape = shapeSettings.Create().Get();
 
-    PhysBodyID standingShapeID = createCharacterCapsule(ownerEntity, position, halfExtents);
-
     JPH::CharacterSettings settings;
-    settings.mMaxSlopeAngle = JPH::DegreesToRadians(45.0f);
+    settings.mMaxSlopeAngle = JPH::DegreesToRadians(60.0f);
     settings.mLayer = e_cast(PhysicsObjectLayer::Dynamic);
     settings.mShape = shape;
     settings.mFriction = 0.5f;
     settings.mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisZ(), -halfExtents.y); // Accept contacts that touch the lower sphere of the capsule
     std::unique_ptr<JPH::Character> newCharacter = std::make_unique<JPH::Character>(
         &settings,
-        JPH::RVec3::sZero(),
+        JPH::RVec3(position.x, position.y, position.z),
         JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f),
         PhysicsBodyUserData(ownerEntity),
         &mContext->getSystem()
@@ -553,8 +568,8 @@ void NewPhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilde
             for (auto& [key, physBodyID] : it->second->mTileKeyToPhysBodyID) {
                 mContext->getBodyInterface().RemoveBody(JPH::BodyID(physBodyID));
             }
+            mTileContainerPhysicsData.erase(it);
         }
-        mTileContainerPhysicsData.erase(it);
         return;
     }
 
@@ -677,7 +692,6 @@ void NewPhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRi
     PROFILE_FUNCTION();
     assert(!gatherer.mRigidBodiesToAdd.empty());
 
-    // Never
     // TODO: Scratch allocator?
     static thread_local UnorderedFlatSet<TileKey> addedKeys;
     addedKeys.reserve(gatherer.mRigidBodiesToAdd.size());
@@ -702,4 +716,17 @@ void NewPhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRi
         }
     }
     addedKeys.clear();
+}
+
+
+const JPH::BodyLockInterface& NewPhysicsWorld::getBodyLockInterface() const {
+    return mContext->getBodyLockInterface();
+}
+
+JPH::BodyInterface& NewPhysicsWorld::getBodyInterface() const {
+    return mContext->getBodyInterface();
+}
+
+const JPH::BodyInterface& NewPhysicsWorld::getBodyInterfaceNonLocking() const {
+    return mContext->getBodyInterfaceNonLocking();
 }

@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "PhysicsComponent.h"
 
-#include <BulletDynamics/Dynamics/btRigidBody.h>
-#include <BulletCollision/CollisionShapes/btCapsuleShape.h>
 
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
@@ -10,7 +8,12 @@
 
 #include "resources/TileRepository.h"
 
-#include "physics/PhysicsWorld.h"
+#include "physics/NewPhysicsWorld.h"
+
+#include <Jolt/Physics/Body/BodyLock.h>
+#include <Jolt/Physics/Body/BodyInterface.h>
+#include <Jolt/Physics/Body/BodyLockInterface.h>
+
 constexpr float MIN_Z_SPEED = -0.24f;
 constexpr float TOP_COLLISION_THRESHOLD = 0.75f;
 constexpr float TOP_COLLISION_DEPTH = 1.0f - TOP_COLLISION_THRESHOLD;
@@ -19,114 +22,110 @@ constexpr float REFILTER_HEIGHT_CHANGE = 0.2f;
 static_assert(1.0f + MIN_Z_SPEED > TOP_COLLISION_THRESHOLD);
 
 
+f32v3 PhysicsComponent::getBottomPosition() const {
+    const JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterfaceNonLocking(*sGamePhysicsWorld);
 
-f32v2 PhysicsComponent::getDir() const {
-    ASSERT_GAME_THREAD();
-    btVector3 result = btVector3(1.0, 0.0, 0.0);
-    result = mRigidBody->getWorldTransform().getBasis() * result;
-    return f32v2(result.getX(), result.getY());
-}
-
-f32v2 PhysicsComponent::getInterpolatedDir() const {
-    ASSERT_GAME_THREAD();
-    btVector3 result = btVector3(1.0, 0.0, 0.0);
-    result = mRigidBody->getInterpolationWorldTransform().getBasis() * result;
-    return f32v2(result.getX(), result.getY());
-}
-
-f32v3 PhysicsComponent::getPosition() const {
-    ASSERT_GAME_THREAD();
-    // TODO: Physics system could cache position
-    // TODO: Get origin?
-    f32v3 rv = btVector3ToF32v3(mRigidBody->getWorldTransform().getOrigin());
-    rv.z += mZPosOffset;
-    return rv;
-}
-
-f32v3 PhysicsComponent::getInterpolatedPosition() const {
-    ASSERT_GAME_THREAD();
-    // TODO: Physics system could cache position
-    f32v3 rv = btVector3ToF32v3(mRigidBody->getInterpolationWorldTransform().getOrigin());
-    rv.z += mZPosOffset;
-    return rv;
+    JPH::RVec3 rPos = bodyInterface.GetPosition(JPH::BodyID(mBodyID));
+    return f32v3(rPos.GetX(), rPos.GetY(), rPos.GetZ() - mHalfHeight);
 }
 
 f32v3 PhysicsComponent::getLinearVelocity() const {
-    ASSERT_GAME_THREAD();
-    return btVector3ToF32v3(mRigidBody->getLinearVelocity());
+    const JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterfaceNonLocking(*sGamePhysicsWorld);
+
+    JPH::Vec3 vel = bodyInterface.GetLinearVelocity(JPH::BodyID(mBodyID));
+    return f32v3(vel.GetX(), vel.GetY(), vel.GetZ());
 }
 
-f32v2 PhysicsComponent::getLinearVelocity2D() const {
-    ASSERT_GAME_THREAD();
-    return btVector3ToF32v2(mRigidBody->getLinearVelocity());
+f32 PhysicsComponent::getLinearVelocityZ() const {
+    const JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterfaceNonLocking(*sGamePhysicsWorld);
+    return bodyInterface.GetLinearVelocity(JPH::BodyID(mBodyID)).GetZ();
 }
 
-f32 PhysicsComponent::getRotation() const {
+void PhysicsComponent::setLinearVelocity(f32v3 velocity) {
     ASSERT_GAME_THREAD();
-    // TODO: Interpolated or no?
-    f32v2 dir = getDir();
-    return atan2(dir.y, dir.x);
+    assert(mBodyID != INVALID_PHYS_BODY_ID);
+
+    JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterface(*sGamePhysicsWorld);
+    bodyInterface.SetLinearVelocity(JPH::BodyID(mBodyID), JPH::Vec3(velocity.x, velocity.y, velocity.z));
+}
+
+void PhysicsComponent::setLinearVelocityZ(f32 zVelocity) {
+    ASSERT_GAME_THREAD();
+    assert(mBodyID != INVALID_PHYS_BODY_ID);
+
+    f32v3 linearVelocity = getLinearVelocity();
+
+    JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterface(*sGamePhysicsWorld);
+    bodyInterface.SetLinearVelocity(JPH::BodyID(mBodyID), JPH::Vec3(linearVelocity.x, linearVelocity.y, zVelocity));
+}
+
+void PhysicsComponent::clearLinearVelocityZIfNegative() {
+    ASSERT_GAME_THREAD();
+    assert(mBodyID != INVALID_PHYS_BODY_ID);
+
+    f32v3 linearVelocity = getLinearVelocity();
+    if (linearVelocity.z < 0.0f) {
+        linearVelocity.z = 0.0f;
+        JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterface(*sGamePhysicsWorld);
+        bodyInterface.SetLinearVelocity(JPH::BodyID(mBodyID), JPH::Vec3(linearVelocity.x, linearVelocity.y, 0.0f));
+    }
+}
+
+void PhysicsComponent::addImpulse(f32v3 impulse) {
+    ASSERT_GAME_THREAD();
+    assert(mBodyID != INVALID_PHYS_BODY_ID);
+
+    JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterface(*sGamePhysicsWorld);
+    bodyInterface.AddImpulse(JPH::BodyID(mBodyID), JPH::Vec3(impulse.x, impulse.y, impulse.z));
 }
 
 void PhysicsComponent::teleportToPoint(f32v3 worldPos) {
     ASSERT_GAME_THREAD();
-    assert(mRigidBody);
-    btTransform worldTransform;
-    worldPos.z -= mZPosOffset;
-    worldTransform.setOrigin(f32v3ToBtVector3(worldPos));
-    worldTransform.setRotation(btQuaternion(0.0, 0.0, 0.0));
-    mRigidBody->setWorldTransform(worldTransform);
+    assert(mBodyID != INVALID_PHYS_BODY_ID);
+
+    JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterface(*sGamePhysicsWorld);
+    bodyInterface.SetPosition(JPH::BodyID(mBodyID), JPH::DVec3((double)worldPos.x, (double)worldPos.y, (double)worldPos.z), JPH::EActivation::Activate);
 }
 
-void PhysicsComponent::setTransform(const f32v3& worldPos, f32 rotation) {
-    ASSERT_GAME_THREAD();
-    assert(mRigidBody);
-    btTransform worldTransform;
-    worldTransform.setOrigin(btVector3(worldPos.x, worldPos.y, worldPos.z - mZPosOffset));
-    worldTransform.setRotation(btQuaternion(rotation, 0.0, 0.0));
-    mRigidBody->setWorldTransform(worldTransform);
-}
-
-void PhysicsComponent::setVelocity(const f32v3& vel) {
-    ASSERT_GAME_THREAD();
-    assert(mRigidBody);
-    mRigidBody->setLinearVelocity(f32v3ToBtVector3(vel));
+void PhysicsComponent::teleportBottomToPoint(f32v3 worldPos) {
+    teleportToPoint(f32v3(worldPos.x, worldPos.y, worldPos.z + mHalfHeight));
 }
 
 void PhysicsSystem::update(World& world, entt::registry& registry, f32 elapsedSec) {
+    ASSERT_GAME_THREAD();
     PROFILE_FUNCTION();
     const IHeightmapGrid& grid = world.getHeightmapGrid();
-    auto view = registry.view<PhysicsComponent, PositionComponent>();
+
+    // Update all uncontrolled object positions
+    auto view = registry.view<PhysicsComponent, PositionComponent>(entt::exclude<CharacterControlComponent>);
     for (auto entity : view) {
         PhysicsComponent& cmp = view.get<PhysicsComponent>(entity);
-        f32v3 pos = cmp.getPosition();
+        PositionComponent& posCmp = view.get<PositionComponent>(entity);
+        f32v3 pos = cmp.getBottomPosition();
         const f32v2 xyPosition(pos.x, pos.y);
-        constexpr f32 SNAP_THRESHOLD = 0.01f;
+        constexpr f32 SNAP_THRESHOLD = 0.1f;
         const f32 terrainHeight = grid.computeHeightAtPoint<false>(xyPosition);
 
-        if (terrainHeight >= pos.z - SNAP_THRESHOLD) {
-            f32v3 vel = cmp.getLinearVelocity();
-            const f32v3 velocity = cmp.getLinearVelocity();
-            if (velocity.z < 0.0f) {
-                cmp.setVelocity(f32v3(vel.x, vel.y, 0.0f));
-            }
+        if (pos.z + SNAP_THRESHOLD < terrainHeight) {
             pos.z = terrainHeight;
-            cmp.setTransform(pos, 0.0f);
+            cmp.teleportBottomToPoint(pos);
+            cmp.clearLinearVelocityZIfNegative();
             cmp.mFlags.setBit(PhysicsComponentFlag::IS_ON_GROUND);
         }
         else {
             cmp.mFlags.clearBit(PhysicsComponentFlag::IS_ON_GROUND);
         }
+
         // Copy position to our position component
-        PositionComponent& posCmp = view.get<PositionComponent>(entity);
         posCmp.mPosition = pos;
         const ChunkID newChunkID = world.getChunkIDAtWorldPos(pos);
 
         if (newChunkID != posCmp.chunkId) [[unlikely]] {
             const ui32 oldChunkId = posCmp.chunkId;
             posCmp.chunkId = newChunkID;
-            world.getECS().onEntityEnterNewChunk(entity, oldChunkId, newChunkID);
-            // Entity may be destroyed in onEntityEnterNewChunk
+            if (world.getECS().onEntityEnterNewChunk(entity, oldChunkId, newChunkID)) {
+                continue; // Entity deleted
+            }
         }
     };
 

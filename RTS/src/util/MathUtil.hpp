@@ -216,6 +216,7 @@ namespace MathUtil {
         while (angle < -M_PIf) angle += 2 * M_PIf;
         return angle;
     }
+    // Multiply rotationSpeed by deltatime
     inline float rotateYawToTarget(float currentYaw, float targetYaw, float rotationSpeed) {
         currentYaw = normalizeAngle(currentYaw);
         targetYaw = normalizeAngle(targetYaw);

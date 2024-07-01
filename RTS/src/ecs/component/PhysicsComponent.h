@@ -19,24 +19,25 @@ enum class PhysicsComponentFlag : ui8 {
 class PhysicsComponent {
 public:
 
-	f32v2 getDir() const;
-	f32v2 getInterpolatedDir() const;
-    f32v3 getPosition() const;
-	f32v3 getInterpolatedPosition() const;
-	f32v3 getLinearVelocity() const;
-	f32v2 getLinearVelocity2D() const;
-	f32 getRotation() const;
+    f32v3 getBottomPosition() const;
+    f32v3 getLinearVelocity() const;
+    f32 getLinearVelocityZ() const;
 
-	void teleportToPoint(f32v3 worldPos);
+    void setLinearVelocity(f32v3 velocity);
+    void setLinearVelocityZ(f32 zVelocity);
+	// Set Z to 0 if it is going downwards only
+	void clearLinearVelocityZIfNegative();
+	void addImpulse(f32v3 impulse);
 
-	void setTransform(const f32v3& pos, f32 rotation);
-	void setVelocity(const f32v3& vel);
+	// Teleport the middle of the object to the point
+    void teleportToPoint(f32v3 worldPos);
+	// Teleport the bottom of the object to the point (useful for characters)
+	void teleportBottomToPoint(f32v3 worldPos);
 
-	// TODO: Delete rigidbody on component destroy
-    btRigidBody* mRigidBody = nullptr; // TODO: Pack btRigidBody?
-    f32 mZPosOffset = 0.0f; // Used for calculating the position at the bottom of the rigidbody
+    PhysBodyID mBodyID = INVALID_PHYS_BODY_ID;
+    f32 mHalfHeight = 0.0f;
     BitFlags<PhysicsComponentFlag> mFlags;
-	PhysBodyID mBodyID = INVALID_PHYS_BODY_ID;
+	// TODO: Delete body on component destroy
 
 };
 //static_assert(sizeof(PhysicsComponent) == 16, "Keep super tiny");

@@ -105,12 +105,11 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
 
     const HeightmapPatchID id = getHeightmapPatchID(patchIndex);
     IHeightmapGrid& heightmapGrid = mChunk.getWorld().getHeightmapGrid();
-    const HeightmapPatch* heightData = heightmapGrid.getHeightDataAt(id);
     // Instantly generate
-    Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex, heightData]() {
+    Services::Threadpool::ref().addTask([this, &patch, lod, patchIndex]() {
 
         GrassMeshTaskData* taskData = new GrassMeshTaskData(this, patchIndex, mMeshes[patchIndex]->mMesh);
-        if (GrassMeshBuilderMethods::createGrassMesh(taskData->meshBuilder, mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod, heightData)) {
+        if (GrassMeshBuilderMethods::createGrassMesh(taskData->meshBuilder, mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod)) {
             // Back to render thread for upload and state update
             RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
                 GrassMeshTaskData* taskData = static_cast<GrassMeshTaskData*>(vTaskData);

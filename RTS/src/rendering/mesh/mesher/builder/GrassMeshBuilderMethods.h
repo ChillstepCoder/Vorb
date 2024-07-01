@@ -13,8 +13,7 @@ namespace GrassMeshBuilderMethods
         GrassBillboardMeshBuilder& grassMeshBuilder,
         const Chunk& chunk,
         const ui32v2& tilePosStart,
-        ui32 lod,
-        const HeightmapPatch* heightData
+        ui32 lod
     );
 
     void editorCreateGrassMesh(

@@ -130,7 +130,7 @@ void EditorWorldInterfaceController::updateTilePicking() {
                                 IFullECS& ecs = world->getECS();
                                 PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                                 NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
-                                cmp.requestCoarsePath(physCmp.getPosition(), worldPos, 1.0f);
+                                cmp.requestCoarsePath(physCmp.getBottomPosition(), worldPos, 1.0f);
                             });
                         }
                         else {
@@ -284,7 +284,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                         IFullECS& ecs = data->first->getECS();
                         PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                         NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
-                        cmp.requestCoarsePath(physCmp.getPosition(), tileHandle.getWorldPos3D(), 5.0f);
+                        cmp.requestCoarsePath(physCmp.getBottomPosition(), tileHandle.getWorldPos3D(), 5.0f);
                     }
                     delete data;
                 });
@@ -384,7 +384,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                     IFullECS& ecs = world->getECS();
                     PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
                     NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
-                    cmp.requestCoarsePathToHarvestable(physCmp.getPosition(), TileHarvestable::Wood, 1024.0f);
+                    cmp.requestCoarsePathToHarvestable(physCmp.getBottomPosition(), TileHarvestable::Wood, 1024.0f);
                 });
             }
         }

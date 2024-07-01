@@ -172,7 +172,7 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
     const AttackShapeCone& coneData = std::get<AttackShapeCone>(attackData.varAttackShape);
 
     IFullECS& ecs = mWorld.getECS();
-    const f32 sourceRotation = ecs.mRegistry.get<CharacterControlComponent>(source).mControllerAngle;
+    const f32 sourceRotation = ecs.mRegistry.get<CharacterControlComponent>(source).mControllerAngleRad;
 
     constexpr int MAX_RESULTS = 8;
     PhysicsQueryResult results[MAX_RESULTS];

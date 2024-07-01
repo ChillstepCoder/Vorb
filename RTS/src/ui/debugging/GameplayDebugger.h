@@ -6,10 +6,12 @@
 
 
 class Camera3D;
+class MovementDebugger;
 
 struct GameplayDebugOptions {
     bool showAIDebugger = false;
     bool showPhysicsDebugger = false;
+    bool showMovementDebugger = false;
 };
 // Managed by GameplayDebugger singleton
 inline static GameplayDebugOptions sGameplayDebugOptions;
@@ -57,8 +59,9 @@ public:
     GameplayDebugger();
     ~GameplayDebugger();
     
-    GameplayDebugger* tryGetInstance();
+    GameplayDebugger* tryGetInstance() { return sInstance; }
     AIDebugger& getAIDebugger() { return mAIDebugger; }
+    PhysicsDebugger& getPhysicsDebugger() { return mPhysicsDebugger; }
 
 public:
     void updateAndRenderImGui(const Camera3D& camera);
@@ -67,5 +70,8 @@ private:
 
     AIDebugger mAIDebugger;
     PhysicsDebugger mPhysicsDebugger;
+    std::unique_ptr<MovementDebugger> mMovementDebugger;
+
+    inline static GameplayDebugger* sInstance = nullptr;
 };
 

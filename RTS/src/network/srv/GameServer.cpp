@@ -245,9 +245,9 @@ void GameServer::processClientPlayerStateMessage(int clientIndex, ClientPlayerSt
     if (entity != entt::null) {
         PhysicsComponent& physCmp = srvEcs.mRegistry.get<PhysicsComponent>(entity);
         CharacterControlComponent& controlCmp = srvEcs.mRegistry.get<CharacterControlComponent>(entity);
-        physCmp.setTransform(message->mPosition, 0.0f);
-        physCmp.setVelocity(message->mVelocity);
-        controlCmp.mControllerAngle = message->mControlAngle;
+        physCmp.teleportBottomToPoint(message->mPosition);
+        physCmp.setLinearVelocity(message->mVelocity);
+        controlCmp.mControllerAngleRad = message->mControlAngle;
         controlCmp.mDesiredLocomotionMode = (CharacterLocomotionMode)message->mDesiredLocomotionMode;
     }
 }
@@ -289,7 +289,7 @@ void GameServer::replicateStartGameStateToClient(int clientIndex) {
     for (auto entity : view) {
         PhysicsComponent& physicsCmp = view.get<PhysicsComponent>(entity);
         EntityDetailsComponent& detailsCmp = view.get<EntityDetailsComponent>(entity);
-        SrvMessage::sendEntityCreateMessage(clientIndex, entity, detailsCmp.mEntityToken, physicsCmp.getPosition(), physicsCmp.getRotation());
+        SrvMessage::sendEntityCreateMessage(clientIndex, entity, detailsCmp.mEntityToken, physicsCmp.getBottomPosition(), 0.0f /*TODO: Character control rotation???*/);
     }
 
     // TODO: Implement start state for other shit
@@ -308,7 +308,7 @@ void GameServer::replicateEntities() {
         for (int clientIndex : mConnectedClients) {
             if (repCmp.shouldReplicateTo(clientIndex)) {
                 //SrvMessage::sendEntityTransformMessage(clientIndex, entity, physicsCmp.getPosition(), physicsCmp.getRotation());
-                SrvMessage::sendCharacterStateMessage(clientIndex, entity, physicsCmp.getPosition(), physicsCmp.getLinearVelocity(), controlCmp.mControllerAngle, e_cast(controlCmp.mDesiredLocomotionMode));
+                SrvMessage::sendCharacterStateMessage(clientIndex, entity, physicsCmp.getBottomPosition(), physicsCmp.getLinearVelocity(), controlCmp.mControllerAngleRad, e_cast(controlCmp.mDesiredLocomotionMode));
             }
         }
     }
