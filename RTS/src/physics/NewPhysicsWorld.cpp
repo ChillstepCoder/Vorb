@@ -29,7 +29,6 @@
 
 #include "options/DebugOptions.h"
 
-
 PhysicsBodyUserData::PhysicsBodyUserData(entt::entity owner) {
     data = e_cast(PhysicsBodyUserDataType::Entity) << 62 | static_cast<ui64>(owner);
 }
@@ -567,7 +566,7 @@ void NewPhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilde
     else {
         // May remove some old collision
         NewTileContainerPhysicsData& data = *it->second;
-        panic("TODO: IMPLEMENT  NewPhysicsWorld::updateTileContainerMeshFromBuilder");
+        updateTrackedStaticRigidBodiesFromGatherer(meshBuilder.mTrackedRigidBodyGatherer, data);
     }
 }
 
@@ -664,10 +663,24 @@ PhysBodyID NewPhysicsWorld::createTerrainBody(f32v3 position, const JPH::Shape* 
 }
 
 void NewPhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
-    if (gatherer.mRigidBodiesToAdd.empty()) {
-        return;
-    }
     PROFILE_FUNCTION();
+    assert(!gatherer.mRigidBodiesToAdd.empty());
+    assert(physicsData.mTileKeyToPhysBodyID.empty());
+
+    for (auto& it : gatherer.mRigidBodiesToAdd) {
+        const TileKey key = TileKey{ it.ownerTilePosition, it.tileId, it.layer };
+        physicsData.mTileKeyToPhysBodyID.emplace(key, createTileBody(gatherer.mContainerId, it.ownerTilePosition, it.position, it.shapeId));
+    }
+}
+
+void NewPhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
+    PROFILE_FUNCTION();
+    assert(!gatherer.mRigidBodiesToAdd.empty());
+
+    // Never
+    // TODO: Scratch allocator?
+    static thread_local UnorderedFlatSet<TileKey> addedKeys;
+    addedKeys.reserve(gatherer.mRigidBodiesToAdd.size());
 
     for (auto& it : gatherer.mRigidBodiesToAdd) {
         const TileKey key = TileKey{ it.ownerTilePosition, it.tileId, it.layer };
@@ -676,5 +689,17 @@ void NewPhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigid
         if (pit == physicsData.mTileKeyToPhysBodyID.end()) {
             physicsData.mTileKeyToPhysBodyID.emplace(key, createTileBody(gatherer.mContainerId, it.ownerTilePosition, it.position, it.shapeId));
         }
+        addedKeys.insert(key);
     }
+    // Remove any keys that are not in the gatherer
+    for (auto it = physicsData.mTileKeyToPhysBodyID.begin(); it != physicsData.mTileKeyToPhysBodyID.end();) {
+        if (!addedKeys.contains(it->first)) {
+            mContext->removeBody(it->second);
+            it = physicsData.mTileKeyToPhysBodyID.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+    addedKeys.clear();
 }

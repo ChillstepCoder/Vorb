@@ -361,7 +361,6 @@ void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBod
     }
 }
 
-
 RigidBodyPair PhysicsWorld::createRigidBody(entt::entity ownerEntity, btScalar mass, const f32v3& position, btCollisionShape* shape, CollisionGroup group)
 {
     PROFILE_FUNCTION();

@@ -104,6 +104,7 @@ private:
     PhysBodyID createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId);
     PhysBodyID createTerrainBody(f32v3 position, const JPH::Shape* terrainShape);
     void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
+    void updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
 
     World& mWorld;
     CollisionShapeRepository& mShapeRepo;
