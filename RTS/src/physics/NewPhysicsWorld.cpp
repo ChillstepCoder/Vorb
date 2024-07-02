@@ -13,6 +13,7 @@
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/HeightFieldShape.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
 #include <jolt/Physics/Body/BodyID.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
@@ -29,15 +30,21 @@
 
 #include "options/DebugOptions.h"
 
+static const JPH::Quat ROTATE_ZUP = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f);
+
 NewPhysicsWorld* sGamePhysicsWorld = nullptr;
 
-PhysicsBodyUserData::PhysicsBodyUserData(entt::entity owner) {
-    data = e_cast(PhysicsBodyUserDataType::Entity) << 62 | static_cast<ui64>(owner);
+PhysicsBodyUserData::PhysicsBodyUserData(entt::entity owner) 
+    : data(e_cast(PhysicsBodyUserDataType::Entity) << 62 | static_cast<ui64>(owner)) {
 }
 
-PhysicsBodyUserData::PhysicsBodyUserData(TileContainerID tileContainer, TileIndex tileIndex) {
+PhysicsBodyUserData::PhysicsBodyUserData(TileContainerID tileContainer)
+    : data(e_cast(PhysicsBodyUserDataType::ContainerMesh) << 62 | static_cast<ui64>(tileContainer)) {
+}
+
+PhysicsBodyUserData::PhysicsBodyUserData(TileContainerID tileContainer, TileIndex tileIndex)
+    : data(e_cast(PhysicsBodyUserDataType::Tile) << 62 | (static_cast<ui64>(tileIndex) << 32) | static_cast<ui64>(tileContainer)){
     assert(tileIndex <= 0x3FFFFFFF); // 30 bits
-    data = e_cast(PhysicsBodyUserDataType::Tile) << 62 | (static_cast<ui64>(tileIndex) << 32) | static_cast<ui64>(tileContainer);
 }
 
 PhysicsBodyUserDataType PhysicsBodyUserData::getType() const {
@@ -50,6 +57,11 @@ std::pair<TileContainerID, TileIndex> PhysicsBodyUserData::getTileData() const {
     result.first = static_cast<TileContainerID>(data & 0xFFFFFFFF);
     result.second = static_cast<TileIndex>((data >> 32) & 0x3FFFFFFF);
     return result;
+}
+
+TileContainerID PhysicsBodyUserData::getContainerId() const {
+    assert(getType() == PhysicsBodyUserDataType::Tile || getType() == PhysicsBodyUserDataType::ContainerMesh);
+    return static_cast<TileContainerID>(data & 0xFFFFFFFF);
 }
 
 entt::entity PhysicsBodyUserData::getEntity() const {
@@ -548,7 +560,7 @@ std::unique_ptr<JPH::CharacterBase> NewPhysicsWorld::createSimpleCharacter(entt:
     std::unique_ptr<JPH::Character> newCharacter = std::make_unique<JPH::Character>(
         &settings,
         JPH::RVec3(position.x, position.y, position.z),
-        JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f),
+        ROTATE_ZUP,
         PhysicsBodyUserData(ownerEntity),
         &mContext->getSystem()
     );
@@ -562,26 +574,59 @@ void NewPhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilde
 
     auto&& it = mTileContainerPhysicsData.find(meshBuilder.getOwnerTileContainerID());
 
-    // Remove old collision
+    // Remove old collision and return
     if (!meshBuilder.hasAnyCollision()) {
         if (it != mTileContainerPhysicsData.end()) {
             for (auto& [key, physBodyID] : it->second->mTileKeyToPhysBodyID) {
                 mContext->getBodyInterface().RemoveBody(JPH::BodyID(physBodyID));
             }
+
+            StaticPhysicsMesh& staticMesh = it->second->mStaticMesh;
+            if (staticMesh.mBodyID != INVALID_PHYS_BODY_ID) {
+                mContext->removeBody(staticMesh.mBodyID);
+                staticMesh.mBodyID = INVALID_PHYS_BODY_ID;
+            }
+
             mTileContainerPhysicsData.erase(it);
         }
         return;
     }
 
+    // Update rigid bodies and cache static mesh pointer
+    StaticPhysicsMesh* staticMesh;
     if (it == mTileContainerPhysicsData.end()) {
         // Simply creating brand new collision
         NewTileContainerPhysicsData& newData = *mTileContainerPhysicsData.emplace(meshBuilder.getOwnerTileContainerID(), std::make_unique<NewTileContainerPhysicsData>()).first->second;
+        staticMesh = &newData.mStaticMesh;
         addTrackedStaticRigidBodiesFromGatherer(meshBuilder.mTrackedRigidBodyGatherer, newData);
     }
     else {
         // May remove some old collision
         NewTileContainerPhysicsData& data = *it->second;
+        staticMesh = &data.mStaticMesh;
         updateTrackedStaticRigidBodiesFromGatherer(meshBuilder.mTrackedRigidBodyGatherer, data);
+    }
+
+    // Update procedural mesh
+    if (meshBuilder.mVerts.size()) {
+        JPH::MeshShapeSettings shapeSettings = createStaticMeshShapeSettings(meshBuilder.mVerts, meshBuilder.mIndices);
+        const JPH::Shape* shape = shapeSettings.Create().Get();
+
+        // Create body or update its shape
+        if (staticMesh->mBodyID == INVALID_PHYS_BODY_ID) {
+            const f32v3 rootPos = meshBuilder.getRootPos();
+            JPH::BodyCreationSettings createSettings(shapeSettings.Create().Get(), JPH::RVec3(rootPos.x, rootPos.y, rootPos.z), JPH::Quat::sIdentity(), JPH::EMotionType::Static, e_cast(PhysicsObjectLayer::Static));
+            JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, 434343 /*Cheeky mesh number for debug output*/);
+            body.SetUserData(PhysicsBodyUserData(meshBuilder.getOwnerTileContainerID()));
+            staticMesh->mBodyID = body.GetID().GetIndexAndSequenceNumber();
+        }
+        else {
+            mContext->updateShape(staticMesh->mBodyID, shape, false, JPH::EActivation::DontActivate);
+        }
+    }
+    else if (staticMesh->mBodyID != INVALID_PHYS_BODY_ID) {
+        mContext->removeBody(staticMesh->mBodyID);
+        staticMesh->mBodyID = INVALID_PHYS_BODY_ID;
     }
 }
 
@@ -630,22 +675,11 @@ int NewPhysicsWorld::getBodyCount(PhysicsObjectLayer layer) const {
 }
 #endif
 
-JPH::BodyCreationSettings NewPhysicsWorld::makeBodyCreateSettings(f32v3 position, const JPH::Shape* shape, JPH::EMotionType motionType, PhysicsObjectLayer layer) {
-    // Adjust the position to account for the Z-up orientation
-    JPH::RVec3 adjustedPosition(position.x, position.y, position.z/* + halfExtents.y*/);
-
-    // Create a rotation quaternion to orient along the Z-axis
-    static const JPH::Quat orientation = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f);
-
-    // Create the settings for the body itself
-    return JPH::BodyCreationSettings(shape, adjustedPosition, orientation, motionType, e_cast(layer));
-}
-
 JPH::BodyCreationSettings NewPhysicsWorld::makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer) {
     JPH::ShapeSettings& shapeSettings = mShapeRepo.getJoltShapeSettings(shapeId);
     JPH::ShapeRefC shape = shapeSettings.Create().Get();
 
-    return makeBodyCreateSettings(position, shape, motionType, layer);
+    return JPH::BodyCreationSettings(shape, JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, motionType, e_cast(layer));
 }
 
 PhysBodyID NewPhysicsWorld::createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId) {
@@ -670,16 +704,35 @@ PhysBodyID NewPhysicsWorld::createTileBody(TileContainerID containerId, TileInde
 
 PhysBodyID NewPhysicsWorld::createTerrainBody(f32v3 position, const JPH::Shape* terrainShape) {
     ASSERT_GAME_THREAD();
-    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, terrainShape, JPH::EMotionType::Static, PhysicsObjectLayer::Static);
+    JPH::BodyCreationSettings createSettings(terrainShape, JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, JPH::EMotionType::Static, e_cast(PhysicsObjectLayer::Static));
 
     JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, 696969 /*Cheeky terrain number for debug output*/);
-
     return body.GetID().GetIndexAndSequenceNumber();
+}
+
+JPH::MeshShapeSettings NewPhysicsWorld::createStaticMeshShapeSettings(std::span<f32v3> verts, std::span<ui32> indices) {
+    ASSERT_GAME_THREAD();
+    assert(indices.size() % 3 == 0);
+    assert(indices.size() && verts.size());
+
+    JPH::VertexList jpVerts;
+    jpVerts.reserve(verts.size());
+    for (const f32v3& vert : verts) {
+        jpVerts.emplace_back(vert.x, vert.y, vert.z);
+    }
+    // Triangles must be provided in counter clockwise order.
+    // For simulation, the triangles are considered to be single sided.
+    JPH::IndexedTriangleList jpInds;
+    jpInds.reserve(indices.size() / 3);
+    for (size_t i = 0; i < indices.size(); i += 3) {
+        jpInds.emplace_back(indices[i], indices[i + 1], indices[i + 2]);
+    }
+    
+    return JPH::MeshShapeSettings(std::move(jpVerts), std::move(jpInds));
 }
 
 void NewPhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
     PROFILE_FUNCTION();
-    assert(!gatherer.mRigidBodiesToAdd.empty());
     assert(physicsData.mTileKeyToPhysBodyID.empty());
 
     for (auto& it : gatherer.mRigidBodiesToAdd) {
@@ -690,7 +743,6 @@ void NewPhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigid
 
 void NewPhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
     PROFILE_FUNCTION();
-    assert(!gatherer.mRigidBodiesToAdd.empty());
 
     // TODO: Scratch allocator?
     static thread_local UnorderedFlatSet<TileKey> addedKeys;

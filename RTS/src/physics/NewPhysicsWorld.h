@@ -7,13 +7,16 @@ class StaticPhysicsMeshBuilder;
 class TrackedStaticRigidBodyGatherer;
 class HeightmapPatch;
 
-#include "physics/CollisionShapes.h"
 
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Collision/ObjectLayer.h>
 #include <Jolt/Physics/EActivation.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/MotionType.h>
+
+
+#include "physics/CollisionShapes.h"
+#include "physics/StaticPhysicsMesh.h"
 
 #define ENABLE_PHYSICS_ANALYTICS 1
 
@@ -26,6 +29,7 @@ namespace JPH {
     class Character;
     class BodyLockInterface;
     class BodyInterface;
+    class MeshShapeSettings;
 }
 
 enum class PhysicsObjectLayer : JPH::ObjectLayer {
@@ -36,14 +40,14 @@ enum class PhysicsObjectLayer : JPH::ObjectLayer {
 
 struct NewTileContainerPhysicsData {
     UnorderedFlatMap<TileKey, PhysBodyID> mTileKeyToPhysBodyID;
-    //StaticPhysicsMesh mStaticMesh; // TODO: hmmm
+    StaticPhysicsMesh mStaticMesh;
 };
 
 enum class PhysicsBodyUserDataType : ui8 {
-    Unknown,
+    Terrain,
     Tile,
     Entity,
-    // ?
+    ContainerMesh,
     COUNT
 };
 static_assert(e_count(PhysicsBodyUserDataType) <= 4); // Fitting into 2 bits
@@ -51,6 +55,7 @@ static_assert(e_count(PhysicsBodyUserDataType) <= 4); // Fitting into 2 bits
 struct alignas(8) PhysicsBodyUserData {
     PhysicsBodyUserData() = default;
     PhysicsBodyUserData(entt::entity owner);
+    PhysicsBodyUserData(TileContainerID tileContainer);
     PhysicsBodyUserData(TileContainerID tileContainer, TileIndex tileIndex);
     PhysicsBodyUserData(ui64 data) : data(data) {}
 
@@ -59,6 +64,10 @@ struct alignas(8) PhysicsBodyUserData {
 
     // Only works if getType == Tile
     std::pair<TileContainerID, TileIndex> getTileData() const;
+
+    // Only works if getType == Tile || ContainerMesh
+    TileContainerID getContainerId() const;
+
     // Only works if getType == Entity
     entt::entity getEntity() const;
 
@@ -107,11 +116,11 @@ private:
     // ===========================================================================
     // Private API
     // ===========================================================================
-    JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, const JPH::Shape* shape, JPH::EMotionType motionType, PhysicsObjectLayer layer);
     JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer);
     PhysBodyID createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId);
     PhysBodyID createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId);
     PhysBodyID createTerrainBody(f32v3 position, const JPH::Shape* terrainShape);
+    JPH::MeshShapeSettings createStaticMeshShapeSettings(std::span<f32v3> verts, std::span<ui32> indices);
     void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
     void updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
 

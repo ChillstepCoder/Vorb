@@ -14,6 +14,7 @@ struct StaticPhysicsMesh {
     std::unique_ptr<btTriangleIndexVertexArray> mPhysicsMesh;
     std::unique_ptr<btBvhTriangleMeshShape> mShape;
     btCollisionObject* mCollisionObject = nullptr;
+    PhysBodyID mBodyID = INVALID_PHYS_BODY_ID;
 
     // We hold onto these directly because the physics engine uses it
     std::vector<f32v3> mVerts;

@@ -73,11 +73,8 @@ void GameThreadTasks::addTileContainerStaticPhysicsMeshUpdateTask(const TileCont
     typedef std::tuple<World*, const TileContainer*, StaticPhysicsMeshBuilder> TaskData;
     // TODO: Figure out how to not have new here (deleted copy constructor issue?)
     StaticPhysicsMeshBuilder* builderData = new StaticPhysicsMeshBuilder(std::move(meshBuilder));
-    mGameThreadFuncProcs.enqueue([world = &container->getWorld(), container, builderData]() mutable {
-        builderData->finish(world->getPhysicsWorld());
+    mGameThreadFuncProcs.enqueue([world = &container->getWorld(), container, builderData]() {
         builderData->finish(world->getNewPhysicsWorld());
-        // Release
-        //assert(container->getState() == TileContainerState::WAITING_MESH_AND_PHYSICS);
         container->setDidInitPhysics();
         container->decRef();
         delete builderData;

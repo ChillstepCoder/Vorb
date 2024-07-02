@@ -25,9 +25,7 @@ const f32v2 CUBE_FACING_AXIS_INITIAL_OFFSETS[e_cast(CubeFacing::COUNT)] = {
     f32v2(1, 1)   // BOTTOM
 };
 
-StaticPhysicsMeshBuilder::~StaticPhysicsMeshBuilder() {
-
-}
+StaticPhysicsMeshBuilder::~StaticPhysicsMeshBuilder() = default;
 
 void StaticPhysicsMeshBuilder::reserveQuadCount(ui32 count)
 {
