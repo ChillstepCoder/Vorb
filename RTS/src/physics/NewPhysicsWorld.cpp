@@ -7,7 +7,6 @@
 #include <Jolt/RegisterTypes.h>
 #include <Jolt/Core/Factory.h>
 #include <Jolt/Core/TempAllocator.h>
-#include <Jolt/Core/JobSystemThreadPool.h>
 #include <Jolt/Physics/PhysicsSettings.h>
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
@@ -27,6 +26,7 @@
 #include "physics/StaticPhysicsMeshBuilder.h"
 #include "physics/CollisionShapeRepository.h"
 #include "physics/PhysicsBodyFilters.h"
+#include "physics/PhysicsJobSystem.h"
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
 
@@ -340,8 +340,7 @@ private:
     // pre-allocating 10 MB to avoid having to do allocations during the physics update.
     JPH::TempAllocatorImpl tempAllocator = JPH::TempAllocatorImpl(10 * 1024 * 1024);
 
-    // TODO: Use our job system instead
-    JPH::JobSystemThreadPool jobSystem = JPH::JobSystemThreadPool(JPH::cMaxPhysicsJobs, JPH::cMaxPhysicsBarriers, std::max(2u, std::thread::hardware_concurrency() - 3));
+    PhysicsJobSystem jobSystem = PhysicsJobSystem(JPH::cMaxPhysicsBarriers);
 
     // Mapping table from object layer to broadphase layer
     BPLayerInterfaceImpl broadPhaseLayerInterface;

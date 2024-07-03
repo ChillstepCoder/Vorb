@@ -3,6 +3,17 @@
 #include "Vorb/ThreadPool.h"
 #include "Vorb/logging/Logger.h"
 
+static std::atomic_int WORKER_THREAD_ID_COUNTER = 0;
+
+void setWorkerThreadName() {
+    const int id = WORKER_THREAD_ID_COUNTER.fetch_add(1);
+    std::string name = std::format("Worker {}", id);
+    wchar_t wc[64];
+    size_t outSize;
+    mbstowcs_s(&outSize, wc, name.size() + 1, name.c_str(), 64);
+    SetThreadDescription(GetCurrentThread(), wc);
+}
+
 vorb::core::ThreadPool::ThreadPool(ui32 size) {
     /// Allocate all threads
     mWorkers.resize(size);
@@ -44,6 +55,9 @@ void vcore::ThreadPool::clearTasks() {
 
 void vcore::ThreadPool::workerThreadFunc(WorkerThread* thisThread) {
     std::function<void()> task;
+
+    setWorkerThreadName();
+
     moodycamel::ConsumerToken ctok[(int)TaskPriority::COUNT] = {
         moodycamel::ConsumerToken(mTasks[0]),
         moodycamel::ConsumerToken(mTasks[1]),
@@ -51,7 +65,6 @@ void vcore::ThreadPool::workerThreadFunc(WorkerThread* thisThread) {
     };
     while (!thisThread->mStop.load()) {
         mTaskSemaphore.acquire();
-        --COUNTER;
         ++mRunningThreads;
         if (mTasks[(int)TaskPriority::High].try_dequeue(ctok[(int)TaskPriority::High], task)) {
             task();
@@ -67,7 +80,6 @@ void vcore::ThreadPool::workerThreadFunc(WorkerThread* thisThread) {
             // which means we should be grabbing a higher priority one.
             // One semaphore count = one task, so we HAVE to release it.
             mTaskSemaphore.release();
-            ++COUNTER;
         }
         --mRunningThreads;
     }

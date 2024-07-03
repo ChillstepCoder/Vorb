@@ -58,16 +58,7 @@ namespace vorb {
             inline void addTask(std::function<void()> workerProc, TaskPriority priority = TaskPriority::Normal) {
                 mTasks[(int)priority].enqueue(workerProc);
                 mTaskSemaphore.release();
-                ++COUNTER;
-                assert(COUNTER < mTaskSemaphore.max());
             }
-
-            /// Add an array of tasks to the task queue
-            /// @param tasks: The array of tasks to add
-            /// @param size: The size of the array
-            /*void addTasks(IThreadPoolTask<T>* tasks[], size_t size) {
-                mTasks.enqueue_bulk(tasks, size);
-            }*/
 
             /// Getters
             i32 getNumWorkers() const { return mWorkers.size(); }
@@ -119,7 +110,6 @@ namespace vorb {
             std::vector<std::unique_ptr<WorkerThread>> mDeadWorkers; // Workers we have released
             std::atomic_int mActiveThreads = 0;
             std::atomic_int mRunningThreads = 0;
-            std::atomic_int COUNTER = 0;
         };
 
     }

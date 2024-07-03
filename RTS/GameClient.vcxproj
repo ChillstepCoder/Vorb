@@ -367,6 +367,7 @@
     <ClCompile Include="src\physics\NewPhysicsWorld.cpp" />
     <ClCompile Include="src\physics\PhysicsBodyUserData.cpp" />
     <ClCompile Include="src\physics\PhysicsDebugRenderer.cpp" />
+    <ClCompile Include="src\physics\PhysicsJobSystem.cpp" />
     <ClCompile Include="src\physics\StaticPhysicsMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\animation\AnimMachineInstance.cpp" />
     <ClCompile Include="src\rendering\animation\Blendspace1DPlayer.cpp" />
@@ -815,6 +816,7 @@
     <ClInclude Include="src\physics\PhysicsBroadPhaseLayerFilters.h" />
     <ClInclude Include="src\physics\PhysicsConst.h" />
     <ClInclude Include="src\physics\PhysicsDebugRenderer.h" />
+    <ClInclude Include="src\physics\PhysicsJobSystem.h" />
     <ClInclude Include="src\physics\PhysicsObjectLayer.h" />
     <ClInclude Include="src\physics\PhysicsObjectLayerFilters.h" />
     <ClInclude Include="src\physics\PhysicsShapeUserData.h" />
