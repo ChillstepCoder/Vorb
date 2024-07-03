@@ -12,17 +12,21 @@
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/CylinderShape.h>
 #include <Jolt/Physics/Collision/Shape/HeightFieldShape.h>
 #include <Jolt/Physics/Collision/Shape/MeshShape.h>
-#include <jolt/Physics/Body/BodyID.h>
+#include <Jolt/Physics/Collision/CollideShape.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 #include <Jolt/Physics/Character/Character.h>
+#include <Jolt/Physics/Body/BodyID.h>
 
 #include "physics/PhysicsDebugRenderer.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
 #include "physics/CollisionShapeRepository.h"
-
+#include "physics/PhysicsBodyFilters.h"
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
 
@@ -32,42 +36,14 @@
 
 static const JPH::Quat ROTATE_ZUP = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f);
 
+
 NewPhysicsWorld* sGamePhysicsWorld = nullptr;
 
-PhysicsBodyUserData::PhysicsBodyUserData(entt::entity owner) 
-    : data(e_cast(PhysicsBodyUserDataType::Entity) << 62 | static_cast<ui64>(owner)) {
-}
+constexpr const char* PHYSICS_STEP_PROFILE_NAME = "Physics Step";
 
-PhysicsBodyUserData::PhysicsBodyUserData(TileContainerID tileContainer)
-    : data(e_cast(PhysicsBodyUserDataType::ContainerMesh) << 62 | static_cast<ui64>(tileContainer)) {
-}
-
-PhysicsBodyUserData::PhysicsBodyUserData(TileContainerID tileContainer, TileIndex tileIndex)
-    : data(e_cast(PhysicsBodyUserDataType::Tile) << 62 | (static_cast<ui64>(tileIndex) << 32) | static_cast<ui64>(tileContainer)){
-    assert(tileIndex <= 0x3FFFFFFF); // 30 bits
-}
-
-PhysicsBodyUserDataType PhysicsBodyUserData::getType() const {
-    return static_cast<PhysicsBodyUserDataType>(data >> 62);
-}
-
-std::pair<TileContainerID, TileIndex> PhysicsBodyUserData::getTileData() const {
-    assert(getType() == PhysicsBodyUserDataType::Tile);
-    std::pair<TileContainerID, TileIndex> result;
-    result.first = static_cast<TileContainerID>(data & 0xFFFFFFFF);
-    result.second = static_cast<TileIndex>((data >> 32) & 0x3FFFFFFF);
-    return result;
-}
-
-TileContainerID PhysicsBodyUserData::getContainerId() const {
-    assert(getType() == PhysicsBodyUserDataType::Tile || getType() == PhysicsBodyUserDataType::ContainerMesh);
-    return static_cast<TileContainerID>(data & 0xFFFFFFFF);
-}
-
-entt::entity PhysicsBodyUserData::getEntity() const {
-    assert(getType() == PhysicsBodyUserDataType::Entity);
-    return static_cast<entt::entity>(data & 0x3FFFFFFFFFFFFFFF);
-}
+// Shared query shapes
+static std::unique_ptr<JPH::SphereShape> sUnitSphereShape;
+static std::unique_ptr<JPH::CylinderShape> sUnitCylinderShape;
 
 // TODOS:
 // 1. Character and CharacterVirtual https://jrouwe.github.io/JoltPhysics/index.html#character-controllers
@@ -92,11 +68,9 @@ static void TraceImpl(const char* inFMT, ...)
 
 #ifdef JPH_ENABLE_ASSERTS
 
-static bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, uint inLine)
-{
+static bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, uint inLine) {
     panic("PHYSICS ASSERT FAILED: {}:{}: ({}) {}", inFile, inLine, inExpression, (inMessage != nullptr ? inMessage : ""));
 
-    // Breakpoint
     return true;
 };
 
@@ -122,18 +96,6 @@ public:
     }
 };
 
-// Each broadphase layer results in a separate bounding volume tree in the broad phase. You at least want to have
-// a layer for non-moving and moving objects to avoid having to update a tree full of static objects every frame.
-// You can have a 1-on-1 mapping between object layers and broadphase layers (like in this case) but if you have
-// many object layers you'll be creating many broad phase trees, which is not efficient. If you want to fine tune
-// your broadphase layers define JPH_TRACK_BROADPHASE_STATS and look at the stats reported on the TTY.
-namespace BroadPhaseLayers
-{
-    static constexpr JPH::BroadPhaseLayer Static(0);
-    static constexpr JPH::BroadPhaseLayer Dynamic(1);
-    static constexpr uint Count(2);
-};
-
 // BroadPhaseLayerInterface implementation
 // This defines a mapping between object and broadphase layers.
 class BPLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface
@@ -146,7 +108,7 @@ public:
     }
 
     virtual uint GetNumBroadPhaseLayers() const override {
-        return BroadPhaseLayers::Count;
+        return BroadPhaseLayers::COUNT;
     }
 
     virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override {
@@ -186,55 +148,71 @@ public:
 };
 
 // Can be called from multiple threads
-class MyContactListener : public JPH::ContactListener {
-public:
-    // See: ContactListener
-    virtual JPH::ValidateResult	OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult) override  {
-        LOG_INFO("Contact validate callback");
-
-        // Allows you to ignore a contact before it is created (using layers to not make objects collide is cheaper!)
-        return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
-    }
-
-    virtual void OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override {
-        LOG_INFO("Contact added callback");
-    }
-
-    virtual void OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override {
-        LOG_INFO("Contact persisted callback");
-    }
-
-    virtual void OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) override {
-        LOG_INFO("Contact removed callback");
-    }
-};
-
-// Can be called from multiple threads
-//class MyBodyActivationListener : public JPH::BodyActivationListener
-//{
+//class MyContactListener : public JPH::ContactListener {
 //public:
-//    virtual void OnBodyActivated(const JPH::BodyID& inBodyID, ui64 inBodyUserData) override {
-//        LOG_INFO("A body got activated");
+//    // See: ContactListener
+//    virtual JPH::ValidateResult	OnContactValidate(const JPH::Body& inBody1, const JPH::Body& inBody2, JPH::RVec3Arg inBaseOffset, const JPH::CollideShapeResult& inCollisionResult) override  {
+//        LOG_INFO("Contact validate callback");
+//
+//        // Allows you to ignore a contact before it is created (using layers to not make objects collide is cheaper!)
+//        return JPH::ValidateResult::AcceptAllContactsForThisBodyPair;
 //    }
 //
-//    virtual void OnBodyDeactivated(const JPH::BodyID& inBodyID, ui64 inBodyUserData) override {
-//        LOG_INFO("A body went to sleep");
+//    virtual void OnContactAdded(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override {
+//        LOG_INFO("Contact added callback");
+//    }
+//
+//    virtual void OnContactPersisted(const JPH::Body& inBody1, const JPH::Body& inBody2, const JPH::ContactManifold& inManifold, JPH::ContactSettings& ioSettings) override {
+//        LOG_INFO("Contact persisted callback");
+//    }
+//
+//    virtual void OnContactRemoved(const JPH::SubShapeIDPair& inSubShapePair) override {
+//        LOG_INFO("Contact removed callback");
 //    }
 //};
 
-class DynamicBodyFilter : public JPH::BodyDrawFilter {
+// Collects results and stores in stack array of length MAX_COUNT
+class PhysicsQueryCollector : public JPH::TransformedShapeCollector {
 public:
-    bool ShouldDraw(const JPH::Body& inBody) const {
-        return inBody.GetMotionType() == JPH::EMotionType::Dynamic;
+    PhysicsQueryCollector(std::span<PhysicsQueryResult> outResults, const JPH::BodyInterface& bodyInterface) : outResults(outResults), bodyInterface(bodyInterface) {}
+
+    void AddHit(const JPH::TransformedShape& inResult) override {
+        if (collectedShapes < outResults.size()) [[likely]] {
+            PhysicsQueryResult& result = outResults[collectedShapes++];
+            result.mCenterOfMassPosition = f32v3(inResult.mShapePositionCOM.GetX(), inResult.mShapePositionCOM.GetY(), inResult.mShapePositionCOM.GetZ());
+            result.mPhysBody = inResult.mBodyID.GetIndexAndSequenceNumber();
+            result.mBodyUserData = bodyInterface.GetUserData(inResult.mBodyID);
+            result.mShape = inResult.mShape;
+        }
     }
+
+    i32 collectedShapes = 0;
+    std::span<PhysicsQueryResult> outResults;
+    const JPH::BodyInterface& bodyInterface;
 };
 
-class StaticBodyFilter : public JPH::BodyDrawFilter {
+class PhysicsHitCollector : public JPH::CollideShapeCollector {
 public:
-    bool ShouldDraw(const JPH::Body& inBody) const {
-        return inBody.GetMotionType() == JPH::EMotionType::Static;
+    PhysicsHitCollector(std::span<PhysHitResult> outResults, const JPH::BodyInterface& bodyInterface) : outResults(outResults), bodyInterface(bodyInterface) {}
+
+    void AddHit(const JPH::CollideShapeResult& inResult) override {
+        if (collectedHits < outResults.size()) [[likely]] {
+            PhysHitResult& result = outResults[collectedHits++];
+            result.mHitBody = inResult.mBodyID2.GetIndexAndSequenceNumber();
+            result.mPosition = f32v3(inResult.mContactPointOn2.GetX(), inResult.mContactPointOn2.GetY(), inResult.mContactPointOn2.GetZ());
+            result.mBodyUserData = bodyInterface.GetUserData(inResult.mBodyID2);
+            result.mShape = bodyInterface.GetShape(inResult.mBodyID2);
+            result.mNormal = f32v3(inResult.mPenetrationAxis.GetX(), inResult.mPenetrationAxis.GetY(), inResult.mPenetrationAxis.GetZ());
+            result.mTime = 0.0f; // Signifies hit
+            result.mPenetrationDepth = inResult.mPenetrationDepth;
+        }
     }
+
+    i32 collectedHits = 0;
+    std::span<PhysHitResult> outResults;
+    const JPH::BodyInterface& bodyInterface;
 };
+
 
 class JPHPhysicsWorldContext {
 public:
@@ -242,9 +220,6 @@ public:
         physicsSystem.Init(maxBodies, numBodyMutexes, maxBodyPairs, maxContactConstraints, broadPhaseLayerInterface, objectVsBroadphaseLayerFilter, objectVsObjectLayerFilter);
         // Z up
         physicsSystem.SetGravity(JPH::Vec3(0.0f, 0.0f, -9.81f));
-
-        //physics_system.SetBodyActivationListener(&body_activation_listener);
-        //physics_system.SetContactListener(&contact_listener);
     }
 
     JPH::BodyInterface& getBodyInterface() {
@@ -297,13 +272,13 @@ public:
             sDebugRenderer->PrepareFrame(camera);
             // Only update static when static changes
             if (mDirtyStaticDebugRender) {
-                StaticBodyFilter staticFilter;
+                StaticBodyDrawFilter staticFilter;
                 sDebugRenderer->PreDraw(true);
                 physicsSystem.DrawBodies(settings, sDebugRenderer.get(), &staticFilter);
                 mDirtyStaticDebugRender = false;
             }
             // Always update dynamic
-            DynamicBodyFilter dynamicFilter;
+            DynamicBodyDrawFilter dynamicFilter;
             sDebugRenderer->PreDraw(false);
             physicsSystem.DrawBodies(settings, sDebugRenderer.get(), &dynamicFilter);
             sDebugRenderer->EndFrame();
@@ -445,10 +420,16 @@ void NewPhysicsWorld::initializeJPH() {
     // If you have your own custom shape types you probably need to register their handlers with the CollisionDispatch before calling this function.
     // If you implement your own default material (PhysicsMaterial::sDefault) make sure to initialize it before this function or else this function will create one for you.
     JPH::RegisterTypes();
+
+    // Shared query shapes
+    sUnitSphereShape = std::make_unique<JPH::SphereShape>(1.0_r);
+    sUnitSphereShape->SetUserData(PhysicsShapeUserData(CollisionShapes::SPHERE));
+    sUnitCylinderShape = std::make_unique<JPH::CylinderShape>(1.0_r, 1.0_r);
+    sUnitCylinderShape->SetUserData(PhysicsShapeUserData(CollisionShapes::CYLINDER));
 }
 
 int NewPhysicsWorld::stepSimulation(f32 deltaTime) {
-    PROFILE_FUNCTION();
+    PROFILE_SCOPE(PHYSICS_STEP_PROFILE_NAME);
 
     // Fixed timestep
     constexpr f32 PHYSICS_TIMESTEP = 1.0f / 60.0f;
@@ -539,6 +520,7 @@ PhysBodyID NewPhysicsWorld::createCharacterCapsule(entt::entity ownerEntity, f32
     CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
 
     JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Dynamic, PhysicsObjectLayer::Dynamic);
+    createSettings.mUserData = PhysicsBodyUserData(ownerEntity);
     createSettings.mAllowedDOFs = JPH::EAllowedDOFs::TranslationX | JPH::EAllowedDOFs::TranslationY | JPH::EAllowedDOFs::TranslationZ;
 
     return createEntityBody(createSettings, ownerEntity, shapeId);
@@ -548,8 +530,7 @@ std::unique_ptr<JPH::CharacterBase> NewPhysicsWorld::createSimpleCharacter(entt:
     ASSERT_GAME_THREAD();
 
     CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
-    JPH::ShapeSettings& shapeSettings = mShapeRepo.getJoltShapeSettings(shapeId);
-    JPH::ShapeRefC shape = shapeSettings.Create().Get();
+    const JPH::Shape* shape = mShapeRepo.getShape(shapeId);
 
     JPH::CharacterSettings settings;
     settings.mMaxSlopeAngle = JPH::DegreesToRadians(60.0f);
@@ -581,10 +562,10 @@ void NewPhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilde
                 mContext->getBodyInterface().RemoveBody(JPH::BodyID(physBodyID));
             }
 
-            StaticPhysicsMesh& staticMesh = it->second->mStaticMesh;
-            if (staticMesh.mBodyID != INVALID_PHYS_BODY_ID) {
-                mContext->removeBody(staticMesh.mBodyID);
-                staticMesh.mBodyID = INVALID_PHYS_BODY_ID;
+            PhysBodyID& staticMesh = it->second->mStaticMesh;
+            if (staticMesh != INVALID_PHYS_BODY_ID) {
+                mContext->removeBody(staticMesh);
+                staticMesh = INVALID_PHYS_BODY_ID;
             }
 
             mTileContainerPhysicsData.erase(it);
@@ -593,7 +574,7 @@ void NewPhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilde
     }
 
     // Update rigid bodies and cache static mesh pointer
-    StaticPhysicsMesh* staticMesh;
+    PhysBodyID* staticMesh;
     if (it == mTileContainerPhysicsData.end()) {
         // Simply creating brand new collision
         NewTileContainerPhysicsData& newData = *mTileContainerPhysicsData.emplace(meshBuilder.getOwnerTileContainerID(), std::make_unique<NewTileContainerPhysicsData>()).first->second;
@@ -610,23 +591,24 @@ void NewPhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilde
     // Update procedural mesh
     if (meshBuilder.mVerts.size()) {
         JPH::MeshShapeSettings shapeSettings = createStaticMeshShapeSettings(meshBuilder.mVerts, meshBuilder.mIndices);
-        const JPH::Shape* shape = shapeSettings.Create().Get();
+        JPH::Shape* shape = shapeSettings.Create().Get();
+        shape->SetUserData(PhysicsShapeUserData(CollisionShapes::MESH));
 
         // Create body or update its shape
-        if (staticMesh->mBodyID == INVALID_PHYS_BODY_ID) {
+        if (*staticMesh == INVALID_PHYS_BODY_ID) {
             const f32v3 rootPos = meshBuilder.getRootPos();
-            JPH::BodyCreationSettings createSettings(shapeSettings.Create().Get(), JPH::RVec3(rootPos.x, rootPos.y, rootPos.z), JPH::Quat::sIdentity(), JPH::EMotionType::Static, e_cast(PhysicsObjectLayer::Static));
+            JPH::BodyCreationSettings createSettings(shape, JPH::RVec3(rootPos.x, rootPos.y, rootPos.z), JPH::Quat::sIdentity(), JPH::EMotionType::Static, e_cast(PhysicsObjectLayer::Static));
             JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, 434343 /*Cheeky mesh number for debug output*/);
             body.SetUserData(PhysicsBodyUserData(meshBuilder.getOwnerTileContainerID()));
-            staticMesh->mBodyID = body.GetID().GetIndexAndSequenceNumber();
+            *staticMesh = body.GetID().GetIndexAndSequenceNumber();
         }
         else {
-            mContext->updateShape(staticMesh->mBodyID, shape, false, JPH::EActivation::DontActivate);
+            mContext->updateShape(*staticMesh, shape, false, JPH::EActivation::DontActivate);
         }
     }
-    else if (staticMesh->mBodyID != INVALID_PHYS_BODY_ID) {
-        mContext->removeBody(staticMesh->mBodyID);
-        staticMesh->mBodyID = INVALID_PHYS_BODY_ID;
+    else if (*staticMesh != INVALID_PHYS_BODY_ID) {
+        mContext->removeBody(*staticMesh);
+        *staticMesh = INVALID_PHYS_BODY_ID;
     }
 }
 
@@ -634,6 +616,155 @@ void NewPhysicsWorld::removeBody(PhysBodyID id) {
     assert(id != INVALID_PHYS_BODY_ID);
     mContext->removeBody(id);
 }
+
+PhysHitResult NewPhysicsWorld::raycastFirst(
+    f32v3 rayStart,
+    f32v3 rayEnd,
+    const JPH::BroadPhaseLayerFilter& broadPhaseLayerFilter /*= {}*/,
+    const JPH::ObjectLayerFilter& objectLayerFilter /*= {}*/,
+    const JPH::BodyFilter& bodyFilter /*= {}*/,
+    bool traceFarTerrain /*= false*/) const
+{
+    PhysHitResult rv;
+
+    const JPH::NarrowPhaseQuery* queryApi;
+    const JPH::BodyInterface* bodyInterface;
+    // Game thread can be lockless since only game thread writes
+    if (IS_GAME_THREAD()) {
+        queryApi = &mContext->getSystem().GetNarrowPhaseQueryNoLock();
+        bodyInterface = &mContext->getSystem().GetBodyInterfaceNoLock();
+    }
+    else {
+        queryApi = &mContext->getSystem().GetNarrowPhaseQuery();
+        bodyInterface = &mContext->getSystem().GetBodyInterface();
+    }
+
+    const f32v3 dir = rayEnd - rayStart;
+    JPH::RRayCast ray(JPH::RVec3(rayStart.x, rayStart.y, rayStart.z), JPH::Vec3(dir.x, dir.y, dir.z));
+    JPH::RayCastResult castResult;
+
+    if (queryApi->CastRay(
+        ray,
+        castResult,
+        broadPhaseLayerFilter,
+        objectLayerFilter,
+        bodyFilter
+    )) {
+        rv.mHitBody = castResult.mBodyID.GetIndexAndSequenceNumber();
+        rv.mPosition = rayStart + castResult.mFraction * (rayEnd - rayStart);
+        rv.mNormal = dir;
+        rv.mTime = castResult.mFraction;
+        // TODO: In the non game thread case we could use the lock interface so we don't lock twice
+        rv.mBodyUserData = bodyInterface->GetUserData(castResult.mBodyID);
+        rv.mShape = bodyInterface->GetShape(castResult.mBodyID);
+        rv.mPenetrationDepth = 0.0f;
+    }
+    else if (traceFarTerrain) {
+        // Try manual terrain query for long queries so we can hit far terrain
+        if (broadPhaseLayerFilter.ShouldCollide(BroadPhaseLayers::Static)) {
+            IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
+            HeightmapPickResult result = heightGrid.pick(rayStart, rayEnd);
+            if (const HeightmapPatch* patch = heightGrid.getHeightDataAtWorldPos(i32v2(result.hitPoint))) {
+                rv.mHitBody = patch->physBodyID;
+                rv.mBodyUserData = bodyInterface->GetUserData(JPH::BodyID(rv.mHitBody));
+                rv.mShape = bodyInterface->GetShape(JPH::BodyID(rv.mHitBody));
+                rv.mPenetrationDepth = 0.0f;
+            }
+            rv.mPosition = result.hitPoint;
+            rv.mNormal = result.hitNormal;
+            rv.mTime = result.hitTime;
+        }
+    }
+
+    return rv;
+}
+
+void NewPhysicsWorld::pickDeferred(DeferredPhysicsPick* deferredPick, f32v3 rayStart, f32v3 rayEnd, BitFlags<PhysicsPickQueryFlags> queryFlags)
+{
+    assert(false);
+}
+
+int NewPhysicsWorld::queryObjectsInAABB(
+    f32v3 min,
+    f32v3 max,
+    std::span<PhysicsQueryResult> outResults,
+    const JPH::BroadPhaseLayerFilter& broadPhaseLayerFilter /*= {}*/,
+    const JPH::ObjectLayerFilter& objectLayerFilter /*= {}*/,
+    const JPH::BodyFilter& bodyFilter /*= {}*/
+) {
+    ASSERT_GAME_THREAD();
+    PhysicsQueryCollector shapeCollector(outResults, mContext->getBodyInterfaceNonLocking());
+    const JPH::NarrowPhaseQuery& queryApi = mContext->getSystem().GetNarrowPhaseQueryNoLock();
+
+    queryApi.CollectTransformedShapes(
+        JPH::AABox(JPH::Vec3(min.x, min.y, min.z), JPH::Vec3(max.x, max.y, max.z)),
+        shapeCollector,
+        broadPhaseLayerFilter,
+        objectLayerFilter,
+        bodyFilter
+    );
+
+    return shapeCollector.collectedShapes;
+}
+
+int NewPhysicsWorld::collideSphere(
+    f32v3 center,
+    f32 radius,
+    std::span<PhysHitResult> outResults,
+    const JPH::BroadPhaseLayerFilter& broadPhaseLayerFilter /*= {}*/,
+    const JPH::ObjectLayerFilter& objectLayerFilter /*= {}*/,
+    const JPH::BodyFilter& bodyFilter /*= {}*/
+) {
+    ASSERT_GAME_THREAD();
+
+    PhysicsHitCollector hitCollector(outResults, mContext->getBodyInterfaceNonLocking());
+    const JPH::NarrowPhaseQuery& queryApi = mContext->getSystem().GetNarrowPhaseQueryNoLock();
+
+    const JPH::DVec3 centerD(center.x, center.y, center.z);
+
+    queryApi.CollideShape(
+        sUnitSphereShape.get(),
+        JPH::Vec3(radius, radius, radius),
+        JPH::DMat44::sTranslation(centerD),
+        JPH::CollideShapeSettings(),
+        JPH::DVec3::sZero(),
+        hitCollector,
+        broadPhaseLayerFilter,
+        objectLayerFilter,
+        bodyFilter
+    );
+    return hitCollector.collectedHits;
+}
+
+int NewPhysicsWorld::collideCylinder(
+    f32v3 center,
+    f32v2 halfDims,
+    std::span<PhysHitResult> outResults,
+    const JPH::BroadPhaseLayerFilter& broadPhaseLayerFilter /*= {}*/,
+    const JPH::ObjectLayerFilter& objectLayerFilter /*= {}*/,
+    const JPH::BodyFilter& bodyFilter /*= {}*/
+) {
+    ASSERT_GAME_THREAD();
+
+    PhysicsHitCollector hitCollector(outResults, mContext->getBodyInterfaceNonLocking());
+    const JPH::NarrowPhaseQuery& queryApi = mContext->getSystem().GetNarrowPhaseQueryNoLock();
+
+    const JPH::DVec3 centerD(center.x, center.y, center.z);
+
+    queryApi.CollideShape(
+        sUnitCylinderShape.get(),
+        JPH::Vec3(halfDims.x, halfDims.y, 1.0f),
+        JPH::DMat44::sRotationTranslation(ROTATE_ZUP, centerD),
+        JPH::CollideShapeSettings(),
+        JPH::DVec3::sZero(),
+        hitCollector,
+        broadPhaseLayerFilter,
+        objectLayerFilter,
+        bodyFilter
+    );
+    return hitCollector.collectedHits;
+}
+
 
 void NewPhysicsWorld::updateAndRenderImguiDebugControls() {
 
@@ -657,6 +788,14 @@ void NewPhysicsWorld::updateAndRenderImguiDebugControls() {
     ImGui::SeparatorText("Stats");
     ImGui::Text(" Dynamic Bodies: %d", getBodyCount(PhysicsObjectLayer::Dynamic));
     ImGui::Text(" Static Bodies: %d", getBodyCount(PhysicsObjectLayer::Static));
+    InstrumentorDebugStrings debugStr = Instrumentor::get().getSingleResult(GAME_THREAD_ID, PHYSICS_STEP_PROFILE_NAME);
+
+    ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), debugStr.name.c_str());
+
+    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 50, 255, 255));
+    ImGui::Text(debugStr.avg.c_str());
+    ImGui::Text(debugStr.max.c_str());
+    ImGui::PopStyleColor();
 }
 
 void NewPhysicsWorld::debugRender(const Camera3D& camera) const {
@@ -676,18 +815,13 @@ int NewPhysicsWorld::getBodyCount(PhysicsObjectLayer layer) const {
 #endif
 
 JPH::BodyCreationSettings NewPhysicsWorld::makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer) {
-    JPH::ShapeSettings& shapeSettings = mShapeRepo.getJoltShapeSettings(shapeId);
-    JPH::ShapeRefC shape = shapeSettings.Create().Get();
-
-    return JPH::BodyCreationSettings(shape, JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, motionType, e_cast(layer));
+    return JPH::BodyCreationSettings(mShapeRepo.getShape(shapeId), JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, motionType, e_cast(layer));
 }
 
 PhysBodyID NewPhysicsWorld::createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId) {
     ASSERT_GAME_THREAD();
-   
+    // Userdata set by caller
     JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::Activate, shapeId);
-    body.SetUserData(PhysicsBodyUserData(ownerEntity));
-
     return body.GetID().GetIndexAndSequenceNumber();
 }
 
@@ -695,16 +829,17 @@ PhysBodyID NewPhysicsWorld::createTileBody(TileContainerID containerId, TileInde
     ASSERT_GAME_THREAD();
 
     JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Static, PhysicsObjectLayer::Static);
+    createSettings.mUserData = PhysicsBodyUserData(containerId, tileIndex);
 
     JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, shapeId);
-    body.SetUserData(PhysicsBodyUserData(containerId, tileIndex));
-
     return body.GetID().GetIndexAndSequenceNumber();
 }
 
-PhysBodyID NewPhysicsWorld::createTerrainBody(f32v3 position, const JPH::Shape* terrainShape) {
+PhysBodyID NewPhysicsWorld::createTerrainBody(f32v3 position, JPH::Shape* terrainShape) {
     ASSERT_GAME_THREAD();
+    terrainShape->SetUserData(PhysicsShapeUserData(CollisionShapes::TERRAIN));
     JPH::BodyCreationSettings createSettings(terrainShape, JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, JPH::EMotionType::Static, e_cast(PhysicsObjectLayer::Static));
+    createSettings.mUserData = PhysicsBodyUserData(PhysicsBodyUserDataType::Terrain);
 
     JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, 696969 /*Cheeky terrain number for debug output*/);
     return body.GetID().GetIndexAndSequenceNumber();
@@ -782,3 +917,90 @@ JPH::BodyInterface& NewPhysicsWorld::getBodyInterface() const {
 const JPH::BodyInterface& NewPhysicsWorld::getBodyInterfaceNonLocking() const {
     return mContext->getBodyInterfaceNonLocking();
 }
+
+//ASSERT_GAME_THREAD();
+//PROFILE_FUNCTION();
+//btVector3 start = f32v3ToBtVector3(rayStart);
+//btVector3 end = f32v3ToBtVector3(rayEnd);
+//// TODO: Use more of btCollisionWorld::ClosestRayResultCallback?
+//CustomRayResult rayResult(start, end);
+//int collisionMask = 0;
+//
+//if (pickTypes & PICK_TYPE_DYNAMIC) {
+//    collisionMask |= COLLISION_FILTER_DYNAMIC;
+//}
+//if (pickTypes & PICK_TYPE_STATIC) {
+//    collisionMask |= COLLISION_FILTER_STATIC;
+//}
+//rayResult.m_collisionFilterGroup = BIT_CAST(CollisionGroup::QUERY);
+//rayResult.m_collisionFilterMask = collisionMask;
+////rayResult.m_flags |= btTriangleRaycastCallback::kF_FilterBackfaces;
+//mDynamicsWorld->rayTest(start, end, rayResult);
+//
+//// Test terrain
+//if (pickTypes & PICK_TYPE_STATIC) {
+//    HeightmapPickResult result = mWorld.getHeightmapGrid().pick(rayStart, rayEnd);
+//    if (result.hitTime < rayResult.m_closestHitFraction) {
+//        PhysHitResult rv;
+//        rv.mTime = result.hitTime;
+//        rv.mNormal = result.hitNormal;
+//        rv.mCollisionObject = nullptr;
+//        rv.mPosition = result.hitPoint;
+//        assert(rv.mTime >= 0.0);
+//        return rv;
+//    }
+//}
+//
+//PhysHitResult rv;
+//rv.mTime = rayResult.m_closestHitFraction;
+//rv.mNormal = rayResult.mHitNormal;
+//rv.mCollisionObject = rayResult.m_collisionObject;
+//rv.mPosition = rayStart + (rayEnd - rayStart) * rv.mTime;
+//if (queryFlags.isBitSet(PhysicsPickQueryFlags::QUERY_TILE_INFO) && rv.mCollisionObject) {
+//
+//    if (rv.mCollisionObject->getUserIndex() != INVALID_PHYSICS_USER_INDEX) {
+//        rv.mSelectedEntity = entt::entity(rv.mCollisionObject->getUserIndex());
+//    }
+//    else {
+//        TileContainerID containerId = rv.mCollisionObject->getUserIndex2();
+//        if (containerId != INVALID_PHYSICS_USER_INDEX) {
+//            rv.mContainerID = containerId;
+//            TileIndex index = rv.mCollisionObject->getUserIndex3();
+//            if (index != INVALID_PHYSICS_USER_INDEX) {
+//                rv.mTileIndex = index;
+//            }
+//            else {
+//                f32v2 tilePos2D(rv.mPosition.x, rv.mPosition.y);
+//                TileHandle handle = mWorld.getTerrainTileHandleAtWorldPos(tilePos2D);
+//                if (handle.isValid()) {
+//                    assert(tilePos2D.x >= 0.0f && tilePos2D.y >= 0.0f);
+//                    if (Building* structure = mWorld.tryGetStructureAtWorldPos(TileCoord(tilePos2D))) {
+//                        TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(rv.mPosition);
+//                        if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
+//                            rv.mTileIndex = nextHandle.tileIndex;
+//                        }
+//                    }
+//                    /*Chunk* chunk = handle.container->getOwnerChunk();
+//                    if (chunk->isDataReady()) {
+//                        StructureArrayPtr structures = chunk->getStructuresAt(handle.tileIndex);
+//                        for (int i = 0; i < structures.second; ++i) {
+//                            Structure* structure = structures.first[i];
+//                            TileHandle nextHandle = structure->getTileContainer()->tryGetTileHandleAtWorldPos(rv.mPosition);
+//                            if (nextHandle.isValid() && structure->isTileOwned(nextHandle.tileIndex)) {
+//                                rv.mTileIndex = nextHandle.tileIndex;
+//                                break;
+//                            }
+//                        }
+//                    }*/
+//                }
+//                else {
+//                    // Need to query which tile we selected
+//                    LOG_DEBUG("Selected invalid chunk in ray pick");
+//                }
+//            }
+//        }
+//    }
+//}
+//
+//assert(rv.mTime >= 0.0);
+//return rv;

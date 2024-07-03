@@ -23,7 +23,7 @@ void Instrumentor::getDebugOutputData(InstrumentorDebugOutputData& outData)
     // Copy to reduce critical section time to as small as possible
     DebugInstrumentationDataMap timeCopy;
     {
-        std::lock_guard lock(mMutex);
+        std::shared_lock lock(mMutex);
         timeCopy = mMostRecentTimes;
     }
     // Sort via threads
@@ -69,6 +69,29 @@ void Instrumentor::getDebugOutputData(InstrumentorDebugOutputData& outData)
     }
 }
 
+InstrumentorDebugStrings Instrumentor::getSingleResult(std::thread::id threadId, const char* name) const {
+    InstrumentTimeInfo info;
+
+    std::shared_lock lock(mMutex);
+    const auto&& it = mMostRecentTimes.find(threadId);
+    if (it != mMostRecentTimes.end()) {
+        const auto& it2 = it->second.find(name);
+        if (it2 != it->second.end()) {
+            info = it2->second;
+        }
+        else {
+            return InstrumentorDebugStrings();
+        }
+    }
+    else {
+        return InstrumentorDebugStrings();
+    }
+    return InstrumentorDebugStrings{
+        name,
+        "  avg: " + std::to_string(info.runningAverage * MICROSEC_TO_MILLISEC) + "ms",
+        "  max: " + std::to_string(info.max * MICROSEC_TO_MILLISEC) + "ms"};
+}
+
 void Instrumentor::resetTimes()
 {
     std::lock_guard lock(mMutex);
@@ -101,7 +124,6 @@ void Instrumentor::writeProfile(const ProfileResult& result)
             }
         }
     }
-
 
     // TODO: f you build up the json by sending sending everything to a local stringstream first,
     // and then send the stringstream to the output file stream in one go at the end of WriteProfile(),

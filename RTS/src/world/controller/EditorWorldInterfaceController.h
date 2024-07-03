@@ -37,8 +37,8 @@ protected:
     f32v3 mMousePickRay = f32v3(0.0f);
     WorldObjectQueryPtr mWorldObjectQuery;
     bool mIsQuerying = false;
-    std::unique_ptr<DeferredPhysicsPick> mRightClickDownPick;
-    std::unique_ptr<DeferredPhysicsPick> mRightClickUpPick;
+    std::unique_ptr<PhysHitResult> mRightClickDownPick;
+    std::unique_ptr<PhysHitResult> mRightClickUpPick;
     f32v2 mRightClickUpPickScreenPos = f32v2(0.0);
 
     // Event listeners

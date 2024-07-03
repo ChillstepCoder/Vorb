@@ -4,7 +4,6 @@
 #include "options/DebugOptions.h"
 
 #include "world/World.h"
-#include "physics/PhysicsWorld.h"
 
 #include "ecs/IFullECS.h"
 #include <Vorb/ui/GameWindow.h>

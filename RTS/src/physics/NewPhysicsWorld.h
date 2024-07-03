@@ -7,16 +7,20 @@ class StaticPhysicsMeshBuilder;
 class TrackedStaticRigidBodyGatherer;
 class HeightmapPatch;
 
-
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Collision/ObjectLayer.h>
 #include <Jolt/Physics/EActivation.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/MotionType.h>
+#include <Jolt/Physics/Body/BodyFilter.h>
+#include <Jolt/Physics/Collision/ObjectLayer.h>
+#include <Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h>
 
-
+#include "physics/PhysHitResult.h"
 #include "physics/CollisionShapes.h"
-#include "physics/StaticPhysicsMesh.h"
+#include "physics/PhysicsBodyUserData.h"
+#include "physics/BroadphaseLayers.h"
+#include "PhysicsObjectLayer.h"
 
 #define ENABLE_PHYSICS_ANALYTICS 1
 
@@ -30,51 +34,13 @@ namespace JPH {
     class BodyLockInterface;
     class BodyInterface;
     class MeshShapeSettings;
+    class ObjectLayerFilter;
 }
-
-enum class PhysicsObjectLayer : JPH::ObjectLayer {
-    Static,
-    Dynamic,
-    COUNT
-};
 
 struct NewTileContainerPhysicsData {
     UnorderedFlatMap<TileKey, PhysBodyID> mTileKeyToPhysBodyID;
-    StaticPhysicsMesh mStaticMesh;
+    PhysBodyID mStaticMesh = INVALID_PHYS_BODY_ID;
 };
-
-enum class PhysicsBodyUserDataType : ui8 {
-    Terrain,
-    Tile,
-    Entity,
-    ContainerMesh,
-    COUNT
-};
-static_assert(e_count(PhysicsBodyUserDataType) <= 4); // Fitting into 2 bits
-
-struct alignas(8) PhysicsBodyUserData {
-    PhysicsBodyUserData() = default;
-    PhysicsBodyUserData(entt::entity owner);
-    PhysicsBodyUserData(TileContainerID tileContainer);
-    PhysicsBodyUserData(TileContainerID tileContainer, TileIndex tileIndex);
-    PhysicsBodyUserData(ui64 data) : data(data) {}
-
-    operator ui64() const { return std::bit_cast<ui64>(*this); }
-    PhysicsBodyUserDataType getType() const;
-
-    // Only works if getType == Tile
-    std::pair<TileContainerID, TileIndex> getTileData() const;
-
-    // Only works if getType == Tile || ContainerMesh
-    TileContainerID getContainerId() const;
-
-    // Only works if getType == Entity
-    entt::entity getEntity() const;
-
-    // We use bit packing to store lots of data in here
-    ui64 data = 0;
-};
-static_assert(sizeof(PhysicsBodyUserData) == sizeof(ui64), "JoltUserData must be 64 bits");
 
 class PhysicsWorldBodyInterface;
 
@@ -103,6 +69,45 @@ public:
     void removeBody(PhysBodyID id);
 
     // ===========================================================================
+    // Queries
+    // ===========================================================================
+    // TODO: Separate queries into its own interface class?
+    // For filters see "physics/PhysicsBroadPhaseLayerFilters.h" "physics/PhysicObjectLayerFilters.h" "physics/PhysicsBodyFilters.h"
+    PhysHitResult raycastFirst(
+        f32v3 rayStart,
+        f32v3 rayEnd,
+        const JPH::BroadPhaseLayerFilter& broadPhaseLayerFilter = {},
+        const JPH::ObjectLayerFilter& objectLayerFilter = {},
+        const JPH::BodyFilter& bodyFilter = {},
+        bool traceFarTerrain = false
+    ) const;
+    void pickDeferred(DeferredPhysicsPick* deferredPick, f32v3 rayStart, f32v3 rayEnd, BitFlags<PhysicsPickQueryFlags> queryFlags);
+    int queryObjectsInAABB(
+        f32v3 min,
+        f32v3 max,
+        std::span<PhysicsQueryResult> outResults,
+        const JPH::BroadPhaseLayerFilter& broadPhaseLayerFilter = {},
+        const JPH::ObjectLayerFilter& objectLayerFilter = {},
+        const JPH::BodyFilter& bodyFilter = {}
+    );
+    int collideSphere(
+        f32v3 center,
+        f32 radius,
+        std::span<PhysHitResult> outResults,
+        const JPH::BroadPhaseLayerFilter& broadPhaseLayerFilter = {},
+        const JPH::ObjectLayerFilter& objectLayerFilter = {},
+        const JPH::BodyFilter& bodyFilter = {}
+    );
+    int collideCylinder(
+        f32v3 center,
+        f32v2 halfDims,
+        std::span<PhysHitResult> outResults,
+        const JPH::BroadPhaseLayerFilter& broadPhaseLayerFilter = {},
+        const JPH::ObjectLayerFilter& objectLayerFilter = {},
+        const JPH::BodyFilter& bodyFilter = {}
+    );
+
+    // ===========================================================================
     // Debugging
     // ===========================================================================
     void updateAndRenderImguiDebugControls();
@@ -119,7 +124,7 @@ private:
     JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer);
     PhysBodyID createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId);
     PhysBodyID createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId);
-    PhysBodyID createTerrainBody(f32v3 position, const JPH::Shape* terrainShape);
+    PhysBodyID createTerrainBody(f32v3 position, JPH::Shape* terrainShape);
     JPH::MeshShapeSettings createStaticMeshShapeSettings(std::span<f32v3> verts, std::span<ui32> indices);
     void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
     void updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);

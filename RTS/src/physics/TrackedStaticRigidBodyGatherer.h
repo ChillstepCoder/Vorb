@@ -14,7 +14,6 @@ static_assert(sizeof(TrackedStaticRigidBody) == 24, "Keep tiny");
 // Gathers static rigid bodies to track for a particular tile container
 class TrackedStaticRigidBodyGatherer {
 public:
-    friend class PhysicsWorld;
     friend class NewPhysicsWorld;
     TrackedStaticRigidBodyGatherer() = delete;
     VORB_NON_COPYABLE_BUT_MOVABLE(TrackedStaticRigidBodyGatherer);

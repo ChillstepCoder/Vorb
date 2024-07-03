@@ -11,7 +11,6 @@
 #include "options/DebugOptions.h"
 #include "pathfinding/NavThread.h"
 #include "pathfinding/NavWorld.h"
-#include "physics/PhysicsWorld.h"
 #include "physics/NewPhysicsWorld.h"
 #include "rendering/RenderContext.h"
 #include "rendering/RenderThreadTasks.h"
@@ -137,7 +136,6 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     // Structures
     mStructureGrid = std::make_unique<BuildingGrid>(*this);
     // Physics
-    mPhysWorld = std::make_unique<PhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
     mPhysicsWorld = std::make_unique<NewPhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
     // Generation
     mChunkGenerator = std::make_unique<ChunkGenerator>(*this);
@@ -245,9 +243,8 @@ void World::tick(f32 elapsedSec) {
     // Time
     mTimeOfDayManager->updateTimeOfDay(0.0f /*TIME IS FROZEN*/);
 
-    // Physworld will handle internal interpolation and timestep itself
-    const int stepCount = mPhysWorld->stepSimulation(elapsedSec);
-    /*const int stepCount =*/ mPhysicsWorld->stepSimulation(elapsedSec);
+    // Physics
+    const int stepCount = mPhysicsWorld->stepSimulation(elapsedSec);
 
     // If there were any steps, simulate manual physics once with no sub stepping
     if (stepCount) {
@@ -295,7 +292,7 @@ void World::shutdown() {
     mHostSimContext.reset();
     mTimeOfDayManager.reset();
     mStructureGrid.reset();
-    mPhysWorld.reset();
+    mPhysicsWorld.reset();
     mChunkGenerator.reset();
     mCombatContext.reset();
     mItemStockpileRegistry.reset();

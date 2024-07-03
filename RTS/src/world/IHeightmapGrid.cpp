@@ -11,7 +11,6 @@
 // TODO: move
 #include "rendering/ChunkGrassQuadtree.h"
 #include "world/HeightmapTerrainQuadtree.h"
-#include "physics/PhysicsWorld.h"
 #include "physics/NewPhysicsWorld.h"
 
 #include "world/World.h"

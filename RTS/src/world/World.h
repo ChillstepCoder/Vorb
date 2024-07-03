@@ -20,7 +20,6 @@ class IHeightmapGrid;
 class ItemStockpileRegistry;
 class IEffectContext;
 class IFactionManager;
-class PhysicsWorld;
 class NewPhysicsWorld;
 class BuildingGrid;
 class TimeOfDayManager;
@@ -89,7 +88,6 @@ public:
     WorldMarkupGrid& getMarkupGrid() const { return *mMarkupGrid; }
     OwnershipGrid& getOwnershipGrid() const { return *mOwnershipGrid; }
     IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
-    PhysicsWorld& getPhysicsWorld() const { return *mPhysWorld; }
     NewPhysicsWorld& getNewPhysicsWorld() const { return *mPhysicsWorld; }
     IFullECS& getECS() const { /*ASSERT_GAME_THREAD();*/ return *mEcs; }//  TODO: GameThreadAssert should be on
     BuildingGrid& getBuildingGrid() const { return *mStructureGrid; }
@@ -181,7 +179,6 @@ private:
     // ECS
     std::unique_ptr<IFullECS> mEcs;
     // Physics
-    std::unique_ptr<PhysicsWorld> mPhysWorld;
     std::unique_ptr<NewPhysicsWorld> mPhysicsWorld;
     // Structures
     std::unique_ptr<BuildingGrid> mStructureGrid;

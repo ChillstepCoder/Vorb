@@ -5,10 +5,14 @@
 
 #include "world/World.h"
 #include "ecs/IFullECS.h"
-#include "physics/PhysicsWorld.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
 
+#include "physics/NewPhysicsWorld.h"
+#include "physics/PhysHitResult.h"
+#include "physics/PhysicsBroadPhaseLayerFilters.h"
+
 #include "options/DebugOptions.h"
+
 
 GameThreadTasks::GameThreadTasks() : mToken(mGameThreadFuncProcs) {
 
@@ -37,7 +41,7 @@ void GameThreadTasks::updateMainThread() {
     }
 }
 
-void GameThreadTasks::addCameraPickTeleportTask(World& world, const f32v3& camPos, const f32v3& camDir) {
+void GameThreadTasks::addCameraPickTeleportTask(World& world, f32v3 camPos, f32v3 camDir) {
 
     struct CameraPickTeleportData {
         World* world;
@@ -48,7 +52,7 @@ void GameThreadTasks::addCameraPickTeleportTask(World& world, const f32v3& camPo
     mGameThreadFuncProcs.enqueue([data = teleportData]() {
         IFullECS& ecs = data->world->getECS();
         if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.getLocalPlayer())) {
-            PhysHitResult hitResult = data->world->getPhysicsWorld().pick(data->camPos, data->camPos + data->camDir * 3000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
+            PhysHitResult hitResult = data->world->getNewPhysicsWorld().raycastFirst(data->camPos, data->camPos + data->camDir * 3000.0f, PhysicsBroadphaseLayerFilterStatic(), {}, {}, true /*traceFarTerrain*/);
             if (hitResult.didHit()) {
                 phys->teleportBottomToPoint(hitResult.mPosition);
             }

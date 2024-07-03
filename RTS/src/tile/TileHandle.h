@@ -42,6 +42,7 @@ static_assert(sizeof(TileHandle) == 16, "Keep small as possible");
 struct LiteTileHandle {
     LiteTileHandle() {};
     LiteTileHandle(TileContainerID containerId, TileIndex index) : containerId(containerId), index(index) {};
+    LiteTileHandle(std::pair<TileContainerID, TileIndex> pair) : containerId(pair.first), index(pair.second) {};
 
     TileContainer* getTileContainer(World& world) const;
     TileContainer* tryGetTileContainer(World& world) const;

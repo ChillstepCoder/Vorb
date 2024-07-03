@@ -10,7 +10,6 @@
 #include "item/ItemStockpileRegistry.h"
 #include "rendering/RenderContext.h"
 #include "world/World.h"
-#include "physics/PhysicsWorld.h"
 #include "ecs/IFullECS.h"
 #include "ecs/factory/EntityFactory.h"
 #include "ui/UIContext.h"
@@ -24,6 +23,9 @@
 #include <Vorb/ui/GameWindow.h>
 
 #include "options/DebugOptions.h"
+
+#include "physics/NewPhysicsWorld.h"
+#include "physics/PhysicsBroadPhaseLayerFilters.h"
 
 void EditorWorldInterfaceController::init()
 {
@@ -82,8 +84,8 @@ void EditorWorldInterfaceController::updateTilePicking() {
     f32v3 pickRayXYZ(pickRayWorldSpace.x, pickRayWorldSpace.y, pickRayWorldSpace.z);
     mMousePickRay = glm::normalize(pickRayXYZ);
 
-    if (mRightClickDownPick && mRightClickDownPick->isDone()) {
-        PhysHitResult hitResult = mRightClickDownPick->getLastPickResult();
+    if (mRightClickDownPick) {
+        PhysHitResult hitResult = *mRightClickDownPick;
         if (hitResult.didHit()) {
             mRightClickPickPos = hitResult.mPosition;
         }
@@ -92,8 +94,8 @@ void EditorWorldInterfaceController::updateTilePicking() {
         }
         mRightClickDownPick.reset();
     }
-    if (mRightClickUpPick && mRightClickUpPick->isDone()) {
-        PhysHitResult hitResult = mRightClickUpPick->getLastPickResult();
+    if (mRightClickUpPick) {
+        PhysHitResult hitResult = *mRightClickUpPick;
         if (hitResult.didHit()) {
 
             // TMP REMOVE
@@ -107,39 +109,25 @@ void EditorWorldInterfaceController::updateTilePicking() {
 
             mSelectedScreenPos = mRightClickUpPickScreenPos;
             // For interact must click in about the same spot
-            if (hitResult.mSelectedEntity != INVALID_ENTITY) {
+            PhysicsBodyUserData bodyUserData = hitResult.mBodyUserData;
+            PhysicsBodyUserDataType type = bodyUserData.getType();
+            if (type == PhysicsBodyUserDataType::Entity) {
                 LOG_CRITICAL("Selected Entity");
             }
-            else {
+            else if (type == PhysicsBodyUserDataType::Tile) {
                 if (glm::length(mRightClickPickPos - hitResult.mPosition) < 0.05f) {
-                    TileContainerID containerOwner = hitResult.mContainerID;
-                    if (containerOwner != INVALID_TILE_CONTAINER_ID) {
-                        TileIndex index = hitResult.mTileIndex;
-                        // ONLY WORKS FOR MODELS
-                        if (index != INVALID_TILE_INDEX) {
-                            // Query whatever we selected
-                            mWorldObjectQuery = WorldObjectQueryFactory::makeQuery(*mWorld, LiteTileHandle(containerOwner, index));
-                            mIsQuerying = true;
-                        }
-                    }
-                    else {
-                        f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
-                        if (vui::InputDispatcher::key.isKeyPressed(VKEY_J)) {
-                            GameThreadTasks::getInstance().addGenericTask([world = mWorld, worldPos]() {
-                                // TODO: Small race condition here if tile handle changes or chunk is destroyed
-                                IFullECS& ecs = world->getECS();
-                                PhysicsComponent& physCmp = ecs.mRegistry.get<PhysicsComponent>(ecs.getLocalPlayer());
-                                NavigationComponent& cmp = ecs.mRegistry.get_or_emplace<NavigationComponent>(ecs.getLocalPlayer());
-                                cmp.requestCoarsePath(physCmp.getBottomPosition(), worldPos, 1.0f);
-                            });
-                        }
-                        else {
-                            // Selected terrain
-                            mWorldObjectQuery = WorldObjectQueryFactory::makeQuery(*mWorld, worldPos);
-                            mIsQuerying = true;
-                        }
+                    const auto& [containerOwner, index] = bodyUserData.getTileData();
+                    // ONLY WORKS FOR MODELS
+                    if (index != INVALID_TILE_INDEX) {
+                        // Query whatever we selected
+                        mWorldObjectQuery = WorldObjectQueryFactory::makeQuery(*mWorld, LiteTileHandle(containerOwner, index));
+                        mIsQuerying = true;
                     }
                 }
+            } else if (type == PhysicsBodyUserDataType::Terrain) {
+                f32v3 worldPos = hitResult.mPosition + hitResult.mNormal * 0.01f;
+                mWorldObjectQuery = WorldObjectQueryFactory::makeQuery(*mWorld, worldPos);
+                mIsQuerying = true;
             }
         }
         mRightClickUpPick.reset();
@@ -191,14 +179,15 @@ void EditorWorldInterfaceController::initEvents() {
             }
         }
         else if (event.keyCode == VKEY_P && event.mod.lShift) {
-            GameThreadTasks::getInstance().addGenericTask([world = mWorld]() {
-                if (world->getPhysicsWorld().isProfiling()) {
-                    world->getPhysicsWorld().endB3ProfilingAndDumpToFile("bullet_timings");
-                }
-                else {
-                    world->getPhysicsWorld().startB3Profiling();
-                }
-            });
+            LOG_WARN("TODO: Implement physics profiling");
+            /*   GameThreadTasks::getInstance().addGenericTask([world = mWorld]() {
+                   if (world->getPhysicsWorld().isProfiling()) {
+                       world->getPhysicsWorld().endB3ProfilingAndDumpToFile("bullet_timings");
+                   }
+                   else {
+                       world->getPhysicsWorld().startB3Profiling();
+                   }
+               });*/
         }
         else if (event.keyCode == VKEY_ESCAPE) {
             UIContext::getInstance().toggleEscapeMenu();
@@ -218,9 +207,9 @@ void EditorWorldInterfaceController::initEvents() {
                 return;
             }
             if (mCameraController) {
-                mRightClickDownPick = std::make_unique<DeferredPhysicsPick>();
+                mRightClickDownPick = std::make_unique<PhysHitResult>();
                 const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-                mWorld->getPhysicsWorld().pickDeferred(mRightClickDownPick.get(), camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
+                *mRightClickDownPick = mWorld->getNewPhysicsWorld().raycastFirst(camPos, camPos + mMousePickRay * 3000.0f, PhysicsBroadphaseLayerFilterStatic());
                 mRightClickTimer.start();
 
             }
@@ -255,8 +244,8 @@ void EditorWorldInterfaceController::initEvents() {
             }
             else if (!mRightClickUpPick && mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
                 const f32v3& camPos = mCameraController->getOwnedCamera().getPosition();
-                mRightClickUpPick = std::make_unique<DeferredPhysicsPick>();
-                mWorld->getPhysicsWorld().pickDeferred(mRightClickUpPick.get(), camPos, camPos + mMousePickRay * 3000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
+                mRightClickUpPick = std::make_unique<PhysHitResult>();
+                *mRightClickUpPick = mWorld->getNewPhysicsWorld().raycastFirst(camPos, camPos + mMousePickRay * 3000.0f, PhysicsBroadphaseLayerFilterStatic());
                 mRightClickUpPickScreenPos = screenPos;
             }
         }

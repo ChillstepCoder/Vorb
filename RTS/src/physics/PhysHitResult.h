@@ -1,30 +1,25 @@
 #pragma once
 
+namespace JPH {
+    class Shape;
+}
+
 #include <variant>
 
 #include "tile/TileHandle.h"
-
-class btCollisionObject;
-
-enum class PhysicsHitObjectType : ui8 {
-    Tile,
-    Entity,
-    Terrain,
-    Invalid,
-    COUNT
-};
+#include "physics/PhysicsBodyUserData.h"
+#include "physics/PhysicsShapeUserData.h"
 
 struct PhysHitResult {
-    const btCollisionObject* mCollisionObject = nullptr;
+    BodyID mHitBody = INVALID_PHYS_BODY_ID;
     f32v3 mPosition;
-    f32v3 mNormal;
+    f32v3 mNormal; // Not normalized for raycasts
     f32 mTime = 1.0f;
-    entt::entity mSelectedEntity = INVALID_ENTITY;
-    TileContainerID mContainerID = INVALID_TILE_CONTAINER_ID;
-    TileIndex mTileIndex = INVALID_TILE_INDEX;
+    f32 mPenetrationDepth = 0.0f;
+    PhysicsBodyUserData mBodyUserData;
+    const JPH::Shape* mShape = nullptr;
 
     bool didHit() const { return mTime < 1.0f; }
-    bool wasTerrain() const { return mCollisionObject != nullptr; }
 };
 
 enum class PhysicsPickQueryFlags : ui8 {
@@ -32,8 +27,10 @@ enum class PhysicsPickQueryFlags : ui8 {
 };
 
 struct PhysicsQueryResult {
-    const btCollisionObject* mCollisionObject = nullptr;
-    std::variant<entt::entity, LiteTileHandle> mObject;
+    const JPH::Shape* mShape = nullptr;
+    PhysicsBodyUserData mBodyUserData;
+    BodyID mPhysBody = INVALID_PHYS_BODY_ID;
+    f32v3 mCenterOfMassPosition = f32v3(0);
 };
 
 // Allows thread to request the physics engine to perform a pick that will be populated eventually.

@@ -1,20 +1,21 @@
 #include "stdafx.h"
 #include "CombatContext.h"
 
-#include "physics/PhysicsWorld.h"
-
 #include "world/World.h"
 #include "effect/IEffectContext.h"
 
 #include "ecs/IFullECS.h"
 #include "ecs/component/CharacterControlComponent.h"
 
-#include "btBulletCollisionCommon.h"
-#include "BulletCollision/CollisionShapes/btCylinderShape.h"
 
 #include "options/DebugOptions.h"
 
 #include "math/Random.h"
+
+#include "physics/NewPhysicsWorld.h"
+#include "physics/PhysicsBodyFilters.h"
+
+#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 
 // For testing
 #include "debugging/DebugRenderer.h"
@@ -173,6 +174,7 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
 
     IFullECS& ecs = mWorld.getECS();
     const f32 sourceRotation = ecs.mRegistry.get<CharacterControlComponent>(source).mControllerAngleRad;
+    const BodyID sourceBody = ecs.mRegistry.get<PhysicsComponent>(source).mBodyID;
 
     constexpr int MAX_RESULTS = 8;
     PhysicsQueryResult results[MAX_RESULTS];
@@ -184,7 +186,7 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
     const f32v2 forwardNormal = f32v2(cos(sourceRotation), sin(sourceRotation));
     const f32AABB3 aabb = getAABBEnclosingArc(attackStartPos, coneData.radius, coneData.arcAngleRad, sourceRotation, coneData.height);
     const f32 halfArcAngleRad = coneData.arcAngleRad * 0.5f;
-    const int resultCount = mWorld.getPhysicsWorld().queryObjectsInAABB(aabb.pos, aabb.pos + aabb.dims, results, MAX_RESULTS);
+    const int resultCount = mWorld.getNewPhysicsWorld().queryObjectsInAABB(aabb.pos, aabb.pos + aabb.dims, std::span(results), {}, {}, PhysicsBodyFilterAttackable(sourceBody));
 
     const f32v2 origin2D(attackStartPos);
     const f32v2 start2D = origin2D + glm::vec2(coneData.radius * std::cos(sourceRotation - halfArcAngleRad), coneData.radius * std::sin(sourceRotation - halfArcAngleRad));
@@ -192,14 +194,10 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
     
     // Damage tile
     for (int i = 0; i < resultCount; ++i) {
-        const btCollisionShape* shape = results[i].mCollisionObject->getCollisionShape();
-        if (shape == nullptr) {
-            return;
-        }
-
+       
         // This is at the center of the collision object, not the base
-        const f32v3 targetRootPosition = btVector3ToF32v3(results[i].mCollisionObject->getWorldTransform().getOrigin());
-        const f32v2 targetCenterPoint2D = targetRootPosition;
+        const f32v3 targetCenter = results[i].mCenterOfMassPosition;
+        const f32v2 targetCenterPoint2D = targetCenter;
         const f32v2 offsetToTarget2D = targetCenterPoint2D - f32v2(attackStartPos);
         const f32 distanceFromTarget2 = glm::length2(offsetToTarget2D);
         const f32v2 normalToTarget2D = offsetToTarget2D / sqrt(distanceFromTarget2);
@@ -208,16 +206,21 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
         f32v3 impactNormal = f32v3(0.0f);
         f32v3 impactDir = f32v3(0.0f);
 
+        const PhysicsBodyUserData bodyUserData = results[i].mBodyUserData;
+        const PhysicsBodyUserDataType type = bodyUserData.getType();
+
         // Tile handle
-        if (std::holds_alternative<LiteTileHandle>(results[i].mObject)) {
+        if (type == PhysicsBodyUserDataType::Tile) {
+            const JPH::Shape* shape = results[i].mShape;
+            PhysicsShapeUserData shapeUserData(shape->GetUserData());
 
             bool intersectsArc = false;
-            const int shapeType = shape->getShapeType();
+            const CollisionShapes shapeType = shapeUserData.getShapeType();
             switch (shapeType) {
                 //case CYLINDER_SHAPE_PROXYTYPE: {
-                case CAPSULE_SHAPE_PROXYTYPE: {
-                    const btCapsuleShape* capsule = static_cast<const btCapsuleShape*>(shape);
-                    const f32 capsuleRadius = capsule->getRadius();
+                case CollisionShapes::CAPSULE: {
+                    const JPH::CapsuleShape* capsule = static_cast<const JPH::CapsuleShape*>(shape);
+                    const f32 capsuleRadius = capsule->GetRadius();
                     const f32 targetRadiusSQ = SQ(capsuleRadius);
 
                     const f32 totalRadius = coneData.radius + capsuleRadius;
@@ -244,7 +247,7 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
                     if (intersectsArc) {
                         const f32v2 impactNormal2D = offsetToTarget2D / sqrt(distanceFromTarget2);
                         impactNormal = f32v3(impactNormal2D.x, impactNormal2D.y, 0.0f);
-                        f32v3 targetCenterAtSourceHeight(targetRootPosition.x, targetRootPosition.y, attackStartPos.z);
+                        f32v3 targetCenterAtSourceHeight(targetCenter.x, targetCenter.y, attackStartPos.z);
                         const f32v3 impactCenter = targetCenterAtSourceHeight + f32v3(0.0f, 0.0f, attackData.swingHeight);
                         impactPosition = impactCenter - impactNormal * static_cast<f32>(capsuleRadius);
                     }
@@ -259,11 +262,12 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
             if (intersectsArc) {
                 const f32 angleRad = MathUtil::yawFromDirection(normalToTarget2D);
                 impactDir = MathUtil::rotateVectorYawRad(attackData.swingDir, angleRad);
-                hitTile(std::get<LiteTileHandle>(results[i].mObject), skillDef, attackData.damageRange, impactPosition, impactNormal, impactDir);
+                LiteTileHandle hitTileHandle(bodyUserData.getTileData());
+                hitTile(hitTileHandle, skillDef, attackData.damageRange, impactPosition, impactNormal, impactDir);
             }
         }
-        else {
-            const entt::entity hitEntity = std::get<entt::entity>(results[i].mObject);
+        else if (type == PhysicsBodyUserDataType::Entity) {
+            const entt::entity hitEntity = bodyUserData.getEntity();
             // No self hit
             if (hitEntity == source) {
                 continue;

@@ -2,20 +2,18 @@
 
 #include "physics/TrackedStaticRigidBodyGatherer.h"
 
-class PhysicsWorld;
 class NewPhysicsWorld;
 
 class StaticPhysicsMeshBuilder
 {
-    friend class PhysicsWorld;
     friend class NewPhysicsWorld;
 public:
     StaticPhysicsMeshBuilder(TileContainerID tileContainerOwner) : mTrackedRigidBodyGatherer(tileContainerOwner) {};
     ~StaticPhysicsMeshBuilder();
     VORB_NON_COPYABLE_BUT_MOVABLE(StaticPhysicsMeshBuilder);
 
-    void setRootPos(const f32v3& rootPos) { mRootPos = rootPos; }
-    const f32v3& getRootPos() const { return mRootPos; }
+    void setRootPos(f32v3 rootPos) { mRootPos = rootPos; }
+    f32v3 getRootPos() const { return mRootPos; }
     
     void reserveQuadCount(ui32 count);
     void addTileQuad(f32v3 tilePosition, const f32v2& xyDims, CubeFacing axis);
@@ -26,7 +24,6 @@ public:
     TileContainerID getOwnerTileContainerID() const { return mTrackedRigidBodyGatherer.getOwnerTileContainerID(); }
 
     bool hasAnyCollision();
-    void finish(PhysicsWorld& physicsWorld);
     void finish(NewPhysicsWorld& physicsWorld);
 
 private:

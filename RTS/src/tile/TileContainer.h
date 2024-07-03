@@ -11,7 +11,6 @@
 #include "tile/TileDamageData.h"
 #include "visibility/TileVisibilityContainer.h"
 
-#include "physics/StaticPhysicsMesh.h"
 #include <shared_mutex>
 
 #include <boost/container/flat_set.hpp>

@@ -55,7 +55,7 @@ EVENT_DISPATCHER_TYPE(IHeightmapGrid, HeightmapGridEventType, const HeightmapGri
 struct HeightmapPickResult {
     f32v3 hitPoint;
     f32v3 hitNormal;
-    f32 hitTime = 1.0; // [0, 1]
+    f32 hitTime = 1.0f; // [0, 1]
     bool didHit = false;
 };
 

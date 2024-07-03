@@ -5,7 +5,6 @@
 #include "ecs/component/ComponentDefBase.h"
 
 class IFullECS;
-class PhysicsWorld;
 class btRigidBody;
 class World;
 

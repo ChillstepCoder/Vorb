@@ -65,7 +65,7 @@ void Services::resetThreads()
 
 void Services::initThreads()
 {
-    // - 3 threads for main thread + nav thread + extra
+    // - 3 threads for main thread + nav thread + render thread
     const int threadCount = vmath::max<int>(std::thread::hardware_concurrency() - 3, 2);
     LOG_INFO("  Initializing threadpool with {} threads. ", threadCount);
     Threadpool::set(threadCount);

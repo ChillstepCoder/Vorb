@@ -34,7 +34,6 @@
 #include "item/ItemReservation.h"
 
 #include "physics/PhysHitResult.h"
-#include "physics/PhysicsWorld.h"
 #include "physics/NewPhysicsWorld.h"
 
 #include "pathfinding/NavWorld.h"
@@ -55,9 +54,6 @@
 #include "world/controller/EditorWorldInterfaceController.h"
 
 #include "screens/ScreenState.h"
-
-// For getUserIndex
-#include <BulletCollision/CollisionDispatch/btCollisionObject.h>
 
 constexpr ui32 MAX_TICKS_PER_UPDATE = 3;
 constexpr f64 TICK_RATE_MS = 40.0;
@@ -165,7 +161,6 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     if (MainMenuScreenGlobalState::serverType != ServerType::NONE) {
         GameServer::initInstance(*sGameWorld, MainMenuScreenGlobalState::serverType);
     }
-
 
     // Always init the world
     displayLoadScreen("Loading...", true);

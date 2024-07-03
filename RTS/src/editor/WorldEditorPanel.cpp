@@ -25,7 +25,6 @@
 
 #include "gamethread/GameThreadTasks.h"
 
-#include "physics/PhysicsWorld.h"
 #include "camera/Camera3D.h"
 
 #include "math/Random.h"
@@ -33,6 +32,8 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+#include "physics/NewPhysicsWorld.h"
+#include "physics/PhysicsBroadPhaseLayerFilters.h"
 
 #include <Vorb/ui/InputDispatcher.h>
 
@@ -109,13 +110,14 @@ void WorldEditorPanel::update(World* world, const Camera3D& camera, const f32v3&
 
     {
         PROFILE_SCOPE("Tile picking");
-        if (mDeferredPhysicsPick && mDeferredPhysicsPick->isDone()) {
-            mHitResult = mDeferredPhysicsPick->getLastPickResult();
-            world->getPhysicsWorld().pickDeferred(mDeferredPhysicsPick.get(), camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
-        } else if (!mDeferredPhysicsPick) {
-            mDeferredPhysicsPick = std::make_unique<DeferredPhysicsPick>();
-            world->getPhysicsWorld().pickDeferred(mDeferredPhysicsPick.get(), camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
-        }
+        /*  if (mDeferredPhysicsPick && mDeferredPhysicsPick->isDone()) {
+              mHitResult = mDeferredPhysicsPick->getLastPickResult();
+              world->getPhysicsWorld().pickDeferred(mDeferredPhysicsPick.get(), camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
+          } else if (!mDeferredPhysicsPick) {
+              mDeferredPhysicsPick = std::make_unique<DeferredPhysicsPick>();
+              world->getPhysicsWorld().pickDeferred(mDeferredPhysicsPick.get(), camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PICK_TYPE_ALL, PhysicsPickQueryFlags::QUERY_TILE_INFO);
+          }*/
+        mHitResult = world->getNewPhysicsWorld().raycastFirst(camera.getPosition(), camera.getPosition() + pickRay * 10000.0f, PhysicsBroadphaseLayerFilterStatic());
     }
 
     if (mEditMode == WorldEditorEditMode::TERRAIN) {

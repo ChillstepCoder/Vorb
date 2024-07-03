@@ -1,16 +1,13 @@
 #include "stdafx.h"
 #include "CollisionShapeRepository.h"
 
-#include "BulletCollision/CollisionShapes/btCapsuleShape.h"
-#include "BulletCollision/CollisionShapes/btCylinderShape.h"
-#include "BulletCollision/CollisionShapes/btBoxShape.h"
-#include "BulletCollision/CollisionShapes/btSphereShape.h"
-
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
+
+#include "physics/PhysicsShapeUserData.h"
 
 
 CollisionShapeRepository::CollisionShapeRepository() = default;
@@ -28,11 +25,11 @@ CollisionShapeID CollisionShapeRepository::getOrAddCollisionShape(CollisionShape
         case CollisionShapes::SPHERE:
             return getOrAddSphereCollisionShape(halfExtents.x);
         default:
-            assert(false);
+            panic("Invalid shape type {} in getOrAddCollisionShape", (int)shapeType);
             break;
 
     }
-    static_assert(e_cast(CollisionShapes::COUNT) == 4, "Handle new shapes");
+    static_assert(e_cast(CollisionShapes::COUNT) == 7, "Handle new shapes");
     return INVALID_COLLISION_SHAPE_ID;
 }
 
@@ -46,10 +43,19 @@ CollisionShapeID CollisionShapeRepository::getOrAddCapsuleCollisionShape(f32 rad
     }
 
     // Insert new
-    const CollisionShapeID id = mAllShapes.size();
-    mAllShapes.emplace_back(std::make_unique<btCapsuleShapeZ>(radius, halfHeight * 2.0f));
-    std::unique_ptr< JPH::CapsuleShapeSettings> data = std::make_unique<JPH::CapsuleShapeSettings>(halfHeight, radius);
-    mAllJoltShapes.emplace_back(std::move(data));
+    const CollisionShapeID id = mAllJoltShapes.size();
+    JPH::CapsuleShapeSettings settings(halfHeight, radius);
+    JPH::ShapeSettings::ShapeResult res = settings.Create();
+    if (res.HasError()) {
+        panic("Failed to create capsule shape: {}", res.GetError().c_str());
+    }
+    if (settings.IsSphere()) {
+        res.Get()->SetUserData(PhysicsShapeUserData(CollisionShapes::SPHERE));
+    }
+    else {
+        res.Get()->SetUserData(PhysicsShapeUserData(CollisionShapes::CAPSULE));
+    }
+    mAllJoltShapes.emplace_back(res.Get());
     mCapsuleShapes[key] = id;
     return id;
 }
@@ -63,9 +69,14 @@ CollisionShapeID CollisionShapeRepository::getOrAddCylinderCollisionShape(const 
     }
 
     // Insert new
-    const CollisionShapeID id = mAllShapes.size();
-    mAllShapes.emplace_back(std::make_unique<btCylinderShapeZ>(btVector3(halfExtents.x, halfExtents.y, halfExtents.z)));
-    mAllJoltShapes.emplace_back(std::make_unique<JPH::CylinderShapeSettings>(halfExtents.y, halfExtents.x));
+    const CollisionShapeID id = mAllJoltShapes.size();
+    JPH::CylinderShapeSettings settings(halfExtents.y, halfExtents.x);
+    JPH::ShapeSettings::ShapeResult res = settings.Create();
+    if (res.HasError()) {
+        panic("Failed to create cylinder shape: {}", res.GetError().c_str());
+    }
+    res.Get()->SetUserData(PhysicsShapeUserData(id, CollisionShapes::CYLINDER));
+    mAllJoltShapes.emplace_back(res.Get());
     mCylinderShapes[halfExtents] = id;
     return id;
 }
@@ -79,11 +90,14 @@ CollisionShapeID CollisionShapeRepository::getOrAddBoxCollisionShape(const f32v3
     }
 
     // Insert new
-    const CollisionShapeID id = mAllShapes.size();
-    mAllShapes.emplace_back(std::make_unique<btBoxShape>(btVector3(halfExtents.x, halfExtents.y, halfExtents.z)));
-    mAllJoltShapes.emplace_back(
-        std::make_unique<JPH::BoxShapeSettings>(JPH::Vec3Arg(halfExtents.x, halfExtents.y, halfExtents.z))
-    );
+    const CollisionShapeID id = mAllJoltShapes.size();
+    JPH::BoxShapeSettings data(JPH::Vec3Arg(halfExtents.x, halfExtents.y, halfExtents.z));
+    JPH::ShapeSettings::ShapeResult res = data.Create();
+    if (res.HasError()) {
+        panic("Failed to create box shape: {}", res.GetError().c_str());
+    }
+    res.Get()->SetUserData(PhysicsShapeUserData(id, CollisionShapes::BOX));
+    mAllJoltShapes.emplace_back(res.Get());
     mBoxShapes[halfExtents] = id;
     return id;
 }
@@ -97,9 +111,14 @@ CollisionShapeID CollisionShapeRepository::getOrAddSphereCollisionShape(f32 radi
     }
 
     // Insert new
-    const CollisionShapeID id = mAllShapes.size();
-    mAllShapes.emplace_back(std::make_unique<btSphereShape>(radius));
-    mAllJoltShapes.emplace_back(std::make_unique<JPH::SphereShapeSettings>(radius));
+    const CollisionShapeID id = mAllJoltShapes.size();
+    JPH::SphereShapeSettings settings(radius);
+    JPH::ShapeSettings::ShapeResult res = settings.Create();
+    if (res.HasError()) {
+        panic("Failed to create box shape: {}", res.GetError().c_str());
+    }
+    res.Get()->SetUserData(PhysicsShapeUserData(id, CollisionShapes::SPHERE));
+    mAllJoltShapes.emplace_back(res.Get());
     mSphereShapes[radius] = id;
     return id;
 }

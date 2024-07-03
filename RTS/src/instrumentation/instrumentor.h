@@ -21,6 +21,8 @@
 
 constexpr f32 MICROSEC_TO_MILLISEC = 0.001f;
 
+#include <shared_mutex>
+
 struct ProfileResult
 {
     const char* Name;
@@ -52,7 +54,9 @@ struct InstrumentorDebugOutputData {
     std::map<std::thread::id, std::vector<InstrumentorDebugStrings>> data;
 };
 
-typedef FlatMap<std::thread::id, std::map<const char*, InstrumentTimeInfo>> DebugInstrumentationDataMap;
+typedef FlatMap<std::thread::id, FlatMap<const char*, InstrumentTimeInfo>> DebugInstrumentationDataMap;
+
+
 
 class Instrumentor
 {
@@ -62,7 +66,7 @@ private:
     std::ofstream m_OutputStream;
 #endif
     int m_ProfileCount;
-    std::mutex mMutex;
+    mutable std::shared_mutex mMutex;
     // TODO: Hashed string
     DebugInstrumentationDataMap mMostRecentTimes;
 
@@ -76,6 +80,7 @@ public:
     }
 
     void getDebugOutputData(InstrumentorDebugOutputData& outData);
+    InstrumentorDebugStrings getSingleResult(std::thread::id threadId, const char* name) const;
 
     void resetTimes();
 

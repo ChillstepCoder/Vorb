@@ -70,7 +70,6 @@
 
 #include "camera/Camera3D.h"
 #include "camera/CameraController.h"
-#include "physics/PhysicsWorld.h"
 
 #include "time/TimeOfDayManager.h" // TODO: Move to WorldRenderer
 
@@ -635,18 +634,10 @@ void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState&
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
         yOffset += GAP_SIZE;
 
-        sprintf_s(buffer, STR_BUFFER_SIZE, "Static objects: %u", mActiveWorld->getPhysicsWorld().getNumStaticCollisionObjects());
-        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-        yOffset += GAP_SIZE;
-
-        sprintf_s(buffer, STR_BUFFER_SIZE, "Dynamic objects: %u", mActiveWorld->getPhysicsWorld().getNumDynamicCollisionObjects());
-        mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-        yOffset += GAP_SIZE;
-
-        if (mActiveWorld->getPhysicsWorld().isProfiling()) {
-            mSb->drawString(mSpriteFont.get(), "PHYSICS PROFILING ON", f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::Red);
-            yOffset += GAP_SIZE;
-        }
+        //if (mActiveWorld->getPhysicsWorld().isProfiling()) {
+        //    mSb->drawString(mSpriteFont.get(), "PHYSICS PROFILING ON", f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::Red);
+        //    yOffset += GAP_SIZE;
+        //}
 
         if (sDebugOptions.mChunkBoundaries) {
             sprintf_s(buffer, STR_BUFFER_SIZE, "Chunks: %u", (ui32)renderState.getDebugChunks().size());

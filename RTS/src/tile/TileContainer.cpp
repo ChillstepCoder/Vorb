@@ -18,8 +18,6 @@
 
 #include "debugging/DebugRenderer.h"
 
-#include "physics/PhysicsWorld.h"
-
 // For item placement
 #include "definitions/ModelDef.h"
 

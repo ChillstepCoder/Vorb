@@ -134,7 +134,7 @@ namespace ImguiUtil {
         else if constexpr (std::is_same_v<T, std::string>) {
             // Handle std::string
             char buffer[256];
-            std::strncpy(buffer, value.c_str(), sizeof(buffer));
+            strncpy_s(buffer, value.c_str(), sizeof(buffer));
             changed |= ImGui::InputText(label, buffer, sizeof(buffer));
             if (changed) {
                 value = buffer;

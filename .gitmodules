@@ -11,9 +11,6 @@
 [submodule "RTS/dependencies/yojimbo"]
 	path = RTS/dependencies/yojimbo
 	url = https://github.com/networkprotocol/yojimbo.git
-[submodule "RTS/dependencies/bullet"]
-	path = RTS/dependencies/bullet
-	url = https://github.com/bulletphysics/bullet3
 [submodule "RTS/dependencies/eventpp"]
 	path = RTS/dependencies/eventpp
 	url = https://github.com/wqking/eventpp.git

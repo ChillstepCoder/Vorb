@@ -1,12 +1,7 @@
 #include "stdafx.h"
 #include "StaticPhysicsMeshBuilder.h"
 
-#include "physics/PhysicsWorld.h"
 #include "physics/NewPhysicsWorld.h"
-#include "physics/StaticPhysicsMesh.h"
-
-#include "BulletCollision/CollisionShapes/btTriangleIndexVertexArray.h"
-#include "BulletCollision/CollisionShapes/btBvhTriangleMeshShape.h"
 
 const f32v2 CUBE_FACING_AXIS_DIRECTIONS[e_cast(CubeFacing::COUNT)] = {
     f32v2(-1, 1), // LEFT
@@ -43,7 +38,6 @@ void StaticPhysicsMeshBuilder::addTileQuad(f32v3 tilePosition, const f32v2& xyDi
     mIndices[ind + 3u] = v + 2u;
     mIndices[ind + 4u] = v + 3u;
     mIndices[ind + 5u] = v;
-
 
     mVerts.resize(mVerts.size() + 4);
 
@@ -137,12 +131,6 @@ void StaticPhysicsMeshBuilder::addTriangleBetweenPoints(const f32v3 vertPoints[3
 
 bool StaticPhysicsMeshBuilder::hasAnyCollision() {
     return mVerts.size() || mTrackedRigidBodyGatherer.getNumStaticObjectsToAdd();
-}
-
-void StaticPhysicsMeshBuilder::finish(PhysicsWorld& physicsWorld) {
-    if (hasAnyCollision()) {
-        physicsWorld.addStaticMeshFromBuilder(*this);
-    }
 }
 
 void StaticPhysicsMeshBuilder::finish(NewPhysicsWorld& physicsWorld) {

@@ -21,7 +21,7 @@ public:
 
     // Tasks
     void addGenericTask(GameFunction func) { mGameThreadFuncProcs.enqueue(std::move(func)); }
-    void addCameraPickTeleportTask(World& world, const f32v3& camPos, const f32v3& camDir);
+    void addCameraPickTeleportTask(World& world, f32v3 camPos, f32v3 camDir);
     void addHideLocalPlayerModelTask(World& world, bool hide);
     void addTileContainerStaticPhysicsMeshUpdateTask(const TileContainer* container, StaticPhysicsMeshBuilder&& meshBuilder);
     void addEntityCreateTask(World& world, const f32v3& pos, StrToken typeToken, bool shouldReplicate);

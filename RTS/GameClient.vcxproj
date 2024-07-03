@@ -151,7 +151,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\bullet\src;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;BT_USE_DOUBLE_PRECISION;BT_EULER_DEFAULT_ZYX;BT_ENABLE_PROFILE;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -159,7 +159,7 @@
       <AdditionalOptions>/bigobj /Bt %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlibd.lib;SDL_ttfd.lib;SDL2maind.lib;SDL2d.lib;libyaml-cppmdd.lib;lua_libd.lib;pngd.lib;freetyped.lib;bz2d.lib;glewd.lib;enetd.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\base\Debug\*_d.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;Bullet3Common_vs2010_x64_debug.lib;Bullet3Dynamics_vs2010_x64_debug.lib;Bullet3Geometry_vs2010_x64_debug.lib;Bullet3Collision_vs2010_x64_debug.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Debug\yojimbo.lib;$(SolutionDir)..\RTS\dependencies\meshoptimizer\Debug\meshoptimizer.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\build\Debug\ryml.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\build\Debug\c4core.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlibd.lib;SDL_ttfd.lib;SDL2maind.lib;SDL2d.lib;libyaml-cppmdd.lib;lua_libd.lib;pngd.lib;freetyped.lib;bz2d.lib;glewd.lib;enetd.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\base\Debug\*_d.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Debug\yojimbo.lib;$(SolutionDir)..\RTS\dependencies\meshoptimizer\Debug\meshoptimizer.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\build\Debug\ryml.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\build\Debug\c4core.lib</AdditionalDependencies>
     </Link>
     <PreLinkEvent>
       <Command>
@@ -213,7 +213,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\bullet\src;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;BT_USE_DOUBLE_PRECISION;BT_NO_SIMD_OPERATOR_OVERLOADS;BT_ENABLE_PROFILE;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -223,7 +223,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>..\build\release\vorb.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlib.lib;SDL_ttf.lib;SDL2main.lib;SDL2.lib;libyaml-cppmd.lib;lua_lib.lib;png.lib;freetype.lib;bz2.lib;glew.lib;enet.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\base\Release\*_r.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;BulletCollision_vs2010_x64_release.lib;BulletDynamics_vs2010_x64_release.lib;LinearMath_vs2010_x64_release.lib;Bullet3Common_vs2010_x64_release.lib;Bullet3Dynamics_vs2010_x64_release.lib;Bullet3Geometry_vs2010_x64_release.lib;Bullet3Collision_vs2010_x64_release.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Release\yojimbo.lib;$(SolutionDir)..\RTS\dependencies\meshoptimizer\Release\meshoptimizer.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\build\Release\ryml.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\build\Release\c4core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\build\release\vorb.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlib.lib;SDL_ttf.lib;SDL2main.lib;SDL2.lib;libyaml-cppmd.lib;lua_lib.lib;png.lib;freetype.lib;bz2.lib;glew.lib;enet.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\base\Release\*_r.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Release\yojimbo.lib;$(SolutionDir)..\RTS\dependencies\meshoptimizer\Release\meshoptimizer.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\build\Release\ryml.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\build\Release\c4core.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -258,7 +258,6 @@
     <ClCompile Include="src\data_structure\FlatQuadtree.cpp" />
     <ClCompile Include="src\debugging\DebugMesh.cpp" />
     <ClCompile Include="src\debugging\DebugRenderer.cpp" />
-    <ClCompile Include="src\debugging\PhysicsDebugDrawer.cpp" />
     <ClCompile Include="src\debugging\ValueTweaker.cpp" />
     <ClCompile Include="src\debugging\VisualLogger.cpp" />
     <ClCompile Include="src\definitions\AnimMachineDef.cpp" />
@@ -366,9 +365,8 @@
     <ClCompile Include="src\physics\CollisionShapeRepository.cpp" />
     <ClCompile Include="src\physics\CollisionShapes.cpp" />
     <ClCompile Include="src\physics\NewPhysicsWorld.cpp" />
+    <ClCompile Include="src\physics\PhysicsBodyUserData.cpp" />
     <ClCompile Include="src\physics\PhysicsDebugRenderer.cpp" />
-    <ClCompile Include="src\physics\PhysicsWorld.cpp" />
-    <ClCompile Include="src\physics\StaticPhysicsMesh.cpp" />
     <ClCompile Include="src\physics\StaticPhysicsMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\animation\AnimMachineInstance.cpp" />
     <ClCompile Include="src\rendering\animation\Blendspace1DPlayer.cpp" />
@@ -549,7 +547,6 @@
     <ClCompile Include="src\ui\UIContext.cpp" />
     <ClCompile Include="src\ui\TileInteractPanel.cpp" />
     <ClCompile Include="src\util\ArbitraryObjectArray.cpp" />
-    <ClCompile Include="src\util\b3ChromeTraceUtil.cpp" />
     <ClCompile Include="src\util\BitArray.cpp" />
     <ClCompile Include="src\util\GridEdgeFinder.cpp" />
     <ClCompile Include="src\util\IntersectionUtil.cpp" />
@@ -649,7 +646,6 @@
     <ClInclude Include="src\data_structure\QuadtreeSettings.h" />
     <ClInclude Include="src\debugging\DebugMesh.h" />
     <ClInclude Include="src\debugging\DebugRenderer.h" />
-    <ClInclude Include="src\debugging\PhysicsDebugDrawer.h" />
     <ClInclude Include="src\debugging\ValueTweaker.h" />
     <ClInclude Include="src\debugging\SimpleMesh.h" />
     <ClInclude Include="src\debugging\VisualLogger.h" />
@@ -809,14 +805,19 @@
     <ClInclude Include="src\pathfinding\NavPath.h" />
     <ClInclude Include="src\pathfinding\NavWorld.h" />
     <ClInclude Include="src\pathfinding\PathFinder.h" />
+    <ClInclude Include="src\physics\BroadphaseLayers.h" />
     <ClInclude Include="src\physics\CollisionShapeRepository.h" />
     <ClInclude Include="src\physics\CollisionShapes.h" />
     <ClInclude Include="src\physics\NewPhysicsWorld.h" />
     <ClInclude Include="src\physics\PhysHitResult.h" />
+    <ClInclude Include="src\physics\PhysicsBodyFilters.h" />
+    <ClInclude Include="src\physics\PhysicsBodyUserData.h" />
+    <ClInclude Include="src\physics\PhysicsBroadPhaseLayerFilters.h" />
     <ClInclude Include="src\physics\PhysicsConst.h" />
     <ClInclude Include="src\physics\PhysicsDebugRenderer.h" />
-    <ClInclude Include="src\physics\PhysicsWorld.h" />
-    <ClInclude Include="src\physics\StaticPhysicsMesh.h" />
+    <ClInclude Include="src\physics\PhysicsObjectLayer.h" />
+    <ClInclude Include="src\physics\PhysicsObjectLayerFilters.h" />
+    <ClInclude Include="src\physics\PhysicsShapeUserData.h" />
     <ClInclude Include="src\physics\StaticPhysicsMeshBuilder.h" />
     <ClInclude Include="src\physics\TrackedStaticRigidBodyGatherer.h" />
     <ClInclude Include="src\rendering\animation\AnimMachineInstance.h" />
@@ -1064,7 +1065,6 @@
     <ClInclude Include="src\ui\UIContextEvents.h" />
     <ClInclude Include="src\util\AABB.hpp" />
     <ClInclude Include="src\util\ArbitraryObjectArray.h" />
-    <ClInclude Include="src\util\b3ChromeTraceUtil.h" />
     <ClInclude Include="src\util\BitArray.h" />
     <ClInclude Include="src\util\BitFlags.h" />
     <ClInclude Include="src\util\Cartesian.h" />

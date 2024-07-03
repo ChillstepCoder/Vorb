@@ -6,8 +6,6 @@
 
 constexpr f32 MATH_EPSILON = 0.00001f;
 
-#include "LinearMath/btVector3.h"
-
 inline int intFloor(double x) {
     int i = (int)x;
     return i - (i > x);
@@ -23,15 +21,6 @@ inline void incrementMod3(OUT int& i) {
 }
 
 namespace {
-    inline f32v3 btVector3ToF32v3(const btVector3& v) {
-        return f32v3(v.x(), v.y(), v.z());
-    }
-    inline f32v2 btVector3ToF32v2(const btVector3& v) {
-        return f32v2(v.x(), v.y());
-    }
-    inline btVector3 f32v3ToBtVector3(const f32v3& v) {
-        return btVector3(v.x, v.y, v.z);
-    }
     inline const i8v3 compressNormal(const f32v3& normal) {
         return {
             (i8)glm::clamp(normal.x * 127.0f, -127.0f, 127.0f),

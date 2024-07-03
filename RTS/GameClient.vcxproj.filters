@@ -330,12 +330,6 @@
     <ClCompile Include="src\resources\FontRepository.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\physics\PhysicsWorld.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\debugging\PhysicsDebugDrawer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\physics\CollisionShapes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -465,9 +459,6 @@
     <ClCompile Include="src\rendering\mesh\GrassMeshManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\physics\StaticPhysicsMesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rendering\mesh\Vertex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -508,9 +499,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\physics\CollisionShapeRepository.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\util\b3ChromeTraceUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\resources\ResourceOperations.cpp">
@@ -1131,6 +1119,9 @@
     <ClCompile Include="src\ui\debugging\MovementDebugger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\physics\PhysicsBodyUserData.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -1562,12 +1553,6 @@
     <ClInclude Include="src\rendering\font\Font.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\physics\PhysicsWorld.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\debugging\PhysicsDebugDrawer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\terrain\HeightmapPatch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1775,9 +1760,6 @@
     <ClInclude Include="src\rendering\tasks\MeshTask.inl">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\physics\StaticPhysicsMesh.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\physics\PhysicsConst.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -1836,9 +1818,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\physics\TrackedStaticRigidBodyGatherer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\util\b3ChromeTraceUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tile\TileContainerEvents.h">
@@ -2799,6 +2778,27 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\options\GlobalMovementSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\physics\PhysicsBodyUserData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\physics\PhysicsBodyFilters.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\physics\BroadphaseLayers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\physics\PhysicsBroadPhaseLayerFilters.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\physics\PhysicsObjectLayerFilters.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\physics\PhysicsObjectLayer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\physics\PhysicsShapeUserData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

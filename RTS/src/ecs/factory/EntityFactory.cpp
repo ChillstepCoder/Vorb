@@ -19,7 +19,6 @@
 
 #include <ozz/animation/runtime/animation.h>
 #include "world/World.h"
-#include "physics/PhysicsWorld.h"
 #include "physics/NewPhysicsWorld.h"
 
 #include <Jolt/Physics/Character/Character.h>
@@ -33,7 +32,6 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
     // due to physics component doing singleton lookup
     assert(&world == sGameWorld.get());
 
-    PhysicsWorld& physWorld = world.getPhysicsWorld();
     NewPhysicsWorld& physicsWorld = world.getNewPhysicsWorld();
     IFullECS& ecs = world.getECS();
 
@@ -119,19 +117,13 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                 assert(defInst.componentDef);
                 PhysicsComponentDef& cdef = static_cast<PhysicsComponentDef&>(*defInst.componentDef);
                 auto& physics = registry.emplace<PhysicsComponent>(newEntity);
-                RigidBodyRotationType rotType = RigidBodyRotationType::FULL;
-                if (cdef.disableXyzRot) {
-                    rotType = RigidBodyRotationType::NO_ROTATE;
-                }
-                else if (cdef.disableXyRot) {
-                    rotType = RigidBodyRotationType::NO_ROTATE_XY;
-                }
-                // TODO: allow collision group specify
+
                 physics.mHalfHeight = cdef.halfExtents.y;
                 if (hasCharacterControl) {
                     // TODO: Use?
                     UNUSED(cdef.massKg);
                     UNUSED(cdef.colliderShape);
+                    UNUSED(cdef.disableXyzRot);
                     CharacterControlComponent& controlCmp = registry.get<CharacterControlComponent>(newEntity);
                     controlCmp.mCharacterController = physicsWorld.createSimpleCharacter(newEntity, f32v3(position.x, position.y, position.z + cdef.halfExtents.y), cdef.halfExtents);
                     physics.mBodyID = static_cast<JPH::Character&>(*controlCmp.mCharacterController).GetBodyID().GetIndexAndSequenceNumber();

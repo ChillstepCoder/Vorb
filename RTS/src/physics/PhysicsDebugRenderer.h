@@ -2,7 +2,23 @@
 
 #ifdef JPH_DEBUG_RENDERER
 #include <Jolt/Jolt.h>
+#include <Jolt/Physics/Body/Body.h>
+#include <Jolt/Physics/Body/BodyFilter.h>
 #include <Jolt/Renderer/DebugRenderer.h>
+
+class DynamicBodyDrawFilter : public JPH::BodyDrawFilter {
+public:
+    bool ShouldDraw(const JPH::Body& inBody) const {
+        return inBody.GetMotionType() == JPH::EMotionType::Dynamic;
+    }
+};
+
+class StaticBodyDrawFilter : public JPH::BodyDrawFilter {
+public:
+    bool ShouldDraw(const JPH::Body& inBody) const {
+        return inBody.GetMotionType() == JPH::EMotionType::Static;
+    }
+};
 
 DECL_VG(class GLProgram);
 
