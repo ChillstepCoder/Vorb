@@ -44,6 +44,13 @@ struct InstrumentTimeInfo {
     unsigned depth;
 };
 
+struct InstrumentorDebugOutput {
+    const char* functionName;
+    f32 runningAvgerageMs;
+    f32 maxMs;
+    unsigned depth;
+};
+
 struct InstrumentorDebugStrings {
     nString name;
     nString avg;
@@ -51,11 +58,10 @@ struct InstrumentorDebugStrings {
 };
 
 struct InstrumentorDebugOutputData {
-    std::map<std::thread::id, std::vector<InstrumentorDebugStrings>> data;
+    std::map<std::thread::id, std::vector<InstrumentorDebugOutput>> data;
 };
 
 typedef FlatMap<std::thread::id, FlatMap<const char*, InstrumentTimeInfo>> DebugInstrumentationDataMap;
-
 
 
 class Instrumentor
@@ -81,6 +87,7 @@ public:
 
     void getDebugOutputData(InstrumentorDebugOutputData& outData);
     InstrumentorDebugStrings getSingleResult(std::thread::id threadId, const char* name) const;
+    static void buildDebugStrings(InstrumentorDebugOutput inputData, InstrumentorDebugStrings& outStrings);
 
     void resetTimes();
 

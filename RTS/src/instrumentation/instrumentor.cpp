@@ -2,24 +2,19 @@
 #include "instrumentor.h"
 
 
-void recursiveGetChildStrings(std::vector<const char*>& children, std::map<const char*, std::vector<const char*>>& childMap, std::vector<InstrumentorDebugStrings>& threadStrings, std::map<const char*, std::pair<InstrumentorDebugStrings, bool>>& functionStrings) {
+void recursiveGetChildInfo(std::vector<const char*>& children, std::map<const char*, std::vector<const char*>>& childMap, std::vector<InstrumentorDebugOutput>& threadStrings, std::map<const char*, std::pair<InstrumentorDebugOutput, bool>>& functionStrings) {
     // TODO: Detect circular reference? Tail recursion?
     for (auto&& childId : children) {
         threadStrings.emplace_back(std::move(functionStrings[childId].first));
         auto&& it = childMap.find(childId);
         if (it != childMap.end()) {
-            recursiveGetChildStrings(it->second, childMap, threadStrings, functionStrings);
+            recursiveGetChildInfo(it->second, childMap, threadStrings, functionStrings);
         }
     }
 }
 
 void Instrumentor::getDebugOutputData(InstrumentorDebugOutputData& outData)
 {
-    std::ostringstream outSS[3];
-
-    for (int i = 0; i < 3; ++i)
-        outSS[i].precision(1);
-
     // Copy to reduce critical section time to as small as possible
     DebugInstrumentationDataMap timeCopy;
     {
@@ -28,22 +23,19 @@ void Instrumentor::getDebugOutputData(InstrumentorDebugOutputData& outData)
     }
     // Sort via threads
     for (auto& imap : timeCopy) {
-        std::vector<InstrumentorDebugStrings>& threadStrings = outData.data[imap.first];
+        std::vector<InstrumentorDebugOutput>& threadStrings = outData.data[imap.first];
         std::map<const char* /*function*/, std::vector<const char*> /*children*/> childMap;
-        std::map<const char* /*function*/, std::pair<InstrumentorDebugStrings, bool/*isRoot*/>> functionStrings;
+        std::map<const char* /*function*/, std::pair<InstrumentorDebugOutput, bool/*isRoot*/>> functionStrings;
         // Sort by parent
         for (auto&& it : imap.second) {
             const InstrumentTimeInfo& timeInfo = it.second;
             const char* functionName = it.first;
-            // Format
-            const unsigned depthFill = timeInfo.depth * 2;
-            outSS[0] << std::setfill(' ') << std::setw(depthFill) << "" << functionName;
-            outSS[1] << std::setfill(' ') << std::setw(depthFill) << "" << "  avg: " << std::setw(5) << std::fixed << timeInfo.runningAverage * MICROSEC_TO_MILLISEC << "ms";
-            outSS[2] << std::setfill(' ') << std::setw(depthFill) << "" << "  max: " << std::setw(5) << std::fixed << timeInfo.max * MICROSEC_TO_MILLISEC << "ms";
 
             // Store string + isroot
             const bool isRoot = (timeInfo.parent == nullptr);
-            functionStrings[functionName] = std::make_pair(InstrumentorDebugStrings{ outSS[0].str(), outSS[1].str(), outSS[2].str() }, isRoot);
+            functionStrings[functionName] = std::make_pair(InstrumentorDebugOutput{
+                functionName,  timeInfo.runningAverage * MICROSEC_TO_MILLISEC, timeInfo.max * MICROSEC_TO_MILLISEC, timeInfo.depth }, isRoot
+            );
             // Store parent/child mapping
             if (isRoot) {
                 // Make sure we exist in the child map
@@ -53,17 +45,14 @@ void Instrumentor::getDebugOutputData(InstrumentorDebugOutputData& outData)
                 // Mark us as child of parent
                 childMap[timeInfo.parent].emplace_back(functionName);
             }
-            outSS[0].str({});
-            outSS[1].str({});
-            outSS[2].str({});
         }
         // Copy strings in sorted order
         for (auto&& it : childMap) {
-            std::pair<InstrumentorDebugStrings, bool/*isRoot*/>& functionData = functionStrings[it.first];
+            std::pair<InstrumentorDebugOutput, bool/*isRoot*/>& functionData = functionStrings[it.first];
             if (functionData.second) {
                 // If we are root, store our strings and recurse chilren
                 threadStrings.emplace_back(std::move(functionData.first));
-                recursiveGetChildStrings(it.second, childMap, threadStrings, functionStrings);
+                recursiveGetChildInfo(it.second, childMap, threadStrings, functionStrings);
             }
         }
     }
@@ -90,6 +79,21 @@ InstrumentorDebugStrings Instrumentor::getSingleResult(std::thread::id threadId,
         name,
         "  avg: " + std::to_string(info.runningAverage * MICROSEC_TO_MILLISEC) + "ms",
         "  max: " + std::to_string(info.max * MICROSEC_TO_MILLISEC) + "ms"};
+}
+
+void Instrumentor::buildDebugStrings(InstrumentorDebugOutput inputData, InstrumentorDebugStrings& outStrings) {
+    std::ostringstream outSS[3];
+
+    for (int i = 0; i < 3; ++i)
+        outSS[i].precision(1);
+
+    const unsigned depthFill = inputData.depth * 2;
+    outSS[0] << std::setfill(' ') << std::setw(depthFill) << "" << inputData.functionName;
+    outSS[1] << std::setfill(' ') << std::setw(depthFill) << "" << "  avg: " << std::setw(5) << std::fixed << inputData.runningAvgerageMs << "ms";
+    outSS[2] << std::setfill(' ') << std::setw(depthFill) << "" << "  max: " << std::setw(5) << std::fixed << inputData.maxMs << "ms";
+    outStrings.name = std::move(outSS[0].str());
+    outStrings.avg = std::move(outSS[1].str());
+    outStrings.max = std::move(outSS[2].str());
 }
 
 void Instrumentor::resetTimes()

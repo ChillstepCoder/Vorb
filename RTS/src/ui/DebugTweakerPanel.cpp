@@ -530,13 +530,15 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         }
         InstrumentorDebugOutputData timeStrings;
         Instrumentor::get().getDebugOutputData(timeStrings);
-        std::map<nString, std::vector<InstrumentorDebugStrings>> sortedStrings;
+        std::map<nString, std::vector<InstrumentorDebugOutput>> sortedStrings;
         for (auto&& str : timeStrings.data) {
             sortedStrings[getThreadName(str.first)] = std::move(str.second);
         }
+        InstrumentorDebugStrings debugStr;
         for (auto&& str : sortedStrings) {
             if (ImGui::CollapsingHeader(str.first.c_str())) {
-                for (InstrumentorDebugStrings& debugStr : str.second) {
+                for (InstrumentorDebugOutput& debugOutput : str.second) {
+                    Instrumentor::buildDebugStrings(debugOutput, debugStr);
                     ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), debugStr.name.c_str());
 
                     ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 50, 255, 255));
