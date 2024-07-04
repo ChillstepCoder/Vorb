@@ -1110,7 +1110,7 @@
     <ClCompile Include="src\ecs\system\PlayerInteractSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\physics\NewPhysicsWorld.cpp">
+    <ClCompile Include="src\physics\PhysicsWorld.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\physics\PhysicsDebugRenderer.cpp">
@@ -2771,7 +2771,7 @@
     <ClInclude Include="src\ecs\system\PlayerInteractSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\physics\NewPhysicsWorld.h">
+    <ClInclude Include="src\physics\PhysicsWorld.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\physics\PhysicsDebugRenderer.h">
@@ -2805,6 +2805,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\physics\PhysicsJobSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\physics\PhysicsWorldEvents.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

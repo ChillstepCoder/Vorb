@@ -4,7 +4,7 @@
 #include "world/World.h"
 #include "ecs/IFullECS.h"
 
-#include "physics/NewPhysicsWorld.h"
+#include "physics/PhysicsWorld.h"
 
 #include "ui/UIContext.h"
 #include "ui/debugging/MovementDebugger.h"
@@ -269,7 +269,7 @@ PhysicsDebugger::~PhysicsDebugger() = default;
 void PhysicsDebugger::updateAndRenderImGui() {
     if (ImGui::Begin("Physics Debugger", &sGameplayDebugOptions.showPhysicsDebugger, ImGuiWindowFlags_NoDocking)) {
 
-        sGameWorld->getNewPhysicsWorld().updateAndRenderImguiDebugControls();
+        sGameWorld->getPhysicsWorld().updateAndRenderImguiDebugControls();
 
         ImGui::End();
     }

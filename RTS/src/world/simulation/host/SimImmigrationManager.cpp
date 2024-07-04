@@ -27,7 +27,7 @@ void SimImmigrationManager::init() {
     mImmigrationData.reserve(mMarkupGrid.getBodyCount());
     std::vector<std::pair<ui32, f32>> desirabilitiesSort;
     desirabilitiesSort.reserve(256);
-    for (BodyID i = 0; i < mMarkupGrid.getBodyCount(); ++i) {
+    for (WorldBodyID i = 0; i < mMarkupGrid.getBodyCount(); ++i) {
         const WorldBodyMarkupData& bodyMarkup = mMarkupGrid.getBodyData(i);
         if (bodyMarkup.isLand()) {
             BodyImmigrationData& data = mImmigrationData[i];
@@ -93,8 +93,8 @@ SimImmigrationManager::ImmigrationOrder SimImmigrationManager::getNextImmigratio
                 for (ChunkID chunkId : bodyMarkup.borderChunks) {
                     const f32v2 chunkPos = GridIdUtil::getWorldPos(chunkId, CHUNK_WIDTH, widthChunks);
                     f32 distanceSq = glm::length2(targetPos - chunkPos);
-                    const BodyID adjacentBodyID = mMarkupGrid.getChunkMarkup(chunkId).mainWaterBodyID;
-                    if (adjacentBodyID == INVALID_BODY_ID || mMarkupGrid.getBodyData(adjacentBodyID).bodyType != WorldMarkupBodyType::Ocean) {  
+                    const WorldBodyID adjacentBodyID = mMarkupGrid.getChunkMarkup(chunkId).mainWaterBodyID;
+                    if (adjacentBodyID == InvalidWOrldBodyID || mMarkupGrid.getBodyData(adjacentBodyID).bodyType != WorldMarkupBodyType::Ocean) {  
                         // We don't want to spawn on lakes, invalid should be impossible but IDK
                         distanceSq += SQ(32768.f);
                     }

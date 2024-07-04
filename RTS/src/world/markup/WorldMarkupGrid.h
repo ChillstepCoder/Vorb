@@ -65,7 +65,7 @@ constexpr ui16 WORLD_MARKUP_FLAGS_WATER_MASK = e_cast(WorldMarkupFlags::Lake) | 
 // River is often adjacent to the city center
 
 struct WorldMarkupData {
-    BodyID bodyId = INVALID_BODY_ID;
+    WorldBodyID bodyId = InvalidWOrldBodyID;
     ui32 continentSize;
     BitFlags<WorldMarkupFlags> flags;
     //ui16 PADDING;
@@ -80,8 +80,8 @@ struct WorldMarkupData {
 static_assert(sizeof(WorldMarkupData) == 12, "Keep small");
 
 struct WorldChunkMarkupData {
-    BodyID mainLandBodyID = UINT32_MAX;
-    BodyID mainWaterBodyID = UINT32_MAX;
+    WorldBodyID mainLandBodyID = UINT32_MAX;
+    WorldBodyID mainWaterBodyID = UINT32_MAX;
     f32 settleDesirability = 0.0f;
     f32 landRatio = 0.0f; // 1.0 = full land, 0.0 = full water
 
@@ -95,7 +95,7 @@ struct WorldChunkMarkupData {
 };
 
 struct WorldBodyNeighborInfo {
-    BodyID neighborBodyIndex = UINT32_MAX;
+    WorldBodyID neighborBodyIndex = UINT32_MAX;
     ui32 adjacentBlocks = 0;
 
     // ======================= Serialization =======================
@@ -126,7 +126,7 @@ struct WorldBodyMarkupData {
     std::vector<ChunkID> chunks; // Only used by land bodies, water will be empty
     std::vector<ChunkID> borderChunks; // Only used by land bodies, water will be empty
     f32v2 averagePos = f32v2(0.0f);
-    BodyID bodyIndex = 0;
+    WorldBodyID bodyIndex = 0;
     ui32 sizeBlocks = 0; // Block is 8x8 tiles
     WorldMarkupBodyType bodyType;
     bool onMapEdge = false;
@@ -177,10 +177,10 @@ public:
         return mChunkMarkup[index];
     }
 
-    const WorldBodyMarkupData& getBodyData(BodyID bodyId) const {
+    const WorldBodyMarkupData& getBodyData(WorldBodyID bodyId) const {
         return mBodies[bodyId];
     }
-    WorldBodyMarkupData& getBodyDataForGeneration(BodyID bodyId) {
+    WorldBodyMarkupData& getBodyDataForGeneration(WorldBodyID bodyId) {
         return mBodies[bodyId];
     }
     ui32 getBodyCount() const {

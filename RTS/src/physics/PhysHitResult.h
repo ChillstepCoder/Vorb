@@ -11,7 +11,7 @@ namespace JPH {
 #include "physics/PhysicsShapeUserData.h"
 
 struct PhysHitResult {
-    BodyID mHitBody = INVALID_PHYS_BODY_ID;
+    PhysBodyID mHitBody = INVALID_PHYS_BODY_ID;
     f32v3 mPosition;
     f32v3 mNormal; // Not normalized for raycasts
     f32 mTime = 1.0f;
@@ -29,7 +29,7 @@ enum class PhysicsPickQueryFlags : ui8 {
 struct PhysicsQueryResult {
     const JPH::Shape* mShape = nullptr;
     PhysicsBodyUserData mBodyUserData;
-    BodyID mPhysBody = INVALID_PHYS_BODY_ID;
+    PhysBodyID mPhysBody = INVALID_PHYS_BODY_ID;
     f32v3 mCenterOfMassPosition = f32v3(0);
 };
 

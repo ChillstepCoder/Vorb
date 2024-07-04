@@ -21,6 +21,7 @@ class HeightmapPatch;
 #include "physics/PhysicsBodyUserData.h"
 #include "physics/BroadphaseLayers.h"
 #include "PhysicsObjectLayer.h"
+#include "physics/PhysicsWorldEvents.h"
 
 #define ENABLE_PHYSICS_ANALYTICS 1
 
@@ -44,11 +45,11 @@ struct NewTileContainerPhysicsData {
 
 class PhysicsWorldBodyInterface;
 
-class NewPhysicsWorld {
+class PhysicsWorld {
     friend class PhysicsWorldBodyInterface;
 public:
-    NewPhysicsWorld(World& world, CollisionShapeRepository& shapeRepo);
-    ~NewPhysicsWorld();
+    PhysicsWorld(World& world, CollisionShapeRepository& shapeRepo);
+    ~PhysicsWorld();
 
     static void initializeJPH();
 
@@ -61,6 +62,7 @@ public:
 
     void updateTerrainBody(HeightmapPatch& patch);
 
+    PhysBodyID createItemCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents, glm::quat orientation, f32v3 linearVelocity, f32v3 angularVelocity);
     PhysBodyID createCharacterCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
     std::unique_ptr<JPH::CharacterBase> createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
 
@@ -108,6 +110,11 @@ public:
     );
 
     // ===========================================================================
+    // Events
+    // ===========================================================================
+    EVENT_LISTENER_FUNCS(PhysicsWorld, ItemAtRest, PhysicsWorldEventType::ItemAtRest, PhysicsWorldEvent&);
+
+    // ===========================================================================
     // Debugging
     // ===========================================================================
     void updateAndRenderImguiDebugControls();
@@ -149,9 +156,12 @@ private:
     f32 mTickTimeRemainder = 0.0f;
 
     UnorderedFlatMap<TileContainerID, std::unique_ptr<NewTileContainerPhysicsData>> mTileContainerPhysicsData;
+
+    EVENT_DISPATCHER_DEF(PhysicsWorld);
+
 };
 
-extern NewPhysicsWorld* sGamePhysicsWorld;
+extern PhysicsWorld* sGamePhysicsWorld;
 
 
 // Trusted classes may use these private members
@@ -160,9 +170,9 @@ class PhysicsWorldBodyInterface {
 
     PhysicsWorldBodyInterface() = delete;
     // Use this to query the body in a thread safe manner
-    inline static const JPH::BodyLockInterface& getBodyLockInterface(NewPhysicsWorld& physicsWorld) { return physicsWorld.getBodyLockInterface(); }
+    inline static const JPH::BodyLockInterface& getBodyLockInterface(PhysicsWorld& physicsWorld) { return physicsWorld.getBodyLockInterface(); }
     // Use this when bodyLockInterface does not suffice due to broadphase manipulation (mutating positions)
-    inline static JPH::BodyInterface& getBodyInterface(NewPhysicsWorld& physicsWorld) { return physicsWorld.getBodyInterface(); }
+    inline static JPH::BodyInterface& getBodyInterface(PhysicsWorld& physicsWorld) { return physicsWorld.getBodyInterface(); }
     // Use this on game thread as we only mutate bodies on game thread
-    inline static const JPH::BodyInterface& getBodyInterfaceNonLocking(NewPhysicsWorld& physicsWorld) { return physicsWorld.getBodyInterfaceNonLocking(); }
+    inline static const JPH::BodyInterface& getBodyInterfaceNonLocking(PhysicsWorld& physicsWorld) { return physicsWorld.getBodyInterfaceNonLocking(); }
 };

@@ -2,11 +2,11 @@
 
 #include "physics/TrackedStaticRigidBodyGatherer.h"
 
-class NewPhysicsWorld;
+class PhysicsWorld;
 
 class StaticPhysicsMeshBuilder
 {
-    friend class NewPhysicsWorld;
+    friend class PhysicsWorld;
 public:
     StaticPhysicsMeshBuilder(TileContainerID tileContainerOwner) : mTrackedRigidBodyGatherer(tileContainerOwner) {};
     ~StaticPhysicsMeshBuilder();
@@ -24,7 +24,7 @@ public:
     TileContainerID getOwnerTileContainerID() const { return mTrackedRigidBodyGatherer.getOwnerTileContainerID(); }
 
     bool hasAnyCollision();
-    void finish(NewPhysicsWorld& physicsWorld);
+    void finish(PhysicsWorld& physicsWorld);
 
 private:
     TrackedStaticRigidBodyGatherer mTrackedRigidBodyGatherer;

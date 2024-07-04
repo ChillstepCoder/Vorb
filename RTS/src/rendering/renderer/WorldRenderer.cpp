@@ -49,7 +49,7 @@
 #include "ui/UIContext.h"
 
 #include "camera/Camera3D.h"
-#include "physics/NewPhysicsWorld.h"
+#include "physics/PhysicsWorld.h"
 
 #include "tile/TileContainerRepository.h"
 
@@ -533,7 +533,7 @@ void WorldRenderer::renderDebug() {
     }
 
     // Physics
-    mActiveWorld->getNewPhysicsWorld().debugRender(*mCamera);
+    mActiveWorld->getPhysicsWorld().debugRender(*mCamera);
 }
 
 WorldRenderDataManager& WorldRenderer::getRenderDataManagerForWorld(const World& world) {

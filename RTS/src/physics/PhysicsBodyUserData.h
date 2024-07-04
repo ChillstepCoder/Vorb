@@ -6,6 +6,7 @@ enum class PhysicsBodyUserDataType : ui8 {
     Terrain,
     Tile,
     Entity,
+    ItemEntity,
     ContainerMesh,
     COUNT
 };
@@ -21,6 +22,7 @@ constexpr ui64 PHYS_USER_DATA_LEFTPART_MASK = PHYS_USER_DATA_LEFTPART_MASK_POSTS
 struct PhysicsBodyUserData {
     PhysicsBodyUserData() = default;
     PhysicsBodyUserData(entt::entity owner);
+    PhysicsBodyUserData(entt::entity owner, PhysicsBodyUserDataType type);
     PhysicsBodyUserData(TileContainerID tileContainer);
     PhysicsBodyUserData(TileContainerID tileContainer, TileIndex tileIndex);
     PhysicsBodyUserData(ui64 data) : data(data) {}

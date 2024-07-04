@@ -10,7 +10,7 @@
 class PhysicsBodyFilterAttackable : public JPH::BodyFilter {
 public:
     PhysicsBodyFilterAttackable() = default;
-    PhysicsBodyFilterAttackable(BodyID excludeId) : mExcludeId(excludeId) {}
+    PhysicsBodyFilterAttackable(PhysBodyID excludeId) : mExcludeId(excludeId) {}
 
     bool ShouldCollide(const JPH::BodyID& inBodyID) const override {
         return inBodyID != mExcludeId;
@@ -27,7 +27,7 @@ public:
 class PhysicsBodyFilterExcludeType : public JPH::BodyFilter {
 public:
     PhysicsBodyFilterExcludeType(PhysicsBodyUserDataType type) : mType(type) {};
-    PhysicsBodyFilterExcludeType(PhysicsBodyUserDataType type, BodyID excludeId) : mType(type), mExcludeId(excludeId) {}
+    PhysicsBodyFilterExcludeType(PhysicsBodyUserDataType type, PhysBodyID excludeId) : mType(type), mExcludeId(excludeId) {}
 
     bool ShouldCollide(const JPH::BodyID& inBodyID) const override {
         return inBodyID != mExcludeId;
@@ -45,7 +45,7 @@ public:
 class PhysicsBodyFilterOnlyType : public JPH::BodyFilter {
 public:
     PhysicsBodyFilterOnlyType(PhysicsBodyUserDataType type) : mType(type) {};
-    PhysicsBodyFilterOnlyType(PhysicsBodyUserDataType type, BodyID excludeId) : mType(type), mExcludeId(mExcludeId) {}
+    PhysicsBodyFilterOnlyType(PhysicsBodyUserDataType type, PhysBodyID excludeId) : mType(type), mExcludeId(mExcludeId) {}
 
     bool ShouldCollide(const JPH::BodyID& inBodyID) const override {
         return inBodyID != mExcludeId;

@@ -8,9 +8,18 @@
 // Jolt supports 16 or 32 bit ObjectLayers through the JPH_OBJECT_LAYER_BITS define and you're free to define as many as 
 // you like as they don't incur any overhead in the system.
 
-// TODO: Bitmask for layers ex player, NPC, terrain, ect
 enum class PhysicsObjectLayer : JPH::ObjectLayer {
-    Static,
-    Dynamic,
-    COUNT
+    Static = BIT(0),
+    Item = BIT(1),
+    Character = BIT(2),
+    COUNT = 3
 };
+
+constexpr JPH::ObjectLayer STATIC_OBJECT_LAYER_MASK = e_cast(PhysicsObjectLayer::Static);
+constexpr JPH::ObjectLayer DYNAMIC_OBJECT_LAYER_MASK = ~STATIC_OBJECT_LAYER_MASK;
+
+// Object Collision Masks
+constexpr JPH::ObjectLayer ITEM_OBJECT_COLLISION_MASK = STATIC_OBJECT_LAYER_MASK | e_cast(PhysicsObjectLayer::Item);
+constexpr JPH::ObjectLayer CHARACTER_OBJECT_COLLISION_MASK = STATIC_OBJECT_LAYER_MASK | e_cast(PhysicsObjectLayer::Character);
+
+static_assert(e_count(PhysicsObjectLayer) <= 16, "Too many object layers defined, increase JPH_OBJECT_LAYER_BITS");

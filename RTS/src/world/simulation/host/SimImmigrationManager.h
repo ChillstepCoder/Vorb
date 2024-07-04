@@ -36,6 +36,6 @@ private:
     WorldMarkupGrid& mMarkupGrid;
     TimestampMs mLastImmigrationTimestamp = 0;
     SimWorldAnalytics& mWorldAnalytics;
-    FlatMap<BodyID, BodyImmigrationData> mImmigrationData;
+    FlatMap<WorldBodyID, BodyImmigrationData> mImmigrationData;
 };
 

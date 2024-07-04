@@ -177,10 +177,10 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
             it = mModelBatchesThisFrame.erase(it);
         }
     }
-    // TODO: Had a crash here (0 == 273)
-    assert(transformIndex == totalTransforms);
-    mTransformsBuffer->flushDataAndIncrementFrame(totalTransforms);
-    mVariantsBuffer->flushDataAndIncrementFrame(totalTransforms);
+    // When items are culled due to distance transformIndex will be less
+    assert(transformIndex <= totalTransforms);
+    mTransformsBuffer->flushDataAndIncrementFrame(transformIndex);
+    mVariantsBuffer->flushDataAndIncrementFrame(transformIndex);
 }
 
 void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType renderPass) {

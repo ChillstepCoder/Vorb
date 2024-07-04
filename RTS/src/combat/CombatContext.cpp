@@ -12,7 +12,7 @@
 
 #include "math/Random.h"
 
-#include "physics/NewPhysicsWorld.h"
+#include "physics/PhysicsWorld.h"
 #include "physics/PhysicsBodyFilters.h"
 
 #include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
@@ -174,7 +174,7 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
 
     IFullECS& ecs = mWorld.getECS();
     const f32 sourceRotation = ecs.mRegistry.get<CharacterControlComponent>(source).mControllerAngleRad;
-    const BodyID sourceBody = ecs.mRegistry.get<PhysicsComponent>(source).mBodyID;
+    const PhysBodyID sourceBody = ecs.mRegistry.get<PhysicsComponent>(source).mBodyID;
 
     constexpr int MAX_RESULTS = 8;
     PhysicsQueryResult results[MAX_RESULTS];
@@ -186,7 +186,7 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
     const f32v2 forwardNormal = f32v2(cos(sourceRotation), sin(sourceRotation));
     const f32AABB3 aabb = getAABBEnclosingArc(attackStartPos, coneData.radius, coneData.arcAngleRad, sourceRotation, coneData.height);
     const f32 halfArcAngleRad = coneData.arcAngleRad * 0.5f;
-    const int resultCount = mWorld.getNewPhysicsWorld().queryObjectsInAABB(aabb.pos, aabb.pos + aabb.dims, std::span(results), {}, {}, PhysicsBodyFilterAttackable(sourceBody));
+    const int resultCount = mWorld.getPhysicsWorld().queryObjectsInAABB(aabb.pos, aabb.pos + aabb.dims, std::span(results), {}, {}, PhysicsBodyFilterAttackable(sourceBody));
 
     const f32v2 origin2D(attackStartPos);
     const f32v2 start2D = origin2D + glm::vec2(coneData.radius * std::cos(sourceRotation - halfArcAngleRad), coneData.radius * std::sin(sourceRotation - halfArcAngleRad));

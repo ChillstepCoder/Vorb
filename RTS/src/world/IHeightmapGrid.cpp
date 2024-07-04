@@ -11,7 +11,7 @@
 // TODO: move
 #include "rendering/ChunkGrassQuadtree.h"
 #include "world/HeightmapTerrainQuadtree.h"
-#include "physics/NewPhysicsWorld.h"
+#include "physics/PhysicsWorld.h"
 
 #include "world/World.h"
 #include "world/IChunkGrid.h"
@@ -98,7 +98,7 @@ void IHeightmapGrid::tickShared() {
         dispatchEditVerts(editEvent);
         mModifiedVertsThisTick.clear();
 
-        NewPhysicsWorld& physWorld = mWorld->getNewPhysicsWorld();
+        PhysicsWorld& physWorld = mWorld->getPhysicsWorld();
         for (HeightmapPatchID id : mModifiedPatchesThisTick) {
             HeightmapPatch& patch = mHeightData[id];
             if (patch.physBodyID != INVALID_PHYS_BODY_ID) {
@@ -448,7 +448,7 @@ void IHeightmapGrid::initChunkGridEvents() {
         HeightmapPatch& patch = mHeightData[patchId];
         if (++patch.mNumActiveChunksThisPatch == 1) {
             // Need to activate physics
-            mWorld->getNewPhysicsWorld().updateTerrainBody(patch);
+            mWorld->getPhysicsWorld().updateTerrainBody(patch);
         }
     });
     mWorld->getChunkGrid().addDeactivatedListener(mChunkGridListeners, [this](ChunkGridEvent& evnt) {
@@ -457,7 +457,7 @@ void IHeightmapGrid::initChunkGridEvents() {
         assert(mHeightData[patchId].mNumActiveChunksThisPatch > 0);
         if (--mHeightData[patchId].mNumActiveChunksThisPatch == 0) {
             // Need to deactivate physics
-            mWorld->getNewPhysicsWorld().removeBody(patch.physBodyID);
+            mWorld->getPhysicsWorld().removeBody(patch.physBodyID);
             patch.physBodyID = INVALID_PHYS_BODY_ID;
         }
     });

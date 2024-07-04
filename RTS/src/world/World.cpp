@@ -11,7 +11,7 @@
 #include "options/DebugOptions.h"
 #include "pathfinding/NavThread.h"
 #include "pathfinding/NavWorld.h"
-#include "physics/NewPhysicsWorld.h"
+#include "physics/PhysicsWorld.h"
 #include "rendering/RenderContext.h"
 #include "rendering/RenderThreadTasks.h"
 #include "resources/ResourceManager.h"
@@ -136,7 +136,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     // Structures
     mStructureGrid = std::make_unique<BuildingGrid>(*this);
     // Physics
-    mPhysicsWorld = std::make_unique<NewPhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
+    mPhysicsWorld = std::make_unique<PhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
     // Generation
     mChunkGenerator = std::make_unique<ChunkGenerator>(*this);
     // Combat

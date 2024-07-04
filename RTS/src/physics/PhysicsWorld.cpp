@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "NewPhysicsWorld.h"
+#include "PhysicsWorld.h"
 
 // Jolt Documentation
 // https://jrouwe.github.io/JoltPhysics/index.html
@@ -37,7 +37,7 @@
 static const JPH::Quat ROTATE_ZUP = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f);
 
 
-NewPhysicsWorld* sGamePhysicsWorld = nullptr;
+PhysicsWorld* sGamePhysicsWorld = nullptr;
 
 constexpr const char* PHYSICS_STEP_PROFILE_NAME = "Physics Step";
 
@@ -76,19 +76,37 @@ static bool AssertFailedImpl(const char* inExpression, const char* inMessage, co
 
 #endif // JPH_ENABLE_ASSERTS
 
+class PhysicsBodyActivationListener : public JPH::BodyActivationListener{
+public:
+    PhysicsBodyActivationListener(PhysicsWorld& physicsWorld) : mPhysicsWorld(physicsWorld) {}
+
+    virtual void OnBodyActivated(const JPH::BodyID& inBodyID, ui64 inBodyUserData) override {
+        PhysicsBodyUserData userData(inBodyUserData);
+        if (userData.getType() == PhysicsBodyUserDataType::Entity) {
+
+        }
+    }
+
+    virtual void OnBodyDeactivated(const JPH::BodyID& inBodyID, ui64 inBodyUserData) override {
+        PhysicsBodyUserData userData(inBodyUserData);
+        LOG_INFO("Body of type {} deactivated", (int)userData.getType());
+    }
+
+private:
+    PhysicsWorld& mPhysicsWorld;
+};
 
 /// Class that determines if two object layers can collide
-class ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter
-{
+class ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter {
 public:
-    virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override
-    {
-        switch (inObject1)
-        {
+    virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override {
+        switch (inObject1) {
             case e_cast(PhysicsObjectLayer::Static):
-                return inObject2 == e_cast(PhysicsObjectLayer::Dynamic); // Non moving only collides with moving
-            case e_cast(PhysicsObjectLayer::Dynamic):
-                return true; // Moving collides with everything
+                return inObject2 & DYNAMIC_OBJECT_LAYER_MASK; // Non moving only collides with moving
+            case e_cast(PhysicsObjectLayer::Item):
+                return inObject2 & ITEM_OBJECT_COLLISION_MASK;
+            case e_cast(PhysicsObjectLayer::Character):
+                return inObject2 & CHARACTER_OBJECT_COLLISION_MASK;
             default:
                 JPH_ASSERT(false);
                 return false;
@@ -101,34 +119,27 @@ public:
 class BPLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface
 {
 public:
-    BPLayerInterfaceImpl() {
-        // Create a mapping table from object to broad phase layer
-        mObjectToBroadPhase[e_cast(PhysicsObjectLayer::Static)] = BroadPhaseLayers::Static;
-        mObjectToBroadPhase[e_cast(PhysicsObjectLayer::Dynamic)] = BroadPhaseLayers::Dynamic;
-    }
+    BPLayerInterfaceImpl() { }
 
     virtual uint GetNumBroadPhaseLayers() const override {
         return BroadPhaseLayers::COUNT;
     }
 
     virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override {
-        JPH_ASSERT(inLayer < e_cast(PhysicsObjectLayer::COUNT));
-        return mObjectToBroadPhase[inLayer];
+        return (inLayer & STATIC_OBJECT_LAYER_MASK) ? BroadPhaseLayers::Static : BroadPhaseLayers::Dynamic;
+        static_assert(BroadPhaseLayers::COUNT == 2, "Change this to reflect new layers");
     }
 
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
     virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer) const override {
         switch ((JPH::BroadPhaseLayer::Type)inLayer)
         {
-            case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::Dynamic:	return "Movable";
+            case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::Dynamic:	return "Dynamic";
             case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::Static:	return "Static";
             default:													JPH_ASSERT(false); return "INVALID";
         }
     }
 #endif // JPH_EXTERNAL_PROFILE || JPH_PROFILE_ENABLED
-
-private:
-    JPH::BroadPhaseLayer mObjectToBroadPhase[e_cast(PhysicsObjectLayer::COUNT)];
 };
 
 /// Class that determines if an object layer can collide with a broadphase layer
@@ -138,12 +149,14 @@ public:
         switch (inLayer1) {
             case e_cast(PhysicsObjectLayer::Static):
                 return inLayer2 == BroadPhaseLayers::Dynamic;
-            case e_cast(PhysicsObjectLayer::Dynamic):
+            case e_cast(PhysicsObjectLayer::Character):
+            case e_cast(PhysicsObjectLayer::Item):
                 return true;
             default:
                 JPH_ASSERT(false);
                 return false;
         }
+        static_assert(BroadPhaseLayers::COUNT == 2, "Change this to reflect new layers");
     }
 };
 
@@ -213,13 +226,17 @@ public:
     const JPH::BodyInterface& bodyInterface;
 };
 
-
+// Minor attempt at some PIMPL
 class JPHPhysicsWorldContext {
 public:
+    JPHPhysicsWorldContext(PhysicsWorld& physicsWorld) : bodyActivationListener(physicsWorld) {};
+
     void init(ui32 maxBodies, ui32 numBodyMutexes, ui32 maxBodyPairs, ui32 maxContactConstraints) {
         physicsSystem.Init(maxBodies, numBodyMutexes, maxBodyPairs, maxContactConstraints, broadPhaseLayerInterface, objectVsBroadphaseLayerFilter, objectVsObjectLayerFilter);
         // Z up
         physicsSystem.SetGravity(JPH::Vec3(0.0f, 0.0f, -9.81f));
+
+        physicsSystem.SetBodyActivationListener(&bodyActivationListener);
     }
 
     JPH::BodyInterface& getBodyInterface() {
@@ -288,7 +305,7 @@ public:
     bool mDirtyStaticDebugRender = true;
 #endif
 
-    void updateShape(BodyID id, const JPH::Shape* newShape, bool updateMass, JPH::EActivation activateMode) {
+    void updateShape(PhysBodyID id, const JPH::Shape* newShape, bool updateMass, JPH::EActivation activateMode) {
         ASSERT_GAME_THREAD();
         JPH::BodyInterface& bodyInterface = getBodyInterface();
 
@@ -311,7 +328,8 @@ public:
         ++mNewBodiesWithoutBroadphaseOptimize;
 
 #if ENABLE_PHYSICS_ANALYTICS == 1
-        ++mBodyCounts[createSettings.mObjectLayer];
+        const int bitIndex = std::countr_zero(static_cast<unsigned int>(createSettings.mObjectLayer));
+        ++mBodyCounts[bitIndex];
         if (createSettings.mMotionType == JPH::EMotionType::Static) {
             mDirtyStaticDebugRender = true;
         }
@@ -321,6 +339,18 @@ public:
     }
 
     void removeBody(PhysBodyID id) {
+        ASSERT_GAME_THREAD();
+#if ENABLE_PHYSICS_ANALYTICS == 1
+
+        const JPH::BodyInterface& bodyInterface = getBodyInterfaceNonLocking();
+        JPH::ObjectLayer layer = bodyInterface.GetObjectLayer(JPH::BodyID(id));
+        const int bitIndex = std::countr_zero(static_cast<unsigned int>(layer));
+        --mBodyCounts[bitIndex];
+        if (bodyInterface.GetMotionType(JPH::BodyID(id)) == JPH::EMotionType::Static) {
+            mDirtyStaticDebugRender = true;
+        }
+#endif
+
         getBodyInterface().RemoveBody(JPH::BodyID(id));
     }
 
@@ -351,12 +381,15 @@ private:
     // Filters object vs object layers
     ObjectLayerPairFilterImpl objectVsObjectLayerFilter;
 
+    // Listen for activate/deactivate
+    PhysicsBodyActivationListener bodyActivationListener;
+
     i32 mNewBodiesWithoutBroadphaseOptimize = 0;
     float mTimeSinceLastOptimization = 0.0f;
 };
 
 
-NewPhysicsWorld::NewPhysicsWorld(World& world, CollisionShapeRepository& shapeRepo) : mWorld(world), mShapeRepo(shapeRepo) {
+PhysicsWorld::PhysicsWorld(World& world, CollisionShapeRepository& shapeRepo) : mWorld(world), mShapeRepo(shapeRepo) {
     assert(JPH::Factory::sInstance);
 
     // PhysicsComponent relies on this
@@ -381,11 +414,11 @@ NewPhysicsWorld::NewPhysicsWorld(World& world, CollisionShapeRepository& shapeRe
     // Note: This value is low because this is a simple test. For a real project use something in the order of 10240.
     const uint cMaxContactConstraints = 10240;
 
-    mContext = std::make_unique<JPHPhysicsWorldContext>();
+    mContext = std::make_unique<JPHPhysicsWorldContext>(*this);
     mContext->init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints);
 }
 
-NewPhysicsWorld::~NewPhysicsWorld() {
+PhysicsWorld::~PhysicsWorld() {
 
     if (sGamePhysicsWorld == this) {
         sGamePhysicsWorld = nullptr;
@@ -399,7 +432,7 @@ NewPhysicsWorld::~NewPhysicsWorld() {
     JPH::Factory::sInstance = nullptr;
 }
 
-void NewPhysicsWorld::initializeJPH() {
+void PhysicsWorld::initializeJPH() {
     assert(JPH::VerifyJoltVersionID());
 
     // Register allocation hook. In this example we'll just let Jolt use malloc / free but you can override these if you want (see Memory.h).
@@ -427,7 +460,7 @@ void NewPhysicsWorld::initializeJPH() {
     sUnitCylinderShape->SetUserData(PhysicsShapeUserData(CollisionShapes::CYLINDER));
 }
 
-int NewPhysicsWorld::stepSimulation(f32 deltaTime) {
+int PhysicsWorld::stepSimulation(f32 deltaTime) {
     PROFILE_SCOPE(PHYSICS_STEP_PROFILE_NAME);
 
     // Fixed timestep
@@ -445,7 +478,7 @@ int NewPhysicsWorld::stepSimulation(f32 deltaTime) {
     return collisionSteps;
 }
 
-void NewPhysicsWorld::updateTerrainBody(HeightmapPatch& patch) {
+void PhysicsWorld::updateTerrainBody(HeightmapPatch& patch) {
     PROFILE_FUNCTION();
 
     // Adding an additional edge on right and north side to fill gap, which means we have to do
@@ -515,17 +548,31 @@ void NewPhysicsWorld::updateTerrainBody(HeightmapPatch& patch) {
     }
 }
 
-PhysBodyID NewPhysicsWorld::createCharacterCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
+PhysBodyID PhysicsWorld::createItemCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents, glm::quat orientation, f32v3 linearVelocity, f32v3 angularVelocity) {
     CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
 
-    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Dynamic, PhysicsObjectLayer::Dynamic);
+    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Dynamic, PhysicsObjectLayer::Item);
+    createSettings.mUserData = PhysicsBodyUserData(ownerEntity, PhysicsBodyUserDataType::ItemEntity);
+    createSettings.mRotation = ROTATE_ZUP * JPH::Quat(orientation.x, orientation.y, orientation.z, orientation.w);
+    createSettings.mLinearVelocity = JPH::Vec3(linearVelocity.x, linearVelocity.y, linearVelocity.z);
+    createSettings.mAngularVelocity = JPH::Vec3(angularVelocity.x, angularVelocity.y, angularVelocity.z);
+    createSettings.mFriction = 1.0f;
+    createSettings.mAngularDamping = 0.2f;
+
+    return createEntityBody(createSettings, ownerEntity, shapeId);
+}
+
+PhysBodyID PhysicsWorld::createCharacterCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
+    CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
+
+    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Dynamic, PhysicsObjectLayer::Character);
     createSettings.mUserData = PhysicsBodyUserData(ownerEntity);
     createSettings.mAllowedDOFs = JPH::EAllowedDOFs::TranslationX | JPH::EAllowedDOFs::TranslationY | JPH::EAllowedDOFs::TranslationZ;
 
     return createEntityBody(createSettings, ownerEntity, shapeId);
 }
 
-std::unique_ptr<JPH::CharacterBase> NewPhysicsWorld::createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
+std::unique_ptr<JPH::CharacterBase> PhysicsWorld::createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
     ASSERT_GAME_THREAD();
 
     CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
@@ -533,7 +580,7 @@ std::unique_ptr<JPH::CharacterBase> NewPhysicsWorld::createSimpleCharacter(entt:
 
     JPH::CharacterSettings settings;
     settings.mMaxSlopeAngle = JPH::DegreesToRadians(60.0f);
-    settings.mLayer = e_cast(PhysicsObjectLayer::Dynamic);
+    settings.mLayer = e_cast(PhysicsObjectLayer::Character);
     settings.mShape = shape;
     settings.mFriction = 0.5f;
     settings.mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisZ(), -halfExtents.y); // Accept contacts that touch the lower sphere of the capsule
@@ -548,7 +595,7 @@ std::unique_ptr<JPH::CharacterBase> NewPhysicsWorld::createSimpleCharacter(entt:
     return newCharacter;
 }
 
-void NewPhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder) {
+void PhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder) {
     PROFILE_FUNCTION();
     ASSERT_GAME_THREAD();
 
@@ -611,12 +658,12 @@ void NewPhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilde
     }
 }
 
-void NewPhysicsWorld::removeBody(PhysBodyID id) {
+void PhysicsWorld::removeBody(PhysBodyID id) {
     assert(id != INVALID_PHYS_BODY_ID);
     mContext->removeBody(id);
 }
 
-PhysHitResult NewPhysicsWorld::raycastFirst(
+PhysHitResult PhysicsWorld::raycastFirst(
     f32v3 rayStart,
     f32v3 rayEnd,
     const JPH::BroadPhaseLayerFilter& broadPhaseLayerFilter /*= {}*/,
@@ -678,12 +725,12 @@ PhysHitResult NewPhysicsWorld::raycastFirst(
     return rv;
 }
 
-void NewPhysicsWorld::pickDeferred(DeferredPhysicsPick* deferredPick, f32v3 rayStart, f32v3 rayEnd, BitFlags<PhysicsPickQueryFlags> queryFlags)
+void PhysicsWorld::pickDeferred(DeferredPhysicsPick* deferredPick, f32v3 rayStart, f32v3 rayEnd, BitFlags<PhysicsPickQueryFlags> queryFlags)
 {
     assert(false);
 }
 
-int NewPhysicsWorld::queryObjectsInAABB(
+int PhysicsWorld::queryObjectsInAABB(
     f32v3 min,
     f32v3 max,
     std::span<PhysicsQueryResult> outResults,
@@ -706,7 +753,7 @@ int NewPhysicsWorld::queryObjectsInAABB(
     return shapeCollector.collectedShapes;
 }
 
-int NewPhysicsWorld::collideSphere(
+int PhysicsWorld::collideSphere(
     f32v3 center,
     f32 radius,
     std::span<PhysHitResult> outResults,
@@ -735,7 +782,7 @@ int NewPhysicsWorld::collideSphere(
     return hitCollector.collectedHits;
 }
 
-int NewPhysicsWorld::collideCylinder(
+int PhysicsWorld::collideCylinder(
     f32v3 center,
     f32v2 halfDims,
     std::span<PhysHitResult> outResults,
@@ -765,7 +812,7 @@ int NewPhysicsWorld::collideCylinder(
 }
 
 
-void NewPhysicsWorld::updateAndRenderImguiDebugControls() {
+void PhysicsWorld::updateAndRenderImguiDebugControls() {
 
 #ifdef JPH_DEBUG_RENDERER
     if (ImGui::Checkbox("Show Collision", &sDebugRenderer->mRenderSettings.showCollision)) {
@@ -785,8 +832,9 @@ void NewPhysicsWorld::updateAndRenderImguiDebugControls() {
 
     ImGui::Spacing();
     ImGui::SeparatorText("Stats");
-    ImGui::Text(" Dynamic Bodies: %d", getBodyCount(PhysicsObjectLayer::Dynamic));
-    ImGui::Text(" Static Bodies: %d", getBodyCount(PhysicsObjectLayer::Static));
+    ImGui::Text("   Item Bodies: %d", getBodyCount(PhysicsObjectLayer::Item));
+    ImGui::Text("   Character Bodies: %d", getBodyCount(PhysicsObjectLayer::Character));
+    ImGui::Text("   Static Bodies: %d", getBodyCount(PhysicsObjectLayer::Static));
     InstrumentorDebugStrings debugStr = Instrumentor::get().getSingleResult(GAME_THREAD_ID, PHYSICS_STEP_PROFILE_NAME);
 
     ImGui::TextColored(ImVec4(1.0f, 1.0f, 1.0f, 1.0f), debugStr.name.c_str());
@@ -797,7 +845,7 @@ void NewPhysicsWorld::updateAndRenderImguiDebugControls() {
     ImGui::PopStyleColor();
 }
 
-void NewPhysicsWorld::debugRender(const Camera3D& camera) const {
+void PhysicsWorld::debugRender(const Camera3D& camera) const {
 #ifdef JPH_DEBUG_RENDERER
     PROFILE_FUNCTION();
     if (!sDebugRenderer) {
@@ -808,23 +856,24 @@ void NewPhysicsWorld::debugRender(const Camera3D& camera) const {
 }
 
 #if ENABLE_PHYSICS_ANALYTICS == 1
-int NewPhysicsWorld::getBodyCount(PhysicsObjectLayer layer) const {
-    return mContext->mBodyCounts[e_cast(layer)];
+int PhysicsWorld::getBodyCount(PhysicsObjectLayer layer) const {
+    const int bitIndex = std::countr_zero(static_cast<unsigned int>(layer));
+    return mContext->mBodyCounts[bitIndex];
 }
 #endif
 
-JPH::BodyCreationSettings NewPhysicsWorld::makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer) {
+JPH::BodyCreationSettings PhysicsWorld::makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer) {
     return JPH::BodyCreationSettings(mShapeRepo.getShape(shapeId), JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, motionType, e_cast(layer));
 }
 
-PhysBodyID NewPhysicsWorld::createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId) {
+PhysBodyID PhysicsWorld::createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId) {
     ASSERT_GAME_THREAD();
     // Userdata set by caller
     JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::Activate, shapeId);
     return body.GetID().GetIndexAndSequenceNumber();
 }
 
-PhysBodyID NewPhysicsWorld::createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId) {
+PhysBodyID PhysicsWorld::createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId) {
     ASSERT_GAME_THREAD();
 
     JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Static, PhysicsObjectLayer::Static);
@@ -834,7 +883,7 @@ PhysBodyID NewPhysicsWorld::createTileBody(TileContainerID containerId, TileInde
     return body.GetID().GetIndexAndSequenceNumber();
 }
 
-PhysBodyID NewPhysicsWorld::createTerrainBody(f32v3 position, JPH::Shape* terrainShape) {
+PhysBodyID PhysicsWorld::createTerrainBody(f32v3 position, JPH::Shape* terrainShape) {
     ASSERT_GAME_THREAD();
     terrainShape->SetUserData(PhysicsShapeUserData(CollisionShapes::TERRAIN));
     JPH::BodyCreationSettings createSettings(terrainShape, JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, JPH::EMotionType::Static, e_cast(PhysicsObjectLayer::Static));
@@ -844,7 +893,7 @@ PhysBodyID NewPhysicsWorld::createTerrainBody(f32v3 position, JPH::Shape* terrai
     return body.GetID().GetIndexAndSequenceNumber();
 }
 
-JPH::MeshShapeSettings NewPhysicsWorld::createStaticMeshShapeSettings(std::span<f32v3> verts, std::span<ui32> indices) {
+JPH::MeshShapeSettings PhysicsWorld::createStaticMeshShapeSettings(std::span<f32v3> verts, std::span<ui32> indices) {
     ASSERT_GAME_THREAD();
     assert(indices.size() % 3 == 0);
     assert(indices.size() && verts.size());
@@ -865,7 +914,7 @@ JPH::MeshShapeSettings NewPhysicsWorld::createStaticMeshShapeSettings(std::span<
     return JPH::MeshShapeSettings(std::move(jpVerts), std::move(jpInds));
 }
 
-void NewPhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
+void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
     PROFILE_FUNCTION();
     assert(physicsData.mTileKeyToPhysBodyID.empty());
 
@@ -875,7 +924,7 @@ void NewPhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigid
     }
 }
 
-void NewPhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
+void PhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
     PROFILE_FUNCTION();
 
     // TODO: Scratch allocator?
@@ -905,15 +954,15 @@ void NewPhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRi
 }
 
 
-const JPH::BodyLockInterface& NewPhysicsWorld::getBodyLockInterface() const {
+const JPH::BodyLockInterface& PhysicsWorld::getBodyLockInterface() const {
     return mContext->getBodyLockInterface();
 }
 
-JPH::BodyInterface& NewPhysicsWorld::getBodyInterface() const {
+JPH::BodyInterface& PhysicsWorld::getBodyInterface() const {
     return mContext->getBodyInterface();
 }
 
-const JPH::BodyInterface& NewPhysicsWorld::getBodyInterfaceNonLocking() const {
+const JPH::BodyInterface& PhysicsWorld::getBodyInterfaceNonLocking() const {
     return mContext->getBodyInterfaceNonLocking();
 }
 

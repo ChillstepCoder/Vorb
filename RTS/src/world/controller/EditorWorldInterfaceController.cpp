@@ -24,7 +24,7 @@
 
 #include "options/DebugOptions.h"
 
-#include "physics/NewPhysicsWorld.h"
+#include "physics/PhysicsWorld.h"
 #include "physics/PhysicsBroadPhaseLayerFilters.h"
 
 void EditorWorldInterfaceController::init()
@@ -209,7 +209,7 @@ void EditorWorldInterfaceController::initEvents() {
             if (mCameraController) {
                 mRightClickDownPick = std::make_unique<PhysHitResult>();
                 const f32v3 camPos = mCameraController->getOwnedCamera().getPosition();
-                *mRightClickDownPick = mWorld->getNewPhysicsWorld().raycastFirst(camPos, camPos + mMousePickRay * 3000.0f, PhysicsBroadphaseLayerFilterStatic());
+                *mRightClickDownPick = mWorld->getPhysicsWorld().raycastFirst(camPos, camPos + mMousePickRay * 3000.0f, PhysicsBroadphaseLayerFilterStatic());
                 mRightClickTimer.start();
 
             }
@@ -245,7 +245,7 @@ void EditorWorldInterfaceController::initEvents() {
             else if (!mRightClickUpPick && mRightClickTimer.stop() < RIGHT_CLICK_INTERACT_MS_THRESHOLD) {
                 const f32v3& camPos = mCameraController->getOwnedCamera().getPosition();
                 mRightClickUpPick = std::make_unique<PhysHitResult>();
-                *mRightClickUpPick = mWorld->getNewPhysicsWorld().raycastFirst(camPos, camPos + mMousePickRay * 3000.0f, PhysicsBroadphaseLayerFilterStatic());
+                *mRightClickUpPick = mWorld->getPhysicsWorld().raycastFirst(camPos, camPos + mMousePickRay * 3000.0f, PhysicsBroadphaseLayerFilterStatic());
                 mRightClickUpPickScreenPos = screenPos;
             }
         }

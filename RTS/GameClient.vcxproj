@@ -103,13 +103,13 @@
     <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>$(SolutionDir)..\RTS\dependencies\bullet\bin;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugFast|x64'">
     <LibraryPath>$(SolutionDir)..\RTS\dependencies\bullet\bin;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LibraryPath>$(SolutionDir)..\RTS\dependencies\bullet\bin;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\release;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\release;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
@@ -153,7 +153,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;BT_USE_DOUBLE_PRECISION;BT_EULER_DEFAULT_ZYX;BT_ENABLE_PROFILE;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalOptions>/bigobj /Bt %(AdditionalOptions)</AdditionalOptions>
@@ -215,7 +215,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;BT_USE_DOUBLE_PRECISION;BT_NO_SIMD_OPERATOR_OVERLOADS;BT_ENABLE_PROFILE;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
@@ -364,7 +364,7 @@
     <ClCompile Include="src\pathfinding\PathFinder.cpp" />
     <ClCompile Include="src\physics\CollisionShapeRepository.cpp" />
     <ClCompile Include="src\physics\CollisionShapes.cpp" />
-    <ClCompile Include="src\physics\NewPhysicsWorld.cpp" />
+    <ClCompile Include="src\physics\PhysicsWorld.cpp" />
     <ClCompile Include="src\physics\PhysicsBodyUserData.cpp" />
     <ClCompile Include="src\physics\PhysicsDebugRenderer.cpp" />
     <ClCompile Include="src\physics\PhysicsJobSystem.cpp" />
@@ -809,7 +809,7 @@
     <ClInclude Include="src\physics\BroadphaseLayers.h" />
     <ClInclude Include="src\physics\CollisionShapeRepository.h" />
     <ClInclude Include="src\physics\CollisionShapes.h" />
-    <ClInclude Include="src\physics\NewPhysicsWorld.h" />
+    <ClInclude Include="src\physics\PhysicsWorld.h" />
     <ClInclude Include="src\physics\PhysHitResult.h" />
     <ClInclude Include="src\physics\PhysicsBodyFilters.h" />
     <ClInclude Include="src\physics\PhysicsBodyUserData.h" />
@@ -820,6 +820,7 @@
     <ClInclude Include="src\physics\PhysicsObjectLayer.h" />
     <ClInclude Include="src\physics\PhysicsObjectLayerFilters.h" />
     <ClInclude Include="src\physics\PhysicsShapeUserData.h" />
+    <ClInclude Include="src\physics\PhysicsWorldEvents.h" />
     <ClInclude Include="src\physics\StaticPhysicsMeshBuilder.h" />
     <ClInclude Include="src\physics\TrackedStaticRigidBodyGatherer.h" />
     <ClInclude Include="src\rendering\animation\AnimMachineInstance.h" />

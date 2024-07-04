@@ -43,8 +43,6 @@ typedef ui32 ServerPlayerID;
 
 typedef ui64 TimestampMs;
 
-typedef ui32 BodyID;
-constexpr ui32 INVALID_BODY_ID = std::numeric_limits<BodyID>::max();
 
 typedef ui32 RoadSegmentID;
 constexpr RoadSegmentID INVALID_ROAD_SEGMENT_ID = std::numeric_limits<RoadSegmentID>::max();
@@ -66,6 +64,9 @@ constexpr TileItemUID INVALID_TILE_ITEM_UID = std::numeric_limits<TileItemUID>::
 
 typedef ui32 StaticModelInstanceID;
 constexpr StaticModelInstanceID INVALID_STATIC_MODEL_INSTANCE_ID = std::numeric_limits<StaticModelInstanceID>::max();
+
+typedef ui32 WorldBodyID;
+constexpr ui32 InvalidWOrldBodyID = std::numeric_limits<WorldBodyID>::max();
 
 using PhysBodyID = ui32;
 constexpr PhysBodyID INVALID_PHYS_BODY_ID = std::numeric_limits<PhysBodyID>::max();

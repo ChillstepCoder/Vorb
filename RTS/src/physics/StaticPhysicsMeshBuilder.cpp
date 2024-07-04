@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "StaticPhysicsMeshBuilder.h"
 
-#include "physics/NewPhysicsWorld.h"
+#include "physics/PhysicsWorld.h"
 
 const f32v2 CUBE_FACING_AXIS_DIRECTIONS[e_cast(CubeFacing::COUNT)] = {
     f32v2(-1, 1), // LEFT
@@ -133,6 +133,6 @@ bool StaticPhysicsMeshBuilder::hasAnyCollision() {
     return mVerts.size() || mTrackedRigidBodyGatherer.getNumStaticObjectsToAdd();
 }
 
-void StaticPhysicsMeshBuilder::finish(NewPhysicsWorld& physicsWorld) {
+void StaticPhysicsMeshBuilder::finish(PhysicsWorld& physicsWorld) {
     physicsWorld.updateTileContainerMeshFromBuilder(*this);
 }

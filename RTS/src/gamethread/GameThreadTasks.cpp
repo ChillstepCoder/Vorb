@@ -7,7 +7,7 @@
 #include "ecs/IFullECS.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
 
-#include "physics/NewPhysicsWorld.h"
+#include "physics/PhysicsWorld.h"
 #include "physics/PhysHitResult.h"
 #include "physics/PhysicsBroadPhaseLayerFilters.h"
 
@@ -52,7 +52,7 @@ void GameThreadTasks::addCameraPickTeleportTask(World& world, f32v3 camPos, f32v
     mGameThreadFuncProcs.enqueue([data = teleportData]() {
         IFullECS& ecs = data->world->getECS();
         if (PhysicsComponent* phys = ecs.mRegistry.try_get<PhysicsComponent>(ecs.getLocalPlayer())) {
-            PhysHitResult hitResult = data->world->getNewPhysicsWorld().raycastFirst(data->camPos, data->camPos + data->camDir * 3000.0f, PhysicsBroadphaseLayerFilterStatic(), {}, {}, true /*traceFarTerrain*/);
+            PhysHitResult hitResult = data->world->getPhysicsWorld().raycastFirst(data->camPos, data->camPos + data->camDir * 3000.0f, PhysicsBroadphaseLayerFilterStatic(), {}, {}, true /*traceFarTerrain*/);
             if (hitResult.didHit()) {
                 phys->teleportBottomToPoint(hitResult.mPosition);
             }
@@ -78,7 +78,7 @@ void GameThreadTasks::addTileContainerStaticPhysicsMeshUpdateTask(const TileCont
     // TODO: Figure out how to not have new here (deleted copy constructor issue?)
     StaticPhysicsMeshBuilder* builderData = new StaticPhysicsMeshBuilder(std::move(meshBuilder));
     mGameThreadFuncProcs.enqueue([world = &container->getWorld(), container, builderData]() {
-        builderData->finish(world->getNewPhysicsWorld());
+        builderData->finish(world->getPhysicsWorld());
         container->setDidInitPhysics();
         container->decRef();
         delete builderData;

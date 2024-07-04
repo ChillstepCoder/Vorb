@@ -21,6 +21,7 @@ public:
     f32v3 getBottomPosition() const;
     f32v3 getLinearVelocity() const;
     f32 getLinearVelocityZ() const;
+	glm::quat getOrientation() const;
 
     void setLinearVelocity(f32v3 velocity);
     void setLinearVelocityZ(f32 zVelocity);

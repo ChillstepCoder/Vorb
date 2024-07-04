@@ -3,6 +3,8 @@
 #include "Vorb/ThreadPool.h"
 #include "Vorb/logging/Logger.h"
 
+#include <format>
+
 static std::atomic_int WORKER_THREAD_ID_COUNTER = 0;
 
 void setWorkerThreadName() {

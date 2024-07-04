@@ -18,6 +18,11 @@ PhysicsBodyUserData::PhysicsBodyUserData(PhysicsBodyUserDataType type)
     : data(ui64(type) << PHYS_USER_DATA_TYPE_BIT_SHIFT) {
 }
 
+PhysicsBodyUserData::PhysicsBodyUserData(entt::entity owner, PhysicsBodyUserDataType type)
+    : data(ui64(type) << PHYS_USER_DATA_TYPE_BIT_SHIFT | static_cast<ui64>(owner)) {
+    assert(type == PhysicsBodyUserDataType::Entity || type == PhysicsBodyUserDataType::ItemEntity);
+}
+
 PhysicsBodyUserDataType PhysicsBodyUserData::getType() const {
     return static_cast<PhysicsBodyUserDataType>(data >> PHYS_USER_DATA_TYPE_BIT_SHIFT);
 }

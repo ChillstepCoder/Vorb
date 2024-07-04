@@ -8,7 +8,7 @@
 
 #include "resources/TileRepository.h"
 
-#include "physics/NewPhysicsWorld.h"
+#include "physics/PhysicsWorld.h"
 
 #include <Jolt/Physics/Body/BodyLock.h>
 #include <Jolt/Physics/Body/BodyInterface.h>
@@ -21,6 +21,8 @@ constexpr float REFILTER_HEIGHT_CHANGE = 0.2f;
 // This prevents tunelling when falling
 static_assert(1.0f + MIN_Z_SPEED > TOP_COLLISION_THRESHOLD);
 
+// TODO: USE A COLLISION TRANSFORM ON THE ITEM
+static const JPH::Quat ROTATE_ZUP = JPH::Quat::sRotation(JPH::Vec3::sAxisZ(), JPH::JPH_PI * 0.5f);
 
 f32v3 PhysicsComponent::getBottomPosition() const {
     const JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterfaceNonLocking(*sGamePhysicsWorld);
@@ -39,6 +41,18 @@ f32v3 PhysicsComponent::getLinearVelocity() const {
 f32 PhysicsComponent::getLinearVelocityZ() const {
     const JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterfaceNonLocking(*sGamePhysicsWorld);
     return bodyInterface.GetLinearVelocity(JPH::BodyID(mBodyID)).GetZ();
+}
+
+glm::quat PhysicsComponent::getOrientation() const {
+    const JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterfaceNonLocking(*sGamePhysicsWorld);
+    const JPH::Quat q = bodyInterface.GetRotation(JPH::BodyID(mBodyID)) * ROTATE_ZUP;
+    glm::quat gameOrientation = glm::quat(
+        q.GetW(),
+        q.GetX(),
+        q.GetY(), // Note: Y and Z swapped
+        q.GetZ() // and Y negated
+    );
+    return gameOrientation;
 }
 
 void PhysicsComponent::setLinearVelocity(f32v3 velocity) {
@@ -106,6 +120,7 @@ void PhysicsSystem::update(World& world, entt::registry& registry, f32 elapsedSe
         constexpr f32 SNAP_THRESHOLD = 0.1f;
         const f32 terrainHeight = grid.computeHeightAtPoint<false>(xyPosition);
 
+
         if (pos.z + SNAP_THRESHOLD < terrainHeight) {
             pos.z = terrainHeight;
             cmp.teleportBottomToPoint(pos);
@@ -126,6 +141,11 @@ void PhysicsSystem::update(World& world, entt::registry& registry, f32 elapsedSe
             if (world.getECS().onEntityEnterNewChunk(entity, oldChunkId, newChunkID)) {
                 continue; // Entity deleted
             }
+        }
+
+        // Optional orientation tracking
+        if (OrientationComponent* oCmp = registry.try_get<OrientationComponent>(entity)) {
+            oCmp->mOrientation = cmp.getOrientation();
         }
     };
 
