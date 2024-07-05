@@ -580,7 +580,9 @@ void buildMeshFromStraightSkeleton(const BitArray& floorRoofedTiles, SsPtr iss, 
     computeGablePointsAndExtrudePositions(floorRoofedTiles, spatialGrid, floor, zPos, gableVertexInfo, contourVertexInfo, iss, visLog);
 
 
-    visLog->nextStep("Position verts + triangulate");
+    if (visLog) {
+        visLog->nextStep("Position verts + triangulate");
+    }
 
     // Gather and reposition verts
     ui32 debugColorIndex = 0;

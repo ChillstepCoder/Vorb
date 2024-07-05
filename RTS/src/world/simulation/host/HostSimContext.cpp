@@ -170,7 +170,7 @@ void HostSimContext::initEvents() {
             mSimulatingChunks.clearBit(chunk.getChunkID());
             mEntityTransitionManager->markChunkSimEntitiesForTransition(chunk.getChunkID());
             SimChunk& simChunk = mWorld.getSimChunkGrid().getChunk(chunk.getChunkID());
-            simChunk.setSimulating(false);
+            simChunk.stopSimulating();
             simChunk.bindEditEventToChunkTileContainer(chunk);
             // Atomically allow chunk to begin loading
             chunk.setState(ChunkState::READY_TO_LOAD);
@@ -188,7 +188,7 @@ void HostSimContext::initEvents() {
         simChunk.unBindEditEventToChunkTileContainer();
         mSimThread->addTask([this, &chunk, &simChunk, deactivateList]() {
             mSimulatingChunks.setBit(chunk.getChunkID());
-            simChunk.setSimulating(true);
+            simChunk.beginSimulating();
             mEntityTransitionManager->transitionEntitiesToSimFromFull(chunk.getChunkID(), *deactivateList);
 
             delete deactivateList;

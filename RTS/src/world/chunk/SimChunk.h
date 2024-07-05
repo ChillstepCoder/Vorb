@@ -121,6 +121,7 @@ private:
     TileItemUID addStackToTileSimThread(ChunkTileIndex tileIndex, ItemStack stack);
     TileItemUID addStackToTileGameThread(ChunkTileIndex tileIndex, ItemStack stack);
     void untrackItem(TileItemUID uid, ItemID itemId);
+    void combineStacks();
 
 private:
     BINARY_SERIALIZE() {
@@ -179,7 +180,8 @@ public:
     bool hasBlockingTileAtIndex(ChunkTileIndex tileIndex) const;
 
     bool isSimulating() const { return mIsSimulating; }
-    void setSimulating(bool simulating) { mIsSimulating = simulating; }
+    void beginSimulating();
+    void stopSimulating();
 
 private:
     // TODO: These functions assume a lock so need to be constrained to an interface friend class?

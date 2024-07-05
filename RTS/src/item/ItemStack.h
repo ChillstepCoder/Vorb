@@ -133,15 +133,34 @@ struct TileItemStack {
 public:
 
     bool canCombine(const ItemStack& other) const {
+        // Cannot combine if stack is reserved
+        return props == other.props && (int)count + (int)other.count <= MAX_TILE_ITEM_STACK_SIZE;
+    }
+    bool canCombine(const TileItemStack& other) const {
+        // Cannot combine if stack is reserved
         return props == other.props && (int)count + (int)other.count <= MAX_TILE_ITEM_STACK_SIZE;
     }
     bool tryCombine(ItemStack& other) {
         if (canCombine(other)) {
-            count += other.count;
-            other.count = 0;
+            combine(other);
             return true;
         }
         return false;
+    }
+    bool tryCombine(TileItemStack& other) {
+        if (canCombine(other)) {
+            combine(other);
+            return true;
+        }
+        return false;
+    }
+    void combine(ItemStack& other) {
+        count += other.count;
+        other.count = 0;
+    }
+    void combine(TileItemStack& other) {
+        count += other.count;
+        other.count = 0;
     }
 
     BINARY_SERIALIZE() {

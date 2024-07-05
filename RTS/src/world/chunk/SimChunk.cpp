@@ -313,6 +313,19 @@ bool SimChunk::hasBlockingTileAtIndex(ChunkTileIndex tileIndex) const {
     return false;
 }
 
+void SimChunk::beginSimulating() {
+    PROFILE_FUNCTION();
+    mIsSimulating = true;
+    { // Critical Section
+        std::shared_lock lock(mMutex);
+        mItemData.combineStacks();
+    }
+}
+
+void SimChunk::stopSimulating() {
+    mIsSimulating = true;
+}
+
 bool SimChunk::tryReserveNonEmptyTile(ChunkTileIndex tileIndex) {
     // Does not lock as we can only create these reservations from within SimChunk lock
     if (mTileData) {
@@ -475,4 +488,24 @@ void SimChunkItemData::untrackItem(TileItemUID uid, ItemID itemId) {
         }
     }
     panic("Tried to untrack item {} which was not tracked", uid);
+}
+
+void SimChunkItemData::combineStacks() {
+    // Merge all stacks for efficiency
+    for (auto& [itemId, stacks] : itemStacks) {
+        for (size_t i = 0; i < stacks.size(); ++i) {
+            TileItemStack& stack = stacks[i];
+            for (size_t j = i + 1; j < stacks.size();) {
+                TileItemStack& other = stacks[j];
+                if (stack.tileIndex == other.tileIndex && other.reservedCount == 0 && stack.canCombine(other)) {
+                    stack.combine(other);
+                    stacks[j] = stacks.back();
+                    stacks.pop_back();
+                }
+                else {
+                    ++j;
+                }
+            }
+        }
+    }
 }

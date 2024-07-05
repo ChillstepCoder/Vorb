@@ -247,7 +247,7 @@ public:
         return physicsSystem.GetBodyInterface();
     }
 
-    const JPH::BodyInterface& getBodyInterfaceNonLocking() const {
+    JPH::BodyInterface& getBodyInterfaceNonLocking() {
         ASSERT_GAME_THREAD();
         return physicsSystem.GetBodyInterfaceNoLock();
     }
@@ -309,7 +309,7 @@ public:
 
     void updateShape(PhysBodyID id, const JPH::Shape* newShape, bool updateMass, JPH::EActivation activateMode) {
         ASSERT_GAME_THREAD();
-        JPH::BodyInterface& bodyInterface = getBodyInterface();
+        JPH::BodyInterface& bodyInterface = getBodyInterfaceNonLocking();
 
         bodyInterface.SetShape(JPH::BodyID(id), newShape, updateMass, activateMode);
 #if ENABLE_PHYSICS_ANALYTICS == 1
@@ -321,7 +321,7 @@ public:
 
     JPH::Body& createBody(const JPH::BodyCreationSettings& createSettings, JPH::EActivation inActivationMode, CollisionShapeID shapeId) {
         ASSERT_GAME_THREAD();
-        JPH::BodyInterface& bodyInterface = getBodyInterface();
+        JPH::BodyInterface& bodyInterface = getBodyInterfaceNonLocking();
         JPH::Body* body = bodyInterface.CreateBody(createSettings);
         if (body == nullptr) {
             panic("Failed to create entity body with shape ID {}", (int)shapeId);
@@ -340,11 +340,11 @@ public:
         return *body;
     }
 
-    void removeBody(PhysBodyID id) {
+    void removeAndDestroyBody(PhysBodyID id) {
         ASSERT_GAME_THREAD();
+        JPH::BodyInterface& bodyInterface = getBodyInterfaceNonLocking();
 #if ENABLE_PHYSICS_ANALYTICS == 1
 
-        const JPH::BodyInterface& bodyInterface = getBodyInterfaceNonLocking();
         JPH::ObjectLayer layer = bodyInterface.GetObjectLayer(JPH::BodyID(id));
         const int bitIndex = std::countr_zero(static_cast<unsigned int>(layer));
         --mBodyCounts[bitIndex];
@@ -353,7 +353,8 @@ public:
         }
 #endif
 
-        getBodyInterface().RemoveBody(JPH::BodyID(id));
+        bodyInterface.RemoveBody(JPH::BodyID(id));
+        bodyInterface.DestroyBody(JPH::BodyID(id));
     }
 
 
@@ -562,7 +563,8 @@ PhysBodyID PhysicsWorld::createItemCapsule(entt::entity ownerEntity, f32v3 posit
     createSettings.mLinearVelocity = JPH::Vec3(linearVelocity.x, linearVelocity.y, linearVelocity.z);
     createSettings.mAngularVelocity = JPH::Vec3(angularVelocity.x, angularVelocity.y, angularVelocity.z);
     createSettings.mFriction = 1.0f;
-    createSettings.mAngularDamping = 0.2f;
+    createSettings.mAngularDamping = 0.4f;
+    createSettings.mLinearDamping = 0.2f;
 
     return createEntityBody(createSettings, ownerEntity, shapeId);
 }
@@ -610,12 +612,12 @@ void PhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& 
     if (!meshBuilder.hasAnyCollision()) {
         if (it != mTileContainerPhysicsData.end()) {
             for (auto& [key, physBodyID] : it->second->mTileKeyToPhysBodyID) {
-                mContext->getBodyInterface().RemoveBody(JPH::BodyID(physBodyID));
+                mContext->removeAndDestroyBody(physBodyID);
             }
 
             PhysBodyID& staticMesh = it->second->mStaticMesh;
             if (staticMesh != INVALID_PHYS_BODY_ID) {
-                mContext->removeBody(staticMesh);
+                mContext->removeAndDestroyBody(staticMesh);
                 staticMesh = INVALID_PHYS_BODY_ID;
             }
 
@@ -658,14 +660,14 @@ void PhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& 
         }
     }
     else if (*staticMesh != INVALID_PHYS_BODY_ID) {
-        mContext->removeBody(*staticMesh);
+        mContext->removeAndDestroyBody(*staticMesh);
         *staticMesh = INVALID_PHYS_BODY_ID;
     }
 }
 
 void PhysicsWorld::removeBody(PhysBodyID id) {
     assert(id != INVALID_PHYS_BODY_ID);
-    mContext->removeBody(id);
+    mContext->removeAndDestroyBody(id);
 }
 
 PhysHitResult PhysicsWorld::raycastFirst(
@@ -959,7 +961,7 @@ void PhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigid
     // Remove any keys that are not in the gatherer
     for (auto it = physicsData.mTileKeyToPhysBodyID.begin(); it != physicsData.mTileKeyToPhysBodyID.end();) {
         if (!addedKeys.contains(it->first)) {
-            mContext->removeBody(it->second);
+            mContext->removeAndDestroyBody(it->second);
             it = physicsData.mTileKeyToPhysBodyID.erase(it);
         }
         else {
