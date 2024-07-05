@@ -192,8 +192,6 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     //            staticCmp.modelId, registry.get<OrientationComponent>(entity).mOrientation, registry.get<PositionComponent>(entity).mPosition, 0 /*TODO Variant*/
     //        );
     //        // Item is now gounded
-    //        registry.emplace<TileItemComponent>(entity, registry.get<SimpleItemComponent>(entity).itemStack, INVALID_TILE_ITEM_UID);
-    //        registry.remove<SimpleItemComponent>(entity);
     //        world.dispatchOnItemProjectileLand(WorldEntityEvent(world, entity));
     //    }
     //});

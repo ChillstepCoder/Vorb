@@ -212,7 +212,7 @@ TileItemUID SimChunkGrid::tryDropItemStackOnGroundSimThread(ItemStack stack, Til
     const ChunkCoord chunkCoord(worldPos);
     const ChunkID chunkId = chunkCoord.toGridIDType(mWidthChunks);
     const TileCoord offset = worldPos - TileCoord(chunkCoord);
-    TileItemUID uid = mChunkData[chunkId].tryDropItemStackOnGround(stack, offset.y * CHUNK_WIDTH + offset.x);
+    TileItemUID uid = mChunkData[chunkId].tryAddItemStackToGroundSimThread(stack, offset.y * CHUNK_WIDTH + offset.x);
     // TODO: Handle dropping inside buildings
     if (!mChunkData[chunkId].isSimulating()) {
         GameThreadTasks::getInstance().addGenericTask([world = mWorld, worldPos, stack, uid]() {
@@ -228,7 +228,7 @@ TileItemUID SimChunkGrid::tryDropItemStackOnGroundGameThread(ItemStack stack, f3
     const ChunkCoord chunkCoord = ChunkCoord::fromTilePos(worldPos);
     const ChunkID chunkId = chunkCoord.toGridIDType(mWidthChunks);
     const TileCoord offset = TileCoord(worldPos) - TileCoord(chunkCoord);
-    TileItemUID uid = mChunkData[chunkId].tryDropItemStackOnGround(stack, offset.y * CHUNK_WIDTH + offset.x);
+    TileItemUID uid = mChunkData[chunkId].tryAddItemStackToGroundGameThread(stack, offset.y * CHUNK_WIDTH + offset.x);
     // TODO: handle worldPos.z as in try to place it inside buildings?
     if (uid != INVALID_TILE_ITEM_UID) {
         EntityFactory::createItemOnGround(*mWorld, f32v3(worldPos.x, worldPos.y, mWorld->getTerrainHeightAtPoint(worldPos)), stack, uid);
@@ -239,13 +239,20 @@ TileItemUID SimChunkGrid::tryDropItemStackOnGroundGameThread(ItemStack stack, f3
     return uid;
 }
 
-TileItemUID SimChunkGrid::onItemProjectileLandGameThread(ItemStack stack, f32v3 worldPos) {
+TileItemUID SimChunkGrid::connectItemEntityToGroundGameThread(ItemStack stack, f32v3 worldPos) {
     ASSERT_GAME_THREAD();
     const ChunkCoord chunkCoord = ChunkCoord::fromTilePos(worldPos);
     const ChunkID chunkId = chunkCoord.toGridIDType(mWidthChunks);
     const TileCoord offset = TileCoord(worldPos) - TileCoord(chunkCoord);
-    TileItemUID uid = mChunkData[chunkId].tryDropItemStackOnGround(stack, offset.y * CHUNK_WIDTH + offset.x);
+    TileItemUID uid = mChunkData[chunkId].tryAddItemStackToGroundGameThread(stack, offset.y * CHUNK_WIDTH + offset.x);
     return uid;
+}
+
+void SimChunkGrid::untrackItem(TileItemUID uid, ItemID id, f32v3 worldPos) {
+    const ChunkCoord chunkCoord = ChunkCoord::fromTilePos(worldPos);
+    const ChunkID chunkId = chunkCoord.toGridIDType(mWidthChunks);
+    const TileCoord offset = TileCoord(worldPos) - TileCoord(chunkCoord);
+    mChunkData[chunkId].untrackItem(uid, id);
 }
 
 SimChunkTileItemReservationPtr SimChunkGrid::tryReserveItemStack(TileCoord worldPos, TileItemUID uid, ItemID itemId, ui16 quantity) {

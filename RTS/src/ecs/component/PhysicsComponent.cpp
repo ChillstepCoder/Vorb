@@ -111,7 +111,9 @@ void PhysicsSystem::update(World& world, entt::registry& registry, f32 elapsedSe
     const IHeightmapGrid& grid = world.getHeightmapGrid();
 
     // Update all uncontrolled object positions
-    auto view = registry.view<PhysicsComponent, PositionComponent>(entt::exclude<CharacterControlComponent>);
+    // Exclude character control because it has its own update.
+    // Exclude TileItemComponent because they are deactivated physics objects
+    auto view = registry.view<PhysicsComponent, PositionComponent>(entt::exclude<CharacterControlComponent, TileItemComponent>);
     for (auto entity : view) {
         PhysicsComponent& cmp = view.get<PhysicsComponent>(entity);
         PositionComponent& posCmp = view.get<PositionComponent>(entity);
@@ -119,7 +121,6 @@ void PhysicsSystem::update(World& world, entt::registry& registry, f32 elapsedSe
         const f32v2 xyPosition(pos.x, pos.y);
         constexpr f32 SNAP_THRESHOLD = 0.1f;
         const f32 terrainHeight = grid.computeHeightAtPoint<false>(xyPosition);
-
 
         if (pos.z + SNAP_THRESHOLD < terrainHeight) {
             pos.z = terrainHeight;

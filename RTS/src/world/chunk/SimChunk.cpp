@@ -268,9 +268,14 @@ FlatMap<ItemID, std::vector<TileItemStack>> SimChunk::getItemDataCopy() const {
     return mItemData.itemStacks;
 }
 
-TileItemUID SimChunk::tryDropItemStackOnGround(ItemStack itemStack, ChunkTileIndex tileIndex) {
+TileItemUID SimChunk::tryAddItemStackToGroundSimThread(ItemStack itemStack, ChunkTileIndex tileIndex) {
     std::lock_guard lock(mMutex);
-    return mItemData.addStackToTile(tileIndex, itemStack);
+    return mItemData.addStackToTileSimThread(tileIndex, itemStack);
+}
+
+TileItemUID SimChunk::tryAddItemStackToGroundGameThread(ItemStack itemStack, ChunkTileIndex tileIndex) {
+    std::lock_guard lock(mMutex);
+    return mItemData.addStackToTileGameThread(tileIndex, itemStack);
 }
 
 SimChunkTileItemReservationPtr SimChunk::tryReserveItemStackOnTile(ChunkTileIndex tileIndex, ItemID itemId, ui16 quantity) {
@@ -281,6 +286,11 @@ SimChunkTileItemReservationPtr SimChunk::tryReserveItemStackOnTile(ChunkTileInde
 SimChunkTileItemReservationPtr SimChunk::tryReserveItemStack(TileItemUID uid, ItemID itemId, ui16 quantity) {
     std::lock_guard lock(mMutex);
     return mItemData.tryReserveItemStack(uid, itemId, quantity, *this);
+}
+
+void SimChunk::untrackItem(TileItemUID uid, ItemID itemId) {
+    std::lock_guard lock(mMutex);
+    mItemData.untrackItem(uid, itemId);
 }
 
 i32v2 SimChunk::tryPickupItemsForReservation(SimChunkTileItemReservation& reservation, i32 maxCount) {
@@ -424,7 +434,10 @@ i32v2 SimChunkItemData::tryPickupItemsForReservation(SimChunkTileItemReservation
     return i32v2(0);
 }
 
-TileItemUID SimChunkItemData::addStackToTile(ChunkTileIndex tileIndex, ItemStack stack) {
+TileItemUID SimChunkItemData::addStackToTileSimThread(ChunkTileIndex tileIndex, ItemStack stack) {
+    ASSERT_SIM_THREAD();
+    // Sim thread can combine stacks together
+
     assert(stack.isValid());
     assert(stack.count <= MAX_TILE_ITEM_STACK_SIZE);
 
@@ -437,4 +450,29 @@ TileItemUID SimChunkItemData::addStackToTile(ChunkTileIndex tileIndex, ItemStack
     TileItemUID uid = generateNextItemUID();
     stacks.emplace_back(TileItemStack{ .tileIndex = tileIndex, .count = (ui16)stack.count, .props = stack.props, .uniqueId = uid });
     return uid;
+}
+
+TileItemUID SimChunkItemData::addStackToTileGameThread(ChunkTileIndex tileIndex, ItemStack stack){
+    ASSERT_GAME_THREAD();
+    // Sim thread keeps stacks distinct as they are different item entities
+
+    assert(stack.isValid());
+    assert(stack.count <= MAX_TILE_ITEM_STACK_SIZE);
+
+    std::vector<TileItemStack>& stacks = itemStacks[stack.id];
+    TileItemUID uid = generateNextItemUID();
+    stacks.emplace_back(TileItemStack{ .tileIndex = tileIndex, .count = (ui16)stack.count, .props = stack.props, .uniqueId = uid });
+    return uid;
+}
+
+void SimChunkItemData::untrackItem(TileItemUID uid, ItemID itemId) {
+    std::vector<TileItemStack>& stacks = itemStacks[itemId];
+    for (TileItemStack& tileStack : stacks) {
+        if (tileStack.uniqueId == uid) {
+            tileStack = stacks.back();
+            stacks.pop_back();
+            return;
+        }
+    }
+    panic("Tried to untrack item {} which was not tracked", uid);
 }

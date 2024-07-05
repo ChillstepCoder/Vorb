@@ -82,14 +82,18 @@ public:
 
     virtual void OnBodyActivated(const JPH::BodyID& inBodyID, ui64 inBodyUserData) override {
         PhysicsBodyUserData userData(inBodyUserData);
-        if (userData.getType() == PhysicsBodyUserDataType::Entity) {
-
+        if (userData.getType() == PhysicsBodyUserDataType::ItemEntity) {
+            std::lock_guard lock(mPhysicsWorld.mItemEntitiesMutex);
+            mPhysicsWorld.mItemEntitiesMovedThisFrame.insert(userData.getEntity());
         }
     }
 
     virtual void OnBodyDeactivated(const JPH::BodyID& inBodyID, ui64 inBodyUserData) override {
         PhysicsBodyUserData userData(inBodyUserData);
-        LOG_INFO("Body of type {} deactivated", (int)userData.getType());
+        if (userData.getType() == PhysicsBodyUserDataType::ItemEntity) {
+            std::lock_guard lock(mPhysicsWorld.mItemEntitiesMutex);
+            mPhysicsWorld.mItemEntitiesRestedThisFrame.insert(userData.getEntity());
+        }
     }
 
 private:
@@ -281,23 +285,21 @@ public:
 
 #ifdef JPH_DEBUG_RENDERER
     void debugDraw(const Camera3D& camera) {
-        if (sDebugRenderer->mRenderSettings.showCollision) {
+        if (sDebugRenderer->mRenderSettings.enableDebugDraw) {
 
-            JPH::BodyManager::DrawSettings settings;
-            settings.mDrawShapeWireframe = sDebugRenderer->mRenderSettings.wireframe;
-
+            // TODO: Move into the debug renderer
             sDebugRenderer->PrepareFrame(camera);
             // Only update static when static changes
             if (mDirtyStaticDebugRender) {
                 StaticBodyDrawFilter staticFilter;
                 sDebugRenderer->PreDraw(true);
-                physicsSystem.DrawBodies(settings, sDebugRenderer.get(), &staticFilter);
+                physicsSystem.DrawBodies(sDebugRenderer->mRenderSettings.bodyDrawSettings, sDebugRenderer.get(), &staticFilter);
                 mDirtyStaticDebugRender = false;
             }
             // Always update dynamic
             DynamicBodyDrawFilter dynamicFilter;
             sDebugRenderer->PreDraw(false);
-            physicsSystem.DrawBodies(settings, sDebugRenderer.get(), &dynamicFilter);
+            physicsSystem.DrawBodies(sDebugRenderer->mRenderSettings.bodyDrawSettings, sDebugRenderer.get(), &dynamicFilter);
             sDebugRenderer->EndFrame();
         }
     }
@@ -474,7 +476,10 @@ int PhysicsWorld::stepSimulation(f32 deltaTime) {
     const i32 collisionSteps = glm::min(static_cast<i32>(stepCountf), MAX_COLLISION_STEPS_PER_FRAME);
 
     // Step the world
-    mContext->update(PHYSICS_TIMESTEP, collisionSteps);
+    if (collisionSteps > 0) {
+        mContext->update(PHYSICS_TIMESTEP, collisionSteps);
+        updateItemEntitiesChangedThisFrame();
+    }
     return collisionSteps;
 }
 
@@ -725,11 +730,6 @@ PhysHitResult PhysicsWorld::raycastFirst(
     return rv;
 }
 
-void PhysicsWorld::pickDeferred(DeferredPhysicsPick* deferredPick, f32v3 rayStart, f32v3 rayEnd, BitFlags<PhysicsPickQueryFlags> queryFlags)
-{
-    assert(false);
-}
-
 int PhysicsWorld::queryObjectsInAABB(
     f32v3 min,
     f32v3 max,
@@ -811,24 +811,40 @@ int PhysicsWorld::collideCylinder(
     return hitCollector.collectedHits;
 }
 
+#ifdef JPH_DEBUG_RENDERER
+// For debug draw
+SERIALIZABLE_ENUM(JPH::BodyManager::EShapeColor, EShapeColor,
+    ENUM_FIELD_SIMPLE(JPH::BodyManager::EShapeColor, InstanceColor),
+    ENUM_FIELD_SIMPLE(JPH::BodyManager::EShapeColor, ShapeTypeColor),
+    ENUM_FIELD_SIMPLE(JPH::BodyManager::EShapeColor, MotionTypeColor),
+    ENUM_FIELD_SIMPLE(JPH::BodyManager::EShapeColor, SleepColor),
+    ENUM_FIELD_SIMPLE(JPH::BodyManager::EShapeColor, IslandColor),
+    ENUM_FIELD_SIMPLE(JPH::BodyManager::EShapeColor, MaterialColor)
+);
+#endif
 
 void PhysicsWorld::updateAndRenderImguiDebugControls() {
 
 #ifdef JPH_DEBUG_RENDERER
-    if (ImGui::Checkbox("Show Collision", &sDebugRenderer->mRenderSettings.showCollision)) {
+    bool changed = false;
+
+    changed |= ImGui::Checkbox("Debug Draw", &sDebugRenderer->mRenderSettings.enableDebugDraw);
+
+    if (sDebugRenderer->mRenderSettings.enableDebugDraw) {
+        changed |= ImGui::Checkbox("  Shapes", &sDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawShape);
+        changed |= ImguiUtil::EnumCombo("  Shape Color", sDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawShapeColor);
+        changed |= ImGui::Checkbox("  Wireframe", &sDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawShapeWireframe);
+        changed |= ImGui::Checkbox("  Bounding Boxes", &sDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawBoundingBox);
+        changed |= ImGui::Checkbox("  Center Of Mass", &sDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawCenterOfMassTransform);
+        changed |= ImGui::Checkbox("  Velocity", &sDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawVelocity);
+        changed |= ImGui::SliderFloat("  Render Alpha", &sDebugRenderer->mRenderSettings.alpha, 0.0f, 1.0f);
+    }
+
+    if (changed) {
         mContext->mDirtyStaticDebugRender = true;
     }
-
-    if (sDebugRenderer->mRenderSettings.showCollision) {
-        if (ImGui::Checkbox("Wireframe", &sDebugRenderer->mRenderSettings.wireframe)) {
-            mContext->mDirtyStaticDebugRender = true;
-        }
-
-        if (ImGui::SliderFloat("Alpha", &sDebugRenderer->mRenderSettings.alpha, 0.0f, 1.0f)) {
-            mContext->mDirtyStaticDebugRender = true;
-        }
-    }
 #endif
+
 
     ImGui::Spacing();
     ImGui::SeparatorText("Stats");
@@ -953,6 +969,39 @@ void PhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigid
     addedKeys.clear();
 }
 
+
+void PhysicsWorld::updateItemEntitiesChangedThisFrame() {
+    PROFILE_FUNCTION();
+
+    if (mItemEntitiesMovedThisFrame.size()) {
+        LOG_CRITICAL("MOVE COUNT {}", mItemEntitiesMovedThisFrame.size());
+    }
+    if (mItemEntitiesRestedThisFrame.size()) {
+        LOG_CRITICAL("REST COUNT {}", mItemEntitiesRestedThisFrame.size());
+    }
+
+    for (entt::entity entity : mItemEntitiesMovedThisFrame) {
+        PhysicsWorldEvent event{ entity };
+        dispatchItemMoved(event);
+#ifdef DEBUG
+        // Make sure we had no duplicates
+        assert(!mItemEntitiesRestedThisFrame.contains(entity));
+#endif
+    }
+
+    for (entt::entity entity : mItemEntitiesRestedThisFrame) {
+        PhysicsWorldEvent event{ entity };
+        dispatchItemAtRest(event);
+#ifdef DEBUG
+        // Make sure we had no duplicates
+        assert(!mItemEntitiesMovedThisFrame.contains(entity));
+#endif
+    }
+#
+#
+    mItemEntitiesRestedThisFrame.clear();
+    mItemEntitiesMovedThisFrame.clear();
+}
 
 const JPH::BodyLockInterface& PhysicsWorld::getBodyLockInterface() const {
     return mContext->getBodyLockInterface();

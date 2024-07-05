@@ -495,6 +495,7 @@
     <ClCompile Include="src\tile\TileDamageData.cpp" />
     <ClCompile Include="src\ui\debugging\GameplayDebugger.cpp" />
     <ClCompile Include="src\ui\debugging\MovementDebugger.cpp" />
+    <ClCompile Include="src\ui\debugging\PhysicsDebugger.cpp" />
     <ClCompile Include="src\ui\editor\AnimMachineEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\Blendspace1DEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\NodeGraph.cpp" />
@@ -991,6 +992,7 @@
     <ClInclude Include="src\tile\TileDamageData.h" />
     <ClInclude Include="src\ui\debugging\GameplayDebugger.h" />
     <ClInclude Include="src\ui\debugging\MovementDebugger.h" />
+    <ClInclude Include="src\ui\debugging\PhysicsDebugger.h" />
     <ClInclude Include="src\ui\editor\AnimMachineEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\Blendspace1DEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\NodeGraph.h" />

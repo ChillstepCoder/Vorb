@@ -9,6 +9,8 @@
 #include "world/ChunkGridEvent.h"
 #include "world/WorldEvents.h"
 
+#include "physics/PhysicsWorldEvents.h"
+
 class PlayerInteractSystem;
 
 class AttachedEntityUpdater;
@@ -84,6 +86,7 @@ protected:
 
     ChunkGridListeners mChunkEventListeners;
     WorldListeners mWorldEventListeners;
+    PhysicsWorldListeners mPhysicsWorldListeners;
 
     mutable std::mutex mPlayerEntityMutex;
     entt::entity mLocalPlayerEntity = entt::null;

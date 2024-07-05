@@ -1125,6 +1125,9 @@
     <ClCompile Include="src\physics\PhysicsJobSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\debugging\PhysicsDebugger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -2808,6 +2811,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\physics\PhysicsWorldEvents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\debugging\PhysicsDebugger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

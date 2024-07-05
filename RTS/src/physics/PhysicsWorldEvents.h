@@ -2,10 +2,10 @@
 
 enum class PhysicsWorldEventType {
     INVALID,
-    ItemAtRest
+    ItemAtRest,
+    ItemMoved
 };
 struct PhysicsWorldEvent {
     entt::entity entity;
-    PhysicsWorldEventType type = PhysicsWorldEventType::INVALID;
 };
 EVENT_DISPATCHER_TYPE(PhysicsWorld, PhysicsWorldEventType, PhysicsWorldEvent e);

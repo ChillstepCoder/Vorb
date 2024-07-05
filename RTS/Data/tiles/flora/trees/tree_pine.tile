@@ -19,5 +19,5 @@ item_drops:
   rand: []
   guar:
     - val: wood_log
-      count: [40,50]
+      count: [30,35]
 recipe: []

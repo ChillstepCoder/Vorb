@@ -7,6 +7,7 @@
 
 class Camera3D;
 class MovementDebugger;
+class PhysicsDebugger;
 
 struct GameplayDebugOptions {
     bool showAIDebugger = false;
@@ -44,14 +45,6 @@ private:
     std::vector<AIDebugEntityUpdateHandlePtr> mEntityUpdateHandles;
 };
 
-class PhysicsDebugger {
-public:
-    PhysicsDebugger();
-    ~PhysicsDebugger();
-
-    void updateAndRenderImGui();
-};
-
 // Singleton managed by UIContext
 class GameplayDebugger
 {
@@ -61,7 +54,7 @@ public:
     
     GameplayDebugger* tryGetInstance() { return sInstance; }
     AIDebugger& getAIDebugger() { return mAIDebugger; }
-    PhysicsDebugger& getPhysicsDebugger() { return mPhysicsDebugger; }
+    PhysicsDebugger& getPhysicsDebugger() { return *mPhysicsDebugger; }
 
 public:
     void updateAndRenderImGui(const Camera3D& camera);
@@ -69,7 +62,7 @@ public:
 private:
 
     AIDebugger mAIDebugger;
-    PhysicsDebugger mPhysicsDebugger;
+    std::unique_ptr<PhysicsDebugger> mPhysicsDebugger;
     std::unique_ptr<MovementDebugger> mMovementDebugger;
 
     inline static GameplayDebugger* sInstance = nullptr;

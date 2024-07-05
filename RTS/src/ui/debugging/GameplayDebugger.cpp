@@ -4,7 +4,7 @@
 #include "world/World.h"
 #include "ecs/IFullECS.h"
 
-#include "physics/PhysicsWorld.h"
+#include "ui/debugging/PhysicsDebugger.h"
 
 #include "ui/UIContext.h"
 #include "ui/debugging/MovementDebugger.h"
@@ -28,6 +28,7 @@ GameplayDebugger::GameplayDebugger() {
     sInstance = this;
 
     mMovementDebugger = std::make_unique<MovementDebugger>();
+    mPhysicsDebugger = std::make_unique<PhysicsDebugger>();
 }
 
 GameplayDebugger::~GameplayDebugger() {
@@ -58,7 +59,7 @@ void GameplayDebugger::updateAndRenderImGui(const Camera3D& camera) {
     }
 
     if (sGameplayDebugOptions.showPhysicsDebugger) {
-        mPhysicsDebugger.updateAndRenderImGui();
+        mPhysicsDebugger->updateAndRenderImGui(&sGameplayDebugOptions.showPhysicsDebugger);
     }
 
     if (sGameplayDebugOptions.showMovementDebugger) {
@@ -260,17 +261,5 @@ void AIDebugger::updateAndRenderImGui(const Camera3D& camera) {
 
         ++i;
         ImGui::PopID();
-    }
-}
-
-PhysicsDebugger::PhysicsDebugger() = default;
-PhysicsDebugger::~PhysicsDebugger() = default;
-
-void PhysicsDebugger::updateAndRenderImGui() {
-    if (ImGui::Begin("Physics Debugger", &sGameplayDebugOptions.showPhysicsDebugger, ImGuiWindowFlags_NoDocking)) {
-
-        sGameWorld->getPhysicsWorld().updateAndRenderImguiDebugControls();
-
-        ImGui::End();
     }
 }

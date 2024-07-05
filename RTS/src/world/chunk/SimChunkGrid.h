@@ -70,7 +70,8 @@ public:
     // On fail returns INVALID_TILE_ITEM_UID
     TileItemUID tryDropItemStackOnGroundGameThread(ItemStack stack, f32v3 worldPos);
     // On fail returns INVALID_TILE_ITEM_UID
-    TileItemUID onItemProjectileLandGameThread(ItemStack stack, f32v3 worldPos);
+    TileItemUID connectItemEntityToGroundGameThread(ItemStack stack, f32v3 worldPos);
+    void untrackItem(TileItemUID uid, ItemID id, f32v3 worldPos);
     SimChunkTileItemReservationPtr tryReserveItemStack(TileCoord worldPos, TileItemUID uid, ItemID itemId, ui16 quantity);
 
     bool hasBlockingTileAtWorldPos(TileCoord worldPos) const;

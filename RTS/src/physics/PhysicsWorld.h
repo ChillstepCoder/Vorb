@@ -44,9 +44,11 @@ struct NewTileContainerPhysicsData {
 };
 
 class PhysicsWorldBodyInterface;
+class PhysicsBodyActivationListener;
 
 class PhysicsWorld {
     friend class PhysicsWorldBodyInterface;
+    friend class PhysicsBodyActivationListener;
 public:
     PhysicsWorld(World& world, CollisionShapeRepository& shapeRepo);
     ~PhysicsWorld();
@@ -83,7 +85,6 @@ public:
         const JPH::BodyFilter& bodyFilter = {},
         bool traceFarTerrain = false
     ) const;
-    void pickDeferred(DeferredPhysicsPick* deferredPick, f32v3 rayStart, f32v3 rayEnd, BitFlags<PhysicsPickQueryFlags> queryFlags);
     int queryObjectsInAABB(
         f32v3 min,
         f32v3 max,
@@ -113,6 +114,7 @@ public:
     // Events
     // ===========================================================================
     EVENT_LISTENER_FUNCS(PhysicsWorld, ItemAtRest, PhysicsWorldEventType::ItemAtRest, PhysicsWorldEvent&);
+    EVENT_LISTENER_FUNCS(PhysicsWorld, ItemMoved, PhysicsWorldEventType::ItemMoved, PhysicsWorldEvent&);
 
     // ===========================================================================
     // Debugging
@@ -135,6 +137,7 @@ private:
     JPH::MeshShapeSettings createStaticMeshShapeSettings(std::span<f32v3> verts, std::span<ui32> indices);
     void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
     void updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
+    void updateItemEntitiesChangedThisFrame();
 
     // ===========================================================================
     // PhysicsWorldBodyInterface
@@ -156,6 +159,11 @@ private:
     f32 mTickTimeRemainder = 0.0f;
 
     UnorderedFlatMap<TileContainerID, std::unique_ptr<NewTileContainerPhysicsData>> mTileContainerPhysicsData;
+
+    std::mutex mItemEntitiesMutex;
+    // TODO: Profile vs FlatSet and Vector? Vector may be faster for small N
+    UnorderedFlatSet<entt::entity> mItemEntitiesRestedThisFrame;
+    UnorderedFlatSet<entt::entity> mItemEntitiesMovedThisFrame;
 
     EVENT_DISPATCHER_DEF(PhysicsWorld);
 

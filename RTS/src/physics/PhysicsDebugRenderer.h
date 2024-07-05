@@ -4,6 +4,7 @@
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Body/Body.h>
 #include <Jolt/Physics/Body/BodyFilter.h>
+#include <Jolt/Physics/Body/BodyManager.h>
 #include <Jolt/Renderer/DebugRenderer.h>
 
 class DynamicBodyDrawFilter : public JPH::BodyDrawFilter {
@@ -68,9 +69,9 @@ public:
     void EndFrame();
 
     struct RenderSettings {
-        bool showCollision = false;
+        bool enableDebugDraw = false;
         float alpha = 0.7f;
-        bool wireframe = false;
+        JPH::BodyManager::DrawSettings bodyDrawSettings;
     } mRenderSettings;
 
 private:

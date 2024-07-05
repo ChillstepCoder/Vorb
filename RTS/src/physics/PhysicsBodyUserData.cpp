@@ -41,6 +41,6 @@ TileContainerID PhysicsBodyUserData::getContainerId() const {
 }
 
 entt::entity PhysicsBodyUserData::getEntity() const {
-    assert(getType() == PhysicsBodyUserDataType::Entity);
+    assert(getType() == PhysicsBodyUserDataType::Entity || getType() == PhysicsBodyUserDataType::ItemEntity);
     return static_cast<entt::entity>(data & PHYS_USER_DATA_RIGHTPART_MASK);
 }

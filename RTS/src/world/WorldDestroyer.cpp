@@ -14,6 +14,7 @@ static std::atomic_bool finishedGameThreadShutdown;
 
 void WorldDestroyer::shutdownWorld(World& world) {
     ASSERT_RENDER_THREAD(); // Render thread is responsible for driving world shutdown
+    IS_SHUTTING_DOWN = true;
 
     LOG_DEBUG("Shutting down world {}", (void*)&world);
     // REPLACE IS_SHUTTING_DOWN
@@ -56,6 +57,8 @@ void WorldDestroyer::shutdownWorld(World& world) {
     RenderContext::getInstance().getWorldRenderer().removeRenderDataManagerForWorld(world);
 
     LOG_DEBUG("Finished shutdown");
+
+    IS_SHUTTING_DOWN = false;
 }
 
 void WorldDestroyer::shutdownAllWorlds() {

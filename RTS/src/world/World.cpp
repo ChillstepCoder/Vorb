@@ -75,6 +75,9 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     mTotalChunks = SQ(mWidthChunks);
     mWidthDTiles = mWidthTiles / DTILE_WIDTH;
 
+    // Physics
+    mPhysicsWorld = std::make_unique<PhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
+
     // Host vs Client objects
     switch (netMode) {
         case WorldNetMode::Editor: {
@@ -135,8 +138,6 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     mTimeOfDayManager = std::make_unique<TimeOfDayManager>();
     // Structures
     mStructureGrid = std::make_unique<BuildingGrid>(*this);
-    // Physics
-    mPhysicsWorld = std::make_unique<PhysicsWorld>(*this, Services::ResourceManager::ref().getCollisionShapeRepository());
     // Generation
     mChunkGenerator = std::make_unique<ChunkGenerator>(*this);
     // Combat

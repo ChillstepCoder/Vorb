@@ -11,6 +11,8 @@
 #include "ecs/system/PlayerInteractSystem.h"
 #include "camera/Camera3D.h"
 
+#include "physics/PhysicsWorld.h"
+
 #include "ecs/factory/EntityFactory.h"
 
 // TODO: Get rid of this
@@ -337,17 +339,49 @@ void IFullECS::initEvents() {
         }
     });
 
+    // Item events
     if (mWorld.isHostWorld()) {
+
         mWorld.addOnItemProjectileLandListener(mWorldEventListeners,
             [this](const WorldEntityEvent& event) {
+            assert(false);
+            //ASSERT_GAME_THREAD();
+            //PositionComponent& posCmp = mRegistry.get<PositionComponent>(event.entity);
+            //assert(posCmp.chunkId != INVALID_CHUNK_ID);
+
+            //SimChunkGrid& simChunkGrid = mWorld.getSimChunkGrid();
+            //SimpleItemComponent& itemCmp = mRegistry.get<SimpleItemComponent>(event.entity);
+
+            //TileItemComponent& tileItemCmp = mRegistry.emplace<TileItemComponent>(
+            //    event.entity,
+            //    itemCmp.itemStack,
+            //    simChunkGrid.onItemProjectileLandGameThread(itemCmp.itemStack, posCmp.mPosition
+            //));
+            //mTileItemEntityMap[tileItemCmp.tileItemUID] = event.entity;
+
+            //// Check if we landed in a new chunk and update accordingly
+            //const ChunkID landedChunk = mWorld.getChunkIDAtWorldPos(posCmp.mPosition);
+            //if (landedChunk != posCmp.chunkId) {
+            //    posCmp.chunkId = landedChunk;
+            //    // May end up destroying the item entity if we landed on sim chunk
+            //    onEntityEnterNewChunk(event.entity, posCmp.chunkId, landedChunk);
+            //}
+        });
+
+        mWorld.getPhysicsWorld().registerPhysicsWorldListeners(mPhysicsWorldListeners);
+        mWorld.getPhysicsWorld().addItemAtRestListener(mPhysicsWorldListeners, [this](const PhysicsWorldEvent& event) {
             ASSERT_GAME_THREAD();
             PositionComponent& posCmp = mRegistry.get<PositionComponent>(event.entity);
             assert(posCmp.chunkId != INVALID_CHUNK_ID);
 
-            TileItemComponent& itemCmp = mRegistry.get<TileItemComponent>(event.entity);
-            SimChunkGrid& simChunkGrid = mWorld.getSimChunkGrid();
-            itemCmp.setTileItemUID(simChunkGrid.onItemProjectileLandGameThread(itemCmp.getItemStack(), posCmp.mPosition));
-            mTileItemEntityMap[itemCmp.tileItemUID] = event.entity;
+            SimpleItemComponent& itemCmp = mRegistry.get<SimpleItemComponent>(event.entity);
+
+            TileItemComponent& tileItemCmp = mRegistry.emplace<TileItemComponent>(
+                event.entity,
+                itemCmp.itemStack,
+                mWorld.getSimChunkGrid().connectItemEntityToGroundGameThread(itemCmp.itemStack, posCmp.mPosition
+            ));
+            mTileItemEntityMap[tileItemCmp.tileItemUID] = event.entity;
 
             // Check if we landed in a new chunk and update accordingly
             const ChunkID landedChunk = mWorld.getChunkIDAtWorldPos(posCmp.mPosition);
@@ -355,6 +389,21 @@ void IFullECS::initEvents() {
                 posCmp.chunkId = landedChunk;
                 // May end up destroying the item entity if we landed on sim chunk
                 onEntityEnterNewChunk(event.entity, posCmp.chunkId, landedChunk);
+            }
+        });
+        mWorld.getPhysicsWorld().addItemMovedListener(mPhysicsWorldListeners, [this](const PhysicsWorldEvent& event) {
+            ASSERT_GAME_THREAD();
+            // First move will not have item component
+            if (TileItemComponent* tileItemCmp = mRegistry.try_get<TileItemComponent>(event.entity)) {
+                PositionComponent& posCmp = mRegistry.get<PositionComponent>(event.entity);
+                assert(posCmp.chunkId != INVALID_CHUNK_ID);
+
+                SimChunkGrid& simChunkGrid = mWorld.getSimChunkGrid();
+
+                mTileItemEntityMap.erase(tileItemCmp->tileItemUID);
+                mWorld.getSimChunkGrid().untrackItem(tileItemCmp->getTileItemUID(), tileItemCmp->getItemStack().id, posCmp.mPosition);
+
+                mRegistry.remove<TileItemComponent>(event.entity);
             }
         });
     }
