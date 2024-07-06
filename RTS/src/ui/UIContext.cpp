@@ -13,6 +13,14 @@
 #include "ui/minigame/LocalMinigameContext.h"
 #include "ui/debugging/GameplayDebugger.h"
 
+#include "rendering/MaterialRenderer.h"
+#include "rendering/MaterialShaderRepository.h"
+#include "resources/TextureRepository.h"
+
+
+#include <Vorb/graphics/FullscreenTriangleVAO.h>
+#include <Vorb/graphics/BlendState.h>
+
 #include <Vorb/ui/GameWindow.h>
 
 #include "screens/ScreenState.h"
@@ -38,6 +46,9 @@ UIContext::UIContext(const f32v2& screenResolution, SDL_Window* window) : mScree
 #ifdef DEBUG
     toggleGameplayDebugger(); // Gameplay debugger by default in debug builds
 #endif
+
+    mReticleShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("reticle"));
+    mReticleTexture = TextureRepository::get().getAssetHandle(CStrToken("reticle"));
 }
 
 UIContext::~UIContext() {
@@ -50,6 +61,8 @@ void UIContext::updateEditors(World* world, const Camera3D& camera, const f32v3&
 
 void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec, const Camera3D& camera) {
     
+    bool showReticle = sDebugOptions.mShowReticle;
+
     // Force show editor
     mEditorRoot->updateAndRenderUI(activeGBuffer, elapsedSec, camera);
     
@@ -81,6 +94,12 @@ void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedS
         if (destroyWorld) {
             WorldDestroyer::shutdownAllWorlds();
         }
+
+        showReticle = false;
+    }
+
+    if (showReticle) {
+        renderReticle();
     }
 
     mMinigameContext->updateAndRender(mScreenResolution, elapsedSec);
@@ -187,4 +206,26 @@ ui32v2 UIContext::getWindowDims() {
 
 bool UIContext::shouldPauseGameRendering() const {
     return sDebugOptions.mShowEditor && mEditorRoot && mEditorRoot->hasActiveCenterPanel();
+}
+
+void UIContext::renderReticle() {
+    if (!mReticleShader->isLoaded() || !mReticleTexture->isLoaded()) {
+        return;
+    }
+
+    vg::sBlendStates.ALPHA.set();
+
+    ui32 nextTextureIndex = 0;
+    const MaterialShaderDef& def = mReticleShader->getLoadedAsset();
+    MaterialRenderer::bindMaterialShaderForRender(def, &nextTextureIndex);
+
+    glBindTextureUnit(nextTextureIndex, mReticleTexture->getLoadedAsset().getTextureHandle());
+    glUniform1i(def.getUniform("unTexture"), nextTextureIndex);
+    glUniform1f(def.getUniform("unSize"), sDebugOptions.mReticleSize);
+    glUniform2f(def.getUniform("unScreenDims"), mScreenResolution.x, mScreenResolution.y);
+    glUniform4f(def.getUniform("unColor"), sDebugOptions.mReticleColor.r / 255.f, sDebugOptions.mReticleColor.g / 255.f, sDebugOptions.mReticleColor.b / 255.f, sDebugOptions.mReticleColor.a / 255.f);
+
+    sGlobalFullTriangleVAO.drawTwoTriangles();
+
+    vg::BlendState::restorePrevious();
 }

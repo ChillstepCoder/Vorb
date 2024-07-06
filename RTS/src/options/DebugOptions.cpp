@@ -162,10 +162,14 @@ DebugOptions::DebugOptions() :
     mLoadRangeSq(SQ(CHUNK_LOAD_RANGE * CHUNK_LOAD_RANGE_MULT)),
     mLoadRange(CHUNK_LOAD_RANGE * CHUNK_LOAD_RANGE_MULT),
     // Camera settings
-    mFoV(80.0f),
+    mFoV(75.0f),
     mZFar(200000.0f),
     mCameraZHeight(1.5f),
     mCameraXYDistance(1.0f),
+    mCameraShoulderOffset(0.3f),
+    mReticleSize(18.0f),
+    mShowReticle(true),
+    mReticleColor(255, 255, 255, 255),
     mCameraMode(CameraMode::MMO),
     // Shader debug
     mDebugColor01(0.0f, 0.0f, 1.0f),

@@ -282,6 +282,14 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::SliderFloat("Far Plane", &sDebugOptions.mZFar, 10000.0f, 300000.0f, "%.1f", ImGuiSliderFlags_Logarithmic);
         ImGui::SliderFloat("Z Height", &sDebugOptions.mCameraZHeight, 0.3f, 10.0f, "%.1f");
         ImGui::SliderFloat("XY Distance", &sDebugOptions.mCameraXYDistance, 0.3f, 10.0f, "%.1f");
+        ImGui::SliderFloat("Shoulder Offset", &sDebugOptions.mCameraShoulderOffset, -5.f, 5.0f, "%.1f");
+        ImGui::Checkbox("Enable Reticle", &sDebugOptions.mShowReticle);
+        ImGui::SliderFloat("Reticle Size", &sDebugOptions.mReticleSize, 8.f, 64.0f, "%.1f");
+
+        f32v4 colorf = sDebugOptions.mReticleColor.toVec4();
+        ImGui::ColorPicker4("Reticle Color", &colorf.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        sDebugOptions.mReticleColor = color4(colorf);
+
         ImGui::Text("Camera mode");
         if (ImGui::RadioButton("Free look", sDebugOptions.mCameraMode == CameraMode::FREE_LOOK)) {
             sDebugOptions.mCameraMode = CameraMode::FREE_LOOK;
@@ -289,16 +297,13 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         if (ImGui::RadioButton("Mouselock", sDebugOptions.mCameraMode == CameraMode::MOUSELOCK)) {
             sDebugOptions.mCameraMode = CameraMode::MOUSELOCK;
         }
-        if (ImGui::RadioButton("Cartesian", sDebugOptions.mCameraMode == CameraMode::CARTESIAN)) {
-            sDebugOptions.mCameraMode = CameraMode::CARTESIAN;
-        }
         if (ImGui::RadioButton("MMO", sDebugOptions.mCameraMode == CameraMode::MMO)) {
             sDebugOptions.mCameraMode = CameraMode::MMO;
         }
         if (ImGui::RadioButton("First Person", sDebugOptions.mCameraMode == CameraMode::FIRST_PERSON)) {
             sDebugOptions.mCameraMode = CameraMode::FIRST_PERSON;
         }
-        static_assert(e_cast(CameraMode::COUNT) == 6, "Update options");
+        static_assert(e_cast(CameraMode::COUNT) == 5, "Update options");
         ImGui::PopID();
         ImGui::Separator();
     }

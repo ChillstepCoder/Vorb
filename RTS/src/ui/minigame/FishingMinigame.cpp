@@ -211,7 +211,6 @@ void FishingMinigame::render(f32 elapsedSec) {
 
     // Player
     // TODO: Replace
-    ResourceManager& resourceManager = Services::ResourceManager::ref();
     MaterialRepository& materialRepo = MaterialRepository::get();
     MaterialID materials[8] = {
         materialRepo.getAssetID(CStrToken("soft_particle")),

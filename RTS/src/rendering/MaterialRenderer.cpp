@@ -14,7 +14,6 @@
 #include "options/DebugOptions.h"
 
 void MaterialRenderer::renderFullScreenQuad(const MaterialShaderDef& material) {
-
     bindMaterialShaderForRender(material, nullptr);
 
     sGlobalFullTriangleVAO.draw();

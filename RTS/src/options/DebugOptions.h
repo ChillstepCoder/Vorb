@@ -172,6 +172,10 @@ struct DebugOptions {
     f32 mZFar;
     f32 mCameraZHeight;
     f32 mCameraXYDistance;
+    f32 mCameraShoulderOffset;
+    f32 mReticleSize;
+    bool mShowReticle;
+    color4 mReticleColor;
     CameraMode mCameraMode;
     // Shader debug
     f32v3 mDebugColor01;

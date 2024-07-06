@@ -44,7 +44,6 @@ public:
     void setEditorMode(bool editorMode) { mEditorMode = editorMode; }
 private:
     // Mode updates
-    void updateCameraCartesianMode(f32 frameAlpha, const f32v3& ownerEntityPos);
     void updateCameraFreeLookMode(f32 frameAlpha, f32 deltaTime);
     void updateCameraMMOMode(f32 frameAlpha, const f32v3& ownerEntityPos);
     void updateCameraEditorMode(f32 frameAlpha, const f32v3& ownerEntityPos);

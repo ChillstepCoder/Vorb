@@ -41,9 +41,6 @@ void CameraController::update(f32 deltaTime, f32 frameAlpha, const f32v3& follow
     }
     else {
         switch (mCameraMode) {
-            case CameraMode::CARTESIAN:
-                updateCameraCartesianMode(frameAlpha, followEntityPos);
-                break;
             case CameraMode::MMO:
                 updateCameraMMOMode(frameAlpha, followEntityPos);
                 break;
@@ -59,7 +56,7 @@ void CameraController::update(f32 deltaTime, f32 frameAlpha, const f32v3& follow
                 break;
         }
     }
-    static_assert(e_cast(CameraMode::COUNT) == 6, "Add new mode functionality");
+    static_assert(e_cast(CameraMode::COUNT) == 5, "Add new mode functionality");
 
     // Update camera itself
     mCamera.update();
@@ -78,11 +75,6 @@ void CameraController::setCameraMode(CameraMode cameraMode) {
     mCameraMode = cameraMode;
     // Add new inputs
     switch (mCameraMode) {
-        case CameraMode::CARTESIAN:
-            vui::InputDispatcher::mouse.addWheelListener(mMouseListeners, [this](const vui::MouseWheelEvent& e) { updateMouseWheelInput(e); });
-            vui::InputDispatcher::key.addKeyDownListener(mKeyListeners, [this](const vui::KeyEvent& e) { updateKeyInputCartesianMode(e); });
-            mIsMouseHidden = false;
-            break;
         case CameraMode::MMO:
             vui::InputDispatcher::mouse.addWheelListener(mMouseListeners, [this](const vui::MouseWheelEvent& e) { updateMouseWheelInputMMOMode(e); });
             vui::InputDispatcher::mouse.addMotionListener(mMouseListeners, [this](const vui::MouseMotionEvent& e) { updateMouseMotionInputMMOMode(e); });
@@ -107,42 +99,12 @@ void CameraController::setCameraMode(CameraMode cameraMode) {
         default:
             break;
     }
-    static_assert(e_cast(CameraMode::COUNT) == 6, "Update any input register");
+    static_assert(e_cast(CameraMode::COUNT) == 5, "Update any input register");
 
 }
 
 void CameraController::setCameraDirection(const f32v3& dir) {
     mCameraDirectionTweener.mTarget = dir;
-}
-
-void CameraController::updateCameraCartesianMode(f32 frameAlpha, const f32v3& ownerEntityPos) {
-
-    // TODO: Delta time dependent?
-
-    f32v3 followTargetPos = ownerEntityPos;
-
-    // Camera follow
-    constexpr float MAX_SPEED_MPS = 0.3f;
-    const f32 maxSpeed = MAX_SPEED_MPS * mCameraPositionTweener.mCurr.z;
-    f32v3 targetPos(followTargetPos.x, followTargetPos.y, mCameraPositionTweener.mTarget.z);
-    mCameraPositionTweener.setTarget(targetPos);
-    mCameraPositionTweener.setMaxSpeed(MAX_SPEED_MPS * mCameraPositionTweener.mCurr.z);
-
-    mCameraPositionTweener.update(1.0f);
-    mCameraDirectionTweener.update(1.0f);
-
-    const f32v3 lookAtOffset(mCameraDirectionTweener.mCurr.x * sDebugOptions.mCameraXYDistance, mCameraDirectionTweener.mCurr.y * sDebugOptions.mCameraXYDistance, mCameraDirectionZOffset * sDebugOptions.mCameraZHeight);
-    mCamera.lookAt(mCamera.getPosition() + lookAtOffset);
-
-    // Position tweener causes juttering
-    //mCamera3D->setPosition(mCameraPositionTweener.mCurr - lookAtOffset * mCameraPositionTweener.mCurr.z + f32v3(0.0f, 0.0f, playerZPos));
-    mCamera.setPosition(targetPos - lookAtOffset * mCameraPositionTweener.mTarget.z + f32v3(0.0f, 0.0f, followTargetPos.z));
-
-    // Increase Z clip as camera goes higher to reduce precision issues and make fog move away from camera
-    /*const f32 zNearAlpha = glm::clamp(mCamera.getPosition().z * 0.001f, 0.0f, 1.0f);
-    const f32 zNear = lerp(0.1f, 5.0f, zNearAlpha);
-    mCamera.setClippingPlane(zNear, sDebugOptions.mZFar);*/
-
 }
 
 void CameraController::updateCameraFreeLookMode(f32 frameAlpha, f32 deltaTime) {
@@ -200,6 +162,10 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha, const f32v3& ownerEnt
     //else {
         mCamera.setPosition(camPos);
         mCamera.lookAt(followTargetPos);
+
+
+        // Apply shoulder offset POST set position so we dont get any weird compounding error
+        mCamera.setPosition(camPos + mCamera.getRightVector() * sDebugOptions.mCameraShoulderOffset);
     //}
 
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE)) {
@@ -282,17 +248,6 @@ void CameraController::updateMouseMotionInputFirstPersonMode(const vui::MouseMot
     if (mIsMouseHidden) {
         constexpr f32 ROTATE_SPEED = 0.002f;
         mCamera.applyRotation(evnt.dy * ROTATE_SPEED, -evnt.dx * ROTATE_SPEED);
-    }
-}
-
-void CameraController::updateKeyInputCartesianMode(const vui::KeyEvent& evnt) {
-    if (evnt.keyCode == VKEY_Q) {
-        mCameraCartesianDirection = CARTESIAN_NEIGHBORS[e_cast(mCameraCartesianDirection)][1];
-        mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[e_cast(mCameraCartesianDirection)];
-    }
-    else if (evnt.keyCode == VKEY_E) {
-        mCameraCartesianDirection = CARTESIAN_NEIGHBORS[e_cast(mCameraCartesianDirection)][0];
-        mCameraDirectionTweener.mTarget = TARGET_CAMERA_NORMALS_3D[e_cast(mCameraCartesianDirection)];
     }
 }
 

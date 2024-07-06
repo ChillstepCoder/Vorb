@@ -2,6 +2,9 @@
 
 #include "ui/UIContextEvents.h"
 
+#include "rendering/MaterialShaderDef.h"
+#include "definitions/rendering/TextureDef.h"
+
 struct SDL_Window;
 class Camera3D;
 class TileInspectionPanel;
@@ -52,6 +55,7 @@ public:
 
     EVENT_LISTENER_FUNCS(UIContext, EditorWorldSet, UIContextEventType::EditorWorldSet, const UIContextEvent&);
 private:
+    void renderReticle();
 
     static UIContext* sInstance;
 
@@ -60,6 +64,9 @@ private:
     std::unique_ptr<PauseMenuPanel> mPauseMenuPanel;
     std::unique_ptr<LocalMinigameContext> mMinigameContext;
     std::unique_ptr<GameplayDebugger> mGameplayDebugger;
+
+    AssetHandlePtr<MaterialShaderDef> mReticleShader;
+    AssetHandlePtr<TextureDef> mReticleTexture;
 
     SDL_Window* mWindow;
     f32v2 mScreenResolution;
