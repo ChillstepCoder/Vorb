@@ -118,8 +118,8 @@ private:
     SimChunkTileItemReservationPtr tryReserveItemStack(TileItemUID uid, ItemID itemId, ui16 quantity, SimChunk& owner);
     // Returns <pickedCount, remainingCount>
     [[nodiscard]] i32v2 tryPickupItemsForReservation(SimChunkTileItemReservation& reservation, i32 maxCount);
-    TileItemUID addStackToTileSimThread(ChunkTileIndex tileIndex, ItemStack stack);
-    TileItemUID addStackToTileGameThread(ChunkTileIndex tileIndex, ItemStack stack);
+    TileItemUID addStackToTileSimThreadAllowMerge(ChunkTileIndex tileIndex, ItemStack stack);
+    TileItemUID addStackToTileGameThreadNoMerge(ChunkTileIndex tileIndex, ItemStack stack);
     void untrackItem(TileItemUID uid, ItemID itemId);
     void combineStacks();
 
@@ -169,8 +169,8 @@ public:
 
     // Items
     // On fail returns INVALID_TILE_ITEM_UID
-    TileItemUID tryAddItemStackToGroundSimThread(ItemStack itemStack, ChunkTileIndex tileIndex);
-    TileItemUID tryAddItemStackToGroundGameThread(ItemStack itemStack, ChunkTileIndex tileIndex);
+    TileItemUID tryAddItemStackToGroundAllowMerge(ItemStack itemStack, ChunkTileIndex tileIndex);
+    TileItemUID tryAddItemStackToGroundNoMerge(ItemStack itemStack, ChunkTileIndex tileIndex);
     SimChunkTileItemReservationPtr tryReserveItemStackOnTile(ChunkTileIndex tileIndex, ItemID itemId, ui16 quantity);
     SimChunkTileItemReservationPtr tryReserveItemStack(TileItemUID uid, ItemID itemId, ui16 quantity);
     void untrackItem(TileItemUID uid, ItemID itemId);

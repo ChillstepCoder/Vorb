@@ -268,14 +268,14 @@ FlatMap<ItemID, std::vector<TileItemStack>> SimChunk::getItemDataCopy() const {
     return mItemData.itemStacks;
 }
 
-TileItemUID SimChunk::tryAddItemStackToGroundSimThread(ItemStack itemStack, ChunkTileIndex tileIndex) {
+TileItemUID SimChunk::tryAddItemStackToGroundAllowMerge(ItemStack itemStack, ChunkTileIndex tileIndex) {
     std::lock_guard lock(mMutex);
-    return mItemData.addStackToTileSimThread(tileIndex, itemStack);
+    return mItemData.addStackToTileSimThreadAllowMerge(tileIndex, itemStack);
 }
 
-TileItemUID SimChunk::tryAddItemStackToGroundGameThread(ItemStack itemStack, ChunkTileIndex tileIndex) {
+TileItemUID SimChunk::tryAddItemStackToGroundNoMerge(ItemStack itemStack, ChunkTileIndex tileIndex) {
     std::lock_guard lock(mMutex);
-    return mItemData.addStackToTileGameThread(tileIndex, itemStack);
+    return mItemData.addStackToTileGameThreadNoMerge(tileIndex, itemStack);
 }
 
 SimChunkTileItemReservationPtr SimChunk::tryReserveItemStackOnTile(ChunkTileIndex tileIndex, ItemID itemId, ui16 quantity) {
@@ -447,8 +447,7 @@ i32v2 SimChunkItemData::tryPickupItemsForReservation(SimChunkTileItemReservation
     return i32v2(0);
 }
 
-TileItemUID SimChunkItemData::addStackToTileSimThread(ChunkTileIndex tileIndex, ItemStack stack) {
-    ASSERT_SIM_THREAD();
+TileItemUID SimChunkItemData::addStackToTileSimThreadAllowMerge(ChunkTileIndex tileIndex, ItemStack stack) {
     // Sim thread can combine stacks together
 
     assert(stack.isValid());
@@ -465,8 +464,7 @@ TileItemUID SimChunkItemData::addStackToTileSimThread(ChunkTileIndex tileIndex, 
     return uid;
 }
 
-TileItemUID SimChunkItemData::addStackToTileGameThread(ChunkTileIndex tileIndex, ItemStack stack){
-    ASSERT_GAME_THREAD();
+TileItemUID SimChunkItemData::addStackToTileGameThreadNoMerge(ChunkTileIndex tileIndex, ItemStack stack){
     // Sim thread keeps stacks distinct as they are different item entities
 
     assert(stack.isValid());

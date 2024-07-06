@@ -177,6 +177,16 @@ ChunkSimTransitionData IFullECS::deactivateEntitiesForChunk(Chunk& chunk) {
                 unboundEntities.emplace_back(e);
             }
             else {
+
+                // If we are a loose item, we need to connect it to the world
+                if (SimpleItemComponent* itemCmp = mRegistry.try_get<SimpleItemComponent>(e)) {
+                    if (mRegistry.all_of<PhysicsComponent>(e)) {
+                        // Note that we do not call connectItemToChunk because we do not need to set up this entity, it is about
+                        // to be destroyed. Instead we simply notify the sim chunk grid and forget the UID
+                        mWorld.getSimChunkGrid().connectItemEntityToGroundGameThreadNoMerge(itemCmp->itemStack, mRegistry.get<PositionComponent>(e).mPosition);
+                    }
+                }
+
                 // TODO: Item projectiles probably should snap to the ground rather than delete
                 // Destroy everything else, assume it is tracked
                 destroyEntity(e);
@@ -370,26 +380,7 @@ void IFullECS::initEvents() {
 
         mWorld.getPhysicsWorld().registerPhysicsWorldListeners(mPhysicsWorldListeners);
         mWorld.getPhysicsWorld().addItemAtRestListener(mPhysicsWorldListeners, [this](const PhysicsWorldEvent& event) {
-            ASSERT_GAME_THREAD();
-            PositionComponent& posCmp = mRegistry.get<PositionComponent>(event.entity);
-            assert(posCmp.chunkId != INVALID_CHUNK_ID);
-
-            SimpleItemComponent& itemCmp = mRegistry.get<SimpleItemComponent>(event.entity);
-
-            TileItemComponent& tileItemCmp = mRegistry.emplace<TileItemComponent>(
-                event.entity,
-                itemCmp.itemStack,
-                mWorld.getSimChunkGrid().connectItemEntityToGroundGameThread(itemCmp.itemStack, posCmp.mPosition
-            ));
-            mTileItemEntityMap[tileItemCmp.tileItemUID] = event.entity;
-
-            // Check if we landed in a new chunk and update accordingly
-            const ChunkID landedChunk = mWorld.getChunkIDAtWorldPos(posCmp.mPosition);
-            if (landedChunk != posCmp.chunkId) {
-                posCmp.chunkId = landedChunk;
-                // May end up destroying the item entity if we landed on sim chunk
-                onEntityEnterNewChunk(event.entity, posCmp.chunkId, landedChunk);
-            }
+            connectItemToChunk(event.entity);
         });
         mWorld.getPhysicsWorld().addItemMovedListener(mPhysicsWorldListeners, [this](const PhysicsWorldEvent& event) {
             ASSERT_GAME_THREAD();
@@ -431,4 +422,27 @@ void IFullECS::initEvents() {
             }
         }
     });
+}
+
+void IFullECS::connectItemToChunk(entt::entity entity) {
+    ASSERT_GAME_THREAD();
+    PositionComponent& posCmp = mRegistry.get<PositionComponent>(entity);
+    assert(posCmp.chunkId != INVALID_CHUNK_ID);
+
+    SimpleItemComponent& itemCmp = mRegistry.get<SimpleItemComponent>(entity);
+
+    TileItemComponent& tileItemCmp = mRegistry.emplace<TileItemComponent>(
+        entity,
+        itemCmp.itemStack,
+        mWorld.getSimChunkGrid().connectItemEntityToGroundGameThreadNoMerge(itemCmp.itemStack, posCmp.mPosition
+    ));
+    mTileItemEntityMap[tileItemCmp.tileItemUID] = entity;
+
+    // Check if we landed in a new chunk and update accordingly
+    const ChunkID landedChunk = mWorld.getChunkIDAtWorldPos(posCmp.mPosition);
+    if (landedChunk != posCmp.chunkId) {
+        posCmp.chunkId = landedChunk;
+        // May end up destroying the item entity if we landed on sim chunk
+        onEntityEnterNewChunk(entity, posCmp.chunkId, landedChunk);
+    }
 }

@@ -76,6 +76,7 @@ public:
 
 protected:
     void initEvents();
+    void connectItemToChunk(entt::entity entity);
 
     // TODO: Periodically shrink_to_fit
     std::vector<EntityVector> mEntitiesByChunk;
