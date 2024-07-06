@@ -70,7 +70,8 @@ public:
 
     void updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder);
 
-    void removeBody(PhysBodyID id);
+    // This will also clear user data from the body
+    void removeBody(PhysBodyID id, bool shouldDestroy);
 
     // ===========================================================================
     // Queries

@@ -340,7 +340,7 @@ public:
         return *body;
     }
 
-    void removeAndDestroyBody(PhysBodyID id) {
+    void removeBody(PhysBodyID id, bool shouldDestroy) {
         ASSERT_GAME_THREAD();
         JPH::BodyInterface& bodyInterface = getBodyInterfaceNonLocking();
 #if ENABLE_PHYSICS_ANALYTICS == 1
@@ -353,8 +353,13 @@ public:
         }
 #endif
 
+        // We have to clear the user data because removing a body not at rest
+        // triggers a rest callback. By clearing the user data we ensure we wont listen for it
+        bodyInterface.SetUserData(JPH::BodyID(id), {});
         bodyInterface.RemoveBody(JPH::BodyID(id));
-        bodyInterface.DestroyBody(JPH::BodyID(id));
+        if (shouldDestroy) {
+            bodyInterface.DestroyBody(JPH::BodyID(id));
+        }
     }
 
 
@@ -612,12 +617,12 @@ void PhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& 
     if (!meshBuilder.hasAnyCollision()) {
         if (it != mTileContainerPhysicsData.end()) {
             for (auto& [key, physBodyID] : it->second->mTileKeyToPhysBodyID) {
-                mContext->removeAndDestroyBody(physBodyID);
+                mContext->removeBody(physBodyID, true);
             }
 
             PhysBodyID& staticMesh = it->second->mStaticMesh;
             if (staticMesh != INVALID_PHYS_BODY_ID) {
-                mContext->removeAndDestroyBody(staticMesh);
+                mContext->removeBody(staticMesh, true);
                 staticMesh = INVALID_PHYS_BODY_ID;
             }
 
@@ -660,14 +665,14 @@ void PhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& 
         }
     }
     else if (*staticMesh != INVALID_PHYS_BODY_ID) {
-        mContext->removeAndDestroyBody(*staticMesh);
+        mContext->removeBody(*staticMesh, true);
         *staticMesh = INVALID_PHYS_BODY_ID;
     }
 }
 
-void PhysicsWorld::removeBody(PhysBodyID id) {
+void PhysicsWorld::removeBody(PhysBodyID id, bool shouldDestroy) {
     assert(id != INVALID_PHYS_BODY_ID);
-    mContext->removeAndDestroyBody(id);
+    mContext->removeBody(id, shouldDestroy);
 }
 
 PhysHitResult PhysicsWorld::raycastFirst(
@@ -961,7 +966,7 @@ void PhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigid
     // Remove any keys that are not in the gatherer
     for (auto it = physicsData.mTileKeyToPhysBodyID.begin(); it != physicsData.mTileKeyToPhysBodyID.end();) {
         if (!addedKeys.contains(it->first)) {
-            mContext->removeAndDestroyBody(it->second);
+            mContext->removeBody(it->second, true);
             it = physicsData.mTileKeyToPhysBodyID.erase(it);
         }
         else {
@@ -999,8 +1004,7 @@ void PhysicsWorld::updateItemEntitiesChangedThisFrame() {
         assert(!mItemEntitiesMovedThisFrame.contains(entity));
 #endif
     }
-#
-#
+
     mItemEntitiesRestedThisFrame.clear();
     mItemEntitiesMovedThisFrame.clear();
 }

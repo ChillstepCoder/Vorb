@@ -246,8 +246,16 @@ void EntityFactory::destroyEntity(World& world, entt::entity entity) {
     IFullECS& ecs = world.getECS();
     entt::registry& registry = ecs.mRegistry;
 
+    LOG_CRITICAL("Destroy entity {}", (ui32)entity);
+
     if (PhysicsComponent* cmp = registry.try_get<PhysicsComponent>(entity)) {
-        world.getPhysicsWorld().removeBody(cmp->mBodyID);
+        // We dont destroy the body for characters because the destructor on JPH::Character does it for us
+        if (registry.all_of<CharacterControlComponent>(entity)) {
+            world.getPhysicsWorld().removeBody(cmp->mBodyID, false);
+        } else {
+            world.getPhysicsWorld().removeBody(cmp->mBodyID, true);
+            LOG_CRITICAL("  Destroy body ", cmp->mBodyID);
+        }
     }
 
     if (StaticModelComponent* cmp = registry.try_get<StaticModelComponent>(entity)) {

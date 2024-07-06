@@ -123,6 +123,8 @@ void FishEcosystem::removeFish(entt::entity fishEntity) {
             if (fishChunk.mFish[i] == fishEntity) {
                 removeTrackedFishPopulation(fishCmp.mFishId, fishChunk.mChunkID);
                 fishChunk.mFish[i] = fishChunk.mFish.back();
+                // TODO: This does not call EntityFactory::DestroyEntity so we dont get dispatch, but maybe thats preferrable
+                // for lightweight entity?
                 registry.destroy(fishEntity);
                 return;
             }
@@ -341,6 +343,8 @@ void FishEcosystem::updateActiveFish() {
                     // Update fish
                     if (updateFish(registry, fishEntity, container, fishChunk, fishCmp, positionCmp, yawPitchCmp)) {
                         // Fish is gone
+                        // TODO: This does not call EntityFactory::DestroyEntity so we dont get dispatch, but maybe thats preferrable
+                        // for lightweight entity?
                         registry.destroy(fishEntity);
                         fishChunk.mFish[j] = fishChunk.mFish.back();
                         fishChunk.mFish.pop_back();

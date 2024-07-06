@@ -181,6 +181,9 @@ void SimECS::endCharacterGroup(entt::entity group, CharacterGroupDissolveReason 
 
     onEntityDestroyed(group, SimEntityType::Group);
     mRegistry.remove<CharacterGroupLeaderComponent>(groupCmp.leader);
+
+    // TODO: This does not call EntityFactory::DestroyEntity so we dont get dispatch, but maybe thats preferrable
+    // for lightweight entity?
     mRegistry.destroy(group);
 }
 

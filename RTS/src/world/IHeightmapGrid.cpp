@@ -457,7 +457,7 @@ void IHeightmapGrid::initChunkGridEvents() {
         assert(mHeightData[patchId].mNumActiveChunksThisPatch > 0);
         if (--mHeightData[patchId].mNumActiveChunksThisPatch == 0) {
             // Need to deactivate physics
-            mWorld->getPhysicsWorld().removeBody(patch.physBodyID);
+            mWorld->getPhysicsWorld().removeBody(patch.physBodyID, true);
             patch.physBodyID = INVALID_PHYS_BODY_ID;
         }
     });

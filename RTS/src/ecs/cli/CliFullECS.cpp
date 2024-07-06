@@ -28,6 +28,8 @@ void CliFullECS::destroyEntity(entt::entity entity) {
 }
 
 void CliFullECS::destroyEntityFromSrv(entt::entity srvEntity) {
+    // TODO: EntityFactory::Destroy?
+    assert(false);
     auto&& it = mSrvToCliEntityLookup.find(srvEntity);
     if (it != mSrvToCliEntityLookup.end()) {
         mRegistry.destroy(it->second);
