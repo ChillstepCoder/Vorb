@@ -177,6 +177,10 @@ struct DebugOptions {
     bool mShowReticle;
     color4 mReticleColor;
     CameraMode mCameraMode;
+    // Object highlight
+    f32 mObjectHighlightSize;
+    f32 mObjectHighlightDitherThreshold;
+    color4 mObjectHighlightColor;
     // Shader debug
     f32v3 mDebugColor01;
     f32v3 mDebugColor02;

@@ -11,7 +11,7 @@ struct SubMeshBufferData {
     }
 
     // TODO: Pool allocators or reserve?
-    std::vector<StaticModelVertex> mVerts;
+    std::vector<StandardModelVertex> mVerts;
     std::vector<ui32> mIndices;
 };
 
@@ -43,8 +43,8 @@ public:
 
     void addAxisAlignedQuad(f32v3 rootPosition, const f32v2& xyDims, CubeFacing axis, const MaterialDesc& materialData, const f32v4& uvRect, color4 color);
     void addTerrainAlignedQuad(f32v2 tilePosition, f32 terrainCorners[4], const MaterialDesc& materialData, color4 color, bool flipTriangleDir);
-    void addTriangle(StaticModelVertex verts[3], const MaterialDesc& materialData, bool calculateNormals);
-    void addQuad(StaticModelVertex verts[4], const MaterialDesc& materialData, bool calculateNormals);
+    void addTriangle(StandardModelVertex verts[3], const MaterialDesc& materialData, bool calculateNormals);
+    void addQuad(StandardModelVertex verts[4], const MaterialDesc& materialData, bool calculateNormals);
     void addQuadBetweenPoints(const f32v3 vertPoints[4], const MaterialDesc& materialData, f32v2 uvScale, color4 color, bool swapUV);
     void addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3, const MaterialDesc& materialData, f32v2 uvScale, color4 color, bool swapUV);
     void addQuadBetweenPointsWorldUV(const f32v3 vertPoints[4], const MaterialDesc& materialData, f32v2 uvScale, color4 color, AXIS_3D uvOrient, const f32v3& worldUVRoot, bool flipUv = false);

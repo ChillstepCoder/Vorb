@@ -124,14 +124,16 @@ public:
     void debugRender(const Camera3D& camera) const;
 
 #if ENABLE_PHYSICS_ANALYTICS == 1
-    int getBodyCount(PhysicsObjectLayer layer) const;
+    int getBodyCount(JPH::ObjectLayer layer) const;
 #endif
 
 private:
+    JPH::ObjectLayer makeObjectLayerMasked(JPH::ObjectLayer layerBits, JPH::ObjectLayer collideMaskBits);
+
     // ===========================================================================
     // Private API
     // ===========================================================================
-    JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer);
+    JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, JPH::ObjectLayer layer);
     PhysBodyID createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId);
     PhysBodyID createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId);
     PhysBodyID createTerrainBody(f32v3 position, JPH::Shape* terrainShape);

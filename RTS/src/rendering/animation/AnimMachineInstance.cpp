@@ -165,7 +165,7 @@ void AnimMachineInstance::updateState(AnimMachineInstanceState& state, f32 elaps
 void AnimMachineInstance::updateLoopingAnimSequence(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight) {
     state.anim.time += elapsedSec;
 
-    const AnimationDef& animDef = state.anim.animDef.getLoadedOrUnloadedAsset();
+    const AnimationDef& animDef = state.anim.animDef.getLoadedOrUnloadedAsset<AnimationDef>();
 
     if (state.anim.time > animDef.animation.duration()) [[unlikely]] {
         state.anim.time = fmod(state.anim.time, animDef.animation.duration());

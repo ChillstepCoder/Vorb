@@ -28,6 +28,7 @@
 #include "rendering/model/InstancedDynamicModelRenderer.h"
 #include "rendering/model/InstancedStaticModelManager.h"
 #include "rendering/model/InstancedStaticModelRenderer.h"
+#include "rendering/model/ModelHighlightRenderer.h"
 #include "rendering/post_process/AmbientOcclusionPostProcess.h"
 #include "rendering/post_process/DepthOfFieldPostProcess.h"
 #include "rendering/post_process/ShadowRenderer.h"
@@ -85,6 +86,7 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
     mCharacterRenderer = std::make_unique<CharacterRenderer>();
     mStaticModelRenderer = std::make_unique<InstancedStaticModelRenderer>();
     mDynamicModelRenderer = std::make_unique<InstancedDynamicModelRenderer>();
+    mModelHighlightRenderer = std::make_unique<ModelHighlightRenderer>();
     mTileContainerRenderer = std::make_unique<TileContainerRenderer>();
     mLightRenderer = std::make_unique<LightRenderer>();
     mEcsRenderer = std::make_unique<ECSRenderer>();
@@ -231,9 +233,8 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     }
 
     // Render stockpiles
+    // TODO: Replace this
     mItemRenderer->render(*mCamera);
-
-    // TODO: Render loose items
 
 
     // Ambient occlusion
@@ -325,6 +326,10 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
         mLightRenderer->renderSunlight(*activeGBuffer, mShadowRenderer->getShadowTexture(), *cubemap);
     }
 
+    // Emissives and non lit objects
+    // Player object highlight
+    mModelHighlightRenderer->renderModelHighlight(mRenderState->getPlayerSelectedObject(), *mCamera);
+
     // Sky (PBR version)
     if (sDebugOptions.mUsingPBR) {
         renderPassSky();
@@ -353,6 +358,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     if (sDebugOptions.mIsCameraUnderwater) {
         mOverlayRenderer->renderUnderwaterOverlay();
     }
+
 
     // Final Pass through process
     // TODO: Make this work. When in debug, render tonemap to a new texture

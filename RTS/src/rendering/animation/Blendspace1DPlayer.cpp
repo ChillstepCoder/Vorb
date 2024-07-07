@@ -48,13 +48,13 @@ AnimSampleBlendDataPair Blendspace1DPlayer::updateAndGetBlendData(f32 x, f32 ela
     f32 animSpeed;
     AnimBlendPair blendPair = getBlendPair(mX, animSpeed);
     // Select loop duration based on weights
-    rv.first.anim = &blendPair.anim0.getLoadedOrUnloadedAsset();
+    rv.first.anim = &blendPair.anim0.getLoadedOrUnloadedAsset<AnimationDef>();
     rv.first.weight = blendPair.weight0;
     const f32 duration0 = rv.first.anim->animation.duration();
     f32 duration1;
     float loopDuration = duration0 * rv.first.weight;
     if (blendPair.hasBoth()) {
-        rv.second.anim = &blendPair.anim1.getLoadedOrUnloadedAsset();
+        rv.second.anim = &blendPair.anim1.getLoadedOrUnloadedAsset<AnimationDef>();
         rv.second.weight = 1.0f - blendPair.weight0;
         duration1 = rv.second.anim->animation.duration();
         loopDuration += duration1 * rv.second.weight;

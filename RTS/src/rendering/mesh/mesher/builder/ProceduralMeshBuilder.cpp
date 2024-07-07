@@ -52,10 +52,10 @@ void ProceduralMeshBuilder::addAxisAlignedQuad(f32v3 rootPosition, const f32v2& 
         indexData[ind + 5u] = v;
     }
 
-    std::vector<StaticModelVertex>& vertexData = submesh.mVerts;
+    std::vector<StandardModelVertex>& vertexData = submesh.mVerts;
     vertexData.resize(vertexData.size() + 4);
 
-    StaticModelVertex* verts = (StaticModelVertex*)(&vertexData.back() - 3);
+    StandardModelVertex* verts = (StandardModelVertex*)(&vertexData.back() - 3);
 
     const i32v2& xyAxis = CUBE_FACING_AXIS[e_cast(axis)];
     const f32v3& normal(CUBE_FACING_NORMALSF[e_cast(axis)]);
@@ -118,10 +118,10 @@ void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrai
         indexData[ind + 5u] = v;
     }
 
-    std::vector<StaticModelVertex>& vertexData = submesh.mVerts;
+    std::vector<StandardModelVertex>& vertexData = submesh.mVerts;
     vertexData.resize(vertexData.size() + 4);
 
-    StaticModelVertex* verts = (StaticModelVertex*)(&vertexData.back() - 3);
+    StandardModelVertex* verts = (StandardModelVertex*)(&vertexData.back() - 3);
 
     mPolyTypeFlags.setBit(PolyTypeFlags::QUADS);
 
@@ -165,7 +165,7 @@ void ProceduralMeshBuilder::addTerrainAlignedQuad(f32v2 tilePosition, f32 terrai
     }
 }
 
-void ProceduralMeshBuilder::addTriangle(StaticModelVertex verts[3], const MaterialDesc& materialData, bool calculateNormals) {
+void ProceduralMeshBuilder::addTriangle(StandardModelVertex verts[3], const MaterialDesc& materialData, bool calculateNormals) {
 
     assert(!calculateNormals); // Unsupported so far
     assert(!mUsingSharedIndexBuffer); // Non shared IBO only
@@ -174,14 +174,14 @@ void ProceduralMeshBuilder::addTriangle(StaticModelVertex verts[3], const Materi
 
     mPolyTypeFlags.setBit(PolyTypeFlags::INDEXED_TRIANGLES);
 
-    std::vector<StaticModelVertex>& vertexData = submesh.mVerts;
+    std::vector<StandardModelVertex>& vertexData = submesh.mVerts;
     std::vector<ui32>& indexData = submesh.mIndices;
 
     const size_t i = indexData.size();
     const size_t v = vertexData.size();
     indexData.resize(i + 3u);
     vertexData.resize(v + 3u);
-    memcpy(&vertexData[vertexData.size() - 3], verts, sizeof(StaticModelVertex) * 3);
+    memcpy(&vertexData[vertexData.size() - 3], verts, sizeof(StandardModelVertex) * 3);
     // Set indices
     for (ui32 j = v; j < vertexData.size(); ++j) {
         vertexData[j].materialId = materialData.id;
@@ -191,7 +191,7 @@ void ProceduralMeshBuilder::addTriangle(StaticModelVertex verts[3], const Materi
     indexData[i + 2u] = v + 2u;
 }
 
-void ProceduralMeshBuilder::addQuad(StaticModelVertex verts[4], const MaterialDesc& materialData, bool calculateNormals)
+void ProceduralMeshBuilder::addQuad(StandardModelVertex verts[4], const MaterialDesc& materialData, bool calculateNormals)
 {
     assert(!calculateNormals); // Unsupported so far
     assert(!mUsingSharedIndexBuffer); // Non shared IBO only
@@ -200,14 +200,14 @@ void ProceduralMeshBuilder::addQuad(StaticModelVertex verts[4], const MaterialDe
 
     mPolyTypeFlags.setBit(PolyTypeFlags::INDEXED_TRIANGLES);
 
-    std::vector<StaticModelVertex>& vertexData = submesh.mVerts;
+    std::vector<StandardModelVertex>& vertexData = submesh.mVerts;
     std::vector<ui32>& indexData = submesh.mIndices;
 
     const size_t i = indexData.size();
     const size_t v = vertexData.size();
     indexData.resize(i + 6u);
     vertexData.resize(v + 4u);
-    memcpy(&vertexData[vertexData.size() - 4], verts, sizeof(StaticModelVertex) * 4);
+    memcpy(&vertexData[vertexData.size() - 4], verts, sizeof(StandardModelVertex) * 4);
     // Set indices
     for (ui32 j = v; j < vertexData.size(); ++j) {
         vertexData[j].materialId = materialData.id;
@@ -242,10 +242,10 @@ void ProceduralMeshBuilder::addQuadBetweenPoints(const f32v3& v0, const f32v3& v
         indexData[ind + 5u] = v;
     }
 
-    std::vector<StaticModelVertex>& vertexData = submesh.mVerts;
+    std::vector<StandardModelVertex>& vertexData = submesh.mVerts;
     vertexData.resize(vertexData.size() + 4);
 
-    StaticModelVertex* verts = (StaticModelVertex*)(&vertexData.back() - 3);
+    StandardModelVertex* verts = (StandardModelVertex*)(&vertexData.back() - 3);
 
     mPolyTypeFlags.setBit(PolyTypeFlags::QUADS);
 
@@ -308,10 +308,10 @@ void ProceduralMeshBuilder::addQuadBetweenPointsWorldUV(const f32v3& v0, const f
         indexData[ind + 5u] = v;
     }
 
-    std::vector<StaticModelVertex>& vertexData = submesh.mVerts;
+    std::vector<StandardModelVertex>& vertexData = submesh.mVerts;
     vertexData.resize(vertexData.size() + 4);
 
-    StaticModelVertex* verts = (StaticModelVertex*)(&vertexData.back() - 3);
+    StandardModelVertex* verts = (StandardModelVertex*)(&vertexData.back() - 3);
 
     mPolyTypeFlags.setBit(PolyTypeFlags::QUADS);
 
@@ -531,9 +531,9 @@ void ProceduralMeshBuilder::uploadMeshData(MeshGpuData& subMesh, const f32v3& po
         MeshBuilderCommon::uploadIndexData(subMesh, data.mIndices, flags);
     }
 
-    MeshBuilderCommon::uploadVertexData(subMesh, data.mVerts.data(), data.mVerts.size(), sizeof(StaticModelVertex), flags);
+    MeshBuilderCommon::uploadVertexData(subMesh, data.mVerts.data(), data.mVerts.size(), sizeof(StandardModelVertex), flags);
 
-    subMesh.mVertexType = StaticModelVertex::bindVertexAttribs(subMesh.mVao);
+    subMesh.mVertexType = StandardModelVertex::bindVertexAttribs(subMesh.mVao);
 
     checkGlError("MeshBuilder::uploadMeshData");
 }

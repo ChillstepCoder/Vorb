@@ -28,7 +28,7 @@ inline i16v2 PackUVs(const f32v2& uvs) {
 }
 
 // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
-struct alignas(16) StaticModelVertex {
+struct alignas(16) StandardModelVertex {
     f32v3 pos; // TODO: Can we get away with 16 bit local positions?
     ui32 normalPacked;
     ui32 tangentPacked;
@@ -45,23 +45,22 @@ struct alignas(16) StaticModelVertex {
     void build(const f32v3& pos, const f32v3& normal, const f32v3& tangent, const f32v2& uvs, const color4& color, ui16 materialIdOrSlot, ui8 windInfluence, ui8 damageZone = 0);
 
     static VertexType bindVertexAttribs(VGBuffer vao);
-    static VertexType vertexType() { return VertexType::STATIC_MODEL; }
+    static VertexType vertexType() { return VertexType::STANDARD_MODEL; }
 };
-static_assert(sizeof(StaticModelVertex) == 32, "16 byte alignment needed");
+static_assert(sizeof(StandardModelVertex) == 32, "16 byte alignment needed");
 
 struct alignas(16) TerrainVertex {
-    f32v3 pos;
+    f32v3 pos; // TODO: We can make this just Z by storing a separate global f32v2 buffer of XY positions since every terrain patch is the same in XY
     ui32 normalPacked;
-   // ui8 roadIntensity;
-   // ui16 roadMaterialId;
 
     static VertexType bindVertexAttribs(VGBuffer vao);
     static VertexType vertexType() { return VertexType::TERRAIN; }
 };
 static_assert(sizeof(TerrainVertex) == 16, "16 byte alignment needed");
 
+// TODO: This could probably be only depth
 struct alignas(16) WaterVertex {
-    f32v3 pos;
+    f32v3 pos; // TODO: We can make this just Z (or possibly JUST depth) by storing a separate global f32v2 buffer of XY positions since every terrain patch is the same in XY
     f32 depth;
 
     static VertexType bindVertexAttribs(VGBuffer vao);
@@ -75,7 +74,7 @@ struct alignas(16) Vertex32 {
 
     union { 
         TerrainVertex mTerrain; // VertexType::TERRAIN
-        StaticModelVertex mStaticModel; // VertexType::STATIC_MODEL
+        StandardModelVertex mStaticModel; // VertexType::STATIC_MODEL
     };
 };
 static_assert(sizeof(Vertex32) == 32, "16 byte alignment needed");
@@ -85,12 +84,12 @@ struct alignas(16) SkinnedModelVertex {
 public:
     SkinnedModelVertex() {};
 
-    f32v3 pos;
-    ui32 normalPacked; // TODO: Test uncompressed since we have lots of padding room
+    f32v3 pos; // TODO: Try compress to ui16?
+    ui32 normalPacked;
     ui32 tangentPacked;
     i16v2 uvsPacked;
     color4 color;
-    // TODO: ui16 weights?
+    // TODO: ui16 or ui8 weights
     f32 boneWeights[MAX_BONES_PER_VERTEX] = {}; // 0 Weight default 
     ui8 boneIDs[MAX_BONES_PER_VERTEX] = {}; //
 

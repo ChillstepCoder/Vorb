@@ -35,6 +35,7 @@ IFullECS::IFullECS(World& world) : mWorld(world) {
         list.reserve(ENTITY_LIST_RESERVE_COUNT);
     }
 
+    mPlayerControlSystem = std::make_unique<PlayerControlSystem>(mWorld, mRegistry);
     mPlayerInteractSystem = std::make_unique<PlayerInteractSystem>(mWorld);
 }
 
@@ -61,10 +62,7 @@ void IFullECS::tick(f32 elapsedSec) {
     
 	// TODO: Client ECS
 	if (RenderContext::exists()) {
-		const Camera3D* camera = RenderContext::getInstance().getCamera();
-		if (camera) {
-			mPlayerControlSystem.update(mWorld, mRegistry, camera->getYaw());
-		}
+		mPlayerControlSystem->update(RenderContext::getInstance().getGameThreadCameraData(), elapsedSec);
 	}
 
     mSkillsSystem.update(mWorld, mRegistry, elapsedSec);

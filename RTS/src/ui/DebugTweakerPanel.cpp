@@ -307,6 +307,15 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::PopID();
         ImGui::Separator();
     }
+
+
+    if (ImGui::CollapsingHeader("Object Highlight")) {
+        ImGui::SliderFloat("Size", &sDebugOptions.mObjectHighlightSize, 0.0f, 0.5f, "%.3f");
+        f32v4 colorf = sDebugOptions.mObjectHighlightColor.toVec4();
+        ImGui::ColorPicker4("Color", &colorf.x, ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_PickerHueBar);
+        sDebugOptions.mObjectHighlightColor = color4(colorf);
+        ImGui::SliderFloat("Dither Threshold", &sDebugOptions.mObjectHighlightDitherThreshold, 0.0f, 1.0f, "%.3f");
+    }
     
     if (ImGui::CollapsingHeader("Clouds")) {
         ImGui::PushID(++ID);

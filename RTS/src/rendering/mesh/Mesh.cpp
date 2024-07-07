@@ -180,8 +180,8 @@ MeshCpuData::~MeshCpuData() {
             case VertexType::WATER:
                 delete[] static_cast<WaterVertex*>(mVertsPtr);
                 break;
-            case VertexType::STATIC_MODEL:
-                delete[] static_cast<StaticModelVertex*>(mVertsPtr);
+            case VertexType::STANDARD_MODEL:
+                delete[] static_cast<StandardModelVertex*>(mVertsPtr);
                 break;
             case VertexType::SKINNED_MODEL:
                 delete[] static_cast<SkinnedModelVertex*>(mVertsPtr);

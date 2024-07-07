@@ -522,6 +522,19 @@ void World::updateEntitiesRenderState(WorldRenderState& renderState) {
             renderState.mDynamicModels.emplace_back(orientCmp.mOrientation, posCmp.mPosition, modelCmp.modelId);
         };
     }
+
+    // Player object selection
+    entt::entity localPlayer = mEcs->getLocalPlayer();
+    if (localPlayer != entt::null) {
+        if (PlayerControlComponent* playerControlCmp = registry.try_get<PlayerControlComponent>(localPlayer)) {
+            if (playerControlCmp->mSelectedObjectData.modelId != INVALID_MODEL_ID) {
+                renderState.mPlayerSelectedObject = playerControlCmp->mSelectedObjectData;
+            }
+            else {
+                renderState.mPlayerSelectedObject.modelId = INVALID_MODEL_ID;
+            }
+        }
+    }
 }
 
 void World::updateDebugRenderState(WorldRenderState& renderState) {

@@ -17,10 +17,13 @@
 #include <Jolt/Physics/Collision/CollideShape.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/ObjectLayerPairFilterMask.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 #include <Jolt/Physics/Character/Character.h>
 #include <Jolt/Physics/Body/BodyID.h>
+#include <Jolt/Physics/Collision/Broadphase/BroadphaseLayerInterfaceMask.h>
+#include <Jolt/Physics/Collision/Broadphase/ObjectVsBroadphaseLayerFilterMask.h>
 
 #include "physics/PhysicsDebugRenderer.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
@@ -33,6 +36,8 @@
 #include "terrain/HeightmapPatch.h"
 
 #include "options/DebugOptions.h"
+
+#include "debugging/DebugRenderer.h"
 
 static const JPH::Quat ROTATE_ZUP = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f);
 
@@ -100,39 +105,29 @@ private:
     PhysicsWorld& mPhysicsWorld;
 };
 
-/// Class that determines if two object layers can collide
-class ObjectLayerPairFilterImpl : public JPH::ObjectLayerPairFilter {
-public:
-    virtual bool ShouldCollide(JPH::ObjectLayer inObject1, JPH::ObjectLayer inObject2) const override {
-        switch (inObject1) {
-            case e_cast(PhysicsObjectLayer::Static):
-                return inObject2 & DYNAMIC_OBJECT_LAYER_MASK; // Non moving only collides with moving
-            case e_cast(PhysicsObjectLayer::Item):
-                return inObject2 & ITEM_OBJECT_COLLISION_MASK;
-            case e_cast(PhysicsObjectLayer::Character):
-                return inObject2 & CHARACTER_OBJECT_COLLISION_MASK;
-            default:
-                JPH_ASSERT(false);
-                return false;
-        }
-    }
-};
 
 // BroadPhaseLayerInterface implementation
 // This defines a mapping between object and broadphase layers.
-class BPLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterface
-{
+class BPLayerInterfaceImpl final : public JPH::BroadPhaseLayerInterfaceMask {
 public:
-    BPLayerInterfaceImpl() { }
-
-    virtual uint GetNumBroadPhaseLayers() const override {
-        return BroadPhaseLayers::COUNT;
+    BPLayerInterfaceImpl() : JPH::BroadPhaseLayerInterfaceMask(BroadPhaseLayers::COUNT) {
+        // Object layer masks will select the broadphase layer that first fits the inGroupsToInclude and !inGroupsToExclude
+        // Include groups can collide with this broadphase layer, even if they are excluded, hence why for example Movable is
+        // included on static layer
+        ConfigureLayer(BroadPhaseLayers::Static, 
+            PhysicsObjectLayer::Static | PhysicsObjectLayer::DynamicSolid | PhysicsObjectLayer::DynamicItem | PhysicsObjectLayer::Character, // Include
+            PhysicsObjectLayer::DynamicSolid | PhysicsObjectLayer::DynamicItem | PhysicsObjectLayer::QueryPhantom // Exclude
+        );
+        ConfigureLayer(BroadPhaseLayers::Dynamic,
+            PhysicsObjectLayer::DynamicSolid | PhysicsObjectLayer::DynamicItem | PhysicsObjectLayer::Character, // Include
+            PhysicsObjectLayer::QueryPhantom // Exclude
+        );
+        ConfigureLayer(BroadPhaseLayers::QueryOnly,
+            PhysicsObjectLayer::QueryPhantom, // Include
+            0 // Exclude
+        );
     }
-
-    virtual JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer) const override {
-        return (inLayer & STATIC_OBJECT_LAYER_MASK) ? BroadPhaseLayers::Static : BroadPhaseLayers::Dynamic;
-        static_assert(BroadPhaseLayers::COUNT == 2, "Change this to reflect new layers");
-    }
+    static_assert(PhysicsObjectLayer::COUNT == 5, "Update");
 
 #if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
     virtual const char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer) const override {
@@ -140,28 +135,12 @@ public:
         {
             case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::Dynamic:	return "Dynamic";
             case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::Static:	return "Static";
+            case (JPH::BroadPhaseLayer::Type)BroadPhaseLayers::QueryOnly: return "Query Only";
             default:													JPH_ASSERT(false); return "INVALID";
         }
+        static_assert(BroadPhaseLayers::COUNT == 3);
     }
 #endif // JPH_EXTERNAL_PROFILE || JPH_PROFILE_ENABLED
-};
-
-/// Class that determines if an object layer can collide with a broadphase layer
-class ObjectVsBroadPhaseLayerFilterImpl : public JPH::ObjectVsBroadPhaseLayerFilter {
-public:
-    virtual bool ShouldCollide(JPH::ObjectLayer inLayer1, JPH::BroadPhaseLayer inLayer2) const override {
-        switch (inLayer1) {
-            case e_cast(PhysicsObjectLayer::Static):
-                return inLayer2 == BroadPhaseLayers::Dynamic;
-            case e_cast(PhysicsObjectLayer::Character):
-            case e_cast(PhysicsObjectLayer::Item):
-                return true;
-            default:
-                JPH_ASSERT(false);
-                return false;
-        }
-        static_assert(BroadPhaseLayers::COUNT == 2, "Change this to reflect new layers");
-    }
 };
 
 // Can be called from multiple threads
@@ -233,7 +212,7 @@ public:
 // Minor attempt at some PIMPL
 class JPHPhysicsWorldContext {
 public:
-    JPHPhysicsWorldContext(PhysicsWorld& physicsWorld) : bodyActivationListener(physicsWorld) {};
+    JPHPhysicsWorldContext(PhysicsWorld& physicsWorld) : bodyActivationListener(physicsWorld), objectVsBroadphaseLayerFilter(broadPhaseLayerInterface) {};
 
     void init(ui32 maxBodies, ui32 numBodyMutexes, ui32 maxBodyPairs, ui32 maxContactConstraints) {
         physicsSystem.Init(maxBodies, numBodyMutexes, maxBodyPairs, maxContactConstraints, broadPhaseLayerInterface, objectVsBroadphaseLayerFilter, objectVsObjectLayerFilter);
@@ -364,7 +343,7 @@ public:
 
 
 #if ENABLE_PHYSICS_ANALYTICS == 1
-    std::atomic_int mBodyCounts[e_count(PhysicsObjectLayer)] = {};
+    std::atomic_int mBodyCounts[PhysicsObjectLayer::COUNT] = {};
 #endif
 
     JPH::PhysicsSystem& getSystem() {
@@ -384,10 +363,10 @@ private:
     BPLayerInterfaceImpl broadPhaseLayerInterface;
 
     // Filters object vs broadphase layers
-    ObjectVsBroadPhaseLayerFilterImpl objectVsBroadphaseLayerFilter;
+    JPH::ObjectVsBroadPhaseLayerFilterMask objectVsBroadphaseLayerFilter;
 
     // Filters object vs object layers
-    ObjectLayerPairFilterImpl objectVsObjectLayerFilter;
+    JPH::ObjectLayerPairFilterMask objectVsObjectLayerFilter;
 
     // Listen for activate/deactivate
     PhysicsBodyActivationListener bodyActivationListener;
@@ -562,7 +541,12 @@ void PhysicsWorld::updateTerrainBody(HeightmapPatch& patch) {
 PhysBodyID PhysicsWorld::createItemCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents, glm::quat orientation, f32v3 linearVelocity, f32v3 angularVelocity) {
     CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
 
-    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Dynamic, PhysicsObjectLayer::Item);
+    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Dynamic,
+        makeObjectLayerMasked(
+            PhysicsObjectLayer::DynamicItem,
+            PhysicsObjectLayer::Static | PhysicsObjectLayer::DynamicItem
+        )
+    );
     createSettings.mUserData = PhysicsBodyUserData(ownerEntity, PhysicsBodyUserDataType::ItemEntity);
     createSettings.mRotation = ROTATE_ZUP * JPH::Quat(orientation.x, orientation.y, orientation.z, orientation.w);
     createSettings.mLinearVelocity = JPH::Vec3(linearVelocity.x, linearVelocity.y, linearVelocity.z);
@@ -592,7 +576,10 @@ std::unique_ptr<JPH::CharacterBase> PhysicsWorld::createSimpleCharacter(entt::en
 
     JPH::CharacterSettings settings;
     settings.mMaxSlopeAngle = JPH::DegreesToRadians(60.0f);
-    settings.mLayer = e_cast(PhysicsObjectLayer::Character);
+    settings.mLayer = makeObjectLayerMasked(
+        PhysicsObjectLayer::Character | PhysicsObjectLayer::DynamicSolid, // layerBits
+        PhysicsObjectLayer::Static | PhysicsObjectLayer::Character // collideMaskBits
+    );
     settings.mShape = shape;
     settings.mFriction = 0.5f;
     settings.mSupportingVolume = JPH::Plane(JPH::Vec3::sAxisZ(), -halfExtents.y); // Accept contacts that touch the lower sphere of the capsule
@@ -655,7 +642,13 @@ void PhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& 
         // Create body or update its shape
         if (*staticMesh == INVALID_PHYS_BODY_ID) {
             const f32v3 rootPos = meshBuilder.getRootPos();
-            JPH::BodyCreationSettings createSettings(shape, JPH::RVec3(rootPos.x, rootPos.y, rootPos.z), JPH::Quat::sIdentity(), JPH::EMotionType::Static, e_cast(PhysicsObjectLayer::Static));
+            JPH::BodyCreationSettings createSettings(
+                shape, JPH::RVec3(rootPos.x, rootPos.y, rootPos.z), JPH::Quat::sIdentity(), JPH::EMotionType::Static,
+                makeObjectLayerMasked(
+                    PhysicsObjectLayer::Static,  // layerBits
+                    PhysicsObjectLayer::DynamicSolid | PhysicsObjectLayer::DynamicItem // collideMaskBits
+                )
+            );
             JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, 434343 /*Cheeky mesh number for debug output*/);
             body.SetUserData(PhysicsBodyUserData(meshBuilder.getOwnerTileContainerID()));
             *staticMesh = body.GetID().GetIndexAndSequenceNumber();
@@ -716,23 +709,43 @@ PhysHitResult PhysicsWorld::raycastFirst(
         rv.mBodyUserData = bodyInterface->GetUserData(castResult.mBodyID);
         rv.mShape = bodyInterface->GetShape(castResult.mBodyID);
         rv.mPenetrationDepth = 0.0f;
+
+#ifdef JPH_DEBUG_RENDERER
+        if (sDebugRenderer && sDebugRenderer->mRenderSettings.showRaycasts) {
+            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(rayStart, rv.mPosition, color::Green, sDebugRenderer->mRenderSettings.queryRenderTime);
+            AM::DebugRenderer::drawWireQuadThreadSafe(rv.mPosition - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.2f), color::Green, sDebugRenderer->mRenderSettings.queryRenderTime);
+        }
+#endif
+
     }
-    else if (traceFarTerrain) {
+    else if (traceFarTerrain && broadPhaseLayerFilter.ShouldCollide(BroadPhaseLayers::Static)) {
         // Try manual terrain query for long queries so we can hit far terrain
-        if (broadPhaseLayerFilter.ShouldCollide(BroadPhaseLayers::Static)) {
-            IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
-            HeightmapPickResult result = heightGrid.pick(rayStart, rayEnd);
-            if (const HeightmapPatch* patch = heightGrid.getHeightDataAtWorldPos(i32v2(result.hitPoint))) {
-                rv.mHitBody = patch->physBodyID;
-                rv.mBodyUserData = bodyInterface->GetUserData(JPH::BodyID(rv.mHitBody));
-                rv.mShape = bodyInterface->GetShape(JPH::BodyID(rv.mHitBody));
-                rv.mPenetrationDepth = 0.0f;
-            }
-            rv.mPosition = result.hitPoint;
-            rv.mNormal = result.hitNormal;
-            rv.mTime = result.hitTime;
+        IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
+        HeightmapPickResult result = heightGrid.pick(rayStart, rayEnd);
+        if (const HeightmapPatch* patch = heightGrid.getHeightDataAtWorldPos(i32v2(result.hitPoint))) {
+            rv.mHitBody = patch->physBodyID;
+            rv.mBodyUserData = bodyInterface->GetUserData(JPH::BodyID(rv.mHitBody));
+            rv.mShape = bodyInterface->GetShape(JPH::BodyID(rv.mHitBody));
+            rv.mPenetrationDepth = 0.0f;
+        }
+        rv.mPosition = result.hitPoint;
+        rv.mNormal = result.hitNormal;
+        rv.mTime = result.hitTime;
+
+#ifdef JPH_DEBUG_RENDERER
+        if (sDebugRenderer && sDebugRenderer->mRenderSettings.showRaycasts) {
+            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(rayStart, rv.mPosition, color::Green, sDebugRenderer->mRenderSettings.queryRenderTime);
+            AM::DebugRenderer::drawWireQuadThreadSafe(rv.mPosition - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.2f), color::Green, sDebugRenderer->mRenderSettings.queryRenderTime);
+        }
+#endif
+    }
+#ifdef JPH_DEBUG_RENDERER
+    else {
+        if (sDebugRenderer && sDebugRenderer->mRenderSettings.showRaycasts) {
+            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(rayStart, rayEnd, color::Red, sDebugRenderer->mRenderSettings.queryRenderTime);
         }
     }
+#endif
 
     return rv;
 }
@@ -847,6 +860,15 @@ void PhysicsWorld::updateAndRenderImguiDebugControls() {
         changed |= ImGui::SliderFloat("  Render Alpha", &sDebugRenderer->mRenderSettings.alpha, 0.0f, 1.0f);
     }
 
+    ImGui::SeparatorText("Queries");
+    // These dont dirty the render
+    ImGui::Checkbox("Show Raycasts", &sDebugRenderer->mRenderSettings.showRaycasts);
+    ImGui::Checkbox("Show Shape Queries", &sDebugRenderer->mRenderSettings.showShapeQueries);
+    if (sDebugRenderer->mRenderSettings.showRaycasts || sDebugRenderer->mRenderSettings.showShapeQueries) {
+        ImGui::SliderInt("Query Draw Time", &sDebugRenderer->mRenderSettings.queryRenderTime, 1, 512);
+    }
+
+
     if (changed) {
         mContext->mDirtyStaticDebugRender = true;
     }
@@ -855,7 +877,7 @@ void PhysicsWorld::updateAndRenderImguiDebugControls() {
 
     ImGui::Spacing();
     ImGui::SeparatorText("Stats");
-    ImGui::Text("   Item Bodies: %d", getBodyCount(PhysicsObjectLayer::Item));
+    ImGui::Text("   Item Bodies: %d", getBodyCount(PhysicsObjectLayer::DynamicItem));
     ImGui::Text("   Character Bodies: %d", getBodyCount(PhysicsObjectLayer::Character));
     ImGui::Text("   Static Bodies: %d", getBodyCount(PhysicsObjectLayer::Static));
     InstrumentorDebugStrings debugStr = Instrumentor::get().getSingleResult(GAME_THREAD_ID, PHYSICS_STEP_PROFILE_NAME);
@@ -878,15 +900,19 @@ void PhysicsWorld::debugRender(const Camera3D& camera) const {
 #endif //JPH_DEBUG_RENDERER
 }
 
+JPH::ObjectLayer PhysicsWorld::makeObjectLayerMasked(JPH::ObjectLayer layerBits, JPH::ObjectLayer collideMaskBits) {
+    return JPH::ObjectLayerPairFilterMask::sGetObjectLayer(layerBits, collideMaskBits);
+}
+
 #if ENABLE_PHYSICS_ANALYTICS == 1
-int PhysicsWorld::getBodyCount(PhysicsObjectLayer layer) const {
+int PhysicsWorld::getBodyCount(JPH::ObjectLayer layer) const {
     const int bitIndex = std::countr_zero(static_cast<unsigned int>(layer));
     return mContext->mBodyCounts[bitIndex];
 }
 #endif
 
-JPH::BodyCreationSettings PhysicsWorld::makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, PhysicsObjectLayer layer) {
-    return JPH::BodyCreationSettings(mShapeRepo.getShape(shapeId), JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, motionType, e_cast(layer));
+JPH::BodyCreationSettings PhysicsWorld::makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, JPH::ObjectLayer layer) {
+    return JPH::BodyCreationSettings(mShapeRepo.getShape(shapeId), JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, motionType, layer);
 }
 
 PhysBodyID PhysicsWorld::createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId) {
@@ -899,7 +925,10 @@ PhysBodyID PhysicsWorld::createEntityBody(const JPH::BodyCreationSettings& creat
 PhysBodyID PhysicsWorld::createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId) {
     ASSERT_GAME_THREAD();
 
-    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Static, PhysicsObjectLayer::Static);
+    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(
+        position, shapeId, JPH::EMotionType::Static,
+        makeObjectLayerMasked(PhysicsObjectLayer::Static, PhysicsObjectLayer::DynamicSolid | PhysicsObjectLayer::DynamicItem)
+    );
     createSettings.mUserData = PhysicsBodyUserData(containerId, tileIndex);
 
     JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, shapeId);
@@ -909,7 +938,10 @@ PhysBodyID PhysicsWorld::createTileBody(TileContainerID containerId, TileIndex t
 PhysBodyID PhysicsWorld::createTerrainBody(f32v3 position, JPH::Shape* terrainShape) {
     ASSERT_GAME_THREAD();
     terrainShape->SetUserData(PhysicsShapeUserData(CollisionShapes::TERRAIN));
-    JPH::BodyCreationSettings createSettings(terrainShape, JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, JPH::EMotionType::Static, e_cast(PhysicsObjectLayer::Static));
+    JPH::BodyCreationSettings createSettings(
+        terrainShape, JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, JPH::EMotionType::Static,
+        makeObjectLayerMasked(PhysicsObjectLayer::Static, PhysicsObjectLayer::DynamicSolid | PhysicsObjectLayer::DynamicItem)
+    );
     createSettings.mUserData = PhysicsBodyUserData(PhysicsBodyUserDataType::Terrain);
 
     JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, 696969 /*Cheeky terrain number for debug output*/);

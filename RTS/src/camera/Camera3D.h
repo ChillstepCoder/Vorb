@@ -56,7 +56,7 @@ protected:
     f32 mFieldOfView = 75.0f;
 
     f32 mPitch = 0.0f;
-    std::atomic<f32> mYaw = 0.0f; // Atomic because we use it on game thread for player update
+    f32 mYaw = 0.0f; // Atomic because we use it on game thread for player update
 
     // See: CAMERA_MATRICES_BYTE_SIZE
     //  ****************

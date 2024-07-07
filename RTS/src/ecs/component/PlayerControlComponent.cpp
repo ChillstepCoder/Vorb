@@ -9,10 +9,17 @@
 #include <Vorb/ui/InputDispatcher.h>
 #include <glm/gtx/rotate_vector.hpp>
 
-#include "camera/Camera3D.h"
+#include "physics/PhysicsWorld.h"
+
 #include "options/DebugOptions.h"
 
 #include "rendering/RenderThreadTasks.h"
+#include "camera/Camera3DGameThreadData.h"
+
+#include "debugging/DebugRenderer.h"
+
+// TODO: REMOVE
+#include "ecs/factory/EntityFactory.h"
 
 constexpr float ATTACK_RADIUS = 5.0f;
 constexpr float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
@@ -32,8 +39,8 @@ struct PlayerInputs {
     bool left = false;
     bool right = false;
     bool back = false;
+    bool interact = false;
 };
-
 
 f32v2 getMovementDir(const PlayerInputs& inputs, f32 cameraYaw) {
 	f32v2 moveDir(0.0f);
@@ -64,7 +71,8 @@ f32v2 getMovementDir(const PlayerInputs& inputs, f32 cameraYaw) {
 }
 
 
-void PlayerControlSystem::updateComponent(World& world, entt::entity entity, PlayerControlComponent& playerControlCmp, CharacterControlComponent& characterControlCmp, entt::registry& registry, f32 cameraYaw) {
+void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComponent& playerControlCmp, CharacterControlComponent& characterControlCmp, const Camera3DGameThreadData& cameraData, f32 elapsedSec) {
+    PROFILE_FUNCTION();
 
     PlayerInputs inputs;
     if (playerControlCmp.mInputLockCount == 0) {
@@ -77,6 +85,7 @@ void PlayerControlSystem::updateComponent(World& world, entt::entity entity, Pla
         inputs.left = vui::InputDispatcher::key.isKeyPressed(VKEY_A);
         inputs.right = vui::InputDispatcher::key.isKeyPressed(VKEY_D);
         inputs.back = vui::InputDispatcher::key.isKeyPressed(VKEY_S);
+        inputs.interact = vui::InputDispatcher::key.isKeyPressed(VKEY_E);
     }
 
     // Inputs for states, but only while we are on ground
@@ -96,10 +105,10 @@ void PlayerControlSystem::updateComponent(World& world, entt::entity entity, Pla
 
         // Fishing
         if (inputs.castFishingRod) {
-            registry.get_or_emplace<FishingComponent>(entity).mIsCastInputPressed = true;
+            mRegistry.get_or_emplace<FishingComponent>(entity).mIsCastInputPressed = true;
         }
         else {
-            FishingComponent* component = registry.try_get<FishingComponent>(entity);
+            FishingComponent* component = mRegistry.try_get<FishingComponent>(entity);
             if (component) {
                 component->mIsCastInputPressed = false;
             }
@@ -108,40 +117,100 @@ void PlayerControlSystem::updateComponent(World& world, entt::entity entity, Pla
 	// Update skills
     if (inputs.primaryAction) {
         // TODO: Move this to some kind of combat manager/context
-        SkillsComponent& skillsCmp = registry.get<SkillsComponent>(entity);
-        world.getECS().mSkillsSystem.tryActivateSkillSlot(entity, registry, SkillSlot::Primary);
+        SkillsComponent& skillsCmp = mRegistry.get<SkillsComponent>(entity);
+        mWorld.getECS().mSkillsSystem.tryActivateSkillSlot(entity, mRegistry, SkillSlot::Primary);
     }
 
 	//  Update movement
-    characterControlCmp.mMoveDirection = getMovementDir(inputs, cameraYaw);
+    characterControlCmp.mMoveDirection = getMovementDir(inputs, cameraData.yaw);
     characterControlCmp.mFlags.clearBit(CharacterControlComponentFlags::OrientToMovement);
 
     // Update controller rotation
-    characterControlCmp.mControllerAngleRad = cameraYaw; // glm::rotate(f32v2(0.0f, 1.0f), -cameraYaw);
+    characterControlCmp.mControllerAngleRad = cameraData.yaw;
 
     if (characterControlCmp.mMoveDirection.x != 0.0f || characterControlCmp.mMoveDirection.y != 0.0f) {
         // Remove any navigation component if we are applying movement input
-        registry.remove<NavigationComponent>(entity);
+        mRegistry.remove<NavigationComponent>(entity);
 	}
 	else if (!characterControlCmp.isInAirState() && characterControlCmp.mDesiredLocomotionMode != CharacterLocomotionMode::BEGIN_JUMP) {
         characterControlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::IDLE;
 	}
+    
+    
+    updateSelection(entity, playerControlCmp, cameraData, inputs, elapsedSec);
 
 }
 
-PlayerControlSystem::PlayerControlSystem() {
+void PlayerControlSystem::updateSelection(entt::entity entity, PlayerControlComponent& playerControlCmp, const Camera3DGameThreadData& cameraData, const PlayerInputs& inputs, f32 elapsedSec) {
+    // Interact input
+    bool didInteract = false;
+    if (inputs.interact) {
+        if (playerControlCmp.mInteractDuration == 0.0f) {
+            didInteract = true;
+        }
+        playerControlCmp.mInteractDuration += elapsedSec;
+    }
+    else {
+        playerControlCmp.mInteractDuration = 0.0f;
+    }
+
+    // Reset so we can select it anew below
+    playerControlCmp.mSelectedObjectData.modelId = INVALID_MODEL_ID;
+
+    // Selection
+    const f32 rayLength = 9.0f;
+    // TODO: Filters?
+    PhysHitResult result = mWorld.getPhysicsWorld().raycastFirst(cameraData.worldPos, cameraData.worldPos + cameraData.direction * rayLength);
+    if (result.didHit()) {
+        // TODO: Tiles as well?
+        PhysicsBodyUserDataType type = result.mBodyUserData.getType();
+        if (type == PhysicsBodyUserDataType::Entity || type == PhysicsBodyUserDataType::ItemEntity) {
+            entt::entity selected = result.mBodyUserData.getEntity();
+
+            // Interact
+            if (inputs.interact) {
+                EntityFactory::destroyEntity(mWorld, selected);
+                return;
+            }
+
+            // Selection
+            if (DynamicModelComponent* modelCmp = mRegistry.try_get<DynamicModelComponent>(selected)) {
+                playerControlCmp.mSelectedObjectData.modelId = modelCmp->modelId;
+            } else if (StaticModelComponent* modelCmp = mRegistry.try_get<StaticModelComponent>(selected)) {
+                playerControlCmp.mSelectedObjectData.modelId = modelCmp->modelId;
+            } else {
+                playerControlCmp.mSelectedObjectData.modelId = INVALID_MODEL_ID;
+                // We can only select models
+                return;
+            }
+            playerControlCmp.mSelectedObjectData.position = mRegistry.get<PositionComponent>(selected).mPosition;
+            if (OrientationComponent* orientationCmp = mRegistry.try_get<OrientationComponent>(selected)) {
+                playerControlCmp.mSelectedObjectData.orientation = orientationCmp->mOrientation;
+            }
+            else {
+                playerControlCmp.mSelectedObjectData.orientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+            }
+        }
+    }
+    else {
+        playerControlCmp.mSelectedObjectData.modelId = INVALID_MODEL_ID;
+    }
 
 }
 
-void PlayerControlSystem::update(World& world, entt::registry& registry, f32 cameraYaw) {
+PlayerControlSystem::PlayerControlSystem(World& world, entt::registry& registry) : mWorld(world), mRegistry(registry) {
+
+}
+
+void PlayerControlSystem::update(const Camera3DGameThreadData& cameraData, f32 elapsedSec) {
     ASSERT_GAME_THREAD();
     // Don't update while in free fly
     if (sDebugOptions.mCameraMode == CameraMode::FREE_LOOK) { return; }
 	// Update components
-    auto view = registry.view<PlayerControlComponent, CharacterControlComponent>();
+    auto view = mRegistry.view<PlayerControlComponent, CharacterControlComponent>();
     for (auto entity : view) {
 		PlayerControlComponent& controlCmp = view.get<PlayerControlComponent>(entity);
 		CharacterControlComponent& motionCmp = view.get<CharacterControlComponent>(entity);
-		updateComponent(world, entity, controlCmp, motionCmp, registry, cameraYaw);
+		updateComponent(entity, controlCmp, motionCmp, cameraData, elapsedSec);
 	};
 }

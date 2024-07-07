@@ -16,6 +16,8 @@ public:
         release();
     }
 
+    // TODO: Custom allocator? Pool?
+
     std::unique_ptr<AssetHandle<T>> clone() const;
 
     VORB_NON_COPYABLE(AssetHandle);
@@ -32,6 +34,7 @@ public:
     const T* tryGetLoadedAsset() const;
     // Asset MUST already be loaded or this will crash
     const T& getLoadedAsset() const;
+    const T& getLoadedOrUnloadedAsset() const;
 
     T* editorTryGetMutableAsset() { return const_cast<T*>(tryGetLoadedAsset()); }
 
@@ -39,26 +42,6 @@ protected:
     const T* mLoadedAsset = nullptr;
 };
 
+
 template <typename T>
 using AssetHandlePtr = std::unique_ptr<AssetHandle<T>>;
-
-template <typename T>
-class AssetRawPtr {
-public:
-    AssetRawPtr() = default;
-    AssetRawPtr(AssetID id) : assetId(id) {};
-
-    AssetRawPtr<T>& operator= (AssetID id) {
-        assetId = id;
-        return *this;
-    }
-
-    const T& getLoadedOrUnloadedAsset() const;
-
-
-    bool isValid() const {
-        return assetId != INVALID_ASSET_ID;
-    }
-
-    AssetID assetId = INVALID_ASSET_ID;
-};

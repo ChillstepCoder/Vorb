@@ -58,9 +58,9 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
         }
     }
     else {
-        StaticModelVertex* verts = new StaticModelVertex[rv.mVertsCount];
+        StandardModelVertex* verts = new StandardModelVertex[rv.mVertsCount];
         rv.mVertsPtr = verts;
-        rv.mVertexType = VertexType::STATIC_MODEL;
+        rv.mVertexType = VertexType::STANDARD_MODEL;
 
         // Slots
         std::vector<ui16> rawMaterialIdSlotMapping;
@@ -93,7 +93,7 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
                 rawMaterialIdSlotMapping.push_back(rawVert.rawMaterialIndex);
             }
 
-            StaticModelVertex& myVert = verts[i];
+            StandardModelVertex& myVert = verts[i];
             myVert.build(
                 rawVert.pos,
                 rawVert.normal,
@@ -142,8 +142,8 @@ void ModelMeshBuilder::uploadCpuMeshToGpu(const void* vertsPtr, ui32 vertsCount,
         case VertexType::WATER:
             mappedVertexType = WaterVertex::bindVertexAttribs(outGpuMesh.mVao);
             break;
-        case VertexType::STATIC_MODEL:
-            mappedVertexType = StaticModelVertex::bindVertexAttribs(outGpuMesh.mVao);
+        case VertexType::STANDARD_MODEL:
+            mappedVertexType = StandardModelVertex::bindVertexAttribs(outGpuMesh.mVao);
             break;
         case VertexType::SKINNED_MODEL:
             mappedVertexType = SkinnedModelVertex::bindVertexAttribs(outGpuMesh.mVao);

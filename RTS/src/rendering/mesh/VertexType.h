@@ -6,7 +6,7 @@ enum class VertexType {
     INVALID,
     TERRAIN,
     WATER,
-    STATIC_MODEL,
+    STANDARD_MODEL,
     SKINNED_MODEL,
     COUNT
 };
@@ -14,7 +14,7 @@ const char* const VertexTypeNames[e_cast(VertexType::COUNT)] = {
     "Invalid", // INVALID
     "Terrain", // TERRAIN
     "Water", // WATER
-    "Static Model", // STATIC_MODEL
+    "Standard Model", // STANDARD_MODEL
     "Skinned Model", // SKINNED_MODEL
 };
 inline const char* getVertexTypeName(VertexType type) {

@@ -14,7 +14,7 @@ struct AnimMachineInstanceState {
     union {
         struct {
             // TODO: Flyweight this too like blendspace?
-            AssetRawPtr<AnimationDef> animDef;
+            LiteAssetRef<AssetType::Animation> animDef;
             f32 time;
         } anim;
         struct {

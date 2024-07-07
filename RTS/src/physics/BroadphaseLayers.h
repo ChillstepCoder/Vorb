@@ -7,6 +7,7 @@
 namespace BroadPhaseLayers {
     static constexpr JPH::BroadPhaseLayer Static(0);
     static constexpr JPH::BroadPhaseLayer Dynamic(1);
-    static constexpr ui32 COUNT(2);
+    static constexpr JPH::BroadPhaseLayer QueryOnly(2);
+    static constexpr ui32 COUNT(3);
 };
 

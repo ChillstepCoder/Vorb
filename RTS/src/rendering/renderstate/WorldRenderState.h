@@ -7,6 +7,8 @@
 #include "rendering/renderstate/CharacterRenderState.h"
 #include "rendering/renderstate/DynamicModelInstanceState.h"
 
+#include "interact/SelectedObjectData.h"
+
 class World;
 
 enum class DebugChunkFlags : ui8 {
@@ -47,6 +49,7 @@ public:
     const std::vector<CharacterRenderState>& getCharacterRenderState() const { return mCharacters; }
     const std::vector<DynamicModelInstanceState>& getDynamicModels() const { return mDynamicModels; }
     WorldID getWorldId() const { return mWorldId; }
+    const SelectedObjectData& getPlayerSelectedObject() const { return mPlayerSelectedObject; }
 private:
     // ======================== Game State  ========================
     WorldID mWorldId = 0;
@@ -55,6 +58,7 @@ private:
     bool mIsCameraOwned;
     std::vector<CharacterRenderState> mCharacters;
     std::vector<DynamicModelInstanceState> mDynamicModels;
+    SelectedObjectData mPlayerSelectedObject;
 
     // ======================== Debug state ========================
     std::vector<DebugChunkRenderState> mDebugChunks;

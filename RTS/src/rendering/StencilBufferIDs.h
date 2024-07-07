@@ -6,7 +6,8 @@ enum class StencilBufferIDs : ui8 {
     TERRAIN = BIT(1), // TODO: We dont  really  need terrain we can combine with smudge if we run out of bits
     SMUDGE = BIT(2),
     CLOUD_OR_WATER = BIT(3),
-    SKY = BIT(4)
+    SKY = BIT(4),
+    HIGHLIGHT_CORE = BIT(5),
 
     // NO MORE THAN BIT(7)
 };

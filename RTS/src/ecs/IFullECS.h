@@ -54,7 +54,7 @@ public:
 
     // TODO: UniquePtr for faster include
     CharacterControlSystem mCharacterControlSystem;
-    PlayerControlSystem mPlayerControlSystem;
+    std::unique_ptr<PlayerControlSystem> mPlayerControlSystem;
     std::unique_ptr<PlayerInteractSystem> mPlayerInteractSystem;
     TimedTileInteractSystem mTimedTileInteractSystem;
     PhysicsSystem mPhysicsSystem;

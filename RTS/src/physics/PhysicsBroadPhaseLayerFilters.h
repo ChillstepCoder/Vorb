@@ -21,4 +21,11 @@ public:
     }
 };
 
-static_assert(BroadPhaseLayers::COUNT == 2, "Add new filters if needed");
+class PhysicsBroadphaseLayerFilterQueryOnly : public JPH::BroadPhaseLayerFilter {
+public:
+    bool ShouldCollide(JPH::BroadPhaseLayer inLayer) const override {
+        return inLayer == BroadPhaseLayers::QueryOnly;
+    }
+};
+
+static_assert(BroadPhaseLayers::COUNT == 3, "Add new filters if needed");

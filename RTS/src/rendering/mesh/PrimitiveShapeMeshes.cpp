@@ -49,9 +49,9 @@ void PrimitiveShapeMeshes::generateIcoSphereMesh() {
     }
 
     // This has an ugly seam
-    std::vector<StaticModelVertex> vertices(positions.size(), StaticModelVertex{});
+    std::vector<StandardModelVertex> vertices(positions.size(), StandardModelVertex{});
     for (size_t i = 0; i < vertices.size(); ++i) {
-        StaticModelVertex& myVert = vertices[i];
+        StandardModelVertex& myVert = vertices[i];
         myVert.pos = positions[i];
         f32v3 normalFloat = glm::normalize(myVert.pos);
         f32v3 tangentFloat = glm::normalize(glm::cross(normalFloat, f32v3(0.0f, 0.0f, 1.0f)));
@@ -84,7 +84,7 @@ void PrimitiveShapeMeshes::generateUVSphereMesh() {
 
     // clear memory of prev arrays
     // TODO: Reserve
-    std::vector<StaticModelVertex> vertices;
+    std::vector<StandardModelVertex> vertices;
 
     float x, y, z, xy;                              // vertex position
     float nx, ny, nz, lengthInv = 1.0f / radius;    // vertex normal
@@ -106,7 +106,7 @@ void PrimitiveShapeMeshes::generateUVSphereMesh() {
         {
             sectorAngle = j * sectorStep;           // starting from 0 to 2pi
             
-            StaticModelVertex& v = vertices.emplace_back();
+            StandardModelVertex& v = vertices.emplace_back();
 
             // vertex position (x, y, z)
             x = xy * cosf(sectorAngle);             // r * cos(u) * cos(v)
@@ -166,7 +166,7 @@ void PrimitiveShapeMeshes::generateUVSphereMesh() {
 }
 
 void PrimitiveShapeMeshes::generatePlaneMesh() {
-    std::vector<StaticModelVertex> verts(4, StaticModelVertex{});
+    std::vector<StandardModelVertex> verts(4, StandardModelVertex{});
     std::vector<ui16> indices(6);
     indices[0] = 0;
     indices[1] = 1;
@@ -197,7 +197,7 @@ void PrimitiveShapeMeshes::generatePlaneMesh() {
 }
 
 void PrimitiveShapeMeshes::generateCubeMesh() {
-    std::vector<StaticModelVertex> verts(6 * 4, StaticModelVertex{});
+    std::vector<StandardModelVertex> verts(6 * 4, StandardModelVertex{});
     std::vector<ui16> indices(6 * 6);
 
     // UVs
@@ -364,9 +364,9 @@ void PrimitiveShapeMeshes::generateCylinderMesh() {
         indices.push_back(i3);
     }
 
-    std::vector<StaticModelVertex> staticVertices(vertices.size());
+    std::vector<StandardModelVertex> staticVertices(vertices.size());
     for (size_t i = 0; i < staticVertices.size(); ++i) {
-        StaticModelVertex& myVert = staticVertices[i];
+        StandardModelVertex& myVert = staticVertices[i];
         myVert.pos = vertices[i].position;
         myVert.uvsPacked.x = (ui16)(vertices[i].uv.x * UINT16_MAX);
         myVert.uvsPacked.y = (ui16)(vertices[i].uv.y * UINT16_MAX);
@@ -377,14 +377,14 @@ void PrimitiveShapeMeshes::generateCylinderMesh() {
     uploadMesh(staticVertices, indices, PrimitiveShapeType::Cylinder);
 }
 
-void PrimitiveShapeMeshes::uploadMesh(const std::vector<StaticModelVertex>& vertices, const std::vector<ui16>& indices16, PrimitiveShapeType shapeType) {
+void PrimitiveShapeMeshes::uploadMesh(const std::vector<StandardModelVertex>& vertices, const std::vector<ui16>& indices16, PrimitiveShapeType shapeType) {
 
     std::unique_ptr<Mesh> mesh = std::make_unique<Mesh>();
 
     MeshLODData lodData;
     lodData.mTotalIndexCount = indices16.size();
     lodData.mLODStarts[1] = lodData.mTotalIndexCount;
-    ModelMeshBuilder::uploadCpuMeshToGpu(vertices.data(), (ui32)vertices.size(), StaticModelVertex::vertexType(), indices16.data(), MeshIndexType::SHORT, lodData, mesh->mGpuData);
+    ModelMeshBuilder::uploadCpuMeshToGpu(vertices.data(), (ui32)vertices.size(), StandardModelVertex::vertexType(), indices16.data(), MeshIndexType::SHORT, lodData, mesh->mGpuData);
 
     mMeshes[e_cast(shapeType)] = std::move(mesh);
 }

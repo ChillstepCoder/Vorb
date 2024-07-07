@@ -841,7 +841,7 @@ void addRoofQuad(
     const MaterialDesc& materialData
 ) {
 
-    StaticModelVertex verts[4];
+    StandardModelVertex verts[4];
     for (int i = 0; i < 4; ++i) {
         verts[i].pos = points[i];
         verts[i].color = color4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -897,7 +897,7 @@ void addRoofTriangle(
     const MaterialDesc& materialData
 ) {
 
-    StaticModelVertex verts[3];
+    StandardModelVertex verts[3];
     for (int i = 0; i < 3; ++i) {
         verts[i].pos = points[i];
         verts[i].color = color4(1.0f, 1.0f, 1.0f, 1.0f);

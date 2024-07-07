@@ -2,7 +2,7 @@
 
 #include "rendering/mesh/Mesh.h"
 
-struct StaticModelVertex;
+struct StandardModelVertex;
 
 enum class PrimitiveShapeType {
     IcoSphere,
@@ -27,7 +27,7 @@ private:
     static void generatePlaneMesh();
     static void generateCubeMesh();
     static void generateCylinderMesh();
-    static void uploadMesh(const std::vector<StaticModelVertex>& vertices, const std::vector<ui16>& indices16, PrimitiveShapeType shapeType);
+    static void uploadMesh(const std::vector<StandardModelVertex>& vertices, const std::vector<ui16>& indices16, PrimitiveShapeType shapeType);
 
     inline static std::unique_ptr<Mesh> mMeshes[e_cast(PrimitiveShapeType::COUNT)];
 

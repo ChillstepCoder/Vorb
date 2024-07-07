@@ -37,7 +37,7 @@ VertexType WaterVertex::bindVertexAttribs(VGBuffer vao) {
     return VertexType::WATER;
 }
 
-void StaticModelVertex::build(const f32v3& pos, const f32v3& normal, const f32v3& tangent, const f32v2& uvs, const color4& color, ui16 materialIdOrSlot, ui8 windInfluence, ui8 damageZone /*= 0*/) {
+void StandardModelVertex::build(const f32v3& pos, const f32v3& normal, const f32v3& tangent, const f32v2& uvs, const color4& color, ui16 materialIdOrSlot, ui8 windInfluence, ui8 damageZone /*= 0*/) {
     this->pos = pos;
     this->materialId = materialIdOrSlot;
     this->uvsPacked = PackUVs(uvs);
@@ -48,7 +48,7 @@ void StaticModelVertex::build(const f32v3& pos, const f32v3& normal, const f32v3
     this->damageZone = damageZone;
 }
 
-VertexType StaticModelVertex::bindVertexAttribs(VGBuffer vao) {
+VertexType StandardModelVertex::bindVertexAttribs(VGBuffer vao) {
     assert(vao);
     //// Standard verts
     //glEnableVertexArrayAttrib(vao, 0);
@@ -66,28 +66,28 @@ VertexType StaticModelVertex::bindVertexAttribs(VGBuffer vao) {
     glVertexArrayAttribBinding(vao, 0, BINDING_POINT_POSITION);
 
     glEnableVertexArrayAttrib(vao, 1);
-    glVertexArrayAttribFormat(vao, 1 /*index*/, 2 /*size*/, GL_SHORT, true, offsetof(StaticModelVertex, uvsPacked));
+    glVertexArrayAttribFormat(vao, 1 /*index*/, 2 /*size*/, GL_SHORT, true, offsetof(StandardModelVertex, uvsPacked));
     glVertexArrayAttribBinding(vao, 1, BINDING_POINT_INTERLEAVED);
 
     glEnableVertexArrayAttrib(vao, 2);
-    glVertexArrayAttribIFormat(vao, 2 /*index*/, 1 /*size*/, GL_UNSIGNED_SHORT, offsetof(StaticModelVertex, materialId));
+    glVertexArrayAttribIFormat(vao, 2 /*index*/, 1 /*size*/, GL_UNSIGNED_SHORT, offsetof(StandardModelVertex, materialId));
     glVertexArrayAttribBinding(vao, 2, BINDING_POINT_INTERLEAVED);
 
     glEnableVertexArrayAttrib(vao, 3);
-    glVertexArrayAttribFormat(vao, 3 /*index*/, 4 /*size*/, GL_UNSIGNED_BYTE, true, offsetof(StaticModelVertex, color));
+    glVertexArrayAttribFormat(vao, 3 /*index*/, 4 /*size*/, GL_UNSIGNED_BYTE, true, offsetof(StandardModelVertex, color));
     glVertexArrayAttribBinding(vao, 3, BINDING_POINT_INTERLEAVED);
 
     // https://stackoverflow.com/questions/35961057/how-to-pack-normals-into-gl-int-2-10-10-10-rev
     glEnableVertexArrayAttrib(vao, 4);
-    glVertexArrayAttribFormat(vao, 4 /*index*/, 4 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, offsetof(StaticModelVertex, normalPacked));
+    glVertexArrayAttribFormat(vao, 4 /*index*/, 4 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, offsetof(StandardModelVertex, normalPacked));
     glVertexArrayAttribBinding(vao, 4, BINDING_POINT_INTERLEAVED);
 
     glEnableVertexArrayAttrib(vao, 5);
-    glVertexArrayAttribFormat(vao, 5 /*index*/, 4 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, offsetof(StaticModelVertex, tangentPacked));
+    glVertexArrayAttribFormat(vao, 5 /*index*/, 4 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, offsetof(StandardModelVertex, tangentPacked));
     glVertexArrayAttribBinding(vao, 5, BINDING_POINT_INTERLEAVED);
 
     glEnableVertexArrayAttrib(vao, 12);
-    glVertexArrayAttribIFormat(vao, 12 /*index*/, 1 /*size*/, GL_UNSIGNED_BYTE, offsetof(StaticModelVertex, damageZone));
+    glVertexArrayAttribIFormat(vao, 12 /*index*/, 1 /*size*/, GL_UNSIGNED_BYTE, offsetof(StandardModelVertex, damageZone));
     glVertexArrayAttribBinding(vao, 12, BINDING_POINT_INTERLEAVED);
 
     // TODO: WIND
@@ -96,7 +96,7 @@ VertexType StaticModelVertex::bindVertexAttribs(VGBuffer vao) {
     //assert(false && "Check that size in the shader is 3, in standard_tile it is 2");
     //glVertexArrayAttribFormat(vao, 4 /*index*/, 3 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, normalPacked));
    // glVertexArrayAttribFormat(vao, 5 /*index*/, 4 /*size*/, GL_INT_2_10_10_10_REV, GL_TRUE, sizeof(StaticModelVertex), (void*)offsetof(StaticModelVertex, tangentPacked));
-    return VertexType::STATIC_MODEL;
+    return VertexType::STANDARD_MODEL;
 }
 
 VertexType SkinnedModelVertex::bindVertexAttribs(VGBuffer vao)
@@ -144,8 +144,8 @@ constexpr size_t getVertexSize(VertexType type) {
             return sizeof(TerrainVertex);
         case VertexType::WATER:
             return sizeof(WaterVertex);
-        case VertexType::STATIC_MODEL:
-            return sizeof(StaticModelVertex);
+        case VertexType::STANDARD_MODEL:
+            return sizeof(StandardModelVertex);
         case VertexType::SKINNED_MODEL:
             return sizeof(SkinnedModelVertex);
         default:

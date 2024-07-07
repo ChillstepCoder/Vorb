@@ -71,6 +71,7 @@ struct MeshGpuData {
     BitFlags<MeshFlags> mFlags;
     VertexType mVertexType = VertexType::INVALID;
 
+    ui32 getIndexSizeBytes() const { return mIndexType == MeshIndexType::INT ? sizeof(ui32) : sizeof(ui16); }
     void destroy();
 };
 

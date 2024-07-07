@@ -2,6 +2,7 @@
 
 #include "GlobalRenderData.h"
 #include "camera/Camera3D.h"
+#include "camera/Camera3DGameThreadData.h"
 #include "world/WorldEvents.h"
 
 class AmbientOcclusionPostProcess;
@@ -74,8 +75,9 @@ public:
     VGTexture getShadowTexture() const;
     vg::SpriteFont& getSpriteFont() const { return *mSpriteFont; }
     vg::SpriteBatch& getSpriteBatch() const { return *mSb; }
-    const ui32v2& getScreenResolution() const { return mScreenResolution;}
-    const Camera3D* getCamera() const { return &mCamera; }
+    const ui32v2& getScreenResolution() const { return mScreenResolution; }
+    const Camera3D* getCamera() const { ASSERT_RENDER_THREAD(); return &mCamera; }
+    Camera3DGameThreadData getGameThreadCameraData() const;
     CameraController* getCameraController() const { return mCameraController; }
 
     ModelBillboardLodBuilder& getModelBillboardLodBuilder() const { return *mModelBillboardLodBuilder; }
@@ -110,6 +112,8 @@ private:
     ui32v2 mScreenResolution;
     ui32v2 mCurrentFramebufferDims;
     CameraController* mCameraController = nullptr;
+
+    mutable std::mutex mCameraLock;
     Camera3D mCamera;
     f32 mCurrentFrameAlpha;
     f32 mCurrentFrameElapsedSec;

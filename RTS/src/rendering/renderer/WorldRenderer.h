@@ -25,6 +25,7 @@ class TerrainRenderer;
 class TileContainerRenderer;
 class TonemapRenderer;
 class WorldRenderState;
+class ModelHighlightRenderer;
 class MaterialShaderDef;
 class Mesh;
 class TerrainMesh;
@@ -91,6 +92,7 @@ private:
     mutable std::unique_ptr<GrassRenderer> mGrassRenderer;
     mutable std::unique_ptr<InstancedStaticModelRenderer> mStaticModelRenderer;
     mutable std::unique_ptr<InstancedDynamicModelRenderer> mDynamicModelRenderer;
+    mutable std::unique_ptr<ModelHighlightRenderer> mModelHighlightRenderer;
     mutable std::unique_ptr<SmudgeRenderer> mSmudgeRenderer;
     mutable std::unique_ptr<TonemapRenderer> mTonemapRenderer;
     mutable std::unique_ptr<FishRenderer> mFishRenderer;

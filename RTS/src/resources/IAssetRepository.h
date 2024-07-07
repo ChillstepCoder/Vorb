@@ -534,12 +534,10 @@ const T& AssetHandle<T>::getLoadedAsset() const {
     return *mLoadedAsset;
 }
 
-
-// TODO: is saving 4 bytes worth an indirection?
 template <typename T>
-[[nodiscard]] const T& AssetRawPtr<T>::getLoadedOrUnloadedAsset() const {
+const T& AssetHandle<T>::getLoadedOrUnloadedAsset() const {
     assert(isValid());
-    return IAssetRepository<T>::getInstance().getLoadedOrUnloadedAsset(assetId);
+    return IAssetRepository<T>::getInstance().getLoadedOrUnloadedAsset(mAssetID);
 }
 
 namespace AssetUtil {

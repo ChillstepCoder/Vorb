@@ -65,7 +65,7 @@ void MeshDrawer::drawInstanced(const MeshGpuData& meshData, MeshLODLevel lod, GL
     if (meshData.mSSBO) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MESH_SSBO, meshData.mSSBO);
     }
-    glDrawElementsInstanced(GL_TRIANGLES, drawInfo.indexCount, e_cast(meshData.mIndexType), (const GLvoid*)(drawInfo.startIndex * (meshData.mIndexType == MeshIndexType::INT ? sizeof(ui32) : sizeof(ui16))) /* offset */, instanceCount);
+    glDrawElementsInstanced(GL_TRIANGLES, drawInfo.indexCount, e_cast(meshData.mIndexType), (const GLvoid*)(drawInfo.startIndex * meshData.getIndexSizeBytes()) /* offset */, instanceCount);
     RenderStats::recordDrawCall(drawInfo.indexCount / 3);
 }
 

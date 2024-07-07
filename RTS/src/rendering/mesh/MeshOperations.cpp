@@ -10,9 +10,9 @@ void MeshOperations::rotate90AboutAxis(MeshCpuData& mesh, const f32v3& axis) {
 
 void MeshOperations::applyScale(MeshCpuData& mesh, f32 scale) {
     switch (mesh.mVertexType) {
-        case VertexType::STATIC_MODEL:
+        case VertexType::STANDARD_MODEL:
             for (ui32 i = 0; i < mesh.mVertsCount; ++i) {
-                static_cast<StaticModelVertex*>(mesh.mVertsPtr)[i].pos *= scale;
+                static_cast<StandardModelVertex*>(mesh.mVertsPtr)[i].pos *= scale;
             }
             break;
         case VertexType::SKINNED_MODEL:

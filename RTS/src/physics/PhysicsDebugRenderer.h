@@ -70,7 +70,10 @@ public:
 
     struct RenderSettings {
         bool enableDebugDraw = false;
-        float alpha = 0.7f;
+        f32 alpha = 0.7f;
+        i32 queryRenderTime = 32;
+        bool showRaycasts = false;
+        bool showShapeQueries = false;
         JPH::BodyManager::DrawSettings bodyDrawSettings;
     } mRenderSettings;
 

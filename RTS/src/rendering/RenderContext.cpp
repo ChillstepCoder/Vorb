@@ -373,6 +373,17 @@ VGTexture RenderContext::getShadowTexture() const {
     return mWorldRenderer->getShadowRenderer().getShadowTexture();
 }
 
+Camera3DGameThreadData RenderContext::getGameThreadCameraData() const {
+    Camera3DGameThreadData rv;
+    {
+        std::lock_guard lock(mCameraLock);
+        rv.yaw = mCamera.getYaw();
+        rv.direction = mCamera.getDirection();
+        rv.worldPos = mCamera.getPosition();
+    }
+    return rv;
+}
+
 TileContainerRenderer& RenderContext::getTileContainerRenderer() const {
     return mWorldRenderer->getTileContainerRenderer();
 }
@@ -398,24 +409,27 @@ void RenderContext::updateCamera(f32 frameAlpha) {
     }
     mCameraController->update(1.0f /*TODO DELTATIME*/, frameAlpha, cameraPos);
 
-    // Copy camera from the controller so we can fuck with it
-    memcpy(&mCamera, &mCameraController->getOwnedCamera(), sizeof(Camera3D));
+    // Copy camera from the controller threadsafe
+    {
+        std::lock_guard lock(mCameraLock);
+        memcpy(&mCamera, &mCameraController->getOwnedCamera(), sizeof(Camera3D));
 
-    // Water clipping
-    constexpr f32 CAMERA_SURFACE_CLAMP = 0.01f;
-    constexpr f32 CAMERA_DEPTH_CLAMP = -0.2f;
-    const f32v3 newCameraPos = mCamera.getPosition();
-    if (newCameraPos.z > CAMERA_DEPTH_CLAMP) {
-        if (newCameraPos.z <= CAMERA_SURFACE_CLAMP) {
-            mCamera.setPosition(f32v3(newCameraPos.x, newCameraPos.y, CAMERA_DEPTH_CLAMP));
-            sDebugOptions.mIsCameraUnderwater = true;
+        // Water clipping
+        constexpr f32 CAMERA_SURFACE_CLAMP = 0.01f;
+        constexpr f32 CAMERA_DEPTH_CLAMP = -0.2f;
+        const f32v3 newCameraPos = mCamera.getPosition();
+        if (newCameraPos.z > CAMERA_DEPTH_CLAMP) {
+            if (newCameraPos.z <= CAMERA_SURFACE_CLAMP) {
+                mCamera.setPosition(f32v3(newCameraPos.x, newCameraPos.y, CAMERA_DEPTH_CLAMP));
+                sDebugOptions.mIsCameraUnderwater = true;
+            }
+            else {
+                sDebugOptions.mIsCameraUnderwater = false;
+            }
         }
         else {
-            sDebugOptions.mIsCameraUnderwater = false;
+            sDebugOptions.mIsCameraUnderwater = true;
         }
-    }
-    else {
-        sDebugOptions.mIsCameraUnderwater = true;
     }
 }
 
@@ -539,6 +553,11 @@ void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState&
         float yOffset = 0.0f;
         const f32v2 scale(scales);
         const f32 xPos = 10.0f;
+
+#ifdef DEBUG
+        mSb->drawString(mSpriteFont.get(), "DEBUG MODE", f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color4(0, 200, 0, 255));
+        yOffset += GAP_SIZE;
+#endif
 
         sprintf_s(buffer, STR_BUFFER_SIZE, "FPS: %.0f", sFps);
         mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);

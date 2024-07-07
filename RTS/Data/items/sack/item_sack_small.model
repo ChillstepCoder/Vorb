@@ -1,0 +1,7 @@
+model: item_sack_small.fbx
+rig: ''
+machine: ''
+scale: 0.3
+shadow_detail: highest
+force_normals_up: 0
+

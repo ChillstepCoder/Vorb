@@ -11,8 +11,8 @@ struct AnimBlendPair {
     // If weight1 is 1.0f, then anim2 is null
     bool hasBoth() const { return weight0 != 1.0f; }
 
-    AssetRawPtr<AnimationDef> anim0;
-    AssetRawPtr<AnimationDef> anim1;
+    LiteAssetRef<AssetType::Animation> anim0;
+    LiteAssetRef<AssetType::Animation> anim1;
     f32 weight0 = 1.0f; // Weight2 is 1 - weight1
 };
 

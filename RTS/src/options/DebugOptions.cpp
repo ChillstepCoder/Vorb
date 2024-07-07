@@ -171,6 +171,10 @@ DebugOptions::DebugOptions() :
     mShowReticle(true),
     mReticleColor(255, 255, 255, 255),
     mCameraMode(CameraMode::MMO),
+    // Object highlight
+    mObjectHighlightSize(0.051f),
+    mObjectHighlightDitherThreshold(0.151f),
+    mObjectHighlightColor(78, 191, 194, 255),
     // Shader debug
     mDebugColor01(0.0f, 0.0f, 1.0f),
     mDebugColor02(0.0f, 1.0f, 0.0f),
