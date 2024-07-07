@@ -40,6 +40,11 @@ public:
 	// TODO: Delete body on component destroy
 
 };
+
+class StaticPhysicsComponent {
+public:
+	PhysBodyID mBodyID = INVALID_PHYS_BODY_ID;
+};
 //static_assert(sizeof(PhysicsComponent) == 16, "Keep super tiny");
 
 class PhysicsComponentDef : public ComponentDefBase {

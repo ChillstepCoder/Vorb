@@ -49,8 +49,8 @@ glm::quat PhysicsComponent::getOrientation() const {
     glm::quat gameOrientation = glm::quat(
         q.GetW(),
         q.GetX(),
-        q.GetY(), // Note: Y and Z swapped
-        q.GetZ() // and Y negated
+        q.GetY(),
+        q.GetZ()
     );
     return gameOrientation;
 }

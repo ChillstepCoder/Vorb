@@ -64,7 +64,8 @@ public:
 
     void updateTerrainBody(HeightmapPatch& patch);
 
-    PhysBodyID createItemCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents, glm::quat orientation, f32v3 linearVelocity, f32v3 angularVelocity);
+    PhysBodyID createDynamicItemCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents, glm::quat orientation, f32v3 linearVelocity, f32v3 angularVelocity);
+    PhysBodyID createStaticItemCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents, glm::quat orientation);
     PhysBodyID createCharacterCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
     std::unique_ptr<JPH::CharacterBase> createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
 

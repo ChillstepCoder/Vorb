@@ -193,7 +193,7 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     registry.emplace<SimpleItemComponent>(newEntity, itemStack);
     registry.emplace<OrientationComponent>(newEntity, startOrientation);
     PhysicsComponent& physCmp = registry.emplace<PhysicsComponent>(newEntity);
-    physCmp.mBodyID = world.getPhysicsWorld().createItemCapsule(newEntity, position, f32v2(0.158f, 0.65f), startOrientation, velocity, MathUtil::randomAngularVelocity(Random::getCachedRandomf() * 4.0f));
+    physCmp.mBodyID = world.getPhysicsWorld().createDynamicItemCapsule(newEntity, position, f32v2(0.158f, 0.65f), startOrientation, velocity, MathUtil::randomAngularVelocity(Random::getCachedRandomf() * 4.0f));
     // TODO: Use this version for sack items
     //registry.emplace<AngularVelocityComponent>(newEntity, MathUtil::randomAngularVelocity(Random::getCachedRandomf() * 4.0f));
     //BitFlags<ProjectileFlags> flags(ProjectileFlags::RemoveOnLand, ProjectileFlags::OrientToTerrainOnLand);
@@ -246,6 +246,10 @@ entt::entity EntityFactory::createItemOnGround(World& world, f32v3 position, Ite
         staticCmp.modelId, orientCmp.mOrientation, position, 0 /*TODO Variant*/
     );
 
+    // Query physics
+    StaticPhysicsComponent& physCmp = registry.emplace<StaticPhysicsComponent>(newEntity);
+    physCmp.mBodyID = world.getPhysicsWorld().createStaticItemCapsule(newEntity, position, f32v2(0.158f, 0.65f), orientCmp.mOrientation);
+
     world.dispatchOnEntityCreated(WorldEntityEvent(world, newEntity));
 
     return newEntity;
@@ -265,6 +269,8 @@ void EntityFactory::destroyEntity(World& world, entt::entity entity) {
             world.getPhysicsWorld().removeBody(cmp->mBodyID, true);
             LOG_CRITICAL("  Destroy body ", cmp->mBodyID);
         }
+    } else if (StaticPhysicsComponent* cmp = registry.try_get<StaticPhysicsComponent>(entity)) {
+        world.getPhysicsWorld().removeBody(cmp->mBodyID, true);
     }
 
     if (StaticModelComponent* cmp = registry.try_get<StaticModelComponent>(entity)) {

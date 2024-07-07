@@ -290,6 +290,7 @@ public:
         ASSERT_GAME_THREAD();
         JPH::BodyInterface& bodyInterface = getBodyInterfaceNonLocking();
 
+        // TODO: Wake nearby bodies?
         bodyInterface.SetShape(JPH::BodyID(id), newShape, updateMass, activateMode);
 #if ENABLE_PHYSICS_ANALYTICS == 1
         if (bodyInterface.GetMotionType(JPH::BodyID(id)) == JPH::EMotionType::Static) {
@@ -469,6 +470,7 @@ int PhysicsWorld::stepSimulation(f32 deltaTime) {
 }
 
 void PhysicsWorld::updateTerrainBody(HeightmapPatch& patch) {
+    ASSERT_GAME_THREAD();
     PROFILE_FUNCTION();
 
     // Adding an additional edge on right and north side to fill gap, which means we have to do
@@ -529,7 +531,7 @@ void PhysicsWorld::updateTerrainBody(HeightmapPatch& patch) {
     }
 
     JPH::ShapeSettings::ShapeResult newShape = settings.Create();
-    // Remove old body
+    // Update old body
     if (patch.physBodyID != INVALID_PHYS_BODY_ID) {
         mContext->updateShape(patch.physBodyID, newShape.Get(), false, JPH::EActivation::DontActivate);
     }
@@ -538,7 +540,7 @@ void PhysicsWorld::updateTerrainBody(HeightmapPatch& patch) {
     }
 }
 
-PhysBodyID PhysicsWorld::createItemCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents, glm::quat orientation, f32v3 linearVelocity, f32v3 angularVelocity) {
+PhysBodyID PhysicsWorld::createDynamicItemCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents, glm::quat orientation, f32v3 linearVelocity, f32v3 angularVelocity) {
     CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
 
     JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Dynamic,
@@ -558,10 +560,28 @@ PhysBodyID PhysicsWorld::createItemCapsule(entt::entity ownerEntity, f32v3 posit
     return createEntityBody(createSettings, ownerEntity, shapeId);
 }
 
+PhysBodyID PhysicsWorld::createStaticItemCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents, glm::quat orientation) {
+    CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
+
+    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Static,
+        makeObjectLayerMasked(
+            PhysicsObjectLayer::Static,
+            PhysicsObjectLayer::DynamicItem
+        )
+    );
+    createSettings.mUserData = PhysicsBodyUserData(ownerEntity, PhysicsBodyUserDataType::ItemEntity);
+    // TODO: Proper orientation
+    createSettings.mRotation = JPH::Quat::sRotation(JPH::Vec3::sAxisZ(), JPH::JPH_PI * 0.5f) * JPH::Quat(orientation.x, orientation.y, orientation.z, orientation.w);
+
+    return createEntityBody(createSettings, ownerEntity, shapeId);
+}
+
 PhysBodyID PhysicsWorld::createCharacterCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
     CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
 
-    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Dynamic, PhysicsObjectLayer::Character);
+    JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Dynamic, 
+        makeObjectLayerMasked(PhysicsObjectLayer::Character, PhysicsObjectLayer::Static | PhysicsObjectLayer::Character)
+    );
     createSettings.mUserData = PhysicsBodyUserData(ownerEntity);
     createSettings.mAllowedDOFs = JPH::EAllowedDOFs::TranslationX | JPH::EAllowedDOFs::TranslationY | JPH::EAllowedDOFs::TranslationZ;
 

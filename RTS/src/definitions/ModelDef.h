@@ -5,6 +5,8 @@
 #include "rendering/model/MaterialRenderPassType.h"
 #include "rendering/post_process/ShadowDetail.h"
 
+#include "physics/CollisionShapes.h"
+
 #include <ozz/animation/runtime/skeleton.h>
 
 
@@ -28,6 +30,10 @@ struct ModelDrawInfo {
     ModelBatch* mModelBatch = nullptr;
     GLuint mBaseVertex = 0;
     f32 mBoundingSphereRadius = 10.0f;
+};
+
+struct ModelCollider {
+    // TODO:
 };
 
 // Modeldef contains all information about a 3D model including its location
