@@ -129,7 +129,7 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                     physics.mBodyID = static_cast<JPH::Character&>(*controlCmp.mCharacterController).GetBodyID().GetIndexAndSequenceNumber();
                 }
                 else {
-                    assert(cdef.colliderShape == CollisionShapes::CAPSULE && "Only capsule physics supported for now");
+                    assert(cdef.colliderShape == CollisionShapes::Capsule && "Only capsule physics supported for now");
                     physics.mBodyID = physicsWorld.createCharacterCapsule(newEntity, position, cdef.halfExtents);
                 }
                 break;

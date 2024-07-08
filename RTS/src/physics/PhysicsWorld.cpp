@@ -443,9 +443,9 @@ void PhysicsWorld::initializeJPH() {
 
     // Shared query shapes
     sUnitSphereShape = std::make_unique<JPH::SphereShape>(1.0_r);
-    sUnitSphereShape->SetUserData(PhysicsShapeUserData(CollisionShapes::SPHERE));
+    sUnitSphereShape->SetUserData(PhysicsShapeUserData(CollisionShapes::Sphere));
     sUnitCylinderShape = std::make_unique<JPH::CylinderShape>(1.0_r, 1.0_r);
-    sUnitCylinderShape->SetUserData(PhysicsShapeUserData(CollisionShapes::CYLINDER));
+    sUnitCylinderShape->SetUserData(PhysicsShapeUserData(CollisionShapes::Cylinder));
 }
 
 int PhysicsWorld::stepSimulation(f32 deltaTime) {
@@ -657,7 +657,7 @@ void PhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& 
     if (meshBuilder.mVerts.size()) {
         JPH::MeshShapeSettings shapeSettings = createStaticMeshShapeSettings(meshBuilder.mVerts, meshBuilder.mIndices);
         JPH::Shape* shape = shapeSettings.Create().Get();
-        shape->SetUserData(PhysicsShapeUserData(CollisionShapes::MESH));
+        shape->SetUserData(PhysicsShapeUserData(CollisionShapes::Mesh));
 
         // Create body or update its shape
         if (*staticMesh == INVALID_PHYS_BODY_ID) {
@@ -957,7 +957,7 @@ PhysBodyID PhysicsWorld::createTileBody(TileContainerID containerId, TileIndex t
 
 PhysBodyID PhysicsWorld::createTerrainBody(f32v3 position, JPH::Shape* terrainShape) {
     ASSERT_GAME_THREAD();
-    terrainShape->SetUserData(PhysicsShapeUserData(CollisionShapes::TERRAIN));
+    terrainShape->SetUserData(PhysicsShapeUserData(CollisionShapes::Terrain));
     JPH::BodyCreationSettings createSettings(
         terrainShape, JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, JPH::EMotionType::Static,
         makeObjectLayerMasked(PhysicsObjectLayer::Static, PhysicsObjectLayer::DynamicSolid | PhysicsObjectLayer::DynamicItem)

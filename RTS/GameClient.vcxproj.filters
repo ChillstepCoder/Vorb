@@ -1131,6 +1131,9 @@
     <ClCompile Include="src\rendering\model\ModelHighlightRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\editor\CollisionEditor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -2826,6 +2829,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\model\ModelHighlightRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\editor\CollisionEditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

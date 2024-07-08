@@ -499,6 +499,7 @@
     <ClCompile Include="src\ui\debugging\PhysicsDebugger.cpp" />
     <ClCompile Include="src\ui\editor\AnimMachineEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\Blendspace1DEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\CollisionEditor.cpp" />
     <ClCompile Include="src\ui\editor\NodeGraph.cpp" />
     <ClCompile Include="src\ui\editor\TileDistributionEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorViewportPanel.cpp" />
@@ -999,6 +1000,7 @@
     <ClInclude Include="src\ui\debugging\PhysicsDebugger.h" />
     <ClInclude Include="src\ui\editor\AnimMachineEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\Blendspace1DEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\CollisionEditor.h" />
     <ClInclude Include="src\ui\editor\NodeGraph.h" />
     <ClInclude Include="src\ui\editor\TileDistributionEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\TileEditorViewportPanel.h" />

@@ -49,7 +49,7 @@ public:
 
 class PhysicsComponentDef : public ComponentDefBase {
 public:
-	CollisionShapes colliderShape = CollisionShapes::CAPSULE;
+	CollisionShapes colliderShape = CollisionShapes::Capsule;
     f32v3 halfExtents = f32v3(1.0f);
 	bool disableXyRot = false;
 	bool disableXyzRot = false;

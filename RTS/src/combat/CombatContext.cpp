@@ -218,7 +218,7 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
             const CollisionShapes shapeType = shapeUserData.getShapeType();
             switch (shapeType) {
                 //case CYLINDER_SHAPE_PROXYTYPE: {
-                case CollisionShapes::CAPSULE: {
+                case CollisionShapes::Capsule: {
                     const JPH::CapsuleShape* capsule = static_cast<const JPH::CapsuleShape*>(shape);
                     const f32 capsuleRadius = capsule->GetRadius();
                     const f32 targetRadiusSQ = SQ(capsuleRadius);

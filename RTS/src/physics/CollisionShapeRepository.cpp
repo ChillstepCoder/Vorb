@@ -16,13 +16,13 @@ CollisionShapeRepository::~CollisionShapeRepository() = default;
 CollisionShapeID CollisionShapeRepository::getOrAddCollisionShape(CollisionShapes shapeType, const f32v3& halfExtents) {
     assert(IS_GAME_THREAD() || IS_RENDER_THREAD()); // Render thread does this on startup
     switch (shapeType) {
-        case CollisionShapes::CAPSULE:
+        case CollisionShapes::Capsule:
             return getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.z);
-        case CollisionShapes::CYLINDER:
+        case CollisionShapes::Cylinder:
             return getOrAddCylinderCollisionShape(halfExtents);
-        case CollisionShapes::BOX:
+        case CollisionShapes::Box:
             return getOrAddBoxCollisionShape(halfExtents);
-        case CollisionShapes::SPHERE:
+        case CollisionShapes::Sphere:
             return getOrAddSphereCollisionShape(halfExtents.x);
         default:
             panic("Invalid shape type {} in getOrAddCollisionShape", (int)shapeType);
@@ -50,10 +50,10 @@ CollisionShapeID CollisionShapeRepository::getOrAddCapsuleCollisionShape(f32 rad
         panic("Failed to create capsule shape: {}", res.GetError().c_str());
     }
     if (settings.IsSphere()) {
-        res.Get()->SetUserData(PhysicsShapeUserData(CollisionShapes::SPHERE));
+        res.Get()->SetUserData(PhysicsShapeUserData(CollisionShapes::Sphere));
     }
     else {
-        res.Get()->SetUserData(PhysicsShapeUserData(CollisionShapes::CAPSULE));
+        res.Get()->SetUserData(PhysicsShapeUserData(CollisionShapes::Capsule));
     }
     mAllJoltShapes.emplace_back(res.Get());
     mCapsuleShapes[key] = id;
@@ -75,7 +75,7 @@ CollisionShapeID CollisionShapeRepository::getOrAddCylinderCollisionShape(const 
     if (res.HasError()) {
         panic("Failed to create cylinder shape: {}", res.GetError().c_str());
     }
-    res.Get()->SetUserData(PhysicsShapeUserData(id, CollisionShapes::CYLINDER));
+    res.Get()->SetUserData(PhysicsShapeUserData(id, CollisionShapes::Cylinder));
     mAllJoltShapes.emplace_back(res.Get());
     mCylinderShapes[halfExtents] = id;
     return id;
@@ -96,7 +96,7 @@ CollisionShapeID CollisionShapeRepository::getOrAddBoxCollisionShape(const f32v3
     if (res.HasError()) {
         panic("Failed to create box shape: {}", res.GetError().c_str());
     }
-    res.Get()->SetUserData(PhysicsShapeUserData(id, CollisionShapes::BOX));
+    res.Get()->SetUserData(PhysicsShapeUserData(id, CollisionShapes::Box));
     mAllJoltShapes.emplace_back(res.Get());
     mBoxShapes[halfExtents] = id;
     return id;
@@ -117,7 +117,7 @@ CollisionShapeID CollisionShapeRepository::getOrAddSphereCollisionShape(f32 radi
     if (res.HasError()) {
         panic("Failed to create box shape: {}", res.GetError().c_str());
     }
-    res.Get()->SetUserData(PhysicsShapeUserData(id, CollisionShapes::SPHERE));
+    res.Get()->SetUserData(PhysicsShapeUserData(id, CollisionShapes::Sphere));
     mAllJoltShapes.emplace_back(res.Get());
     mSphereShapes[radius] = id;
     return id;

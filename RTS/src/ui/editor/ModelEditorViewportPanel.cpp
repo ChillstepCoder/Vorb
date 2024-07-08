@@ -20,6 +20,7 @@
 #include <imgui_internal.h>
 #include "ui/ImguiUtil.hpp"
 #include "ui/imgui_controls/ObjectVector.h"
+#include "ui/editor/CollisionEditor.h"
 
 #include <Vorb/graphics/GBuffer.h>
 #include <Vorb/graphics/DepthState.h>
@@ -79,6 +80,10 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
             {
                 ImGui::SetTooltip("LOD is auto generated");
             }
+        }
+
+        if (ImGui::CollapsingHeader("Collision")) {
+            changed |= CollisionEditor::updateAndRenderImguiControlsForShapeVector(mAssetData->mColliderData.mShapes);
         }
 
         ImGui::Separator();
@@ -174,5 +179,7 @@ void ModelEditorViewportPanel::renderMesh() {
             mAABBMesh->bind();
             mAABBMesh->drawLines(0);
         }
+
+        CollisionEditor::renderShapesInEditor(mAssetData->mColliderData.mShapes);
     }
 }

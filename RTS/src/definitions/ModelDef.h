@@ -32,9 +32,25 @@ struct ModelDrawInfo {
     f32 mBoundingSphereRadius = 10.0f;
 };
 
-struct ModelCollider {
-    // TODO:
+struct ModelColliderShape {
+    f32v3 mEulerAngles = f32v3(0.0f);
+    f32v3 mOffset = f32v3(0.0f);
+    CollisionShapes mShape = CollisionShapes::Capsule;
+    f32v3 mDims = f32v3(0.5f);
 };
+SERIALIZABLE_SIMPLE(ModelColliderShape,
+    make_field(o.mEulerAngles, "angles"sv),
+    make_field(o.mOffset, "offset"sv),
+    make_field(o.mShape, "shape"sv),
+    make_field(o.mDims, "dims"sv)
+);
+
+struct ModelCollider {
+    std::vector<ModelColliderShape> mShapes;
+};
+SERIALIZABLE_SIMPLE(ModelCollider,
+    make_field(o.mShapes, "shapes"sv)
+);
 
 // Modeldef contains all information about a 3D model including its location
 // in a ModelBatch
@@ -71,6 +87,7 @@ public:
     bool mForceNormalsUp = false;
     std::vector<ModelSubmeshData> mSubmeshesData;
     std::vector<f32v3> mDamageZoneSpline = { f32v3(0.0f), f32v3(0.0f, 0.0f, 8.0f) }; // Damage zones align to this spline
+    ModelCollider mColliderData;
 
     // Variants
     std::vector<ModelVariantData> mVariants;
@@ -91,5 +108,6 @@ SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
     make_field(o.mShadowDetail, "shadow_detail"sv),
     make_field(o.mForceNormalsUp, "force_normals_up"sv),
     make_field(o.mDamageZoneSpline, "dmg_spline"sv),
-    make_field(o.mVariants, "variants"sv)
+    make_field(o.mVariants, "variants"sv),
+    make_field(o.mColliderData, "collider"sv)
 );
