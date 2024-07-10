@@ -460,7 +460,7 @@ TileItemUID SimChunkItemData::addStackToTileSimThreadAllowMerge(ChunkTileIndex t
         }
     }
     TileItemUID uid = generateNextItemUID();
-    stacks.emplace_back(TileItemStack{ .tileIndex = tileIndex, .count = (ui16)stack.count, .props = stack.props, .uniqueId = uid });
+    stacks.emplace_back(TileItemStack(stack, tileIndex, uid));
     return uid;
 }
 
@@ -472,7 +472,7 @@ TileItemUID SimChunkItemData::addStackToTileGameThreadNoMerge(ChunkTileIndex til
 
     std::vector<TileItemStack>& stacks = itemStacks[stack.id];
     TileItemUID uid = generateNextItemUID();
-    stacks.emplace_back(TileItemStack{ .tileIndex = tileIndex, .count = (ui16)stack.count, .props = stack.props, .uniqueId = uid });
+    stacks.emplace_back(TileItemStack(stack, tileIndex, uid));
     return uid;
 }
 

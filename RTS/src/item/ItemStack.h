@@ -97,7 +97,7 @@ struct ItemStack {
         return memcmp(this + offset, &other + offset, sizeof(ItemStack) - offset) == 0;
     }
 
-    ui32 count = 0;
+    ui32 count = 0; // TODO: This should likely be ui16 to match tile item stack size
     ItemID id = INVALID_ITEM_ID;
     ui16 reservedCount = 0;
     ItemProperties props;
@@ -111,7 +111,6 @@ struct ItemStack {
 };
 
 static_assert(sizeof(ItemStack) == 12);
-
 
 // Represents a ledger of a stack of simple items that we want to fill
 struct FillableSimpleItemStack {
@@ -131,6 +130,15 @@ constexpr int MAX_TILE_ITEM_STACK_SIZE = std::numeric_limits<ui16>::max();
 
 struct TileItemStack {
 public:
+    TileItemStack() = default;
+    TileItemStack(ItemStack stack, ChunkTileIndex tileIndex, TileItemUID uniqueId) :
+        itemId(stack.id),
+        tileIndex(tileIndex),
+        count(stack.count),
+        reservedCount(stack.reservedCount),
+        props(stack.props),
+        uniqueId(uniqueId) {
+    }
 
     bool canCombine(const ItemStack& other) const {
         // Cannot combine if stack is reserved
@@ -168,14 +176,20 @@ public:
     }
 public:
 
-    ItemStack toItemStack(ItemID itemId) const {
+    ItemStack toItemStack() const {
         return ItemStack(itemId, count, reservedCount, props);
     }
 
 public:
+    ItemID itemId = INVALID_ITEM_ID;
     ChunkTileIndex tileIndex;
     ui16 count = 0;
     ui16 reservedCount = 0;
     ItemProperties props;
     TileItemUID uniqueId = INVALID_TILE_ITEM_UID;
+};
+
+struct ItemStackWithUID {
+    ItemStack itemStack;
+    TileItemUID tileItemUID = INVALID_TILE_ITEM_UID;
 };

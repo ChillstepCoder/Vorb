@@ -176,8 +176,10 @@ void PlayerControlSystem::updateSelection(entt::entity entity, PlayerControlComp
             // Selection
             if (DynamicModelComponent* modelCmp = mRegistry.try_get<DynamicModelComponent>(selected)) {
                 playerControlCmp.mSelectedObjectData.modelId = modelCmp->modelId;
+                playerControlCmp.mSelectedObjectData.scale = modelCmp->scale;
             } else if (StaticModelComponent* modelCmp = mRegistry.try_get<StaticModelComponent>(selected)) {
                 playerControlCmp.mSelectedObjectData.modelId = modelCmp->modelId;
+                playerControlCmp.mSelectedObjectData.scale = modelCmp->scale;
             } else {
                 playerControlCmp.mSelectedObjectData.modelId = INVALID_MODEL_ID;
                 // We can only select models

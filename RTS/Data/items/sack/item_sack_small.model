@@ -19,6 +19,6 @@ variants:
 collider:
   shapes:
     - angles: [1.5707964,0,0]
-      offset: [0,0,0]
+      offset: [0,0,0.253]
       shape: sphere
-      dims: [0.488,0.5,0.5]
+      dims: [0.314,0.5,0.5]

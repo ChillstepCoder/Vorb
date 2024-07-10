@@ -140,18 +140,44 @@ void IFullECS::createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransiti
         static_assert(e_count(SimEntityType) == 4);
     }
 
-    // Items
-    const f32v2 worldPosChunkWithTileOffset(chunk.getWorldPos().x + 0.5f, chunk.getWorldPos().y + 0.5f);
+    // Re-sort by tiles so we can combine into container entities per tile
+    // TODO: Scratch allocator?
+    static UnorderedFlatMap<TileIndex, std::vector<TileItemStack>> tileCollapsedStacks;
     for (auto&& [itemID, stacks] : data.itemStacks) {
         for (const TileItemStack& stack : stacks) {
-            const f32v2 worldPos(worldPosChunkWithTileOffset + f32v2(stack.tileIndex % CHUNK_WIDTH, stack.tileIndex / CHUNK_WIDTH));
-            const f32v3 pos3(worldPos.x, worldPos.y, heightGrid.computeHeightAtPoint<true>(worldPos));
-            entt::entity newEntity = EntityFactory::createItemOnGround(mWorld, pos3, stack.toItemStack(itemID), stack.uniqueId);
-
-            // TODO: DELETE ME
-           AM::DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Magenta, 2000);
+            tileCollapsedStacks[stack.tileIndex].emplace_back(stack);
         }
     }
+
+    // Items
+    const f32v2 worldPosChunkWithTileOffset(chunk.getWorldPos().x + 0.5f, chunk.getWorldPos().y + 0.5f);
+    for (auto&& [tileIndex, stacks] : tileCollapsedStacks) {
+        f32v2 worldPos(worldPosChunkWithTileOffset + f32v2(tileIndex % CHUNK_WIDTH, tileIndex / CHUNK_WIDTH));
+        worldPos.x += Random::getCachedRandomfInRange(-0.4f, 0.4f);
+        worldPos.y += Random::getCachedRandomfInRange(-0.4f, 0.4f);
+        const f32v3 pos3(worldPos.x, worldPos.y, heightGrid.computeHeightAtPoint<true>(worldPos));
+        if (stacks.size() == 1) {
+            const TileItemStack& stack = stacks[0];
+            entt::entity newEntity = EntityFactory::createItemOnGround(mWorld, pos3, stack.toItemStack(), stack.uniqueId);
+            if (newEntity != entt::null) {
+                mTileItemEntityMap[stack.uniqueId] = newEntity;
+                // TODO: DELETE ME
+                AM::DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Magenta, 2000);
+            }
+        }
+        else {
+            entt::entity newEntity = EntityFactory::createItemContainerOnGround(mWorld, pos3, stacks);
+            if (newEntity != entt::null) {
+                for (const TileItemStack& stack : stacks) {
+                    mTileItemEntityMap[stack.uniqueId] = newEntity;
+                }
+                // TODO: DELETE ME
+                AM::DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Red, 2000);
+            }
+        }
+    }
+
+    tileCollapsedStacks.clear();
 }
 
 ChunkSimTransitionData IFullECS::deactivateEntitiesForChunk(Chunk& chunk) {
@@ -223,7 +249,7 @@ bool IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunkID, C
                 return false;
             }
         }
-        else if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(entity)) {
+        else if (mRegistry.any_of<TileItemComponent, TileItemContainerComponent>(entity)) {
             // Items destroy, will remove from mEntitiesbyChunk in the destroy listener
             destroyEntity(entity);
             return true;
@@ -301,9 +327,14 @@ void IFullECS::onItemPickedUp(TileItemUID itemUID, i32 remaining) {
     assert(it != mTileItemEntityMap.end());
     entt::entity entity = it->second;
     if (remaining) {
-        TileItemComponent& itemCmp = mRegistry.get<TileItemComponent>(entity);
-        itemCmp.itemStack.count = remaining;
-        assert(itemCmp.tileItemUID == itemUID);
+        if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(entity)) {
+            itemCmp->itemStack.count = remaining;
+            assert(itemCmp->tileItemUID == itemUID);
+        }
+        else {
+            TileItemContainerComponent& containerCmp = mRegistry.get<TileItemContainerComponent>(entity);
+            containerCmp.setNewCount(itemUID, remaining);
+        }
     }
     else {
         mTileItemEntityMap.erase(it);
@@ -344,6 +375,11 @@ void IFullECS::initEvents() {
         if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(event.entity)) {
             assert(itemCmp->tileItemUID != INVALID_TILE_ITEM_UID);
             mTileItemEntityMap[itemCmp->tileItemUID] = event.entity;
+        }
+        else if (TileItemContainerComponent* itemCmp = mRegistry.try_get<TileItemContainerComponent>(event.entity)) {
+            for (const ItemStackWithUID& stack : itemCmp->mItemStacks) {
+                mTileItemEntityMap[stack.tileItemUID] = event.entity;
+            }
         }
     });
 
@@ -393,6 +429,12 @@ void IFullECS::initEvents() {
                 mWorld.getSimChunkGrid().untrackItem(tileItemCmp->getTileItemUID(), tileItemCmp->getItemStack().id, posCmp.mPosition);
 
                 mRegistry.remove<TileItemComponent>(event.entity);
+            } else if (TileItemContainerComponent* containerCmp = mRegistry.try_get<TileItemContainerComponent>(event.entity)) {
+                for (const ItemStackWithUID& stack : containerCmp->mItemStacks) {
+                    mTileItemEntityMap.erase(stack.tileItemUID);
+                    mWorld.getSimChunkGrid().untrackItem(stack.tileItemUID, stack.itemStack.id, mRegistry.get<PositionComponent>(event.entity).mPosition);
+                }
+                mRegistry.remove<TileItemContainerComponent>(event.entity);
             }
         });
     }
@@ -405,6 +447,10 @@ void IFullECS::initEvents() {
         if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(event.entity)) {
             if (itemCmp->getTileItemUID() != INVALID_TILE_ITEM_UID) {
                 mTileItemEntityMap.erase(itemCmp->getTileItemUID());
+            }
+        } else if (TileItemContainerComponent* itemCmp = mRegistry.try_get<TileItemContainerComponent>(event.entity)) {
+            for (const ItemStackWithUID& stack : itemCmp->mItemStacks) {
+                mTileItemEntityMap.erase(stack.tileItemUID);
             }
         }
 
@@ -428,13 +474,24 @@ void IFullECS::connectItemToChunk(entt::entity entity) {
     assert(posCmp.chunkId != INVALID_CHUNK_ID);
 
     SimpleItemComponent& itemCmp = mRegistry.get<SimpleItemComponent>(entity);
-
-    TileItemComponent& tileItemCmp = mRegistry.emplace<TileItemComponent>(
-        entity,
-        itemCmp.itemStack,
-        mWorld.getSimChunkGrid().connectItemEntityToGroundGameThreadNoMerge(itemCmp.itemStack, posCmp.mPosition
-    ));
-    mTileItemEntityMap[tileItemCmp.tileItemUID] = entity;
+    if (itemCmp.itemStack.count == 1) {
+        // Single item
+        TileItemComponent& tileItemCmp = mRegistry.emplace<TileItemComponent>(
+            entity,
+            itemCmp.itemStack,
+            mWorld.getSimChunkGrid().connectItemEntityToGroundGameThreadNoMerge(itemCmp.itemStack, posCmp.mPosition
+        ));
+        mTileItemEntityMap[tileItemCmp.tileItemUID] = entity;
+    }
+    else {
+        // Container
+        TileItemContainerComponent& newContainer = mRegistry.emplace<TileItemContainerComponent>(
+            entity,
+            itemCmp.itemStack,
+            mWorld.getSimChunkGrid().connectItemEntityToGroundGameThreadNoMerge(itemCmp.itemStack, posCmp.mPosition
+        ));
+        mTileItemEntityMap[newContainer.mItemStacks[0].tileItemUID] = entity;
+    }
 
     // Check if we landed in a new chunk and update accordingly
     const ChunkID landedChunk = mWorld.getChunkIDAtWorldPos(posCmp.mPosition);

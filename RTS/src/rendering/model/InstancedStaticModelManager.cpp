@@ -682,7 +682,7 @@ void InstancedStaticModelManager::onTileDamagedEvent(const TileContainerEvent& e
     }, taskData);
 }
 
-StaticModelInstanceID InstancedStaticModelManager::addLooseModelInstance(ModelID modelId, const glm::quat& orient, f32v3 position, ui8 variantIndex)
+StaticModelInstanceID InstancedStaticModelManager::addLooseModelInstance(ModelID modelId, const glm::quat& orient, f32v3 position, ui8 variantIndex, f32 scale)
 {
     StaticModelInstanceID id;
     {
@@ -696,7 +696,8 @@ StaticModelInstanceID InstancedStaticModelManager::addLooseModelInstance(ModelID
         .modelId = modelId,
         .instanceId = id,
         .variantIndex = variantIndex,
-        .isRemove = false
+        .isRemove = false,
+        .scale = scale
     };
 
     mPendingLooseModelInstances.enqueue(pendingInstance);
@@ -715,6 +716,7 @@ void InstancedStaticModelManager::removeLooseModelInstance(ModelID modelId, Stat
 }
 
 void InstancedStaticModelManager::updatePendingLooseModelInstances() {
+    ASSERT_RENDER_THREAD();
     PROFILE_FUNCTION();
     constexpr i32 MAX_DEQUEUE = 1024;
     PendingLooseModelInstance instances[MAX_DEQUEUE];
@@ -726,7 +728,7 @@ void InstancedStaticModelManager::updatePendingLooseModelInstances() {
             }
             else {
                 // TODO: Construct transform in place so no copy?
-                const f32m4 transform = MathUtil::createTransformMatrix(instance.position, instance.orient);
+                const f32m4 transform = MathUtil::createTransformMatrix(instance.position, instance.orient, instance.scale);
                 addLooseInstanceInternal(instance.modelId, instance.instanceId, transform, instance.variantIndex);
             }
         }

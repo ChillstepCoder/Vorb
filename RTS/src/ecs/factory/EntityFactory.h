@@ -19,6 +19,7 @@ public:
     // Perhaps instead the ECS should listen for entity create, and then handle replication?
     static entt::entity createItemProjectile(World& world, f32v3 position, f32v3 velocity, ItemStack itemStack);
     static entt::entity createItemOnGround(World& world, f32v3 position, ItemStack itemStack, TileItemUID uid);
+    static entt::entity createItemContainerOnGround(World& world, f32v3 position, std::span<TileItemStack> itemStacks);
 
     static void destroyEntity(World& world, entt::entity entity);
 

@@ -14,6 +14,7 @@ namespace Random {
     extern ui32 getCachedRandomSpecific(ui32 i);
     extern float getCachedRandomf();
     extern float getCachedRandomfSpecific(ui32 i);
+    extern float getCachedRandomfInRange(float min, float max);
 
     extern ui32 getThreadSafe(ui32 x, ui32 y);
     extern float getThreadSafef(ui32 x, ui32 y);

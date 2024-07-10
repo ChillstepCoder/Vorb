@@ -801,9 +801,6 @@
     <ClCompile Include="src\tile\TileItemContainer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ecs\component\TileItemComponent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\ecs\component\ProjectileComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

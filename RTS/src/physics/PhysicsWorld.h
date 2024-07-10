@@ -64,9 +64,9 @@ public:
 
     void updateTerrainBody(HeightmapPatch& patch);
 
-    PhysBodyID createDynamicItemCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents, glm::quat orientation, f32v3 linearVelocity, f32v3 angularVelocity);
-    PhysBodyID createStaticItemCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents, glm::quat orientation);
-    PhysBodyID createCharacterCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
+    PhysBodyID createDynamicItemBody(entt::entity ownerEntity, f32v3 position, CollisionShapeID shapeId, glm::quat orientation, f32v3 linearVelocity, f32v3 angularVelocity);
+    PhysBodyID createStaticItemBody(entt::entity ownerEntity, f32v3 position, CollisionShapeID shapeId, glm::quat orientation, f32 scale);
+    PhysBodyID createCharacterBody(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
     std::unique_ptr<JPH::CharacterBase> createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
 
     void updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder);
@@ -134,7 +134,7 @@ private:
     // ===========================================================================
     // Private API
     // ===========================================================================
-    JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, JPH::ObjectLayer layer);
+    JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, JPH::ObjectLayer layer, f32 scale);
     PhysBodyID createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId);
     PhysBodyID createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, f32q orientation, ModelID modelId);
     PhysBodyID createTerrainBody(f32v3 position, JPH::Shape* terrainShape);

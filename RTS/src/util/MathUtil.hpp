@@ -259,16 +259,42 @@ namespace MathUtil {
         return atan2(dir.y, dir.x);
     }
 
-    inline f32m4 createTransformMatrix(f32v3 translation, const glm::quat& orientation) {
-        // TODO: we can potentially optimize this by using mat3 cast and making sure the outside floats are initialized to 0 elsewhere
-        f32m4 matrix = glm::mat4_cast(orientation); // Creates a rotation matrix from the quaternion.
+    inline f32m4 createTransformMatrix(const f32v3& translation, const glm::quat& orientation, f32 scale) {
+        f32m4 matrix;
+        
+        // glm::mat4_cast expanded here so we can construct entire thing in most efficient way
+        const f32 qxx(orientation.x * orientation.x);
+        const f32 qyy(orientation.y * orientation.y);
+        const f32 qzz(orientation.z * orientation.z);
+        const f32 qxz(orientation.x * orientation.z);
+        const f32 qxy(orientation.x * orientation.y);
+        const f32 qyz(orientation.y * orientation.z);
+        const f32 qwx(orientation.w * orientation.x);
+        const f32 qwy(orientation.w * orientation.y);
+        const f32 qwz(orientation.w * orientation.z);
 
-        // Set translation with minimal copy
-        memcpy(&matrix[3].x, &translation.x, sizeof(f32v3));
+        matrix[0][0] = scale * (1 - 2 * (qyy + qzz));
+        matrix[0][1] = scale * (2 * (qxy + qwz));
+        matrix[0][2] = scale * (2 * (qxz - qwy));
+        matrix[0][3] = 0.0f;
+
+        matrix[1][0] = scale * (2 * (qxy - qwz));
+        matrix[1][1] = scale * (1 - 2 * (qxx + qzz));
+        matrix[1][2] = scale * (2 * (qyz + qwx));
+        matrix[1][3] = 0.0f;
+
+        matrix[2][0] = scale * (2 * (qxz + qwy));
+        matrix[2][1] = scale * (2 * (qyz - qwx));
+        matrix[2][2] = scale * (1 - 2 * (qxx + qyy));
+        matrix[2][3] = 0.0f;
+
+        matrix[3][0] = translation.x;
+        matrix[3][1] = translation.y;
+        matrix[3][2] = translation.z;
+        matrix[3][3] = 1.0f;
 
         return matrix;
     }
-
     inline f32 crossProduct2d(f32v2 v1, f32v2 v2) {
         return (v1.x * v2.y) - (v1.y * v2.x);
     }

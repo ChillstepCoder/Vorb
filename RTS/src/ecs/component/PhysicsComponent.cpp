@@ -112,7 +112,6 @@ void PhysicsSystem::update(World& world, entt::registry& registry, f32 elapsedSe
 
     // Update all uncontrolled object positions
     // Exclude character control because it has its own update.
-    // Exclude TileItemComponent because they are deactivated physics objects
     auto view = registry.view<PhysicsComponent, PositionComponent>(entt::exclude<CharacterControlComponent>);
     for (auto entity : view) {
         PhysicsComponent& cmp = view.get<PhysicsComponent>(entity);

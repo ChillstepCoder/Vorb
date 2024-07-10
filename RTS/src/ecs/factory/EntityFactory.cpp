@@ -130,7 +130,8 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                 }
                 else {
                     assert(cdef.colliderShape == CollisionShapes::Capsule && "Only capsule physics supported for now");
-                    physics.mBodyID = physicsWorld.createCharacterCapsule(newEntity, position, cdef.halfExtents);
+                    physics.mBodyID = physicsWorld.createCharacterBody(newEntity, position, cdef.halfExtents);
+                    assert(false); // Shouldn't happen?
                 }
                 break;
             }
@@ -163,13 +164,17 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
     return newEntity;
 }
 
+AssetID getItemSackSmallID() {
+    return ModelRepository::get().getAssetID(CStrToken("item_sack_small"));
+}
+
 AssetID getItemModelID(ItemStack stack) {
     ItemRepository& itemRepo = ItemRepository::get();
     const ItemDef& itemDef = itemRepo.getLoadedOrUnloadedAsset(stack.id);
     ModelID modelId;
     if (itemDef.mModelRefs.size()) {
         if (stack.count > 1) {
-            modelId = ModelRepository::get().getAssetID(CStrToken("item_sack_small"));
+            modelId = getItemSackSmallID();
         }
         else {
             const i32 modelIndex = Random::getCachedRandom() % itemDef.mModelRefs.size();
@@ -177,13 +182,14 @@ AssetID getItemModelID(ItemStack stack) {
         }
     }
     else {
-        modelId = ModelRepository::get().getAssetID(CStrToken("item_sack_small"));
+        modelId = getItemSackSmallID();
     }
     return modelId;
 }
 
 entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f32v3 velocity, ItemStack itemStack) {
     ASSERT_GAME_THREAD();
+    assert(itemStack.count);
     IFullECS& ecs = world.getECS();
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
@@ -191,7 +197,8 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     ModelID modelId = getItemModelID(itemStack);
 
     // TODO: allow no collider and use old projectile component?
-    const ModelCollider& colliderData = ModelRepository::get().getLoadedOrUnloadedAsset(modelId).mColliderData;
+    const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(modelId);
+    const ModelCollider& colliderData = modelDef.mColliderData;
     if (colliderData.mSubShapes.size() != 1) {
         panic("Tried to spawn item collider with {} subshapes - {}", colliderData.mSubShapes.size(), ModelRepository::get().getAssetName(modelId).toString());
     }
@@ -211,7 +218,7 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
 
     switch (baseShapeData.mShape) {
         case CollisionShapes::Capsule:
-            physCmp.mBodyID = world.getPhysicsWorld().createDynamicItemCapsule(newEntity, position + startOrientation * baseShapeData.mOffset, baseShapeData.mHalfDims, startOrientation, velocity, angularVelocity);
+            physCmp.mBodyID = world.getPhysicsWorld().createDynamicItemBody(newEntity, position + startOrientation * baseShapeData.mOffset, modelDef.mCollisionShapeID, startOrientation, velocity, angularVelocity);
             break;
         case CollisionShapes::Cylinder:
         case CollisionShapes::Box:
@@ -243,40 +250,95 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     //});
 
 
-    registry.emplace<DynamicModelComponent>(newEntity, modelId);
+    registry.emplace<DynamicModelComponent>(newEntity, modelId, 1.0f /*scale*/);
     world.dispatchOnEntityCreated(WorldEntityEvent(world, newEntity));
 
     return newEntity;
 }
 
-entt::entity EntityFactory::createItemOnGround(World& world, f32v3 position, ItemStack itemStack, TileItemUID uid) {
+void finalizeItemOnGroundEntity(entt::entity newEntity, World& world, f32v3 position, ChunkID chunkId, ModelID modelId, f32 scale) {
     ASSERT_GAME_THREAD();
-    IFullECS& ecs = world.getECS();
-    entt::registry& registry = ecs.mRegistry;
-    const entt::entity newEntity = registry.create();
+    entt::registry& registry = world.getECS().mRegistry;
 
-    PositionComponent& posCmp = registry.emplace<PositionComponent>(newEntity, position, world.getChunkIDAtWorldPos(position));
-    registry.emplace<TileItemComponent>(newEntity, itemStack, uid);
+    PositionComponent& posCmp = registry.emplace<PositionComponent>(newEntity, position, chunkId);
     OrientationComponent& orientCmp = registry.emplace<OrientationComponent>(newEntity, glm::angleAxis(Random::getCachedRandomf() * M_2_PIF, f32v3(0.0f, 0.0f, 1.0f)));
 
-    ItemRepository& itemRepo = ItemRepository::get();
-    const ItemDef& itemDef = itemRepo.getLoadedOrUnloadedAsset(itemStack.id);
-
-    ModelID modelId = getItemModelID(itemStack);
-
-    StaticModelComponent& staticCmp = registry.emplace<StaticModelComponent>(newEntity, modelId);
+    StaticModelComponent& staticCmp = registry.emplace<StaticModelComponent>(newEntity, modelId, scale);
     assert(RenderContext::exists());
     // TODO: This incurs a mutex lock in getRenderDataManagerForWorld, and it also could crash during shutdown if the render data manager is destroyed after we access it
     InstancedStaticModelManager& modelMgr = RenderContext::getInstance().getRenderDataManagerForWorld(world).getInstancedStaticModelManager();
     staticCmp.staticModelInstanceId = modelMgr.addLooseModelInstance(
-        staticCmp.modelId, orientCmp.mOrientation, position, 0 /*TODO Variant*/
+        staticCmp.modelId, orientCmp.mOrientation, position, 0 /*TODO Variant*/, scale
     );
 
-    // Query physics
-    StaticPhysicsComponent& physCmp = registry.emplace<StaticPhysicsComponent>(newEntity);
-    physCmp.mBodyID = world.getPhysicsWorld().createStaticItemCapsule(newEntity, position, f32v2(0.158f, 0.65f), orientCmp.mOrientation);
+    const ModelDef& def = ModelRepository::get().getLoadedOrUnloadedAsset(modelId);
+    if (def.mCollisionShapeID != INVALID_COLLISION_SHAPE_ID) {
+        StaticPhysicsComponent& physCmp = registry.emplace<StaticPhysicsComponent>(newEntity);
+        physCmp.mBodyID = world.getPhysicsWorld().createStaticItemBody(newEntity, position + orientCmp.mOrientation * (def.mColliderData.mBaseOffset * scale), def.mCollisionShapeID, orientCmp.mOrientation, scale);
+    }
 
     world.dispatchOnEntityCreated(WorldEntityEvent(world, newEntity));
+}
+
+f32 computeItemSackScale(f32 totalWeight) {
+    return glm::clamp(powf(totalWeight, 0.34f), 0.1f, 3.0f);
+}
+
+entt::entity EntityFactory::createItemOnGround(World& world, f32v3 position, ItemStack itemStack, TileItemUID uid) {
+    ASSERT_GAME_THREAD();
+    assert(itemStack.count);
+    entt::registry& registry = world.getECS().mRegistry;
+    const entt::entity newEntity = registry.create();
+
+    const ChunkID chunkId = world.getChunkIDAtWorldPos(position);
+    if (world.isChunkDeactivated(chunkId)) [[unlikely]] {
+        // This can happen if sim thread just created an item RIGHT before this chunk deactivated
+        return entt::null;
+    }
+
+    ItemRepository& itemRepo = ItemRepository::get();
+    const ItemDef& itemDef = itemRepo.getLoadedOrUnloadedAsset(itemStack.id);
+
+    f32 scale;
+    if (itemStack.count == 1) {
+        registry.emplace<TileItemComponent>(newEntity, itemStack, uid);
+        scale = 1.0f;
+    }
+    else {
+        registry.emplace<TileItemContainerComponent>(newEntity, itemStack, uid);
+        scale = computeItemSackScale(itemDef.getWeight() * itemStack.count);
+    }
+    
+    const ModelID modelId = getItemModelID(itemStack);
+
+    finalizeItemOnGroundEntity(newEntity, world, position, chunkId, modelId, scale);
+
+    return newEntity;
+}
+
+entt::entity EntityFactory::createItemContainerOnGround(World& world, f32v3 position, std::span<TileItemStack> itemStacks) {
+    ASSERT_GAME_THREAD();
+    assert(itemStacks.size());
+    IFullECS& ecs = world.getECS();
+    entt::registry& registry = ecs.mRegistry;
+    const entt::entity newEntity = registry.create();
+
+    const ChunkID chunkId = world.getChunkIDAtWorldPos(position);
+    if (world.isChunkDeactivated(chunkId)) [[unlikely]] {
+        // This can happen if sim thread just created an item RIGHT before this chunk deactivated
+        return entt::null;
+    }
+
+    f32 totalWeight = 0.0f;
+    registry.emplace<TileItemContainerComponent>(newEntity, itemStacks);
+    ItemRepository& itemRepo = ItemRepository::get();
+    for (TileItemStack& stack : itemStacks) {
+        totalWeight += itemRepo.getLoadedOrUnloadedAsset(stack.itemId).getWeight() * stack.count;
+    }
+
+    const ModelID modelId = getItemSackSmallID();
+
+    finalizeItemOnGroundEntity(newEntity, world, position, chunkId, modelId, computeItemSackScale(totalWeight));
 
     return newEntity;
 }

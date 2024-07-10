@@ -42,7 +42,7 @@ void ModelHighlightRenderer::renderModelHighlight(const SelectedObjectData& sele
 
     MaterialRenderer::bindMaterialShaderForRender(*mHighlightShader);
 
-    const f32m4 modelMatrix = MathUtil::createTransformMatrix(selectedObject.position, selectedObject.orientation);
+    const f32m4 modelMatrix = MathUtil::createTransformMatrix(selectedObject.position, selectedObject.orientation, selectedObject.scale);
 
     // TODO: Variant
     const f32v4 colorf = sDebugOptions.mObjectHighlightColor.toVec4();

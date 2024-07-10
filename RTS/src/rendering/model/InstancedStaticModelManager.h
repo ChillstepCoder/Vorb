@@ -69,7 +69,7 @@ public:
     // TODO: This is more data than the renderer needs?
     const ModelBatchMap& getModelInstanceMap() const { return mModelBatches; }
 
-    StaticModelInstanceID addLooseModelInstance(ModelID modelId, const glm::quat& orient, f32v3 position, ui8 variantIndex);
+    StaticModelInstanceID addLooseModelInstance(ModelID modelId, const glm::quat& orient, f32v3 position, ui8 variantIndex, f32 scale);
     void removeLooseModelInstance(ModelID modelId, StaticModelInstanceID instanceId);
 private:
     void updatePendingLooseModelInstances();
@@ -108,6 +108,7 @@ private:
         StaticModelInstanceID instanceId;
         ui8 variantIndex;
         bool isRemove;
+        f32 scale;
     };
     moodycamel::ConcurrentQueue<PendingLooseModelInstance> mPendingLooseModelInstances;
 

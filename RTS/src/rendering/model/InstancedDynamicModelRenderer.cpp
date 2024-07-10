@@ -134,7 +134,7 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
                 if (camera.sphereIsVisible(dynamicModel.position, lodParams.boundingSphereRadius)) {
                     const f32 distance2 = glm::length2(dynamicModel.position - camera.getPosition());
                     if (distance2 < lodParams.lodDistancesSQ[3]) {
-                        transformsArray[transformIndex] = MathUtil::createTransformMatrix(dynamicModel.position, dynamicModel.orientation);
+                        transformsArray[transformIndex] = MathUtil::createTransformMatrix(dynamicModel.position, dynamicModel.orientation, 1.0f);
                         variantsArray[transformIndex] = 0; //dynamicModel.variantIndex; // TODO: Variants
                         for (auto& meshData : batch.mMeshData) {
                             MeshLODDrawInfo* drawInfos = meshData.drawInfos;

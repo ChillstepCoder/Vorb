@@ -337,6 +337,10 @@ void World::setWorldTimeMs(ui64 newTime) {
     mWorldTimeMs = newTime;
 }
 
+bool World::isChunkDeactivated(ChunkID id) const {
+    return mChunkGrid->getChunk(id).isDeactivated();
+}
+
 SimECS* World::tryGetSimECS() const {
     if (!mHostSimContext) {
         return nullptr;

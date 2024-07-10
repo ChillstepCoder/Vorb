@@ -217,6 +217,8 @@ TileItemUID SimChunkGrid::tryDropItemStackOnGroundSimThread(ItemStack stack, Til
     if (!mChunkData[chunkId].isSimulating()) {
         GameThreadTasks::getInstance().addGenericTask([world = mWorld, worldPos, stack, uid]() {
             f32v2 worldPos2d(worldPos.x + 0.5f, worldPos.y + 0.5f);
+            worldPos2d.x += Random::getCachedRandomfInRange(-0.4f, 0.4f);
+            worldPos2d.y += Random::getCachedRandomfInRange(-0.4f, 0.4f);
             EntityFactory::createItemOnGround(*world, f32v3(worldPos2d.x, worldPos2d.y, world->getTerrainHeightAtPoint(worldPos2d)), stack, uid);
         });
     }

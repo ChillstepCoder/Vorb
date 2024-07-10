@@ -279,7 +279,6 @@
     <ClCompile Include="src\ecs\component\FishingComponent.cpp" />
     <ClCompile Include="src\ecs\component\DualInventoryComponent.cpp" />
     <ClCompile Include="src\ecs\component\CharacterControlComponent.cpp" />
-    <ClCompile Include="src\ecs\component\TileItemComponent.cpp" />
     <ClCompile Include="src\ecs\component\FullBrainComponent.cpp" />
     <ClCompile Include="src\ecs\component\CombatComponent.cpp" />
     <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />

@@ -14,6 +14,7 @@
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
 #include <Jolt/Physics/Collision/Shape/HeightFieldShape.h>
 #include <Jolt/Physics/Collision/Shape/MeshShape.h>
+#include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 #include <Jolt/Physics/Collision/CollideShape.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/CastResult.h>
@@ -541,14 +542,12 @@ void PhysicsWorld::updateTerrainBody(HeightmapPatch& patch) {
     }
 }
 
-PhysBodyID PhysicsWorld::createDynamicItemCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents, glm::quat orientation, f32v3 linearVelocity, f32v3 angularVelocity) {
-    CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
-
+PhysBodyID PhysicsWorld::createDynamicItemBody(entt::entity ownerEntity, f32v3 position, CollisionShapeID shapeId, glm::quat orientation, f32v3 linearVelocity, f32v3 angularVelocity) {
     JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Dynamic,
         makeObjectLayerMasked(
             PhysicsObjectLayer::DynamicItem,
             PhysicsObjectLayer::Static | PhysicsObjectLayer::DynamicItem
-        )
+        ), 1.0f /*scale*/
     );
     createSettings.mUserData = PhysicsBodyUserData(ownerEntity, PhysicsBodyUserDataType::ItemEntity);
     createSettings.mRotation = JPH::Quat(orientation.x, orientation.y, orientation.z, orientation.w);
@@ -561,14 +560,12 @@ PhysBodyID PhysicsWorld::createDynamicItemCapsule(entt::entity ownerEntity, f32v
     return createEntityBody(createSettings, ownerEntity, shapeId);
 }
 
-PhysBodyID PhysicsWorld::createStaticItemCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents, glm::quat orientation) {
-    CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
-
+PhysBodyID PhysicsWorld::createStaticItemBody(entt::entity ownerEntity, f32v3 position, CollisionShapeID shapeId, glm::quat orientation, f32 scale) {
     JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Static,
         makeObjectLayerMasked(
             PhysicsObjectLayer::Static,
             PhysicsObjectLayer::DynamicItem
-        )
+        ), scale
     );
     createSettings.mUserData = PhysicsBodyUserData(ownerEntity, PhysicsBodyUserDataType::ItemEntity);
     // TODO: Proper orientation
@@ -577,11 +574,11 @@ PhysBodyID PhysicsWorld::createStaticItemCapsule(entt::entity ownerEntity, f32v3
     return createEntityBody(createSettings, ownerEntity, shapeId);
 }
 
-PhysBodyID PhysicsWorld::createCharacterCapsule(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
+PhysBodyID PhysicsWorld::createCharacterBody(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents) {
     CollisionShapeID shapeId = mShapeRepo.getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
 
     JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(position, shapeId, JPH::EMotionType::Dynamic, 
-        makeObjectLayerMasked(PhysicsObjectLayer::Character, PhysicsObjectLayer::Static | PhysicsObjectLayer::Character)
+        makeObjectLayerMasked(PhysicsObjectLayer::Character, PhysicsObjectLayer::Static | PhysicsObjectLayer::Character), 1.0f /*scale*/
     );
     createSettings.mUserData = PhysicsBodyUserData(ownerEntity);
     createSettings.mAllowedDOFs = JPH::EAllowedDOFs::TranslationX | JPH::EAllowedDOFs::TranslationY | JPH::EAllowedDOFs::TranslationZ;
@@ -932,8 +929,19 @@ int PhysicsWorld::getBodyCount(JPH::ObjectLayer layer) const {
 }
 #endif
 
-JPH::BodyCreationSettings PhysicsWorld::makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, JPH::ObjectLayer layer) {
-    return JPH::BodyCreationSettings(mShapeRepo.getShape(shapeId), JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, motionType, layer);
+JPH::BodyCreationSettings PhysicsWorld::makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, JPH::ObjectLayer layer, f32 scale) {
+    if (scale != 1.0f) {
+        return JPH::BodyCreationSettings(
+            JPH::RefConst<JPH::ScaledShapeSettings>(new JPH::ScaledShapeSettings(mShapeRepo.getShape(shapeId), JPH::Vec3(scale, scale, scale))),
+            JPH::RVec3(position.x, position.y, position.z),
+            ROTATE_ZUP, 
+            motionType, 
+            layer
+        );
+    }
+    else {
+        return JPH::BodyCreationSettings(mShapeRepo.getShape(shapeId), JPH::RVec3(position.x, position.y, position.z), ROTATE_ZUP, motionType, layer);
+    }
 }
 
 PhysBodyID PhysicsWorld::createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId) {
@@ -949,14 +957,14 @@ PhysBodyID PhysicsWorld::createTileBody(TileContainerID containerId, TileIndex t
     const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(modelId);
     assert(modelDef.mCollisionShapeID != INVALID_COLLISION_SHAPE_ID);
 
-    // Offset shape to proper root
-    position += orientation * modelDef.mColliderData.mBaseOffset;
+    // Offset shape to proper root. Include scale here IF we have scale
+    position += orientation * modelDef.mColliderData.mBaseOffset /* *scale*/;
     // Combine shape orientation with input orientation
     orientation *= modelDef.mColliderData.mBaseOrientation;
 
     JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(
         position, modelDef.mCollisionShapeID, JPH::EMotionType::Static,
-        makeObjectLayerMasked(PhysicsObjectLayer::Static, PhysicsObjectLayer::DynamicSolid | PhysicsObjectLayer::DynamicItem)
+        makeObjectLayerMasked(PhysicsObjectLayer::Static, PhysicsObjectLayer::DynamicSolid | PhysicsObjectLayer::DynamicItem), 1.0f /*scale*/
     );
     createSettings.mUserData = PhysicsBodyUserData(containerId, tileIndex);
     createSettings.mRotation = JPH::Quat(orientation.x, orientation.y, orientation.z, orientation.w);
@@ -1041,13 +1049,6 @@ void PhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticModel
 
 void PhysicsWorld::updateItemEntitiesChangedThisFrame() {
     PROFILE_FUNCTION();
-
-    if (mItemEntitiesMovedThisFrame.size()) {
-        LOG_CRITICAL("MOVE COUNT {}", mItemEntitiesMovedThisFrame.size());
-    }
-    if (mItemEntitiesRestedThisFrame.size()) {
-        LOG_CRITICAL("REST COUNT {}", mItemEntitiesRestedThisFrame.size());
-    }
 
     for (entt::entity entity : mItemEntitiesMovedThisFrame) {
         PhysicsWorldEvent event{ entity };
