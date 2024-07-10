@@ -1,6 +1,5 @@
 #pragma once
 
-#include "physics/CollisionShapes.h"
 #include "tile/TileHarvestable.h"
 
 // TODO: Do we need rendering here? (MaterialDesc)
@@ -102,9 +101,6 @@ public:
     f32v3 dims = f32v3(1.0f);
     // TileCollider collider;
      //ui8v2 tileDims = ui8v2(1); // 4x4 is max size
-    CollisionShapes collisionShapeType = CollisionShapes::NONE;
-    f32v3 collisionHalfExtents = f32v3(0.5f, 0.5f, 1.0f);
-    CollisionShapeID collisionShapeID = INVALID_COLLISION_SHAPE_ID;
     TileHarvestable harvestable = TileHarvestable::None;
     // TODO: Could be a giant array of material slots and these defs only store pointers and lengths.
     std::vector<StrToken> materialNames;
@@ -137,8 +133,6 @@ public:
 };
 SERIALIZABLE_IMGUI_CONTROLLED(TileDef,
     make_field(o.dims, "dims"),
-    make_field(o.collisionShapeType, "col_shape"),
-    make_field(o.collisionHalfExtents, "col_half_dims"),
     make_field(o.harvestable, "harvestable"),
     make_field(o.materialNames, "materials"),
     make_field(o.textureMethod, "texture_method"),

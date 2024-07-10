@@ -6,18 +6,33 @@
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/StaticCompoundShape.h>
+#include <Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
 
 #include "physics/PhysicsShapeUserData.h"
 
+CollisionShapeRepository* sCollisionShapeRepository = nullptr;
 
-CollisionShapeRepository::CollisionShapeRepository() = default;
-CollisionShapeRepository::~CollisionShapeRepository() = default;
+CollisionShapeRepository::CollisionShapeRepository() {
+    assert(sCollisionShapeRepository == nullptr);
+    sCollisionShapeRepository = this;
+}
+
+CollisionShapeRepository::~CollisionShapeRepository() {
+    assert(sCollisionShapeRepository == this);
+    sCollisionShapeRepository = nullptr;
+}
+
+CollisionShapeRepository& CollisionShapeRepository::get() {
+    assert(sCollisionShapeRepository);
+    return *sCollisionShapeRepository;
+}
 
 CollisionShapeID CollisionShapeRepository::getOrAddCollisionShape(CollisionShapes shapeType, const f32v3& halfExtents) {
     assert(IS_GAME_THREAD() || IS_RENDER_THREAD()); // Render thread does this on startup
     switch (shapeType) {
         case CollisionShapes::Capsule:
-            return getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.z);
+            return getOrAddCapsuleCollisionShape(halfExtents.x, halfExtents.y);
         case CollisionShapes::Cylinder:
             return getOrAddCylinderCollisionShape(halfExtents);
         case CollisionShapes::Box:
@@ -120,5 +135,24 @@ CollisionShapeID CollisionShapeRepository::getOrAddSphereCollisionShape(f32 radi
     res.Get()->SetUserData(PhysicsShapeUserData(id, CollisionShapes::Sphere));
     mAllJoltShapes.emplace_back(res.Get());
     mSphereShapes[radius] = id;
+    return id;
+}
+
+CollisionShapeID CollisionShapeRepository::addCompoundCollisionShape(std::span<const ModelColliderShape> shapes) {
+    assert(IS_GAME_THREAD() || IS_RENDER_THREAD()); // Render thread does this on startup
+
+    // Insert new
+    const CollisionShapeID id = mAllJoltShapes.size();
+    mAllJoltShapes.emplace_back();
+    JPH::StaticCompoundShapeSettings settings;
+    for (const ModelColliderShape& shape : shapes) {
+        settings.AddShape(
+            JPH::Vec3(shape.mOffset.x, shape.mOffset.y, shape.mOffset.z),
+            JPH::Quat::sEulerAngles(JPH::Vec3(shape.mEulerAngles.x, shape.mEulerAngles.y, shape.mEulerAngles.z)),
+            mAllJoltShapes[getOrAddCollisionShape(shape.mShape, shape.mHalfDims)],
+            PhysicsShapeUserData(id, shape.mShape)
+        );
+    }
+    mAllJoltShapes[id] = settings.Create().Get();
     return id;
 }

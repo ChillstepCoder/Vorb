@@ -16,3 +16,9 @@ variants:
   - name: new_variant
     submesh_mats:
       - [log_set_1,'','','']
+collider:
+  shapes:
+    - angles: [0,0,1.5707964]
+      offset: [0,0,0]
+      shape: capsule
+      dims: [0.164,0.721,0.5]

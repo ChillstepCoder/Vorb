@@ -1,0 +1,2 @@
+vert: physics_debug.vert
+frag: physics_debug.frag

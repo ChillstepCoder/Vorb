@@ -4,7 +4,7 @@
 #include <imgui_internal.h>
 
 namespace ImguiUtil {
-    template <typename T>
+    template <typename T, bool ALLOW_DUPLICATE = false>
     bool ObjectVector(const char* label, std::vector<T>& objects, std::function<bool(T& o, ui32 i)> controlFunc, bool resizable = true, T defaultValue = T()) {
         if (!ImGui::TreeNode(label)) {
             return false;
@@ -26,6 +26,13 @@ namespace ImguiUtil {
             if (resizable) {
                 if (ImGui::Button("Delete")) {
                     isDeleted = true;
+                }
+                if constexpr (ALLOW_DUPLICATE) {
+                    ImGui::SameLine();
+                    if (ImGui::Button("Duplicate")) {
+                        objects.emplace_back(objects[i]);
+                        changed = true;
+                    }
                 }
                 if (i > 0) {
                     ImGui::SameLine();

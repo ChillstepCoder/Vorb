@@ -18,10 +18,11 @@ enum class PhysicsComponentFlag : ui8 {
 class PhysicsComponent {
 public:
 
+	// Only makes sense for character capsules...
     f32v3 getBottomPosition() const;
     f32v3 getLinearVelocity() const;
     f32 getLinearVelocityZ() const;
-	glm::quat getOrientation() const;
+	glm::quat getMainBodyOrientation() const;
 
     void setLinearVelocity(f32v3 velocity);
     void setLinearVelocityZ(f32 zVelocity);
@@ -34,11 +35,19 @@ public:
 	// Teleport the bottom of the object to the point (useful for characters)
 	void teleportBottomToPoint(f32v3 worldPos);
 
-    PhysBodyID mBodyID = INVALID_PHYS_BODY_ID;
+    PhysBodyID mBodyID = INVALID_PHYS_BODY_ID; // Root body
     f32 mHalfHeight = 0.0f;
     BitFlags<PhysicsComponentFlag> mFlags;
 	// TODO: Delete body on component destroy
+};
 
+// Used for transforming a body position back to an entity position
+// TODO: Can we eliminate this with RotatedTranslatedShape? https://jrouwe.github.io/JoltPhysics/class_rotated_translated_shape.html
+//   Its *possible* that RotatedTranslatedShape will be MORE overhead since we are increasing burden on the physics sim. Less complex though,
+//   and we no longer need to store this
+struct ColliderInverseTransformComponent {
+    glm::quat mInverseBaseOrientation;
+	f32v3 mOffsetToShape;
 };
 
 class StaticPhysicsComponent {

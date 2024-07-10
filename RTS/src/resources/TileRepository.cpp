@@ -7,10 +7,9 @@
 #include "tile/Stairs.h"
 #include "item/ItemRepository.h"
 #include "resources/ModelRepository.h"
-#include "physics/CollisionShapeRepository.h"
 
 
-TileRepository::TileRepository(vio::IOManager& ioManager, CollisionShapeRepository& collisionCache) : mCollisionShapeCache(collisionCache), IAssetRepository<TileDef>(ioManager) {
+TileRepository::TileRepository(vio::IOManager& ioManager) : IAssetRepository<TileDef>(ioManager) {
 }
 TileRepository::~TileRepository() = default;
 
@@ -23,19 +22,14 @@ void TileRepository::onRegisteredAsset(AssetID id) {
     // Copy all data
     assert(def.layer < TILE_LAYER_COUNT);
   
-    if (def.collisionShapeType != CollisionShapes::NONE) {
-        assert(def.collisionHalfExtents.x == def.collisionHalfExtents.y); // TODO: Support oblong?
-        def.collisionShapeID = mCollisionShapeCache.getOrAddCollisionShape(def.collisionShapeType, def.collisionHalfExtents);
-    }
-
     // Nav blocking
     if (def.pathWeight == 0) {
         def.navMask = 0;
 
         // If its extends into neighbor tiles larger than player collider radius (player collider is 0.24 radius)
         // then we are blocking
-        const f32 overlapIntoNeighborX = def.collisionHalfExtents.x - 0.5f;
-        const f32 overlapIntoNeighborDiagonal = def.collisionHalfExtents.x - 0.7f;
+        const f32 overlapIntoNeighborX =/* def.collisionHalfExtents.x*/1.0f - 0.5f;
+        const f32 overlapIntoNeighborDiagonal = /*def.collisionHalfExtents.x*/1.0f - 0.7f;
         constexpr f32 AGENT_RADIUS = 0.241f; // TODO: Enforce match to data
         // Distance where if we have two of these objects that have an empty block
         // in between, an agent can no longer path

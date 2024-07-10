@@ -50,6 +50,7 @@ private:
     void updateModelFlyweightData(AssetID id);
     void updateModelVariantData(AssetID id);
     void updateMaterialDependencies(AssetID id);
+    void updateModelCollision(AssetID id);
 
     std::mutex mRawModelsMutex;
     std::map<StrToken, std::unique_ptr<FBXRawMesh>> mRawModels;

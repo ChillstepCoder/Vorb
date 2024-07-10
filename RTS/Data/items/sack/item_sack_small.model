@@ -2,6 +2,23 @@ model: item_sack_small.fbx
 rig: ''
 machine: ''
 scale: 0.3
+lod_dst_0: 45
+lod_dst_1: 90
+lod_dst_2: 180
+lod_dst_3: 360
+bound_sphere: 10
 shadow_detail: highest
 force_normals_up: 0
-
+dmg_spline:
+  - [0,0,0]
+  - [0,0,8]
+variants:
+  - name: new_variant
+    submesh_mats:
+      - [item_sack_01,'','','']
+collider:
+  shapes:
+    - angles: [1.5707964,0,0]
+      offset: [0,0,0]
+      shape: sphere
+      dims: [0.488,0.5,0.5]

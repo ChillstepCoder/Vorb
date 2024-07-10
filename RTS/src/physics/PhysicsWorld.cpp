@@ -39,6 +39,8 @@
 
 #include "debugging/DebugRenderer.h"
 
+#include "resources/ModelRepository.h"
+
 static const JPH::Quat ROTATE_ZUP = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f);
 
 
@@ -264,22 +266,22 @@ public:
 
 #ifdef JPH_DEBUG_RENDERER
     void debugDraw(const Camera3D& camera) {
-        if (sDebugRenderer->mRenderSettings.enableDebugDraw) {
+        if (sPhysicsDebugRenderer->mRenderSettings.enableDebugDraw) {
 
             // TODO: Move into the debug renderer
-            sDebugRenderer->PrepareFrame(camera);
+            sPhysicsDebugRenderer->PrepareFrame(camera);
             // Only update static when static changes
             if (mDirtyStaticDebugRender) {
                 StaticBodyDrawFilter staticFilter;
-                sDebugRenderer->PreDraw(true);
-                physicsSystem.DrawBodies(sDebugRenderer->mRenderSettings.bodyDrawSettings, sDebugRenderer.get(), &staticFilter);
+                sPhysicsDebugRenderer->PreDraw(true);
+                physicsSystem.DrawBodies(sPhysicsDebugRenderer->mRenderSettings.bodyDrawSettings, sPhysicsDebugRenderer.get(), &staticFilter);
                 mDirtyStaticDebugRender = false;
             }
             // Always update dynamic
             DynamicBodyDrawFilter dynamicFilter;
-            sDebugRenderer->PreDraw(false);
-            physicsSystem.DrawBodies(sDebugRenderer->mRenderSettings.bodyDrawSettings, sDebugRenderer.get(), &dynamicFilter);
-            sDebugRenderer->EndFrame();
+            sPhysicsDebugRenderer->PreDraw(false);
+            physicsSystem.DrawBodies(sPhysicsDebugRenderer->mRenderSettings.bodyDrawSettings, sPhysicsDebugRenderer.get(), &dynamicFilter);
+            sPhysicsDebugRenderer->EndFrame();
         }
     }
 
@@ -375,7 +377,6 @@ private:
     i32 mNewBodiesWithoutBroadphaseOptimize = 0;
     float mTimeSinceLastOptimization = 0.0f;
 };
-
 
 PhysicsWorld::PhysicsWorld(World& world, CollisionShapeRepository& shapeRepo) : mWorld(world), mShapeRepo(shapeRepo) {
     assert(JPH::Factory::sInstance);
@@ -550,7 +551,7 @@ PhysBodyID PhysicsWorld::createDynamicItemCapsule(entt::entity ownerEntity, f32v
         )
     );
     createSettings.mUserData = PhysicsBodyUserData(ownerEntity, PhysicsBodyUserDataType::ItemEntity);
-    createSettings.mRotation = ROTATE_ZUP * JPH::Quat(orientation.x, orientation.y, orientation.z, orientation.w);
+    createSettings.mRotation = JPH::Quat(orientation.x, orientation.y, orientation.z, orientation.w);
     createSettings.mLinearVelocity = JPH::Vec3(linearVelocity.x, linearVelocity.y, linearVelocity.z);
     createSettings.mAngularVelocity = JPH::Vec3(angularVelocity.x, angularVelocity.y, angularVelocity.z);
     createSettings.mFriction = 1.0f;
@@ -731,9 +732,9 @@ PhysHitResult PhysicsWorld::raycastFirst(
         rv.mPenetrationDepth = 0.0f;
 
 #ifdef JPH_DEBUG_RENDERER
-        if (sDebugRenderer && sDebugRenderer->mRenderSettings.showRaycasts) {
-            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(rayStart, rv.mPosition, color::Green, sDebugRenderer->mRenderSettings.queryRenderTime);
-            AM::DebugRenderer::drawWireQuadThreadSafe(rv.mPosition - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.2f), color::Green, sDebugRenderer->mRenderSettings.queryRenderTime);
+        if (sPhysicsDebugRenderer && sPhysicsDebugRenderer->mRenderSettings.showRaycasts) {
+            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(rayStart, rv.mPosition, color::Green, sPhysicsDebugRenderer->mRenderSettings.queryRenderTime);
+            AM::DebugRenderer::drawWireQuadThreadSafe(rv.mPosition - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.2f), color::Green, sPhysicsDebugRenderer->mRenderSettings.queryRenderTime);
         }
 #endif
 
@@ -753,16 +754,16 @@ PhysHitResult PhysicsWorld::raycastFirst(
         rv.mTime = result.hitTime;
 
 #ifdef JPH_DEBUG_RENDERER
-        if (sDebugRenderer && sDebugRenderer->mRenderSettings.showRaycasts) {
-            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(rayStart, rv.mPosition, color::Green, sDebugRenderer->mRenderSettings.queryRenderTime);
-            AM::DebugRenderer::drawWireQuadThreadSafe(rv.mPosition - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.2f), color::Green, sDebugRenderer->mRenderSettings.queryRenderTime);
+        if (sPhysicsDebugRenderer && sPhysicsDebugRenderer->mRenderSettings.showRaycasts) {
+            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(rayStart, rv.mPosition, color::Green, sPhysicsDebugRenderer->mRenderSettings.queryRenderTime);
+            AM::DebugRenderer::drawWireQuadThreadSafe(rv.mPosition - f32v3(0.1f, 0.1f, 0.0f), f32v2(0.2f), color::Green, sPhysicsDebugRenderer->mRenderSettings.queryRenderTime);
         }
 #endif
     }
 #ifdef JPH_DEBUG_RENDERER
     else {
-        if (sDebugRenderer && sDebugRenderer->mRenderSettings.showRaycasts) {
-            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(rayStart, rayEnd, color::Red, sDebugRenderer->mRenderSettings.queryRenderTime);
+        if (sPhysicsDebugRenderer && sPhysicsDebugRenderer->mRenderSettings.showRaycasts) {
+            AM::DebugRenderer::drawLineBetweenPointsThreadSafe(rayStart, rayEnd, color::Red, sPhysicsDebugRenderer->mRenderSettings.queryRenderTime);
         }
     }
 #endif
@@ -868,24 +869,24 @@ void PhysicsWorld::updateAndRenderImguiDebugControls() {
 #ifdef JPH_DEBUG_RENDERER
     bool changed = false;
 
-    changed |= ImGui::Checkbox("Debug Draw", &sDebugRenderer->mRenderSettings.enableDebugDraw);
+    changed |= ImGui::Checkbox("Debug Draw", &sPhysicsDebugRenderer->mRenderSettings.enableDebugDraw);
 
-    if (sDebugRenderer->mRenderSettings.enableDebugDraw) {
-        changed |= ImGui::Checkbox("  Shapes", &sDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawShape);
-        changed |= ImguiUtil::EnumCombo("  Shape Color", sDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawShapeColor);
-        changed |= ImGui::Checkbox("  Wireframe", &sDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawShapeWireframe);
-        changed |= ImGui::Checkbox("  Bounding Boxes", &sDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawBoundingBox);
-        changed |= ImGui::Checkbox("  Center Of Mass", &sDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawCenterOfMassTransform);
-        changed |= ImGui::Checkbox("  Velocity", &sDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawVelocity);
-        changed |= ImGui::SliderFloat("  Render Alpha", &sDebugRenderer->mRenderSettings.alpha, 0.0f, 1.0f);
+    if (sPhysicsDebugRenderer->mRenderSettings.enableDebugDraw) {
+        changed |= ImGui::Checkbox("  Shapes", &sPhysicsDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawShape);
+        changed |= ImguiUtil::EnumCombo("  Shape Color", sPhysicsDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawShapeColor);
+        changed |= ImGui::Checkbox("  Wireframe", &sPhysicsDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawShapeWireframe);
+        changed |= ImGui::Checkbox("  Bounding Boxes", &sPhysicsDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawBoundingBox);
+        changed |= ImGui::Checkbox("  Center Of Mass", &sPhysicsDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawCenterOfMassTransform);
+        changed |= ImGui::Checkbox("  Velocity", &sPhysicsDebugRenderer->mRenderSettings.bodyDrawSettings.mDrawVelocity);
+        changed |= ImGui::SliderFloat("  Render Alpha", &sPhysicsDebugRenderer->mRenderSettings.alpha, 0.0f, 1.0f);
     }
 
     ImGui::SeparatorText("Queries");
     // These dont dirty the render
-    ImGui::Checkbox("Show Raycasts", &sDebugRenderer->mRenderSettings.showRaycasts);
-    ImGui::Checkbox("Show Shape Queries", &sDebugRenderer->mRenderSettings.showShapeQueries);
-    if (sDebugRenderer->mRenderSettings.showRaycasts || sDebugRenderer->mRenderSettings.showShapeQueries) {
-        ImGui::SliderInt("Query Draw Time", &sDebugRenderer->mRenderSettings.queryRenderTime, 1, 512);
+    ImGui::Checkbox("Show Raycasts", &sPhysicsDebugRenderer->mRenderSettings.showRaycasts);
+    ImGui::Checkbox("Show Shape Queries", &sPhysicsDebugRenderer->mRenderSettings.showShapeQueries);
+    if (sPhysicsDebugRenderer->mRenderSettings.showRaycasts || sPhysicsDebugRenderer->mRenderSettings.showShapeQueries) {
+        ImGui::SliderInt("Query Draw Time", &sPhysicsDebugRenderer->mRenderSettings.queryRenderTime, 1, 512);
     }
 
 
@@ -913,8 +914,8 @@ void PhysicsWorld::updateAndRenderImguiDebugControls() {
 void PhysicsWorld::debugRender(const Camera3D& camera) const {
 #ifdef JPH_DEBUG_RENDERER
     PROFILE_FUNCTION();
-    if (!sDebugRenderer) {
-        sDebugRenderer = std::make_unique<PhysicsDebugRenderer>();
+    if (!sPhysicsDebugRenderer) {
+        sPhysicsDebugRenderer = std::make_unique<PhysicsDebugRenderer>();
     }
     mContext->debugDraw(camera);
 #endif //JPH_DEBUG_RENDERER
@@ -942,16 +943,25 @@ PhysBodyID PhysicsWorld::createEntityBody(const JPH::BodyCreationSettings& creat
     return body.GetID().GetIndexAndSequenceNumber();
 }
 
-PhysBodyID PhysicsWorld::createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId) {
+PhysBodyID PhysicsWorld::createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, f32q orientation, ModelID modelId) {
     ASSERT_GAME_THREAD();
 
+    const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(modelId);
+    assert(modelDef.mCollisionShapeID != INVALID_COLLISION_SHAPE_ID);
+
+    // Offset shape to proper root
+    position += orientation * modelDef.mColliderData.mBaseOffset;
+    // Combine shape orientation with input orientation
+    orientation *= modelDef.mColliderData.mBaseOrientation;
+
     JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(
-        position, shapeId, JPH::EMotionType::Static,
+        position, modelDef.mCollisionShapeID, JPH::EMotionType::Static,
         makeObjectLayerMasked(PhysicsObjectLayer::Static, PhysicsObjectLayer::DynamicSolid | PhysicsObjectLayer::DynamicItem)
     );
     createSettings.mUserData = PhysicsBodyUserData(containerId, tileIndex);
+    createSettings.mRotation = JPH::Quat(orientation.x, orientation.y, orientation.z, orientation.w);
 
-    JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, shapeId);
+    JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, modelDef.mCollisionShapeID);
     return body.GetID().GetIndexAndSequenceNumber();
 }
 
@@ -989,17 +999,17 @@ JPH::MeshShapeSettings PhysicsWorld::createStaticMeshShapeSettings(std::span<f32
     return JPH::MeshShapeSettings(std::move(jpVerts), std::move(jpInds));
 }
 
-void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
+void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelColliderGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
     PROFILE_FUNCTION();
     assert(physicsData.mTileKeyToPhysBodyID.empty());
 
     for (auto& it : gatherer.mRigidBodiesToAdd) {
         const TileKey key = TileKey{ it.ownerTilePosition, it.tileId, it.layer };
-        physicsData.mTileKeyToPhysBodyID.emplace(key, createTileBody(gatherer.mContainerId, it.ownerTilePosition, it.position, it.shapeId));
+        physicsData.mTileKeyToPhysBodyID.emplace(key, createTileBody(gatherer.mContainerId, it.ownerTilePosition, it.position, it.orientation, it.modelId));
     }
 }
 
-void PhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
+void PhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelColliderGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
     PROFILE_FUNCTION();
 
     // TODO: Scratch allocator?
@@ -1011,7 +1021,7 @@ void PhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigid
         auto&& pit = physicsData.mTileKeyToPhysBodyID.find(key);
         // Only add if it doesn't already exist
         if (pit == physicsData.mTileKeyToPhysBodyID.end()) {
-            physicsData.mTileKeyToPhysBodyID.emplace(key, createTileBody(gatherer.mContainerId, it.ownerTilePosition, it.position, it.shapeId));
+            physicsData.mTileKeyToPhysBodyID.emplace(key, createTileBody(gatherer.mContainerId, it.ownerTilePosition, it.position, it.orientation, it.modelId));
         }
         addedKeys.insert(key);
     }

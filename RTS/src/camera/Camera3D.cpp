@@ -93,7 +93,7 @@ void Camera3D::lookAt(const f32v3& pos) {
     mDirtyView = true;
 }
 
-void Camera3D::copyFromSimpleCamera(SimpleCamera& simpleCamera) {
+void Camera3D::copyFromSimpleCamera(const SimpleCamera& simpleCamera) {
     mAspectRatio = simpleCamera.getAspectRatio();
     mPosition = simpleCamera.getPosition();
     mFieldOfView = simpleCamera.getFov();

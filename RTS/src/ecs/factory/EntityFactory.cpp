@@ -188,12 +188,39 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
 
+    ModelID modelId = getItemModelID(itemStack);
+
+    // TODO: allow no collider and use old projectile component?
+    const ModelCollider& colliderData = ModelRepository::get().getLoadedOrUnloadedAsset(modelId).mColliderData;
+    if (colliderData.mSubShapes.size() != 1) {
+        panic("Tried to spawn item collider with {} subshapes - {}", colliderData.mSubShapes.size(), ModelRepository::get().getAssetName(modelId).toString());
+    }
+    const ModelColliderShape& baseShapeData = colliderData.mSubShapes[0];
+
+    // Note that since this is completely random we can ignore the baseShapeData.mOrientation
     glm::quat startOrientation = MathUtil::randomQuaternion();
     registry.emplace<PositionComponent>(newEntity, position, world.getChunkIDAtWorldPos(position));
     registry.emplace<SimpleItemComponent>(newEntity, itemStack);
     registry.emplace<OrientationComponent>(newEntity, startOrientation);
+    if (colliderData.mHasBaseOrientation || colliderData.mHasBaseOffset) {
+        registry.emplace<ColliderInverseTransformComponent>(newEntity, colliderData.mInverseBaseOrientation, colliderData.mBaseOffset);
+    }
     PhysicsComponent& physCmp = registry.emplace<PhysicsComponent>(newEntity);
-    physCmp.mBodyID = world.getPhysicsWorld().createDynamicItemCapsule(newEntity, position, f32v2(0.158f, 0.65f), startOrientation, velocity, MathUtil::randomAngularVelocity(Random::getCachedRandomf() * 4.0f));
+
+    const f32v3 angularVelocity = MathUtil::randomAngularVelocity(Random::getCachedRandomf() * 4.0f);
+
+    switch (baseShapeData.mShape) {
+        case CollisionShapes::Capsule:
+            physCmp.mBodyID = world.getPhysicsWorld().createDynamicItemCapsule(newEntity, position + startOrientation * baseShapeData.mOffset, baseShapeData.mHalfDims, startOrientation, velocity, angularVelocity);
+            break;
+        case CollisionShapes::Cylinder:
+        case CollisionShapes::Box:
+        case CollisionShapes::Sphere:
+        default:
+            panic("Unhandled collision shape {} in createItemProjectile", (int)baseShapeData.mShape);
+    }
+    static_assert(e_count(CollisionShapes) == 7);
+    
     // TODO: Use this version for sack items
     //registry.emplace<AngularVelocityComponent>(newEntity, MathUtil::randomAngularVelocity(Random::getCachedRandomf() * 4.0f));
     //BitFlags<ProjectileFlags> flags(ProjectileFlags::RemoveOnLand, ProjectileFlags::OrientToTerrainOnLand);
@@ -215,7 +242,6 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     //    }
     //});
 
-    ModelID modelId = getItemModelID(itemStack);
 
     registry.emplace<DynamicModelComponent>(newEntity, modelId);
     world.dispatchOnEntityCreated(WorldEntityEvent(world, newEntity));

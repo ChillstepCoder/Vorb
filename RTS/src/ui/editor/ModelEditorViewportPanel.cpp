@@ -83,7 +83,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
         }
 
         if (ImGui::CollapsingHeader("Collision")) {
-            changed |= CollisionEditor::updateAndRenderImguiControlsForShapeVector(mAssetData->mColliderData.mShapes);
+            changed |= CollisionEditor::updateAndRenderImguiControlsForShapeVector(mAssetData->mColliderData.mSubShapes);
         }
 
         ImGui::Separator();
@@ -180,6 +180,6 @@ void ModelEditorViewportPanel::renderMesh() {
             mAABBMesh->drawLines(0);
         }
 
-        CollisionEditor::renderShapesInEditor(mAssetData->mColliderData.mShapes);
+        CollisionEditor::renderShapesInEditor(mAssetData->mColliderData.mSubShapes, *mCamera);
     }
 }

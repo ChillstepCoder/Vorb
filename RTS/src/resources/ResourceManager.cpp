@@ -67,7 +67,7 @@ ResourceManager::ResourceManager() {
     
     mAssetRepositories.resize(e_count(AssetType));
     mExtensionToAssetRepository.reserve(e_count(AssetType));
-    REGISTER_ASSET_REPO(TileRepository, AssetType::Tile, *mCollisionShapeRepository);
+    REGISTER_ASSET_REPO(TileRepository, AssetType::Tile);
     REGISTER_ASSET_REPO(ParticleSystemRepository, AssetType::ParticleSystem);
     REGISTER_ASSET_REPO(EffectRepository, AssetType::Effect);
     REGISTER_ASSET_REPO(EntityRepository, AssetType::Entity);

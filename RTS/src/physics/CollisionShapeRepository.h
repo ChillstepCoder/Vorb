@@ -4,12 +4,11 @@
 #include <Jolt/Physics/Collision/Shape/Shape.h>
 
 #include "physics/CollisionShapes.h"
+#include "physics/ModelColliderShape.h"
 
 namespace JPH {
     class Shape;
 }
-
-class btCollisionShape;
 
 class CollisionShapeRepository {
 public:
@@ -18,11 +17,14 @@ public:
 
     VORB_NON_COPYABLE(CollisionShapeRepository);
 
+    static CollisionShapeRepository& get();
+
     CollisionShapeID getOrAddCollisionShape(CollisionShapes shapeType, const f32v3& halfExtents);
     CollisionShapeID getOrAddCapsuleCollisionShape(f32 radius, f32 halfHeight);
     CollisionShapeID getOrAddCylinderCollisionShape(const f32v3& halfExtents);
     CollisionShapeID getOrAddBoxCollisionShape(const f32v3& halfExtents);
     CollisionShapeID getOrAddSphereCollisionShape(f32 radius);
+    CollisionShapeID addCompoundCollisionShape(std::span<const ModelColliderShape> shapes);
     JPH::Shape* getShape(CollisionShapeID id) const { return mAllJoltShapes[id]; }
 
 private:
@@ -35,3 +37,4 @@ private:
     static_assert(e_cast(CollisionShapes::COUNT) == 7, "Track new shapes");
 };
 
+extern CollisionShapeRepository* sCollisionShapeRepository;

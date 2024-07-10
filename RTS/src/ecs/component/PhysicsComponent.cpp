@@ -43,9 +43,9 @@ f32 PhysicsComponent::getLinearVelocityZ() const {
     return bodyInterface.GetLinearVelocity(JPH::BodyID(mBodyID)).GetZ();
 }
 
-glm::quat PhysicsComponent::getOrientation() const {
+glm::quat PhysicsComponent::getMainBodyOrientation() const {
     const JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterfaceNonLocking(*sGamePhysicsWorld);
-    const JPH::Quat q = bodyInterface.GetRotation(JPH::BodyID(mBodyID)) * ROTATE_ZUP;
+    const JPH::Quat q = bodyInterface.GetRotation(JPH::BodyID(mBodyID));
     glm::quat gameOrientation = glm::quat(
         q.GetW(),
         q.GetX(),
@@ -113,7 +113,7 @@ void PhysicsSystem::update(World& world, entt::registry& registry, f32 elapsedSe
     // Update all uncontrolled object positions
     // Exclude character control because it has its own update.
     // Exclude TileItemComponent because they are deactivated physics objects
-    auto view = registry.view<PhysicsComponent, PositionComponent>(entt::exclude<CharacterControlComponent, TileItemComponent>);
+    auto view = registry.view<PhysicsComponent, PositionComponent>(entt::exclude<CharacterControlComponent>);
     for (auto entity : view) {
         PhysicsComponent& cmp = view.get<PhysicsComponent>(entity);
         PositionComponent& posCmp = view.get<PositionComponent>(entity);
@@ -136,6 +136,22 @@ void PhysicsSystem::update(World& world, entt::registry& registry, f32 elapsedSe
         posCmp.mPosition = pos;
         const ChunkID newChunkID = world.getChunkIDAtWorldPos(pos);
 
+        // Optional orientation tracking
+        if (OrientationComponent* oCmp = registry.try_get<OrientationComponent>(entity)) {
+            if (ColliderInverseTransformComponent* invCmp = registry.try_get<ColliderInverseTransformComponent>(entity)) {
+                // If we have inverse orientation it means we are rotated relative to our model root
+                oCmp->mOrientation = cmp.getMainBodyOrientation() * invCmp->mInverseBaseOrientation;
+                posCmp.mPosition -= oCmp->mOrientation * invCmp->mOffsetToShape;
+            }
+            else {
+                // Update orientation
+                oCmp->mOrientation = cmp.getMainBodyOrientation();
+            }
+        }
+        else if (ColliderInverseTransformComponent* invCmp = registry.try_get<ColliderInverseTransformComponent>(entity)) {
+            posCmp.mPosition -= (cmp.getMainBodyOrientation() * invCmp->mInverseBaseOrientation) * invCmp->mOffsetToShape;
+        }
+
         if (newChunkID != posCmp.chunkId) [[unlikely]] {
             const ui32 oldChunkId = posCmp.chunkId;
             posCmp.chunkId = newChunkID;
@@ -144,10 +160,6 @@ void PhysicsSystem::update(World& world, entt::registry& registry, f32 elapsedSe
             }
         }
 
-        // Optional orientation tracking
-        if (OrientationComponent* oCmp = registry.try_get<OrientationComponent>(entity)) {
-            oCmp->mOrientation = cmp.getOrientation();
-        }
     };
 
     updateAngularVelocity(world, registry, elapsedSec);

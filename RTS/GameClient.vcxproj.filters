@@ -1829,7 +1829,7 @@
     <ClInclude Include="src\util\TypeHash.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\physics\TrackedStaticRigidBodyGatherer.h">
+    <ClInclude Include="src\physics\TrackedStaticModelColliderGatherer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\tile\TileContainerEvents.h">
@@ -2832,6 +2832,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\editor\CollisionEditor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\physics\ModelColliderShape.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

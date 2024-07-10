@@ -13,6 +13,7 @@
 
 #include "physics/StaticPhysicsMeshBuilder.h"
 #include "resources/TileRepository.h"
+#include "resources/ModelRepository.h"
 
 #include "rendering/mesh/mesher/builder/ProceduralMeshHelpers.h"
 #include "world/IHeightmapGrid.h"
@@ -282,17 +283,19 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                                 damageData = std::make_unique<TileDamageData>(it->second);
                             }
                         }
+                        f32 rotation = getTileModelRotationAtPosition(worldPos);
                         if (heightData) {
                             //sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
                             builders.modelGatherer.addInstance(
-                                tileData.modelId, index, worldPos, f32v3(0.0f, 0.0f, 1.0f), Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI, variantIndex, std::move(damageData)
+                                tileData.modelId, index, worldPos, f32v3(0.0f, 0.0f, 1.0f), rotation, variantIndex, std::move(damageData)
                             );
                         }
                         else {
-                            builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, getTileModelRotationAtPosition(worldPos), variantIndex, std::move(damageData));
+                            builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, rotation, variantIndex, std::move(damageData));
                         }
-                        if (tileData.collisionShapeID != INVALID_COLLISION_SHAPE_ID) {
-                            physics.addTrackedStaticRigidBody(index, layerTile, layerIndex, worldPos, tileData.collisionShapeID);
+                        const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
+                        if (modelDef.mCollisionShapeID != INVALID_COLLISION_SHAPE_ID) {
+                            physics.addTrackedTileModelCollider(index, layerTile, layerIndex, worldPos, f32q(f32v3(0.0f, 0.0f, rotation)), tileData.modelId);
                         }
                     }
                 }

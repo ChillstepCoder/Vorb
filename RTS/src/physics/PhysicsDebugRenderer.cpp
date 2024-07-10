@@ -6,6 +6,7 @@
 
 #include "debugging/DebugRenderer.h"
 
+#include "rendering/MaterialRenderer.h"
 #include "rendering/MaterialShaderRepository.h"
 #include "camera/Camera3D.h"
 
@@ -13,66 +14,7 @@
 
 constexpr GLuint DEBUG_MODEL_COLORS_BINDING_POINT = 3;
 
-namespace {
-    static const cString DEBUG_VERT_SRC = R"(
-// Uniforms
-uniform mat4 unVP;
-uniform vec3 unCameraPos;
-
-// Input
-layout(location = 0) in vec4 vPosition;
-layout(location = 1) in vec3 vNormal;
-layout(location = 3) in vec4 vColor;
-layout(location = 4) in mat4 vModelMatrix;
-layout(location = 8) in vec4 vModelColor;
-
-// Output to fragment shader
-out vec4 fColor;
-out vec3 fNormal;
-out vec3 fWorldPos;
-
-void main() {
-    vec4 worldPos = vModelMatrix * vPosition;
-    fWorldPos = worldPos.xyz;
-    fNormal = mat3(vModelMatrix) * vNormal;  // Transform normal to world space
-    fColor = vColor * vModelColor;
-    
-    worldPos.xyz -= unCameraPos;
-    gl_Position = unVP * worldPos;
-}
-)";
-
-    static const cString DEBUG_FRAG_SRC = R"(
-// Uniforms
-uniform vec3 unLightDir = vec3(-1.0, -1.0, -1.0);
-
-// Input from vertex shader
-in vec4 fColor;
-in vec3 fNormal;
-in vec3 fWorldPos;
-uniform float unAlpha = 1.0;
-
-// Output
-out vec4 pColor;
-
-void main() {
-    vec3 normal = normalize(fNormal);
-    vec3 lightDir = normalize(-unLightDir);
-    
-    // Ambient light
-    float ambientStrength = 0.2;
-    vec3 ambient = ambientStrength * fColor.rgb;
-    
-    // Diffuse light
-    float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = diff * fColor.rgb;
-    
-    // Combine lighting
-    vec3 result = ambient + diffuse;
-    pColor = vec4(result, fColor.a * unAlpha);
-}
-)";
-}
+std::unique_ptr<PhysicsDebugRenderer> sPhysicsDebugRenderer;
 
 JPH::RVec3 rVecFromF32v3(f32v3 v) {
     return JPH::RVec3(v.x, v.y, v.z);
@@ -197,19 +139,27 @@ private:
 PhysicsDebugRenderer::PhysicsDebugRenderer() : JPH::DebugRenderer()
 {
     Initialize();
-    mProgram = std::make_unique<vg::GLProgram>();
-    *mProgram = vg::ShaderManager::createProgram(DEBUG_VERT_SRC, DEBUG_FRAG_SRC, nullptr);
+    mShaderHandle = MaterialShaderRepository::get().getAssetHandle(CStrToken("physics_debug"));
     checkGlError("PhysicsDebugRenderer::PhysicsDebugRenderer");
 }
 
+PhysicsDebugRenderer::~PhysicsDebugRenderer() = default;
+
 void PhysicsDebugRenderer::PrepareFrame(const Camera3D& camera) {
     ASSERT_RENDER_THREAD();
+
+    if (!mShader) {
+        mShader = mShaderHandle->tryGetLoadedAsset();
+        if (!mShader) {
+            return;
+        }
+    }
     vg::sBlendStates.ALPHA.set();
     mCamera = &camera;
 
-    mProgram->use();
-    glUniformMatrix4fv(mProgram->getUniform("unVP"), 1, GL_FALSE, &mCamera->getVPMatrix()[0][0]);
-    glUniform3fv(mProgram->getUniform("unCameraPos"), 1, &mCamera->getPosition()[0]);
+    MaterialRenderer::bindMaterialShaderForRender(*mShader);
+    glUniformMatrix4fv(mShader->getUniform("unVP"), 1, GL_FALSE, &mCamera->getVPMatrix()[0][0]);
+    glUniform3fv(mShader->getUniform("unCameraPos"), 1, &mCamera->getPosition()[0]);
 
     checkGlError("PhysicsDebugRenderer::PrepareFrame");
 }
@@ -310,7 +260,11 @@ void PhysicsDebugRenderer::EndFrame() {
     PROFILE_FUNCTION();
     ASSERT_RENDER_THREAD();
 
-    glUniform1f(mProgram->getUniform("unAlpha"), mRenderSettings.alpha);
+    if (!mShader) {
+        return;
+    }
+
+    glUniform1f(mShader->getUniform("unAlpha"), mRenderSettings.alpha);
 
     size_t mapCount = 0;
     // 0 = dynamic 1 = static

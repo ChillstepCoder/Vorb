@@ -7,6 +7,8 @@
 #include <Jolt/Physics/Body/BodyManager.h>
 #include <Jolt/Renderer/DebugRenderer.h>
 
+class MaterialShaderDef;
+
 class DynamicBodyDrawFilter : public JPH::BodyDrawFilter {
 public:
     bool ShouldDraw(const JPH::Body& inBody) const {
@@ -20,8 +22,6 @@ public:
         return inBody.GetMotionType() == JPH::EMotionType::Static;
     }
 };
-
-DECL_VG(class GLProgram);
 
 class Camera3D;
 
@@ -40,6 +40,7 @@ public:
 class PhysicsDebugRenderer : public JPH::DebugRenderer {
 public:
     PhysicsDebugRenderer();
+    ~PhysicsDebugRenderer();
 
     void PrepareFrame(const Camera3D& camera);
 
@@ -116,11 +117,12 @@ private:
     } mInstanceMaps[2]; // 0 = Dynamic 1 = Static
 
     const Camera3D* mCamera = nullptr;
-    std::unique_ptr<vg::GLProgram> mProgram;
+    AssetHandlePtr<MaterialShaderDef> mShaderHandle;
+    const MaterialShaderDef* mShader;
 
     i32 mInstanceArrayUpdateIndex = 0;
 };
 
-static std::unique_ptr<PhysicsDebugRenderer> sDebugRenderer;
+extern std::unique_ptr<PhysicsDebugRenderer> sPhysicsDebugRenderer;
 
 #endif // JPH_DEBUG_RENDERER

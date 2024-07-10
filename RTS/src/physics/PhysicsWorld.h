@@ -4,7 +4,7 @@ class World;
 class JPHPhysicsWorldContext;
 class HeightmapPatch;
 class StaticPhysicsMeshBuilder;
-class TrackedStaticRigidBodyGatherer;
+class TrackedStaticModelColliderGatherer;
 class HeightmapPatch;
 
 #include <Jolt/Jolt.h>
@@ -136,11 +136,11 @@ private:
     // ===========================================================================
     JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, JPH::ObjectLayer layer);
     PhysBodyID createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId);
-    PhysBodyID createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, CollisionShapeID shapeId);
+    PhysBodyID createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, f32q orientation, ModelID modelId);
     PhysBodyID createTerrainBody(f32v3 position, JPH::Shape* terrainShape);
     JPH::MeshShapeSettings createStaticMeshShapeSettings(std::span<f32v3> verts, std::span<ui32> indices);
-    void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
-    void updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticRigidBodyGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
+    void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelColliderGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
+    void updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelColliderGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
     void updateItemEntitiesChangedThisFrame();
 
     // ===========================================================================

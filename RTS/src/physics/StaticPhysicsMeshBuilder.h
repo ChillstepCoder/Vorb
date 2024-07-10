@@ -1,6 +1,6 @@
 #pragma once
 
-#include "physics/TrackedStaticRigidBodyGatherer.h"
+#include "physics/TrackedStaticModelColliderGatherer.h"
 
 class PhysicsWorld;
 
@@ -20,14 +20,14 @@ public:
     void addQuadBetweenPoints(const f32v3 vertPoints[4]);
     void addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3);
     void addTriangleBetweenPoints(const f32v3 vertPoints[3]);
-    void addTrackedStaticRigidBody(TileIndex ownerTilePosition, TileID id, ui8 layer, const f32v3& pos, CollisionShapeID shapeId) { mTrackedRigidBodyGatherer.addRigidBody(ownerTilePosition, id, layer, pos, shapeId); }
+    void addTrackedTileModelCollider(TileIndex ownerTilePosition, TileID id, ui8 layer, f32v3 pos, f32q orientation, ModelID modelId) { mTrackedRigidBodyGatherer.addTileModelCollider(ownerTilePosition, id, layer, pos, orientation, modelId); }
     TileContainerID getOwnerTileContainerID() const { return mTrackedRigidBodyGatherer.getOwnerTileContainerID(); }
 
     bool hasAnyCollision();
     void finish(PhysicsWorld& physicsWorld);
 
 private:
-    TrackedStaticRigidBodyGatherer mTrackedRigidBodyGatherer;
+    TrackedStaticModelColliderGatherer mTrackedRigidBodyGatherer;
     f32v3 mRootPos = f32v3(0.0f);
     std::vector<f32v3> mVerts;
     std::vector<ui32> mIndices;

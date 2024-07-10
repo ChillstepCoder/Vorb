@@ -217,7 +217,6 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
             bool intersectsArc = false;
             const CollisionShapes shapeType = shapeUserData.getShapeType();
             switch (shapeType) {
-                //case CYLINDER_SHAPE_PROXYTYPE: {
                 case CollisionShapes::Capsule: {
                     const JPH::CapsuleShape* capsule = static_cast<const JPH::CapsuleShape*>(shape);
                     const f32 capsuleRadius = capsule->GetRadius();
@@ -245,7 +244,7 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
                     }
                     // Compute hit info
                     if (intersectsArc) {
-                        const f32v2 impactNormal2D = offsetToTarget2D / sqrt(distanceFromTarget2);
+                        const f32v2 impactNormal2D = -offsetToTarget2D / sqrt(distanceFromTarget2);
                         impactNormal = f32v3(impactNormal2D.x, impactNormal2D.y, 0.0f);
                         f32v3 targetCenterAtSourceHeight(targetCenter.x, targetCenter.y, attackStartPos.z);
                         const f32v3 impactCenter = targetCenterAtSourceHeight + f32v3(0.0f, 0.0f, attackData.swingHeight);

@@ -6,6 +6,7 @@
 #include "rendering/post_process/ShadowDetail.h"
 
 #include "physics/CollisionShapes.h"
+#include "physics/ModelColliderShape.h"
 
 #include <ozz/animation/runtime/skeleton.h>
 
@@ -32,24 +33,17 @@ struct ModelDrawInfo {
     f32 mBoundingSphereRadius = 10.0f;
 };
 
-struct ModelColliderShape {
-    f32v3 mEulerAngles = f32v3(0.0f);
-    f32v3 mOffset = f32v3(0.0f);
-    CollisionShapes mShape = CollisionShapes::Capsule;
-    f32v3 mDims = f32v3(0.5f);
-};
-SERIALIZABLE_SIMPLE(ModelColliderShape,
-    make_field(o.mEulerAngles, "angles"sv),
-    make_field(o.mOffset, "offset"sv),
-    make_field(o.mShape, "shape"sv),
-    make_field(o.mDims, "dims"sv)
-);
-
 struct ModelCollider {
-    std::vector<ModelColliderShape> mShapes;
+    std::vector<ModelColliderShape> mSubShapes;
+    // Used for determining entity rotation
+    glm::quat mBaseOrientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+    glm::quat mInverseBaseOrientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+    f32v3 mBaseOffset = f32v3(0.0f);
+    bool mHasBaseOrientation = false;
+    bool mHasBaseOffset = false;
 };
 SERIALIZABLE_SIMPLE(ModelCollider,
-    make_field(o.mShapes, "shapes"sv)
+    make_field(o.mSubShapes, "shapes"sv)
 );
 
 // Modeldef contains all information about a 3D model including its location
@@ -88,6 +82,7 @@ public:
     std::vector<ModelSubmeshData> mSubmeshesData;
     std::vector<f32v3> mDamageZoneSpline = { f32v3(0.0f), f32v3(0.0f, 0.0f, 8.0f) }; // Damage zones align to this spline
     ModelCollider mColliderData;
+    CollisionShapeID mCollisionShapeID = INVALID_COLLISION_SHAPE_ID;
 
     // Variants
     std::vector<ModelVariantData> mVariants;

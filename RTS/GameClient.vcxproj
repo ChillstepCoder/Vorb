@@ -814,6 +814,7 @@
     <ClInclude Include="src\physics\BroadphaseLayers.h" />
     <ClInclude Include="src\physics\CollisionShapeRepository.h" />
     <ClInclude Include="src\physics\CollisionShapes.h" />
+    <ClInclude Include="src\physics\ModelColliderShape.h" />
     <ClInclude Include="src\physics\PhysicsWorld.h" />
     <ClInclude Include="src\physics\PhysHitResult.h" />
     <ClInclude Include="src\physics\PhysicsBodyFilters.h" />
@@ -827,7 +828,7 @@
     <ClInclude Include="src\physics\PhysicsShapeUserData.h" />
     <ClInclude Include="src\physics\PhysicsWorldEvents.h" />
     <ClInclude Include="src\physics\StaticPhysicsMeshBuilder.h" />
-    <ClInclude Include="src\physics\TrackedStaticRigidBodyGatherer.h" />
+    <ClInclude Include="src\physics\TrackedStaticModelColliderGatherer.h" />
     <ClInclude Include="src\rendering\animation\AnimMachineInstance.h" />
     <ClInclude Include="src\rendering\animation\Blendspace1DPlayer.h" />
     <ClInclude Include="src\rendering\animation\Blendspace1DPlayerNode.h" />

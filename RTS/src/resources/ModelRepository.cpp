@@ -11,6 +11,7 @@
 #include "rendering/mesh/MeshOperations.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/model/ModelBillboardLodManager.h"
+#include "physics/CollisionShapeRepository.h"
 
 #include "tile/TileDamageData.h"
 
@@ -383,6 +384,7 @@ void ModelRepository::onRegisteredAsset(AssetID id) {
     YmlSerializer::readFileData(readFileToString(mAssetRegistry[id].mFilePath), def);
     mLODParameters.resize(mAssets.size());
     updateModelFlyweightData(id);
+    updateModelCollision(id);
 }
 
 void ModelRepository::onAllAssetTypesRegistered() {
@@ -457,5 +459,39 @@ void ModelRepository::updateMaterialDependencies(AssetID id) {
                 }
             }
         }
+    }
+}
+
+void ModelRepository::updateModelCollision(AssetID id) {
+    ModelDef& def = *mAssets[id];
+    if (def.mColliderData.mSubShapes.size() == 1) {
+        // Simple single shape
+        const ModelColliderShape& shape = def.mColliderData.mSubShapes[0];
+       
+        if (shape.mShape != CollisionShapes::NONE) {
+            def.mCollisionShapeID = sCollisionShapeRepository->getOrAddCollisionShape(shape.mShape, shape.mHalfDims);
+
+            def.mColliderData.mBaseOrientation = glm::quat(shape.mEulerAngles);
+            if (def.mColliderData.mBaseOrientation != glm::quat(1.0f, 0.0f, 0.0f, 0.0f)) {
+                def.mColliderData.mInverseBaseOrientation = glm::inverse(def.mColliderData.mBaseOrientation);
+                def.mColliderData.mHasBaseOrientation = true;
+            }
+            if (shape.mOffset != f32v3(0.0f)) {
+                def.mColliderData.mBaseOffset = shape.mOffset;
+                def.mColliderData.mHasBaseOffset = true;
+            }
+        }
+    }
+    else if (def.mColliderData.mSubShapes.size() > 1) {
+        // Compound shape
+        def.mColliderData.mBaseOrientation = def.mColliderData.mInverseBaseOrientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+        def.mColliderData.mHasBaseOrientation = false;
+        def.mColliderData.mHasBaseOffset = false;
+        def.mCollisionShapeID = sCollisionShapeRepository->addCompoundCollisionShape(def.mColliderData.mSubShapes);
+    }
+    else {
+        // No shape
+        def.mColliderData.mBaseOrientation = def.mColliderData.mInverseBaseOrientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+        def.mCollisionShapeID = INVALID_COLLISION_SHAPE_ID;
     }
 }

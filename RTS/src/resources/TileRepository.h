@@ -9,7 +9,6 @@ DECL_VIO(class IOManager);
 class MaterialRepository;
 class ItemRepository;
 class ModelRepository;
-class CollisionShapeRepository;
 
 
 // TODO: Find all references of TileRepository::get().getLoadedOrUnloadedAsset( and tileRepo.getLoadedOrUnloadedAsset(
@@ -18,10 +17,10 @@ class TileRepository : public IAssetRepository<TileDef> {
     friend class ResourceManager;
 public:
     ASSET_REPOSITORY_COMMON_CODE_CUSTOM_INIT(TileRepository, TileDef, AssetType::Tile);
-    static void initInstance(vio::IOManager& ioManager, CollisionShapeRepository& collisionCache) {
-            sInstance = std::make_unique<TileRepository>(ioManager, collisionCache);
+    static void initInstance(vio::IOManager& ioManager) {
+            sInstance = std::make_unique<TileRepository>(ioManager);
     }
-    TileRepository(vio::IOManager& ioManager, CollisionShapeRepository& collisionCache);
+    TileRepository(vio::IOManager& ioManager);
     ~TileRepository();
 
     // TODO: Recipe repository
@@ -38,9 +37,6 @@ private:
     AssetLoadFunc getAssetLoadFunc() override { return nullptr; } // TODO:?
     void onRegisteredAsset(AssetID id) override;
     void fixupRegisteredAsset(AssetID id) override;
-
-    CollisionShapeRepository& mCollisionShapeCache;
-
     // TODO: Recipe repository
     inline static std::vector<Recipe> mTileRecipes;
 };
