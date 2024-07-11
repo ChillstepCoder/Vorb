@@ -512,7 +512,7 @@ void World::updateEntitiesRenderState(WorldRenderState& renderState) {
     }
 
     { // Dynamic models
-        // TODO: Allow no orientation
+        // TODO: Allow no orientation?
         auto view = registry.view<PositionComponent, DynamicModelComponent, OrientationComponent>();
 
         renderState.mDynamicModels.clear();
@@ -527,12 +527,22 @@ void World::updateEntitiesRenderState(WorldRenderState& renderState) {
         };
     }
 
+    // Text
+    renderState.mWorldText.clear();
+
     // Player object selection
     entt::entity localPlayer = mEcs->getLocalPlayer();
     if (localPlayer != entt::null) {
         if (PlayerControlComponent* playerControlCmp = registry.try_get<PlayerControlComponent>(localPlayer)) {
             if (playerControlCmp->mSelectedObjectData.modelId != INVALID_MODEL_ID) {
                 renderState.mPlayerSelectedObject = playerControlCmp->mSelectedObjectData;
+                if (renderState.mPlayerSelectedObject.text) {
+                    renderState.mWorldText.emplace_back(
+                        renderState.mPlayerSelectedObject.text,
+                        renderState.mPlayerSelectedObject.textColor,
+                        renderState.mPlayerSelectedObject.position + f32v3(0.0f, 0.0f, renderState.mPlayerSelectedObject.textZOffset)
+                    );
+                }
             }
             else {
                 renderState.mPlayerSelectedObject.modelId = INVALID_MODEL_ID;

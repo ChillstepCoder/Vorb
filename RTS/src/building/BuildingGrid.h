@@ -3,8 +3,6 @@
 #include "building/Building.h"
 #include "world/IChunkGrid.h"
 
-#include <shared_mutex>
-
 class World;
 class BuildingBlueprint;
 class Building;

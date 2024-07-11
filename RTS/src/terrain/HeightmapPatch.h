@@ -5,7 +5,6 @@
 #include "terrain/CompressedHeight.h"
 
 #include <bitsery/traits/array.h>
-#include <shared_mutex>
 
 class btCollisionObject;
 

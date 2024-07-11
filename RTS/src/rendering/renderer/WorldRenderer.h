@@ -15,6 +15,7 @@ class InstancedDynamicModelRenderer;
 class InstancedStaticModelRenderer;
 class ItemRenderer;
 class InstancedStaticModelGatherer;
+class WorldTextRenderer;
 class World;
 class Skybox;
 class LightRenderer;
@@ -93,6 +94,7 @@ private:
     mutable std::unique_ptr<InstancedStaticModelRenderer> mStaticModelRenderer;
     mutable std::unique_ptr<InstancedDynamicModelRenderer> mDynamicModelRenderer;
     mutable std::unique_ptr<ModelHighlightRenderer> mModelHighlightRenderer;
+    mutable std::unique_ptr<WorldTextRenderer> mWorldTextRenderer;
     mutable std::unique_ptr<SmudgeRenderer> mSmudgeRenderer;
     mutable std::unique_ptr<TonemapRenderer> mTonemapRenderer;
     mutable std::unique_ptr<FishRenderer> mFishRenderer;

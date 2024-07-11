@@ -6,6 +6,7 @@
 #include "character/CharacterLocomotionMode.h"
 #include "rendering/renderstate/CharacterRenderState.h"
 #include "rendering/renderstate/DynamicModelInstanceState.h"
+#include "rendering/renderstate/WorldTextRenderState.h"
 
 #include "interact/SelectedObjectData.h"
 
@@ -48,6 +49,7 @@ public:
     const std::vector<DebugWireQuadState>& getDebugQuads() const { return mDebugQuads; }
     const std::vector<CharacterRenderState>& getCharacterRenderState() const { return mCharacters; }
     const std::vector<DynamicModelInstanceState>& getDynamicModels() const { return mDynamicModels; }
+    const std::vector<WorldTextRenderState>& getWorldText() const { return mWorldText; }
     WorldID getWorldId() const { return mWorldId; }
     const SelectedObjectData& getPlayerSelectedObject() const { return mPlayerSelectedObject; }
 private:
@@ -58,6 +60,7 @@ private:
     bool mIsCameraOwned;
     std::vector<CharacterRenderState> mCharacters;
     std::vector<DynamicModelInstanceState> mDynamicModels;
+    std::vector<WorldTextRenderState> mWorldText;
     SelectedObjectData mPlayerSelectedObject;
 
     // ======================== Debug state ========================

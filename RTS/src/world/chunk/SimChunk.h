@@ -3,8 +3,6 @@
 #include "tile/TileContainerEvents.h"
 #include "tile/TileWallContainer.h"
 
-#include <shared_mutex>
-
 #include "util/BitArray.h"
 #include "util/FixedSizeVector.h"
 

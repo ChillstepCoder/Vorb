@@ -29,6 +29,7 @@
 #include "rendering/model/InstancedStaticModelManager.h"
 #include "rendering/model/InstancedStaticModelRenderer.h"
 #include "rendering/model/ModelHighlightRenderer.h"
+#include "rendering/text/WorldTextRenderer.h"
 #include "rendering/post_process/AmbientOcclusionPostProcess.h"
 #include "rendering/post_process/DepthOfFieldPostProcess.h"
 #include "rendering/post_process/ShadowRenderer.h"
@@ -87,6 +88,7 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
     mStaticModelRenderer = std::make_unique<InstancedStaticModelRenderer>();
     mDynamicModelRenderer = std::make_unique<InstancedDynamicModelRenderer>();
     mModelHighlightRenderer = std::make_unique<ModelHighlightRenderer>();
+    mWorldTextRenderer = std::make_unique<WorldTextRenderer>();
     mTileContainerRenderer = std::make_unique<TileContainerRenderer>();
     mLightRenderer = std::make_unique<LightRenderer>();
     mEcsRenderer = std::make_unique<ECSRenderer>();
@@ -329,6 +331,10 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     // Emissives and non lit objects
     // Player object highlight
     mModelHighlightRenderer->renderModelHighlight(mRenderState->getPlayerSelectedObject(), *mCamera);
+
+    // Text
+    mWorldTextRenderer->renderWorldText(mRenderState->getWorldText(), *mCamera);
+
 
     // Sky (PBR version)
     if (sDebugOptions.mUsingPBR) {

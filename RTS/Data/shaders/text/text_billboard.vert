@@ -4,8 +4,6 @@
 uniform vec3 unOffset;
 
 out vec2 fUV;
-out vec4 fTint;
-
 
 GlyphData getGlyphData() {
   return glyphData[(gl_VertexID / 4)];
@@ -49,7 +47,6 @@ void main() {
 	vec4 worldPos = vertexPosition + vec4(unOffset, 0.0);
     
 	vec4 glPos = VP * worldPos;
-    fTint = vec4(1.0);
 	
     gl_Position = VP * worldPos;
 }

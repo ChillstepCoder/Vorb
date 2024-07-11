@@ -21,8 +21,6 @@
 
 constexpr f32 MICROSEC_TO_MILLISEC = 0.001f;
 
-#include <shared_mutex>
-
 struct ProfileResult
 {
     const char* Name;

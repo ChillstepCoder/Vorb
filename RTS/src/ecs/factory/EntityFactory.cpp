@@ -25,6 +25,8 @@
 
 #include "math/Random.h"
 
+constexpr f32 ITEM_NAMEPLATE_HEIGHT = 0.25f;
+
 entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken typeToken) {
     ASSERT_GAME_THREAD();
 
@@ -194,6 +196,7 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
 
+    const ItemDef& itemDef = ItemRepository::get().getLoadedOrUnloadedAsset(itemStack.id);
     ModelID modelId = getItemModelID(itemStack);
 
     // TODO: allow no collider and use old projectile component?
@@ -209,6 +212,7 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     registry.emplace<PositionComponent>(newEntity, position, world.getChunkIDAtWorldPos(position));
     registry.emplace<SimpleItemComponent>(newEntity, itemStack);
     registry.emplace<OrientationComponent>(newEntity, startOrientation);
+    registry.emplace<SimpleTextNameplateComponent>(newEntity, itemDef.mDisplayName.c_str(), ITEM_NAMEPLATE_HEIGHT, color::White);
     if (colliderData.mHasBaseOrientation || colliderData.mHasBaseOffset) {
         registry.emplace<ColliderInverseTransformComponent>(newEntity, colliderData.mInverseBaseOrientation, colliderData.mBaseOffset);
     }
@@ -308,6 +312,8 @@ entt::entity EntityFactory::createItemOnGround(World& world, f32v3 position, Ite
         registry.emplace<TileItemContainerComponent>(newEntity, itemStack, uid);
         scale = computeItemSackScale(itemDef.getWeight() * itemStack.count);
     }
+
+    registry.emplace<SimpleTextNameplateComponent>(newEntity, itemDef.mDisplayName.c_str(), ITEM_NAMEPLATE_HEIGHT, color::White);
     
     const ModelID modelId = getItemModelID(itemStack);
 
@@ -335,6 +341,8 @@ entt::entity EntityFactory::createItemContainerOnGround(World& world, f32v3 posi
     for (TileItemStack& stack : itemStacks) {
         totalWeight += itemRepo.getLoadedOrUnloadedAsset(stack.itemId).getWeight() * stack.count;
     }
+
+    registry.emplace<SimpleTextNameplateComponent>(newEntity, LocText("Item Sack").c_str(), ITEM_NAMEPLATE_HEIGHT, color::White);
 
     const ModelID modelId = getItemSackSmallID();
 

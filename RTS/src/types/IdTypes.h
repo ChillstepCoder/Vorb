@@ -74,6 +74,9 @@ constexpr PhysBodyID INVALID_PHYS_BODY_ID = std::numeric_limits<PhysBodyID>::max
 using NavPathID = ui16;
 constexpr NavPathID INVALID_NAV_PATH_ID = 0;
 
+using LocTextID = size_t;
+constexpr LocTextID INVALID_LOC_TEXT_ID = std::numeric_limits<LocTextID>::max();
+
 // UIDs
 typedef ui32 CityUID; // We dont make many cities so ui32 is fine. We can always change it later
 typedef ui32 SettlementUID;

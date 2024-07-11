@@ -11,10 +11,6 @@
 #include "tile/TileDamageData.h"
 #include "visibility/TileVisibilityContainer.h"
 
-#include <shared_mutex>
-
-#include <boost/container/flat_set.hpp>
-
 class Chunk;
 class Building;
 class World;

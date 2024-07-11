@@ -84,7 +84,7 @@ f32 getYOffset(size_t numRows, TextAlign align, f32 glyphHeight) {
     return 0.0f; // Should never happen
 }
 
-void TextMeshBuilder::addString(const nString& str, const f32v3& rootPosition, const Font& font, f32 glyphHeight, const f32v2& offset2D, TextAlign align, const f32v4 clipRect /*= f32v4(-1000.0f, -1000.0f, 2000.0f, 2000.0f)*/, bool shouldWrap /*= true*/) {
+void TextMeshBuilder::addString(std::string_view str, const f32v3& rootPosition, const Font& font, f32 glyphHeight, const f32v2& offset2D, TextAlign align, const f32v4 clipRect /*= f32v4(-1000.0f, -1000.0f, 2000.0f, 2000.0f)*/, bool shouldWrap /*= true*/) {
     assert(align == TextAlign::CENTER); // TODO: IMPLEMENT
 
     f32v2 posOffset2D = offset2D;

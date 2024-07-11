@@ -8,8 +8,6 @@
 #include "tile/TileHarvestable.h"
 #include "world/WorldEvents.h"
 
-#include <shared_mutex>
-
 class HostWorldData;
 class Building;
 class Camera3D;

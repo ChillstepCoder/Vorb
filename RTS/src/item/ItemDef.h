@@ -65,6 +65,7 @@ public:
     ItemType mType = ItemType::UNKNOWN;
     TileHarvestable mHarvestableSource = TileHarvestable::None; // TODO: Resource Tags instead?
     InventoryBagType mInventoryBagType = InventoryBagType::Misc;
+    LocText mDisplayName;
     // TODO: ModelDef
     f32 mValue = 1.0f;
     f32 mWeight = 0.01f;
@@ -84,7 +85,8 @@ SERIALIZABLE_IMGUI_CONTROLLED(ItemDef,
     make_field(o.mWeight, "weight"sv),
     make_field(o.mStockpileStackSize, "stack_size"sv),
     make_field(o.mStockpileStackDims, "stack_dims"sv),
-    make_field(o.mInventoryBagType, "inv_bag"sv)
+    make_field(o.mInventoryBagType, "inv_bag"sv),
+    make_field(o.mDisplayName, "name"sv)
 );
 
 struct StoredItemStack {

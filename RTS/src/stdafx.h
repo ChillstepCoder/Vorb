@@ -26,6 +26,7 @@
 /************************************************************************/
 #include <functional>
 #include <mutex>
+#include <shared_mutex>
 #include <string>
 #include <thread>
 #include <type_traits>
@@ -106,6 +107,8 @@ template <typename Stream> bool netSerialize(Stream& stream);
 #include "util/StringUtils.h"
 
 #include "instrumentation/instrumentor.h"
+
+#include "text/LocText.h"
 
 // Const
 #include "physics/PhysicsConst.h"

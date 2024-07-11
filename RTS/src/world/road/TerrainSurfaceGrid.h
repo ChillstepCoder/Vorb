@@ -2,7 +2,6 @@
 
 #include "util/SpatialGrid2D.h"
 
-#include <shared_mutex>
 #include "TerrainSurfaceType.h"
 
 constexpr ui8 MAX_ROAD_STRENGTH = UINT8_MAX;

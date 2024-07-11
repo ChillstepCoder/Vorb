@@ -169,7 +169,7 @@ void PlayerControlSystem::updateSelection(entt::entity entity, PlayerControlComp
 
             // Interact
             if (inputs.interact) {
-                EntityFactory::destroyEntity(mWorld, selected);
+                EntityFactory::destroyEntity(mWorld, selected);\
                 return;
             }
 
@@ -185,6 +185,15 @@ void PlayerControlSystem::updateSelection(entt::entity entity, PlayerControlComp
                 // We can only select models
                 return;
             }
+
+            if (SimpleTextNameplateComponent* nameplateCmp = mRegistry.try_get<SimpleTextNameplateComponent>(selected)) {
+                playerControlCmp.mSelectedObjectData.text = nameplateCmp->text;
+                playerControlCmp.mSelectedObjectData.textColor = nameplateCmp->color;
+                playerControlCmp.mSelectedObjectData.textZOffset = nameplateCmp->zOffset;
+            } else {
+                playerControlCmp.mSelectedObjectData.text = nullptr;
+            }
+
             playerControlCmp.mSelectedObjectData.position = mRegistry.get<PositionComponent>(selected).mPosition;
             if (OrientationComponent* orientationCmp = mRegistry.try_get<OrientationComponent>(selected)) {
                 playerControlCmp.mSelectedObjectData.orientation = orientationCmp->mOrientation;

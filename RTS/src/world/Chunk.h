@@ -12,8 +12,6 @@
 
 #include "tile/TileGrass.h"
 
-#include <shared_mutex>
-
 class Chunk;
 class BillboardMesh;
 class TBOBillboardMesh;

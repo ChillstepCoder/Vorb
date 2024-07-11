@@ -1,8 +1,6 @@
 #pragma once
 #include "faction/IFactionManager.h"
 
-#include <shared_mutex>
-
 class RandomGenerator;
 
 class CliFactionManager : public IFactionManager

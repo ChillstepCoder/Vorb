@@ -23,6 +23,7 @@
 #include "ecs/component/TileItemComponent.h"
 #include "ecs/component/ProjectileComponent.h"
 #include "ecs/component/PlayerIdComponent.h"
+#include "ecs/component/SimpleTextNameplateComponent.h"
 #include "ecs/business/BusinessComponent.h"
 // Charactermodel has a component TODO: Split
 #include "rendering/CharacterModel.h"
