@@ -191,7 +191,7 @@ void PlayerControlSystem::updateSelection(entt::entity entity, PlayerControlComp
                 playerControlCmp.mSelectedObjectData.textColor = nameplateCmp->color;
                 playerControlCmp.mSelectedObjectData.textZOffset = nameplateCmp->zOffset;
             } else {
-                playerControlCmp.mSelectedObjectData.text = nullptr;
+                playerControlCmp.mSelectedObjectData.text.clear();
             }
 
             playerControlCmp.mSelectedObjectData.position = mRegistry.get<PositionComponent>(selected).mPosition;

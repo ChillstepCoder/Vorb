@@ -440,6 +440,7 @@ void TileContainer::setWallsAt(TileIndex index, TileWall walls[4]) {
 }
 
 bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healthAdjust, f32v3 impactPosition, f32v3 impactNormal) {
+    ASSERT_GAME_THREAD();
 
     healthAdjust = glm::clamp(healthAdjust , -(int)UINT16_MAX, (int)UINT16_MAX);
 
@@ -447,7 +448,6 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
 
     assert(isReady());
     assert(index < mTiles.size());
-    ASSERT_GAME_THREAD();
     if (healthAdjust == 0) {
         return false;
     }

@@ -536,7 +536,7 @@ void World::updateEntitiesRenderState(WorldRenderState& renderState) {
         if (PlayerControlComponent* playerControlCmp = registry.try_get<PlayerControlComponent>(localPlayer)) {
             if (playerControlCmp->mSelectedObjectData.modelId != INVALID_MODEL_ID) {
                 renderState.mPlayerSelectedObject = playerControlCmp->mSelectedObjectData;
-                if (renderState.mPlayerSelectedObject.text) {
+                if (renderState.mPlayerSelectedObject.text.size()) {
                     renderState.mWorldText.emplace_back(
                         renderState.mPlayerSelectedObject.text,
                         renderState.mPlayerSelectedObject.textColor,

@@ -26,6 +26,7 @@
 #include "math/Random.h"
 
 constexpr f32 ITEM_NAMEPLATE_HEIGHT = 0.25f;
+constexpr f32 SACK_NAMEPLATE_HEIGHT = 0.5f;
 
 entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken typeToken) {
     ASSERT_GAME_THREAD();
@@ -304,16 +305,19 @@ entt::entity EntityFactory::createItemOnGround(World& world, f32v3 position, Ite
     const ItemDef& itemDef = itemRepo.getLoadedOrUnloadedAsset(itemStack.id);
 
     f32 scale;
+    f32 offset;
     if (itemStack.count == 1) {
         registry.emplace<TileItemComponent>(newEntity, itemStack, uid);
         scale = 1.0f;
+        offset = ITEM_NAMEPLATE_HEIGHT;
     }
     else {
         registry.emplace<TileItemContainerComponent>(newEntity, itemStack, uid);
         scale = computeItemSackScale(itemDef.getWeight() * itemStack.count);
+        offset = SACK_NAMEPLATE_HEIGHT;
     }
 
-    registry.emplace<SimpleTextNameplateComponent>(newEntity, itemDef.mDisplayName.c_str(), ITEM_NAMEPLATE_HEIGHT, color::White);
+    registry.emplace<SimpleTextNameplateComponent>(newEntity, itemDef.mDisplayName.c_str(), offset * scale, color::White);
     
     const ModelID modelId = getItemModelID(itemStack);
 
@@ -338,15 +342,27 @@ entt::entity EntityFactory::createItemContainerOnGround(World& world, f32v3 posi
     f32 totalWeight = 0.0f;
     registry.emplace<TileItemContainerComponent>(newEntity, itemStacks);
     ItemRepository& itemRepo = ItemRepository::get();
+
+    // TODO: loc translate + memory arena?
+    std::string stringBuild;
+    int strCount = 0;
     for (TileItemStack& stack : itemStacks) {
         totalWeight += itemRepo.getLoadedOrUnloadedAsset(stack.itemId).getWeight() * stack.count;
-    }
 
-    registry.emplace<SimpleTextNameplateComponent>(newEntity, LocText("Item Sack").c_str(), ITEM_NAMEPLATE_HEIGHT, color::White);
+        if (strCount < 3) {
+            stringBuild += fmt::format("{} x {}\n", stack.count, itemRepo.getLoadedOrUnloadedAsset(stack.itemId).mDisplayName);
+            ++strCount;
+            if (strCount == 3) {
+                stringBuild += "...";
+            }
+        }
+    }
+    const f32 scale = computeItemSackScale(totalWeight);
+    registry.emplace<SimpleTextNameplateComponent>(newEntity, std::move(stringBuild), scale * SACK_NAMEPLATE_HEIGHT, color::White);
 
     const ModelID modelId = getItemSackSmallID();
 
-    finalizeItemOnGroundEntity(newEntity, world, position, chunkId, modelId, computeItemSackScale(totalWeight));
+    finalizeItemOnGroundEntity(newEntity, world, position, chunkId, modelId, scale);
 
     return newEntity;
 }

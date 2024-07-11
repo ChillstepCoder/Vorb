@@ -6,6 +6,6 @@ struct SelectedObjectData {
     ModelID modelId = INVALID_MODEL_ID;
     f32 scale;
     f32 textZOffset;
-    const char* text;
+    std::string text;
     color4 textColor;
 };
