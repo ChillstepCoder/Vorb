@@ -284,6 +284,7 @@
     <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />
     <ClCompile Include="src\ecs\component\DynamicLightComponent.cpp" />
     <ClCompile Include="src\ecs\component\NavigationComponent.cpp" />
+    <ClCompile Include="src\ecs\component\ObjectPickupComponent.cpp" />
     <ClCompile Include="src\ecs\component\PhysicsComponent.cpp" />
     <ClCompile Include="src\ecs\component\PlayerControlComponent.cpp" />
     <ClCompile Include="src\ecs\component\ProfessionComponent.cpp" />
@@ -337,6 +338,7 @@
     <ClCompile Include="src\item\ItemDef.cpp" />
     <ClCompile Include="src\item\ItemRepository.cpp" />
     <ClCompile Include="src\item\ItemReservation.cpp" />
+    <ClCompile Include="src\item\ItemStack.cpp" />
     <ClCompile Include="src\item\ItemStockpile.cpp" />
     <ClCompile Include="src\item\ItemStockpileRegistry.cpp" />
     <ClCompile Include="src\item\ItemTradeManager.cpp" />
@@ -693,6 +695,7 @@
     <ClInclude Include="src\ecs\component\FullEntityBindingComponent.h" />
     <ClInclude Include="src\ecs\component\DualInventoryComponent.h" />
     <ClInclude Include="src\ecs\component\CharacterControlComponent.h" />
+    <ClInclude Include="src\ecs\component\ObjectPickupComponent.h" />
     <ClInclude Include="src\ecs\component\TileItemComponent.h" />
     <ClInclude Include="src\ecs\component\OwnershipComponent.h" />
     <ClInclude Include="src\ecs\component\FullBrainComponent.h" />

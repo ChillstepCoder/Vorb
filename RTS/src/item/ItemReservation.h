@@ -1,6 +1,6 @@
 #pragma once
 
-struct ItemStack;
+class ItemStack;
 class ItemStockpile;
 
 struct ItemReservationTarget {

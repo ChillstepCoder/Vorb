@@ -73,6 +73,8 @@ void IFullECS::tick(f32 elapsedSec) {
 
 	ProjectileSystem::update(mWorld, mRegistry, elapsedSec);
 
+    ObjectPickupSystem::update(mWorld, mRegistry, elapsedSec);
+
     assert(mDebugEntityUpdater);
     mDebugEntityUpdater->update(mRegistry);
 }
@@ -321,33 +323,103 @@ f32v3 IFullECS::getLocalPlayerPosition() {
 	return mRegistry.get<PositionComponent>(localPlayer).mPosition;
 }
 
-void IFullECS::onItemPickedUp(TileItemUID itemUID, i32 remaining) {
-    ASSERT_GAME_THREAD();
-    auto&& it = mTileItemEntityMap.find(itemUID);
-    assert(it != mTileItemEntityMap.end());
-    entt::entity entity = it->second;
-    if (remaining) {
-        if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(entity)) {
-            itemCmp->itemStack.count = remaining;
-            assert(itemCmp->tileItemUID == itemUID);
-        }
-        else {
-            TileItemContainerComponent& containerCmp = mRegistry.get<TileItemContainerComponent>(entity);
-            containerCmp.setNewCount(itemUID, remaining);
-        }
-    }
-    else {
-        mTileItemEntityMap.erase(it);
-        destroyEntity(entity);
-    }
-}
-
 void IFullECS::addThreadSafeEntityUpdateForNearestCharacter(AttachedEntityUpdateHandlePtr updateHandle, f32v3 pos) {
     QueuedEntityUpdateAttach update;
     update.target = pos;
     update.type = QueuedEntityUpdateAttach::AttachType::Character;
     update.handle = std::move(updateHandle);
     mDebugEntityUpdater->queueAttachUpdate(std::move(update));
+}
+
+i32 IFullECS::pickupTileItem(entt::entity picker, TileItemUID itemUID, i32 quantity) {
+    ASSERT_GAME_THREAD();
+    assert(quantity > 0);
+
+    auto&& it = mTileItemEntityMap.find(itemUID);
+    assert(it != mTileItemEntityMap.end());
+    entt::entity entity = it->second;
+    i32 remaining;
+
+    DualInventoryComponent& inventoryCmp = mRegistry.get<DualInventoryComponent>(picker);
+
+    if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(entity)) {
+        assert(quantity <= itemCmp->itemStack.count);
+        itemCmp->itemStack.count -= quantity;
+        remaining = itemCmp->itemStack.count;
+        assert(itemCmp->tileItemUID == itemUID);
+
+        // Add to inventory
+        ItemStack newItems = itemCmp->itemStack;
+        newItems.count = quantity;
+        inventoryCmp.addItemStack(newItems);
+
+        if (remaining == 0) {
+            mTileItemEntityMap.erase(it);
+            mRegistry.remove<TileItemComponent>(entity);
+            if (StaticModelComponent* staticModel = mRegistry.try_get<StaticModelComponent>(entity)) {
+                // Transform static to dynamic pickup object with no physics
+                // TODO: RECYCLE BODY
+                mRegistry.emplace<DynamicModelComponent>(entity, staticModel->modelId, staticModel->scale);
+                mRegistry.remove<StaticModelComponent>(entity);
+                StaticPhysicsComponent& staticPhysics = mRegistry.get<StaticPhysicsComponent>(entity);
+                mWorld.getPhysicsWorld().removeBody(staticPhysics.mBodyID, true);
+                mRegistry.remove<StaticPhysicsComponent>(entity);
+            }
+            else {
+                // Transform dynamic physics object to no physics
+                PhysicsComponent& dynamicPhysics = mRegistry.get<PhysicsComponent>(entity);
+                mWorld.getPhysicsWorld().removeBody(dynamicPhysics.mBodyID, true);
+                mRegistry.remove<PhysicsComponent>(entity);
+            }
+            mRegistry.emplace<ObjectPickupComponent>(entity, picker);
+        }
+    }
+    else {
+        TileItemContainerComponent& containerCmp = mRegistry.get<TileItemContainerComponent>(entity);
+        auto [takenStack, remaining] = containerCmp.takeCount(itemUID, quantity);
+        if (remaining == 0) {
+            mTileItemEntityMap.erase(it);
+            if (containerCmp.isEmpty()) {
+                // TODO: PICKUP ANIMATION
+                LOG_CRITICAL("TODO: SACK INTERACT");
+                destroyEntity(entity);
+            }
+        }
+        if (takenStack.count > 0) {
+            inventoryCmp.addItemStack(takenStack);
+        }
+    }
+
+  
+    return remaining;
+}
+
+i32 IFullECS::pickupDynamicItem(entt::entity picker, entt::entity itemEntity, i32 quantity) {
+    assert(mRegistry.all_of<DynamicModelComponent>(itemEntity));
+    assert(!mRegistry.all_of<TileItemComponent>(itemEntity) && !mRegistry.all_of<TileItemContainerComponent>(itemEntity));
+
+    DualInventoryComponent& inventoryCmp = mRegistry.get<DualInventoryComponent>(picker);
+
+    SimpleItemComponent& itemCmp = mRegistry.get<SimpleItemComponent>(itemEntity);
+
+    assert(quantity <= itemCmp.itemStack.count);
+    itemCmp.itemStack.count -= quantity;
+    i32 remaining = itemCmp.itemStack.count;
+
+    // Add to inventory
+    ItemStack newItems = itemCmp.itemStack;
+    newItems.count = quantity;
+    inventoryCmp.addItemStack(newItems);
+
+    if (remaining == 0) {
+        mRegistry.remove<SimpleItemComponent>(itemEntity);
+        // Transform dynamic physics object to no physics
+        PhysicsComponent& dynamicPhysics = mRegistry.get<PhysicsComponent>(itemEntity);
+        mWorld.getPhysicsWorld().removeBody(dynamicPhysics.mBodyID, true);
+        mRegistry.remove<PhysicsComponent>(itemEntity);
+        mRegistry.emplace<ObjectPickupComponent>(itemEntity, picker);
+    }
+    return remaining;
 }
 
 void IFullECS::initEvents() {

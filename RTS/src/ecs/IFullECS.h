@@ -46,16 +46,20 @@ public:
     void setLocalPlayer(entt::entity playerEntity);
     f32v3 getLocalPlayerPosition();
 
-    void onItemPickedUp(TileItemUID itemUID, i32 remaining);
-
     // DEBUG:
     // Update will be removed when caller drops the handle
     void addThreadSafeEntityUpdateForNearestCharacter(AttachedEntityUpdateHandlePtr updateHandle, f32v3 pos);
 
+
+    // TODO: Move to some ItemSystem or something
+    // Returns remaining quantity
+    i32 pickupTileItem(entt::entity picker, TileItemUID itemUID, i32 quantity);
+    i32 pickupDynamicItem(entt::entity picker, entt::entity itemEntity, i32 quantity);
+
     // TODO: UniquePtr for faster include
     CharacterControlSystem mCharacterControlSystem;
     std::unique_ptr<PlayerControlSystem> mPlayerControlSystem;
-    std::unique_ptr<PlayerInteractSystem> mPlayerInteractSystem;
+    std::unique_ptr<PlayerInteractSystem> mPlayerInteractSystem; // TODO: DELETE
     TimedTileInteractSystem mTimedTileInteractSystem;
     PhysicsSystem mPhysicsSystem;
     CameraAttachSystem mCameraAttachSystem;
@@ -75,6 +79,7 @@ public:
     EVENT_LISTENER_FUNCS(IFullECS, EntityDeactivated, FullECSEventType::EntityDeactivated, FullECSEvent&);
 
 protected:
+
     void initEvents();
     void connectItemToChunk(entt::entity entity);
 

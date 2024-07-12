@@ -188,16 +188,23 @@ namespace MathUtil {
         return lerp(a, b, fraction);
     }
 
-    template <typename T>
-    inline void accelerateWithDeltaTime(T& inOutPosition, T& inOutVelocity, T accelerationForce, f32 elapsedSec) {
+    template <typename T, typename A>
+    inline void accelerateWithDeltaTime(T& inOutPosition, T& inOutVelocity, A accelerationForce, f32 elapsedSec) {
         inOutPosition += inOutVelocity * elapsedSec + 0.5f * accelerationForce * SQ(elapsedSec);
         inOutVelocity += accelerationForce * elapsedSec;
+    }
+
+    // Returns deltaPos,deltaVel
+    template <typename T, typename A>
+    inline std::pair<T /*deltaPos*/, A/*deltaVel*/> accelerateWithDeltaTime(T inVelocity, A accelerationForce, f32 elapsedSec) {
+        const T deltaPosition = inVelocity * elapsedSec + 0.5f * accelerationForce * SQ(elapsedSec);
+        const A deltaVelocity = accelerationForce * elapsedSec;
+        return { deltaPosition, deltaVelocity };
     }
 
     inline f32 dragForceWithDeltaTime(f32 dragForce, f32 elapsedSec) {
         return pow(1.0f - dragForce, elapsedSec);
     }
-
 
     // Normalizes the angle to be between -PI and PI
     inline float normalizeAngle(float angle) {

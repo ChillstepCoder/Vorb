@@ -14,8 +14,10 @@ f32 DualInventoryComponent::getEncumbermentRatio(InventoryBagType bagType) const
     return 0.0f;
 }
 
-bool DualInventoryComponent::addOrDropItemStack(ItemStack itemStack) {
+bool DualInventoryComponent::addItemStack(ItemStack itemStack) {
     assert(itemStack.props.bagType != InventoryBagType::COUNT);
+    assert(itemStack.count);
+
     const f32 weight = ItemRepository::get().getLoadedOrUnloadedAsset(itemStack.id).getWeight();
     // TODO: Handle inventory weight and overflow
     auto range = mItems.equal_range(itemStack.id);

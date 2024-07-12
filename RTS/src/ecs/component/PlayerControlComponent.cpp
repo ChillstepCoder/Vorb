@@ -168,8 +168,14 @@ void PlayerControlSystem::updateSelection(entt::entity entity, PlayerControlComp
             entt::entity selected = result.mBodyUserData.getEntity();
 
             // Interact
-            if (inputs.interact) {
-                EntityFactory::destroyEntity(mWorld, selected);\
+            if (didInteract) {
+                // TODO: ECS interact?
+                if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(selected)) {
+                    mWorld.getECS().pickupTileItem(entity, itemCmp->getTileItemUID(), itemCmp->getItemStack().count);
+                } else if (mRegistry.all_of<SimpleItemComponent>(selected)) {
+                    mWorld.getECS().pickupDynamicItem(entity, selected, 1);
+                }
+                //EntityFactory::destroyEntity(mWorld, selected);
                 return;
             }
 

@@ -82,25 +82,26 @@ struct SimpleItemStack {
 static_assert(sizeof(SimpleItemStack) == 8);
 
 // Maximum stack size is 4,294,967,295 
-struct ItemStack {
+class ItemStack {
+public:
     ItemStack() = default;
-    ItemStack(ui32 itemId, ui32 count) : id(itemId), count(count) {}
-    ItemStack(ui32 itemId, ui32 count, ItemProperties props) : id(itemId), count(count), props(props) {}
-    ItemStack(ui32 itemId, ui32 count, ui16 reservedCount, ItemProperties props) : id(itemId), count(count), reservedCount(reservedCount), props(props) {}
-    ItemStack(SimpleItemStack simpleStack) {
-        count = simpleStack.count;
-        id = simpleStack.itemId;
-    }
+    ItemStack(ui32 itemId, ui32 count);
+    ItemStack(ui32 itemId, ui32 count, ItemProperties props);
+    ItemStack(ui32 itemId, ui32 count, ui16 reservedCount, ItemProperties props);
+    ItemStack(SimpleItemStack simpleStack);
 
     bool canCombine(const ItemStack other) const {
         constexpr auto offset = offsetof(ItemStack, id);
         return memcmp(this + offset, &other + offset, sizeof(ItemStack) - offset) == 0;
     }
 
-    ui32 count = 0; // TODO: This should likely be ui16 to match tile item stack size
-    ItemID id = INVALID_ITEM_ID;
-    ui16 reservedCount = 0;
-    ItemProperties props;
+    void init(ItemID id, ui32 count);
+    void init(ItemID id, ui32 count, ItemProperties props) {
+        this->id = id;
+        this->count = count;
+        this->props = props;
+    }
+
 
     bool isNull() const { return count == 0; }
     bool isValid() const { return count > 0; }
@@ -108,6 +109,15 @@ struct ItemStack {
     BINARY_SERIALIZE() {
         s.ext(*this, bitsery::ext::PodStruct{});
     }
+
+public:
+    ui32 count = 0; // TODO: This should likely be ui16 to match tile item stack size
+    ItemID id = INVALID_ITEM_ID;
+    ui16 reservedCount = 0;
+    ItemProperties props;
+
+private:
+    void initInternal();
 };
 
 static_assert(sizeof(ItemStack) == 12);
@@ -189,7 +199,8 @@ public:
     TileItemUID uniqueId = INVALID_TILE_ITEM_UID;
 };
 
-struct ItemStackWithUID {
+class ItemStackWithUID {
+public:
     ItemStack itemStack;
     TileItemUID tileItemUID = INVALID_TILE_ITEM_UID;
 };

@@ -33,13 +33,14 @@ i32 SimChunkTileItemReservation::tryPickupSimThread(i32 maxCount) {
     return mOwnerChunk.tryPickupItemsForReservation(*this, maxCount).x;
 }
 
-i32 SimChunkTileItemReservation::tryPickupGameThread(i32 maxCount, IFullECS& ecs) {
+i32 SimChunkTileItemReservation::tryPickupGameThread(entt::entity picker, i32 maxCount, IFullECS& ecs) {
     ASSERT_GAME_THREAD();
     assert(!mOwnerChunk.isSimulating()); // TODO: We probably need to allow this for edge of loaded chunks or we crash later
     i32v2 result = mOwnerChunk.tryPickupItemsForReservation(*this, maxCount);
     if (result.x) {
         // Notify ECS
-        ecs.onItemPickedUp(mItemUID, result.y);
+        // REMAINING ALREADY DONE???
+        ecs.pickupTileItem(picker, mItemUID, result.x);
     }
     return result.x;
 }

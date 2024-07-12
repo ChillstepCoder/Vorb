@@ -114,7 +114,7 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
 
     if (ImGui::CollapsingHeader("Game Settings")) {
         ImGui::Checkbox("VSYNC", &sDebugOptions.mVSYNC);
-        if (ImGui::SliderFloat("Load range", &sDebugOptions.mLoadRange, 128.0f, 3000.0f, "%.1f")) {
+        if (ImGui::SliderFloat("Load range", &sDebugOptions.mLoadRange, 128.0f, 3000.0f)) {
             sDebugOptions.mLoadRangeSq = SQ(sDebugOptions.mLoadRange);
         }
         if (ImGui::Button("LOW POWER MODE")) {

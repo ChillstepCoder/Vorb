@@ -495,7 +495,7 @@ void ConstructBuildingSimTask::updateMoveToItemStackFull(World& world, entt::reg
             break;
         case SimTaskTickResult::Success: {
 
-            const i32 pickedCount = mTileItemReservation->tryPickupGameThread(TMP_CARRY_COUNT, world.getECS());
+            const i32 pickedCount = mTileItemReservation->tryPickupGameThread(fullAgent, TMP_CARRY_COUNT, world.getECS());
             if (pickedCount > 0) {
 
                 if (fullRegistry.all_of<DualResourceBundleComponent>(fullAgent)) {

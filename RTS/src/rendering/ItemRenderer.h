@@ -9,7 +9,7 @@
 #include "rendering/MaterialShaderDef.h"
 
 class ItemRepository;
-struct ItemStack;
+class ItemStack;
 class MaterialShaderDef;
 class ItemStockpile;
 class ItemDef;

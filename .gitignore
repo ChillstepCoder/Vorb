@@ -18,7 +18,7 @@ build/
 bld/
 [Bb]in/
 [Oo]bj/
-RTS/dependencies/noesis/
+RTS/dependencies/noesisgui/
 RTS/dependencies/CGAL/
 RTS/dependencies/lzma/
 RTS/dependencies/boost/

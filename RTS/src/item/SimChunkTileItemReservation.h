@@ -27,7 +27,7 @@ public:
     // Try to instantly retrieve items from the reservation. Returns number of items picked up. 
     // Caller must create resulting items itself
     [[nodiscard]] i32 tryPickupSimThread(i32 maxCount);
-    [[nodiscard]] i32 tryPickupGameThread(i32 maxCount, IFullECS& ecs);
+    [[nodiscard]] i32 tryPickupGameThread(entt::entity picker, i32 maxCount, IFullECS& ecs);
 
     bool isValid() const { return mReservedCount > 0; }
     ChunkTileIndex getTileIndex() const { return mTileIndex; }

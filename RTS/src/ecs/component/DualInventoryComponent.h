@@ -54,7 +54,7 @@ public:
     // Get combined weight of all items in the bag
     f32 getTotalBagWeight(InventoryBagType bagType) const { return mBagWeights[e_cast(bagType)]; }
 
-    bool addOrDropItemStack(ItemStack itemStack);
+    bool addItemStack(ItemStack itemStack);
     // Returns amount removed
     int removeItemStack(ItemStack itemStack);
 

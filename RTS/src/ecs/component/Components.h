@@ -24,6 +24,7 @@
 #include "ecs/component/ProjectileComponent.h"
 #include "ecs/component/PlayerIdComponent.h"
 #include "ecs/component/SimpleTextNameplateComponent.h"
+#include "ecs/component/ObjectPickupComponent.h"
 #include "ecs/business/BusinessComponent.h"
 // Charactermodel has a component TODO: Split
 #include "rendering/CharacterModel.h"

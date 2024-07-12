@@ -1,0 +1,40 @@
+emitters:
+  - default_emitter:
+      scale: [0.1,0.1]
+      color: [255,255,255,255]
+      max_particles: 2000
+      lifetime: 3
+      p_lifespan: 3
+      looping: 1
+      blend: additive
+      shader: particle_bb_3d
+      e_update:
+        - spawn_burst:
+            delay: 0
+            spawn_count: 100
+      p_init:
+        - ring_burst:
+            speed_range: [1,2]
+            max_angle: 90
+            ring_normal: [0,0,1]
+        - set_life:
+            life:
+              rand_float:
+                min: 2
+                max: 4
+                seed_by_p: 1
+        - set_color:
+            color: [255,197,70,255]
+      p_update:
+        - apply_force:
+            force: [0,0,-4]
+        - mult_scale:
+            scale:
+              f32_to_vec2:
+                v:
+                  float_curve:
+                    norm_input:
+                      p_norm_life: {}
+                    keys:
+                      - [0,1]
+                      - [1,0]

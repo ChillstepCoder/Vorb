@@ -53,6 +53,32 @@ public:
         }
         assert(false && "Item not found");
     }
+    // Returns a stack with the taken count + remaining in pair
+    std::pair<ItemStack, ui32 /*remaining*/> takeCount(TileItemUID tileItemUID, i32 count) {
+        assert(count > 0);
+        for (ItemStackWithUID& stack : mItemStacks) {
+            if (stack.tileItemUID == tileItemUID) {
+                assert(count <= stack.itemStack.count);
+                stack.itemStack.count -= count;
+
+                ItemStack takenStack = stack.itemStack;
+                takenStack.count = count;
+
+                if (stack.itemStack.count == 0) {
+                    // Remove
+                    stack = mItemStacks.back();
+                    mItemStacks.pop_back();
+                    return std::make_pair(takenStack, 0);
+                }
+                return std::make_pair(takenStack, stack.itemStack.count);
+            }
+        }
+        return std::make_pair(ItemStack(), 0);
+    }
+
+    bool isEmpty() const {
+        return mItemStacks.empty();
+    }
 
     const std::vector<ItemStackWithUID>& getItemStacks() const {
         return mItemStacks;
