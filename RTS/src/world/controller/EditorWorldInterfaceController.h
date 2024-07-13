@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Vorb/ui/KeyboardEventManager.h>
-#include <Vorb/ui/MouseEventManager.h>
+#include "input/KeyboardEventManager.h"
+#include "input/MouseEventManager.h"
 
 #include "IWorldInterfaceController.h"
 

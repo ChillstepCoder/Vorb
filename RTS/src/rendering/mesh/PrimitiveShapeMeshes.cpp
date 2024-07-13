@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "PrimitiveShapeMeshes.h"
 
-#include "Vorb/MeshGenerators.h"
-
 #include "rendering/mesh/mesher/builder/ModelMeshBuilder.h"
 #include "rendering/mesh/mesher/builder/MeshBuilderCommon.h"
 
@@ -14,9 +12,6 @@ Mesh& PrimitiveShapeMeshes::getOrGenerateShapeMesh(PrimitiveShapeType type) {
     // Generate lazily if needed
     if (mMeshes[e_cast(type)] == nullptr) {
         switch (type) {
-            case PrimitiveShapeType::IcoSphere:
-                generateIcoSphereMesh();
-                break;
             case PrimitiveShapeType::UVSphere:
                 generateUVSphereMesh();
                 break;
@@ -33,46 +28,10 @@ Mesh& PrimitiveShapeMeshes::getOrGenerateShapeMesh(PrimitiveShapeType type) {
                 assert(false);
 
         }
-        static_assert(e_cast(PrimitiveShapeType::COUNT) == 5);
+        static_assert(e_cast(PrimitiveShapeType::COUNT) == 4);
     }
 
     return *mMeshes[e_cast(type)];
-}
-
-void PrimitiveShapeMeshes::generateIcoSphereMesh() {
-    std::vector<ui32> indices;
-    std::vector<f32v3> positions;
-    vmesh::generateIcosphereMesh(3, indices, positions);
-    std::vector<ui16> indices16(indices.size());
-    for (size_t i = 0; i < indices.size(); ++i) {
-        indices16[i] = indices[i];
-    }
-
-    // This has an ugly seam
-    std::vector<StandardModelVertex> vertices(positions.size(), StandardModelVertex{});
-    for (size_t i = 0; i < vertices.size(); ++i) {
-        StandardModelVertex& myVert = vertices[i];
-        myVert.pos = positions[i];
-        f32v3 normalFloat = glm::normalize(myVert.pos);
-        f32v3 tangentFloat = glm::normalize(glm::cross(normalFloat, f32v3(0.0f, 0.0f, 1.0f)));
-        if (normalFloat == f32v3(0.0f, 0.0f, 1.0f)) {
-            tangentFloat = f32v3(1.0f, 0.0f, 0.0f);
-        }
-        else if (normalFloat == f32v3(0.0f, 0.0f, -1.0f)) {
-            tangentFloat = f32v3(-1.0f, 0.0f, 0.0f);
-        }
-        // https://gamedev.stackexchange.com/questions/114412/how-to-get-uv-coordinates-for-sphere-cylindrical-projection
-        f32v2 uvFloat;
-        uvFloat.x = atan2(normalFloat.x, 1.0 - normalFloat.y) / (M_2_PI) + 0.5;
-        uvFloat.y = normalFloat.z * 0.5 + 0.5;
-        uvFloat = glm::clamp(uvFloat, f32v2(0.0), f32v2(1.0));
-        myVert.uvsPacked = PackUVs(uvFloat);
-        myVert.normalPacked = Pack_INT_2_10_10_10_REV(normalFloat.x, normalFloat.y, normalFloat.z, 0.0f);
-        myVert.tangentPacked = Pack_INT_2_10_10_10_REV(tangentFloat.x, tangentFloat.y, tangentFloat.z, 0.0f);
-        myVert.color = COLOR_WHITE;
-    }
-
-    uploadMesh(vertices, indices16, PrimitiveShapeType::IcoSphere);
 }
 
 // http://www.songho.ca/opengl/gl_sphere.html

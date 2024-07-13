@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "debugging/DebugRenderer.h"
 
-#include <Vorb/MeshGenerators.h>
 #include <Vorb/graphics/RasterizerState.h>
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/GLProgram.h>

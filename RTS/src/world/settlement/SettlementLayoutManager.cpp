@@ -178,7 +178,7 @@ bool SettlementLayoutManager::tryAddSector(DTileCoord center, f32 desiredRadius,
                 mSettlementEntity,
                 newSector.center,
                 otherSector.center,
-                DTileCoord(i32v2(glm::round(vmath::lerp(f32v2(newSector.center.v), f32v2(otherSector.center.v), distanceRatio)))),
+                DTileCoord(i32v2(glm::round(lerp(f32v2(newSector.center.v), f32v2(otherSector.center.v), distanceRatio)))),
                 TerrainSurfaceType::DirtRoad,
                 DESIRED_ROAD_WIDTH,
                 zone

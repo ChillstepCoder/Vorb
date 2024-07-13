@@ -39,10 +39,10 @@ public:
 
         // Smooth accelerate, abrupt decelerate
         if (isDecelerating) {
-            mCurrentVelocity = vmath::lerp(mCurrentVelocity, maxTargetVelocity, 0.9f);
+            mCurrentVelocity = lerp(mCurrentVelocity, maxTargetVelocity, 0.9f);
         }
         else {
-            mCurrentVelocity = vmath::lerp(mCurrentVelocity, maxTargetVelocity, 0.1f);
+            mCurrentVelocity = lerp(mCurrentVelocity, maxTargetVelocity, 0.1f);
         }
         mCurr = mCurr + mCurrentVelocity;
     }
@@ -62,7 +62,7 @@ class SphericalTweener : public Tweener<T> {
 public:
     SphericalTweener(T start, f32 maxSpeed = 0.3f, f32 accel = 0.1f) : Tweener<T>(start, maxSpeed, accel) {  }
     void update(f32 deltaTime) override {
-        Tweener<T>::mCurr = vmath::lerp(Tweener<T>::mCurr, Tweener<T>::mTarget, Tweener<T>::mAccel);
+        Tweener<T>::mCurr = lerp(Tweener<T>::mCurr, Tweener<T>::mTarget, Tweener<T>::mAccel);
         Tweener<T>::mCurr = glm::normalize(Tweener<T>::mCurr);
     }
 };

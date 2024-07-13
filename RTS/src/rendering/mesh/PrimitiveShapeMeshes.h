@@ -5,7 +5,6 @@
 struct StandardModelVertex;
 
 enum class PrimitiveShapeType {
-    IcoSphere,
     UVSphere,
     Plane,
     Cube,

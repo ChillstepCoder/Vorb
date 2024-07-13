@@ -11,9 +11,8 @@
 
 #include "rendering/GLExtensions.h"
 
-#include <Vorb/ui/InputDispatcher.h>
-#include <Vorb/ui/ScreenList.h>
-#include <Vorb/sound/SoundEngine.h>
+#include "input/InputDispatcher.h"
+#include "ui/ScreenList.h"
 #include <Vorb/graphics/ShaderManager.h>
 
 // TODO: Config

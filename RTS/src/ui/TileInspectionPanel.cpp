@@ -15,7 +15,7 @@
 #include "building/building.h"
 
 
-#include <Vorb/ui/GameWindow.h>
+#include "ui/GameWindow.h"
 
 TileInspectionPanel::TileInspectionPanel(World& world, const f32v2& screenPos, const TileHandle& tileHandle) : mWorld(world), mScreenPos(screenPos), mTileHandle(tileHandle) {
 

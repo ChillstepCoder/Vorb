@@ -23,7 +23,7 @@
 #include "resources/ResourceManager.h"
 #include "resources/FishRepository.h"
 
-#include <Vorb/ui/InputDispatcher.h>
+#include "input/InputDispatcher.h"
 
 // Initialize launch position
 constexpr f32 BOBBER_GRAVITY = GRAVITY_Z;

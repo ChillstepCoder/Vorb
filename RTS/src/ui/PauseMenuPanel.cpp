@@ -6,8 +6,7 @@
 #include <imgui_internal.h>
 
 
-#include <Vorb/ui/GameWindow.h>
-
+#include "ui/GameWindow.h"
 // TODO: Util
 const ImVec2 buttonSize(200, 50);
 

@@ -332,6 +332,9 @@
     <ClCompile Include="src\generation\WorldGenerationBlackboard.cpp" />
     <ClCompile Include="src\generation\WorldGenerationData.cpp" />
     <ClCompile Include="src\generation\ChunkGenerator.cpp" />
+    <ClCompile Include="src\input\InputDispatcher.cpp" />
+    <ClCompile Include="src\input\KeyboardEventManager.cpp" />
+    <ClCompile Include="src\input\MouseEventManager.cpp" />
     <ClCompile Include="src\instrumentation\instrumentor.cpp" />
     <ClCompile Include="src\io\PngLoader.cpp" />
     <ClCompile Include="src\item\ArmorItem.cpp" />
@@ -348,6 +351,7 @@
     <ClCompile Include="src\item\WeaponItem.cpp" />
     <ClCompile Include="src\logging\ErrorLogging.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\MainGame.cpp" />
     <ClCompile Include="src\math\Noise.cpp" />
     <ClCompile Include="src\math\Random.cpp" />
     <ClCompile Include="src\network\cli\CliAdapter.cpp" />
@@ -505,7 +509,9 @@
     <ClCompile Include="src\ui\editor\NodeGraph.cpp" />
     <ClCompile Include="src\ui\editor\TileDistributionEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\GameWindow.cpp" />
     <ClCompile Include="src\ui\NoesisGuiContext.cpp" />
+    <ClCompile Include="src\ui\ScreenList.cpp" />
     <ClCompile Include="src\util\FixedSizeVector.cpp" />
     <ClCompile Include="src\util\TilingVoronoiMap.cpp" />
     <ClCompile Include="src\visibility\TileVisibilityContainer.cpp" />
@@ -773,6 +779,11 @@
     <ClInclude Include="src\generation\WorldGenerationBlackboard.h" />
     <ClInclude Include="src\generation\WorldGenerationData.h" />
     <ClInclude Include="src\generation\ChunkGenerator.h" />
+    <ClInclude Include="src\input\InputDispatcher.h" />
+    <ClInclude Include="src\input\InputDispatcherEventCatcher.h" />
+    <ClInclude Include="src\input\KeyboardEventManager.h" />
+    <ClInclude Include="src\input\MouseEventManager.h" />
+    <ClInclude Include="src\input\WindowEventManager.h" />
     <ClInclude Include="src\instrumentation\instrumentor.h" />
     <ClInclude Include="src\interact\SelectedObjectData.h" />
     <ClInclude Include="src\io\PngLoader.h" />
@@ -794,6 +805,7 @@
     <ClInclude Include="src\item\SimpleItemReservation.h" />
     <ClInclude Include="src\item\WeaponItem.h" />
     <ClInclude Include="src\logging\ErrorLogging.h" />
+    <ClInclude Include="src\MainGame.h" />
     <ClInclude Include="src\math\ConstVectors.h" />
     <ClInclude Include="src\math\fastPRNG.h" />
     <ClInclude Include="src\math\Noise.h" />
@@ -1014,8 +1026,11 @@
     <ClInclude Include="src\ui\editor\NodeGraph.h" />
     <ClInclude Include="src\ui\editor\TileDistributionEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\TileEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\GameWindow.h" />
+    <ClInclude Include="src\ui\IGameScreen.h" />
     <ClInclude Include="src\ui\imgui_controls\ObjectVector.h" />
     <ClInclude Include="src\ui\NoesisGuiContext.h" />
+    <ClInclude Include="src\ui\ScreenList.h" />
     <ClInclude Include="src\util\DitherMatrix.h" />
     <ClInclude Include="src\util\GridIdUtil.h" />
     <ClInclude Include="src\util\FixedSizeVector.h" />

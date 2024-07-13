@@ -384,7 +384,7 @@ bool SettlementRoadNetwork::tryPlaceRoadInternal(entt::entity settlement, RoadSe
 
     for (int i = 1; i < POINT_COUNT - 1; ++i) {
         // generate intermediate points
-        verts[i] = DTileCoord(i32v2(glm::round(vmath::lerp(f32v2(startVertex.v), f32v2(endVertex.v), f32(i) / (POINT_COUNT - 1)))));
+        verts[i] = DTileCoord(i32v2(glm::round(lerp(f32v2(startVertex.v), f32v2(endVertex.v), f32(i) / (POINT_COUNT - 1)))));
         verts[i].x += mRandomGenerator.getRandomIntInRange(-2, 2);
         verts[i].y += mRandomGenerator.getRandomIntInRange(-2, 2);
     }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Vorb/ui/IGameScreen.h>
+#include "ui/IGameScreen.h"
 #include <Vorb/blockingconcurrentqueue.h>
 
 #include <gli/gli.hpp>

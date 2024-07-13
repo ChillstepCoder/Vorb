@@ -4,7 +4,6 @@
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 
-
 TextMeshBuilder::TextMeshBuilder() {
 
 }

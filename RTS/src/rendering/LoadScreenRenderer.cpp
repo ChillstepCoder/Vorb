@@ -13,7 +13,7 @@
 #include <Vorb/graphics/GLProgram.h>
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/SpriteFont.h>
-#include <Vorb/ui/GameWindow.h>
+#include "ui/GameWindow.h"
 
 const cString SIMPLE_VS_SRC = R"(
 const vec2 vertices[3]=vec2[3](vec2(-1,-1), vec2(3,-1), vec2(-1, 3));

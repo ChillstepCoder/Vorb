@@ -39,7 +39,7 @@
 
 #include <Vorb/graphics/ShaderManager.h>
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
-#include <Vorb/ui/InputDispatcher.h>
+#include "input/InputDispatcher.h"
 
 #include "camera/OrthoCamera.h"
 

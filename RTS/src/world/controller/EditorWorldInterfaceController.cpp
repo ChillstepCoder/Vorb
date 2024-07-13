@@ -20,7 +20,7 @@
 
 #include <imgui.h>
 #include <SDL.h>
-#include <Vorb/ui/GameWindow.h>
+#include "ui/GameWindow.h"
 
 #include "options/DebugOptions.h"
 

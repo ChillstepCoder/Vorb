@@ -6,7 +6,7 @@
 #include "world/World.h"
 #include "debugging/DebugRenderer.h"
 
-#include <Vorb/ui/InputDispatcher.h>
+#include "input/InputDispatcher.h"
 #include <glm/gtx/rotate_vector.hpp>
 
 #include "physics/PhysicsWorld.h"

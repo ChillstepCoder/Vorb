@@ -8,7 +8,7 @@
 
 #include "ui/editor/ContentBrowser/ContentBrowserItem.h"
 
-#include <Vorb/ui/InputDispatcher.h>
+#include "input/InputDispatcher.h"
 
 enum class CONTENT_BROWSER_EVENT_TYPE {
     AssetCreated,

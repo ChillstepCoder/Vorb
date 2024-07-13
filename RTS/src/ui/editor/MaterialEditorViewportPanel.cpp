@@ -31,15 +31,8 @@ void MaterialEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
     ImGui::Separator();
     updateAndRenderSharedControls();
     ImGui::Separator();
-    // Sphere
-    // Plane
-    // Cube
-    // Cylinder
-    // Custom Mesh
-    // Draw mode
-    static_assert(e_cast(PrimitiveShapeType::COUNT) == 5);
+    static_assert(e_cast(PrimitiveShapeType::COUNT) == 4);
     const char* shapeTypes[e_cast(PrimitiveShapeType::COUNT)] = {
-        "IcoSphere",
         "UVSphere",
         "Plane",
         "Cube",

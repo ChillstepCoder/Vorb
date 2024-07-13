@@ -9,7 +9,7 @@
 #include "resources/asset/AssetHandleBundle.h"
 
 AssetLoader::AssetLoader() {
-    const size_t numWorkerThreads = vmath::clamp(std::thread::hardware_concurrency() / 2u, 1u, 6u);
+    const size_t numWorkerThreads = glm::clamp(std::thread::hardware_concurrency() / 2u, 1u, 6u);
     /// Allocate all threads
     mWorkers.resize(numWorkerThreads);
     for (ui32 i = 0; i < numWorkerThreads; i++) {

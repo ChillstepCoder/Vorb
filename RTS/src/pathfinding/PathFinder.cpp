@@ -120,7 +120,7 @@ f32 getDiagonalHeuristicAtPosition(const f32v3& pos, const f32v3& goalPos) {
     // TODO: 3D
     f32 dx = abs((f32)pos.x - (f32)goalPos.x);
     f32 dy = abs((f32)pos.y - (f32)goalPos.y);
-    return /*D * */(dx + dy) + (D2 - 2.0f/* * D*/) * vmath::min(dx, dy);
+    return /*D * */(dx + dy) + (D2 - 2.0f/* * D*/) * glm::min(dx, dy);
 }
 
 f32 getEuclideanHeuristicAtPosition(const f32v3& node, const f32v3& goal) {

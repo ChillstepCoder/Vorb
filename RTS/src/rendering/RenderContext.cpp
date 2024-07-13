@@ -73,7 +73,7 @@
 
 #include "time/TimeOfDayManager.h" // TODO: Move to WorldRenderer
 
-#include <Vorb/ui/InputDispatcher.h>
+#include "input/InputDispatcher.h"
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>

@@ -115,7 +115,7 @@ IntersectionHit2D IntersectionUtil::segmentAABBIntersect(const f32v2& pos, const
     }
 
     IntersectionHit2D hit;
-    hit.timeSource = vmath::clamp(nearTime, 0.0f, 1.0f);
+    hit.timeSource = glm::clamp(nearTime, 0.0f, 1.0f);
     if (nearTimeX > nearTimeY) {
         hit.normal.x = -signX;
         hit.normal.y = 0;
@@ -184,10 +184,10 @@ IntersectionHit2D IntersectionUtil::segmentCircleIntersect(const f32v2& p1, cons
 
         if (0.0 <= t1 && t1 <= 1.0) {
             // Interpolate to get collision point
-            hit.position = circleCenter + vmath::lerp(normA, normB, t1);
+            hit.position = circleCenter + lerp(normA, normB, t1);
         }
         else if (0.0 <= t2 && t2 <= 1.0) {
-            hit.position = circleCenter + vmath::lerp(normA, normB, t2);
+            hit.position = circleCenter + lerp(normA, normB, t2);
         }
         else {
             return hit; // No hit

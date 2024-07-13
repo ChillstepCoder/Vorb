@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Vorb/ui/MainGame.h>
+#include "MainGame.h"
 
 #include "FeatureConst.h"
 

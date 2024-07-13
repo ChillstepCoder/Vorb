@@ -21,7 +21,7 @@
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include <Vorb/graphics/BlendState.h>
 
-#include <Vorb/ui/GameWindow.h>
+#include "ui/GameWindow.h"
 
 #include "ui/NoesisGuiContext.h"
 

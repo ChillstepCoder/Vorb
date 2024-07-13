@@ -3,8 +3,7 @@
 
 #include "App.h"
 
-#include <Vorb/math/VorbMath.hpp>
-#include <Vorb/ui/InputDispatcher.h>
+#include "input/InputDispatcher.h"
 #include <Vorb/graphics/SpriteFont.h>
 #include <glm/gtx/rotate_vector.hpp>
 
@@ -240,7 +239,7 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
         const f32 frameAlpha = 0.0f /*TODO: Framealpha?*/;
 
         // Grab fps
-        sFps = vmath::lerp(sFps, m_app->getFps(), 0.85f);
+        sFps = lerp(sFps, m_app->getFps(), 0.85f);
         mFps = sFps;
 
         mRenderContext->renderFrame(*mCameraController, frameAlpha, gameTime.elapsedSec);

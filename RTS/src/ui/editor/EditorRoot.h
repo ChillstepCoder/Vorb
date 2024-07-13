@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Vorb/ui/InputDispatcher.h>
+#include "input/InputDispatcher.h"
 
 #include <imgui.h>
 

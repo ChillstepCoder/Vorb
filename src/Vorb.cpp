@@ -3,7 +3,6 @@
 
 #include "Vorb/io/filesystem.h"
 
-#include <enet/enet.h>
 //#include <FreeImage.h>
 #if defined(VORB_IMPL_FONT_SDL)
 //#if defined(VORB_OS_WINDOWS)
@@ -18,7 +17,6 @@
 #include "Vorb/graphics/ConnectedTextures.h"
 #include "Vorb/graphics/SpriteBatch.h"
 #include "Vorb/io/IOManager.h"
-#include "Vorb/sound/SoundEngine.h"
 #include "Vorb/utils.h"
 #include "Vorb/VorbLibs.h"
 #include "Vorb/Event.hpp"
@@ -104,27 +102,7 @@ namespace vorb {
 
         return InitParam::IO;
     }
-    InitParam initSound() {
-        // Check for previous initialization
-        if (isSystemInitialized(InitParam::SOUND)) {
-            return InitParam::SOUND;
-        }
-
-        if (!vsound::impl::initSystem()) return InitParam::NONE;
-
-        return InitParam::SOUND;
-    }
-    InitParam initNet() {
-        // Check for previous initialization
-        if (isSystemInitialized(InitParam::NET)) {
-            return InitParam::NET;
-        }
-
-        auto err = enet_initialize();
-        if (err != 0) return InitParam::NONE;
-        return InitParam::NET;
-    }
-    
+   
     /************************************************************************/
     /* Disposers                                                            */
     /************************************************************************/
@@ -152,26 +130,7 @@ namespace vorb {
 
         return InitParam::IO;
     }
-    InitParam disposeSound() {
-        // Check for existence
-        if (!isSystemInitialized(InitParam::SOUND)) {
-            return InitParam::SOUND;
-        }
-        
-        if (!vsound::impl::disposeSystem()) return InitParam::NONE;
-
-        return InitParam::SOUND;
-    }
-    InitParam disposeNet() {
-        // Check for existence
-        if (!isSystemInitialized(InitParam::NET)) {
-            return InitParam::NET;
-        }
-
-        enet_deinitialize();
-
-        return InitParam::NET;
-    }
+  
 }
 
 vorb::InitParam vorb::init(const InitParam& p) {
@@ -182,10 +141,8 @@ vorb::InitParam vorb::init(const InitParam& p) {
     vorb::Logger::init(LoggingLevel::Trace);
 
     vorb::InitParam succeeded = InitParam::NONE;
-    if (HAS(p, InitParam::SOUND)) succeeded |= initSound();
     if (HAS(p, InitParam::GRAPHICS)) succeeded |= initGraphics();
     if (HAS(p, InitParam::IO)) succeeded |= initIO();
-    if (HAS(p, InitParam::NET)) succeeded |= initNet();
 
     // Add system flags
     currentSettings |= succeeded;
@@ -198,10 +155,8 @@ vorb::InitParam vorb::dispose(const InitParam& p) {
 #define HAS(v, b) ((v & b) != InitParam::NONE)
 
     vorb::InitParam succeeded = InitParam::NONE;
-    if (HAS(p, InitParam::SOUND)) succeeded |= disposeSound();
     if (HAS(p, InitParam::GRAPHICS)) succeeded |= disposeGraphics();
     if (HAS(p, InitParam::IO)) succeeded |= disposeIO();
-    if (HAS(p, InitParam::NET)) succeeded |= disposeNet();
 
     // Remove system flags
     currentSettings &= (InitParam)(~(ui64)succeeded);

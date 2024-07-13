@@ -34,11 +34,11 @@ void TimeOfDayManager::updateTimeOfDay(f32 timePassedHours) {
     // Colors TODO: DIFFERENT
     const f32v3& sunSet = sDebugOptions.mSunColorSunset;
     const f32v3& sunPeak = sDebugOptions.mSunColorPeak;
-    const float c = vmath::max(mSunHeight, 0.0f);
+    const float c = glm::max(mSunHeight, 0.0f);
     mSunColor = f32v3(
-        vmath::lerp(sunSet.r, sunPeak.r, c),
-        vmath::lerp(sunSet.g, sunPeak.g, c),
-        vmath::lerp(sunSet.b, sunPeak.b, c)
+        lerp(sunSet.r, sunPeak.r, c),
+        lerp(sunSet.g, sunPeak.g, c),
+        lerp(sunSet.b, sunPeak.b, c)
     );
 
 }

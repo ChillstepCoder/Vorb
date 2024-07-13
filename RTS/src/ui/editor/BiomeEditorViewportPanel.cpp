@@ -4,7 +4,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
-#include <Vorb/ui/InputDispatcher.h>
+#include "input/InputDispatcher.h"
 
 #include <Vorb/graphics/GBuffer.h>
 #include <Vorb/graphics/DepthState.h>

@@ -13,7 +13,7 @@
 #include <imgui_internal.h>
 
 
-#include <Vorb/ui/GameWindow.h>
+#include "ui/GameWindow.h"
 
 FishingEditorViewportPanel::FishingEditorViewportPanel() : AssetEditorViewportPanel<FishDef>() {
     mShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model_pbr"));

@@ -4,7 +4,6 @@
 
 #include <Vorb/graphics/SamplerState.h>
 #include <Vorb/graphics/BlendState.h>
-#include <Vorb/ui/GameWindow.h>
 
 SERIALIZABLE_ENUM(vg::SamplerStateType, SamplerStateType,
     pair{ vg::SamplerStateType::POINT_WRAP, "POINT_WRAP"sv },
@@ -31,11 +30,3 @@ SERIALIZABLE_ENUM(vg::BlendStateType, BlendStateType,
     pair{ vg::BlendStateType::MULTIPLY, "multiply"sv }
 )
 static_assert(e_count(vg::BlendStateType) == 6, "Update with new");
-
-SERIALIZABLE_ENUM(vui::GameSwapInterval, GameSwapInterval,
-    pair{ vui::GameSwapInterval::UNLIMITED_FPS, "Unlimited"sv },
-    pair{ vui::GameSwapInterval::V_SYNC, "VSync"sv },
-    pair{ vui::GameSwapInterval::LOW_SYNC, "LowSync"sv },
-    pair{ vui::GameSwapInterval::POWER_SAVER, "PowerSaver"sv },
-    pair{ vui::GameSwapInterval::USE_VALUE_CAP, "ValueCap"sv }
-)

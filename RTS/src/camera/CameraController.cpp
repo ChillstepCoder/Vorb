@@ -6,8 +6,8 @@
 #include "world/World.h"
 
 #include "ecs/IFullECS.h"
-#include <Vorb/ui/GameWindow.h>
-#include <Vorb/ui/InputDispatcher.h>
+#include "ui/GameWindow.h"
+#include "input/InputDispatcher.h"
 #include <Vorb/ui/GameTime.h>
 
 const f32v2 CAMERA_ZOOM_RANGE = f32v2(1.0f, 1024.0f);

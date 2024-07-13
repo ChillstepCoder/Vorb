@@ -12,7 +12,6 @@
 #endif
 
 #include "Vorb/graphics/GraphicsDevice.h"
-#include "Vorb/graphics/ImageIO.h"
 #include "Vorb/graphics/SpriteBatch.h"
 #include "Vorb/utils.h"
 #include <iostream>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Vorb/ui/IGameScreen.h>
+#include "ui/IGameScreen.h"
 #include <yojimbo/yojimbo.h>
 #include "network/NetworkConst.h"
 

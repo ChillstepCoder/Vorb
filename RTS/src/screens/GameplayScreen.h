@@ -1,5 +1,5 @@
 #pragma once
-#include <Vorb/ui/IGameScreen.h>
+#include "ui/IGameScreen.h"
 
 #include <Vorb/graphics/Texture.h>
 
@@ -8,7 +8,7 @@
 #include "network/WorldNetMode.h"
 
 #include <Vorb/Timing.h>
-#include <Vorb/ui/KeyboardEventManager.h>
+#include "input/KeyboardEventManager.h"
 
 #include "world/WorldObjectQuery.h"
 

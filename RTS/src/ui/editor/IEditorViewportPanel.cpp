@@ -4,7 +4,7 @@
 #include <Vorb/graphics/GBuffer.h>
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>
-#include <Vorb/ui/InputDispatcher.h>
+#include "input/InputDispatcher.h"
 
 #include <glm/gtx/rotate_vector.hpp>
 

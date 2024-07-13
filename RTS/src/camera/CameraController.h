@@ -4,7 +4,7 @@
 #include "camera/Camera3D.h"
 #include <util/Tweener.h>
 
-#include <Vorb/ui/InputDispatcher.h>
+#include "input/InputDispatcher.h"
 
 DECL_VUI(struct GameTime);
 DECL_VUI(class GameWindow);

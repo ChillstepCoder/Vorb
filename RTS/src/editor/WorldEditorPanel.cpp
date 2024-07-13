@@ -35,7 +35,7 @@
 #include "physics/PhysicsWorld.h"
 #include "physics/PhysicsBroadPhaseLayerFilters.h"
 
-#include <Vorb/ui/InputDispatcher.h>
+#include "input/InputDispatcher.h"
 
 #include "util/NativeFileBrowser.h"
 

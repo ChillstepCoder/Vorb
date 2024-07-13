@@ -360,7 +360,7 @@ void BuildingBlueprintGenerator::addPrivateRoomsToGraph(BuildingBlueprintGenerat
         i32 roomIndex = 0;
         for (roomIndex = 0; roomIndex < context.desc->privateRooms.size(); ++roomIndex) {
             const PossibleRoom& room = context.desc->privateRooms[roomIndex];
-            ui8 roomCount = vmath::roundApprox(vmath::lerp((f32)room.countRange.x, (f32)room.countRange.y, context.sizeAlpha));
+            ui8 roomCount = round(lerp((f32)room.countRange.x, (f32)room.countRange.y, context.sizeAlpha));
             countLookup[roomIndex].x = 0;
             countLookup[roomIndex].y = roomCount;
             availablePrivateRooms += roomCount;
@@ -444,7 +444,7 @@ void placeChildrenRecursive(BuildingBlueprintGenerationContext& context, RoomGen
 
     }
 
-    const f32 desiredWidthSpan = vmath::min((f32)totalChildSpan, availableWidthSpan);
+    const f32 desiredWidthSpan = glm::min((f32)totalChildSpan, availableWidthSpan);
     
     // Place a child above with stairs if possible
     bool didCreateStairs = false;
@@ -502,7 +502,7 @@ void placeChildrenRecursive(BuildingBlueprintGenerationContext& context, RoomGen
 
             const i32 childDesiredRadius = child.desiredWidth / 2;
 
-            i32 xOffset = vmath::min(maxXOffsetPerLayer, (i32)(myDesiredRadius + childDesiredRadius));
+            i32 xOffset = glm::min(maxXOffsetPerLayer, (i32)(myDesiredRadius + childDesiredRadius));
             if (xOffset < 1) xOffset = 1;
 
             child.offsetFromZero = currentOffset;
@@ -541,8 +541,8 @@ void BuildingBlueprintGenerator::initRooms(BuildingBlueprintGenerationContext& c
 void applyForceOffset(ui16v2& offset, const f32v2& force, const i32v2& dims) {
     assert(offset.x < 10000 && offset.y < 10000);
     i32v2 newOffset = i32v2(offset) + i32v2(force);
-    offset.x = vmath::clamp(newOffset.x, 1, dims.x - 2);
-    offset.y = vmath::clamp(newOffset.y, 1, dims.y - 2);
+    offset.x = glm::clamp(newOffset.x, 1, dims.x - 2);
+    offset.y = glm::clamp(newOffset.y, 1, dims.y - 2);
     assert(offset.x < 10000 && offset.y < 10000);
 }
 
@@ -573,7 +573,7 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprintGenerationContext& 
 
     const f32 availableWidthSpan = (f32)dims.y;
     // Place the root, +1 so we are less likely to touch the side of the AABB
-    root->offsetFromZero = i32v2(vmath::min(maxDepthOffsetPerLayer / 2, (i32)root->desiredWidth / 2) + 1, dims.y / 2);
+    root->offsetFromZero = i32v2(glm::min(maxDepthOffsetPerLayer / 2, (i32)root->desiredWidth / 2) + 1, dims.y / 2);
     if (root->offsetFromZero.x == 0) root->offsetFromZero.x = 1u;
     assert(root->offsetFromZero.x < 10000 && root->offsetFromZero.y < 10000);
 
@@ -610,8 +610,8 @@ void BuildingBlueprintGenerator::placeRooms(BuildingBlueprintGenerationContext& 
 
     // Clamp positions to be within outer facade
     for (auto&& room : context.rooms) {
-        room.offsetFromZero.x = vmath::clamp((i32)room.offsetFromZero.x, (i32)1u, (i32)dims3D.x - 1);
-        room.offsetFromZero.y = vmath::clamp((i32)room.offsetFromZero.y, (i32)1u, (i32)dims3D.y - 1);
+        room.offsetFromZero.x = glm::clamp((i32)room.offsetFromZero.x, (i32)1u, (i32)dims3D.x - 1);
+        room.offsetFromZero.y = glm::clamp((i32)room.offsetFromZero.y, (i32)1u, (i32)dims3D.y - 1);
         assert(room.offsetFromZero.x < 10000 && room.offsetFromZero.y < 10000);
     }
 
