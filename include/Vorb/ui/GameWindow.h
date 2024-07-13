@@ -23,11 +23,12 @@
 #include "../decorators.h"
 #endif // !VORB_USING_PCH
 
-#include "../io/Keg.h"
-
 #if defined(VORB_DX_11)
 struct ID3D11RenderTargetView;
 #endif
+
+#include "Vorb/Event.hpp"
+#include <vector>
 
 namespace vorb {
     namespace ui {
@@ -238,9 +239,5 @@ namespace vorb {
 namespace vui = vorb::ui;
 
 extern vui::GameWindow* sMainGameWindowHandle;
-
-KEG_ENUM_DECL(GameSwapInterval);
-KEG_TYPE_DECL(GameDisplayMode);
-
 
 #endif // !Vorb_GameWindow_h__

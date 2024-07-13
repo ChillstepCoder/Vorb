@@ -16,7 +16,6 @@
 #define IGameScreen_h__
 
 #include "MainGame.h"
-#include "FocusController.h"
 
 namespace vorb {
     namespace ui {

@@ -231,9 +231,6 @@
     <ClCompile Include="src\item\ItemReservation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\definitions\BusinessDef.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\pathfinding\NavPath.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -517,9 +514,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\mesh\PrimitiveShapeMeshes.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\rendering\model\MaterialRenderPassType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\post_process\SmudgeRenderer.cpp">
@@ -1141,6 +1135,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\item\ItemStack.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\NoesisGuiContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\filesystem\FileSystemWatcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2859,6 +2859,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\ObjectPickupComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\NoesisGuiContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\filesystem\FileSystemWatcher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

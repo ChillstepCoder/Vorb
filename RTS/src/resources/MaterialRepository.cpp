@@ -4,8 +4,6 @@
 
 #include <Vorb/graphics/SamplerState.h>
 
-#include "Vorb/io/YAML.h"
-#include "Vorb/io/YAMLImpl.h"
 #include <Vorb/io/FileOps.h>
 #include <Vorb/io/IOManager.h>
 

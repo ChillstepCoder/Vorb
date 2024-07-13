@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Vorb/io/Keg.h>
-
 namespace vorb {
     namespace graphics {
         enum class SamplerStateType {
@@ -19,7 +17,6 @@ namespace vorb {
             LINEAR_MIRROR,
             COUNT
         };
-        KEG_ENUM_DECL(SamplerStateType);
     }
 }
 namespace vg = vorb::graphics;

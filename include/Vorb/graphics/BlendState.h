@@ -24,8 +24,6 @@
 
 #include "GLEnums.h"
 
-#include <Vorb/io/Keg.h>
-
 namespace vorb {
     namespace graphics {
 
@@ -38,7 +36,6 @@ namespace vorb {
             MULTIPLY,
             COUNT
         };
-        KEG_ENUM_DECL(BlendStateType);
 
         class BlendState
         {

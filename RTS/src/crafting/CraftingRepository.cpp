@@ -10,27 +10,27 @@ struct ItemStackDef {
     nString itemName;
     ui32 count;
 };
-KEG_TYPE_DEF_SAME_NAME(ItemStackDef, kt) {
-    kt.addValue("item", keg::Value::basic(offsetof(ItemStackDef, itemName), keg::BasicType::STRING));
-    kt.addValue("count", keg::Value::basic(offsetof(ItemStackDef, count), keg::BasicType::UI32));
-}
+SERIALIZABLE_SIMPLE(ItemStackDef,
+    make_field(o.itemName, "item"sv),
+    make_field(o.count, "count"sv)
+)
 
 struct CraftingRecipeDef {
-    Array<ItemStackDef> inputs;
+    std::vector<ItemStackDef> inputs;
     ItemStackDef output;
     ItemStackDef byProduct;
     nString requiredWorkStation;
     bool requiresWorkBench = false;
     ui32 work = 1;
 };
-KEG_TYPE_DEF_SAME_NAME(CraftingRecipeDef, kt) {
-    kt.addValue("inputs", keg::Value::array(offsetof(CraftingRecipeDef, inputs), keg::Value::custom(0, "ItemStackDef", false)));
-    kt.addValue("output", keg::Value::custom(offsetof(CraftingRecipeDef, output), "ItemStackDef", false));
-    kt.addValue("byProduct", keg::Value::custom(offsetof(CraftingRecipeDef, byProduct), "ItemStackDef", false));
-    kt.addValue("required_workstation", keg::Value::basic(offsetof(CraftingRecipeDef, byProduct), keg::BasicType::STRING));
-    kt.addValue("requires_workbench", keg::Value::basic(offsetof(CraftingRecipeDef, requiresWorkBench), keg::BasicType::BOOL));
-    kt.addValue("work", keg::Value::basic(offsetof(CraftingRecipeDef, byProduct), keg::BasicType::UI32));
-}
+SERIALIZABLE_SIMPLE(CraftingRecipeDef, 
+    make_field(o.inputs, "inputs"sv),
+    make_field(o.output, "output"sv),
+    make_field(o.byProduct, "byProduct"sv),
+    make_field(o.requiredWorkStation, "required_workstation"sv),
+    make_field(o.requiresWorkBench, "requires_workbench"sv),
+    make_field(o.work, "work"sv)
+)
 
 CraftingRepository::CraftingRepository(vio::IOManager& ioManager) : mIoManager(ioManager) {
     // Add the null item, no lookup
@@ -39,50 +39,44 @@ CraftingRepository::CraftingRepository(vio::IOManager& ioManager) : mIoManager(i
 
 void CraftingRepository::loadRecipeFile(const vio::Path& filePath) {
     const ItemRepository& itemRepo = ItemRepository::get();
-    if (mIoManager.parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
-        keg::ReadContext& readContext = *((keg::ReadContext*)s);
 
-        CraftingRecipeDef def;
-        keg::parse((ui8*)&def, value, readContext, &KEG_GLOBAL_TYPE(CraftingRecipeDef));
-
-        CraftingRecipe& recipe = mCraftingRecipes.emplace_back();
-        recipe.mId = (CraftingRecipeID)(mCraftingRecipes.size() - 1);
-        // Inputs
-        recipe.mNumInputs = (ui32)def.inputs.size();
-        assert(recipe.mNumInputs < MAX_CRAFTING_RECIPE_INPUTS);
-        for (size_t i = 0; i < def.inputs.size(); ++i) {
-            const ItemStackDef& itemStackDef = def.inputs[i];
-            assert(itemRepo.assetExists(StrToken(itemStackDef.itemName)));
-            recipe.mInputItem[i].id = itemRepo.getAssetID(StrToken(itemStackDef.itemName));
-            recipe.mInputItem[i].count = itemStackDef.count;
-        }
-        // Output
-        assert(def.output.itemName.size());
-        recipe.mOutputItem.id = itemRepo.getAssetID(StrToken(def.output.itemName));
-        recipe.mOutputItem.count = def.output.count;
-
-        // By product
-        if (def.byProduct.itemName.size()) {
-            recipe.mByProduct.id = itemRepo.getAssetID(StrToken(def.byProduct.itemName));
-            recipe.mByProduct.count = def.byProduct.count;
-        }
-
-        if (def.requiredWorkStation.size()) {
-            recipe.mRequiredWorkStation = itemRepo.getAssetID(StrToken(def.requiredWorkStation));
-        }
-        recipe.mRequiresWorkbench = def.requiresWorkBench;
-        recipe.mWork = def.work;
-
-        // TODO: Check for mod conflicts
-        mCraftingRecipesFromName[key] = recipe.mId;
-
-    }))) {
-        // Do nothing on success
+    CraftingRecipeDef def;
+    // TODO: DELETE ME WHEN USING ASSET REPO BASE
+    nString fileData;
+    if (!mIoManager.readFileToString(filePath, fileData)) {
+        panic("Asset repository failed to read file {}", filePath.getCString());
     }
-    else {
-        // Failure case
-        pError("Failed to parse item file " + filePath.getString());
+    YmlSerializer::readFileData(fileData, def);
+
+    CraftingRecipe& recipe = mCraftingRecipes.emplace_back();
+    recipe.mId = (CraftingRecipeID)(mCraftingRecipes.size() - 1);
+    // Inputs
+    recipe.mNumInputs = (ui32)def.inputs.size();
+    assert(recipe.mNumInputs < MAX_CRAFTING_RECIPE_INPUTS);
+    for (size_t i = 0; i < def.inputs.size(); ++i) {
+        const ItemStackDef& itemStackDef = def.inputs[i];
+        assert(itemRepo.assetExists(StrToken(itemStackDef.itemName)));
+        recipe.mInputItem[i].id = itemRepo.getAssetID(StrToken(itemStackDef.itemName));
+        recipe.mInputItem[i].count = itemStackDef.count;
     }
+    // Output
+    assert(def.output.itemName.size());
+    recipe.mOutputItem.id = itemRepo.getAssetID(StrToken(def.output.itemName));
+    recipe.mOutputItem.count = def.output.count;
+
+    // By product
+    if (def.byProduct.itemName.size()) {
+        recipe.mByProduct.id = itemRepo.getAssetID(StrToken(def.byProduct.itemName));
+        recipe.mByProduct.count = def.byProduct.count;
+    }
+
+    if (def.requiredWorkStation.size()) {
+        recipe.mRequiredWorkStation = itemRepo.getAssetID(StrToken(def.requiredWorkStation));
+    }
+    recipe.mRequiresWorkbench = def.requiresWorkBench;
+    recipe.mWork = def.work;
+
+    mCraftingRecipesFromName[filePath.getFileNameNoExtension()] = recipe.mId;
 }
 
 std::vector<CraftingRecipe*> CraftingRepository::getAllCraftingRecipesWithInputs(std::vector<ItemID> inputs)

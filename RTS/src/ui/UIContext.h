@@ -13,6 +13,7 @@ class PauseMenuPanel;
 class EditorRoot;
 class LocalMinigameContext;
 class GameplayDebugger;
+class NoesisGuiContext;
 
 DECL_VG(class GBuffer);
 
@@ -52,6 +53,7 @@ public:
     LocalMinigameContext& getMinigameContext() const { return *mMinigameContext; }
     EditorRoot& getEditorRoot() const { return *mEditorRoot; }
     GameplayDebugger& getGameplayDebugger() const { return *mGameplayDebugger; }
+    NoesisGuiContext& getNoesisGuiContext() const { return *mNoesisGuiContext; }
 
     EVENT_LISTENER_FUNCS(UIContext, EditorWorldSet, UIContextEventType::EditorWorldSet, const UIContextEvent&);
 private:
@@ -64,6 +66,7 @@ private:
     std::unique_ptr<PauseMenuPanel> mPauseMenuPanel;
     std::unique_ptr<LocalMinigameContext> mMinigameContext;
     std::unique_ptr<GameplayDebugger> mGameplayDebugger;
+    std::unique_ptr<NoesisGuiContext> mNoesisGuiContext;
 
     AssetHandlePtr<MaterialShaderDef> mReticleShader;
     AssetHandlePtr<TextureDef> mReticleTexture;

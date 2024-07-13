@@ -171,12 +171,6 @@ namespace vorb {
             /// @param path: The path to the directory
             /// @return true if directory exists
             bool directoryExists(const Path& path) const;
-            
-            // Parse a keg file as a specified object
-            bool parseFileAsKegObject(OUT ui8* dest, const vio::Path& filePath, keg::Type* type, bool allowEmpty = false) const;
-
-            // Parse a keg file as a map of specified objects
-            bool parseFileAsKegObjectMap(const vio::Path& filePath, Delegate<void, Sender, const nString&, keg::Node> f) const;
 
         private:
             static Path m_pathCWD; ///< The global current working directory.

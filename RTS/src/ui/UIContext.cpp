@@ -23,6 +23,8 @@
 
 #include <Vorb/ui/GameWindow.h>
 
+#include "ui/NoesisGuiContext.h"
+
 #include "screens/ScreenState.h"
 
 #include <imgui.h>
@@ -49,6 +51,8 @@ UIContext::UIContext(const f32v2& screenResolution, SDL_Window* window) : mScree
 
     mReticleShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("reticle"));
     mReticleTexture = TextureRepository::get().getAssetHandle(CStrToken("reticle"));
+
+    mNoesisGuiContext = std::make_unique<NoesisGuiContext>(*this);
 }
 
 UIContext::~UIContext() {

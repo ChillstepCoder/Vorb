@@ -18,30 +18,23 @@ BusinessRepository::~BusinessRepository() {
 
 }
 
-void BusinessRepository::loadBusinessFile(const vio::Path& filePath)
-{
-    if (mIoManager.parseFileAsKegObjectMap(filePath, makeFunctor([&](Sender s, const nString& key, keg::Node value) {
-        keg::ReadContext& readContext = *((keg::ReadContext*)s);
+void BusinessRepository::loadBusinessFile(const vio::Path& filePath) {
 
-        BusinessDef& def = *mBusinesses.emplace_back(std::make_unique<BusinessDef>());
-        keg::parse((ui8*)&def, value, readContext, &KEG_GLOBAL_TYPE(BusinessDef));
-
-        def.mTypeId = (BusinessTypeID)(mBusinesses.size() - 1);
-
-        // TODO: Check for mod conflicts
-        mBusinessesFromName[key] = def.mTypeId;
-
-    }))) {
-        // Do nothing on success
+    BusinessDef def;
+    // TODO: DELETE ME WHEN USING ASSET REPO BASE
+    nString fileData;
+    if (!mIoManager.readFileToString(filePath, fileData)) {
+        panic("Asset repository failed to read file {}", filePath.getCString());
     }
-    else {
-        // Failure case
-        pError("Failed to parse item file " + filePath.getString());
-    }
+    YmlSerializer::readFileData(fileData, def);
+
+    def.mTypeId = (BusinessTypeID)(mBusinesses.size() - 1);
+
+    // TODO: Check for mod conflicts
+    mBusinessesFromName[filePath.getFileNameNoExtension()] = def.mTypeId;
 }
 
-entt::entity BusinessRepository::createBusinessEntity(entt::registry& registry, const nString& typeName)
-{
+entt::entity BusinessRepository::createBusinessEntity(entt::registry& registry, const nString& typeName) {
 
     auto&& it = mBusinessesFromName.find(typeName);
     assert(it != mBusinessesFromName.end());

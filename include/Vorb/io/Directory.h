@@ -30,7 +30,6 @@
 namespace vorb {
     namespace io {
         typedef std::vector<Path> DirectoryEntries; ///< A list of directory entries
-        typedef Delegate<void, Sender, const Path&> DirectoryEntryCallback; ///< Type for a callback function
 
         /// Represents a directory that houses paths
         class Directory {
@@ -57,12 +56,7 @@ namespace vorb {
             /// Iterate a directory, invoking a function on each entry
             /// @pre: f may not be null
             /// @param f: Invokable function
-            void forEachEntry(DirectoryEntryCallback* f) const;
-            template<typename F>
-            void forEachEntry(F f) const {
-                DirectoryEntryCallback fDel = makeFunctor(f);
-                forEachEntry(&fDel);
-            }
+            void forEachEntry(std::function<void(const Path&)> f) const;
 
             /// @return True if this directory contains no elements
             bool isEmpty() const;

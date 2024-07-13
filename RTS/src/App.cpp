@@ -11,7 +11,6 @@
 
 #include "rendering/GLExtensions.h"
 
-#include <Vorb/Delegate.hpp>
 #include <Vorb/ui/InputDispatcher.h>
 #include <Vorb/ui/ScreenList.h>
 #include <Vorb/sound/SoundEngine.h>

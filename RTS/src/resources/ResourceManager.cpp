@@ -40,16 +40,6 @@
 
 ResourceManager* sInstance = nullptr;
 
-struct ShaderData {
-    nString vert;
-    nString frag;
-};
-KEG_TYPE_DECL(ShaderData);
-KEG_TYPE_DEF_SAME_NAME(ShaderData, kt) {
-    kt.addValue("vert", keg::Value::basic(offsetof(ShaderData, vert), keg::BasicType::STRING));
-    kt.addValue("frag", keg::Value::basic(offsetof(ShaderData, frag), keg::BasicType::STRING));
-}
-
 #define REGISTER_ASSET_REPO(RepoClass, AType, ...) \
     RepoClass::initInstance(*mIoManager, __VA_ARGS__); \
     mAssetRepositories[(size_t)AType] = &RepoClass::get(); \

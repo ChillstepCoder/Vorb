@@ -17,6 +17,7 @@ struct CraftingRecipe {
     ui32 mWork = 1;
 };
 
+// TODO: Real resource repository
 class CraftingRepository
 {
 public:

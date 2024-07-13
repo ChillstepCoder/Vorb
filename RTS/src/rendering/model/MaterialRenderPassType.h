@@ -12,4 +12,3 @@ SERIALIZABLE_ENUM_SAME_NAME(MaterialRenderPassType,
     pair{ MaterialRenderPassType::Water, "water"sv }
 )
 static_assert(e_count(MaterialRenderPassType) == 3, "Update yml definition");
-KEG_ENUM_DECL(MaterialRenderPassType);

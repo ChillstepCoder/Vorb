@@ -103,13 +103,13 @@
     <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(SolutionDir)..\RTS\dependencies\noesisgui\Lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugFast|x64'">
     <LibraryPath>$(SolutionDir)..\RTS\dependencies\bullet\bin;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LibraryPath>C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\release;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\release;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(SolutionDir)..\RTS\dependencies\noesisgui\Lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
@@ -151,9 +151,9 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor;$(SolutionDir)..\RTS\dependencies\noesisgui\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;NS_LICENSE_NAME="HELLO";NS_LICENSE_KEY="WEEE";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalOptions>/bigobj /Bt %(AdditionalOptions)</AdditionalOptions>
@@ -213,7 +213,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor;$(SolutionDir)..\RTS\dependencies\noesisgui\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -261,7 +261,6 @@
     <ClCompile Include="src\debugging\ValueTweaker.cpp" />
     <ClCompile Include="src\debugging\VisualLogger.cpp" />
     <ClCompile Include="src\definitions\AnimMachineDef.cpp" />
-    <ClCompile Include="src\definitions\BusinessDef.cpp" />
     <ClCompile Include="src\definitions\EffectDef.cpp" />
     <ClCompile Include="src\definitions\ModelDef.cpp" />
     <ClCompile Include="src\definitions\rendering\CubemapDef.cpp" />
@@ -319,6 +318,7 @@
     <ClCompile Include="src\faction\HostFactionManager.cpp" />
     <ClCompile Include="src\faction\IFactionManager.cpp" />
     <ClCompile Include="src\filesystem\FileSystem.cpp" />
+    <ClCompile Include="src\filesystem\FileSystemWatcher.cpp" />
     <ClCompile Include="src\gamethread\GameThread.cpp" />
     <ClCompile Include="src\gamethread\GameThreadTasks.cpp" />
     <ClCompile Include="src\generation\stages\BaseHeightmapAndBiomeGenerationStage.cpp" />
@@ -421,7 +421,6 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelGatherer.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelRenderer.cpp" />
-    <ClCompile Include="src\rendering\model\MaterialRenderPassType.cpp" />
     <ClCompile Include="src\rendering\model\ModelBillboardLodManager.cpp" />
     <ClCompile Include="src\rendering\model\ModelHighlightRenderer.cpp" />
     <ClCompile Include="src\rendering\model\skeletal\AnimTransitionConditionDef.cpp" />
@@ -506,6 +505,7 @@
     <ClCompile Include="src\ui\editor\NodeGraph.cpp" />
     <ClCompile Include="src\ui\editor\TileDistributionEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\NoesisGuiContext.cpp" />
     <ClCompile Include="src\util\FixedSizeVector.cpp" />
     <ClCompile Include="src\util\TilingVoronoiMap.cpp" />
     <ClCompile Include="src\visibility\TileVisibilityContainer.cpp" />
@@ -758,6 +758,7 @@
     <ClInclude Include="src\fbx\ozzFbxToMesh.hpp" />
     <ClInclude Include="src\FeatureConst.h" />
     <ClInclude Include="src\filesystem\FileSystem.h" />
+    <ClInclude Include="src\filesystem\FileSystemWatcher.h" />
     <ClInclude Include="src\gamethread\GameThread.h" />
     <ClInclude Include="src\gamethread\GameThreadTasks.h" />
     <ClInclude Include="src\generation\NoiseFunction.hpp" />
@@ -1014,6 +1015,7 @@
     <ClInclude Include="src\ui\editor\TileDistributionEditorViewportPanel.h" />
     <ClInclude Include="src\ui\editor\TileEditorViewportPanel.h" />
     <ClInclude Include="src\ui\imgui_controls\ObjectVector.h" />
+    <ClInclude Include="src\ui\NoesisGuiContext.h" />
     <ClInclude Include="src\util\DitherMatrix.h" />
     <ClInclude Include="src\util\GridIdUtil.h" />
     <ClInclude Include="src\util\FixedSizeVector.h" />

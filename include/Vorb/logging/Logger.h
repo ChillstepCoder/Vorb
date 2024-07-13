@@ -76,7 +76,7 @@ namespace vorb {
     };
 }; // namespace vorb
 
-#define LOG_MSG vorb::logger::log
+#define LOG_MSG vorb::Logger::log
 #define LOG_TRACE vorb::Logger::logTrace
 #define LOG_DEBUG vorb::Logger::logDebug
 #define LOG_INFO vorb::Logger::logInfo
@@ -84,7 +84,7 @@ namespace vorb {
 #define LOG_ERROR vorb::Logger::logError
 #define LOG_CRITICAL vorb::Logger::logCritical
 
-#define VORB_LOG_MSG vorb::logger::vorbLog
+#define VORB_LOG_MSG vorb::Logger::vorbLog
 #define VORB_LOG_TRACE vorb::Logger::vorbLogTrace
 #define VORB_LOG_DEBUG vorb::Logger::vorbLogDebug
 #define VORB_LOG_INFO vorb::Logger::vorbLogInfo

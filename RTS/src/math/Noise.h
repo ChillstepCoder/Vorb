@@ -28,7 +28,20 @@ enum class TerrainStage {
 	CONSTANT,
 	PASS_THROUGH
 };
-KEG_ENUM_DECL(TerrainStage);
+SERIALIZABLE_ENUM_SAME_NAME(TerrainStage,
+    pair{ TerrainStage::NOISE, "noise"sv },
+	pair{ TerrainStage::SQUARED, "squared"sv },
+	pair{ TerrainStage::CUBED, "cubed"sv },
+	pair{ TerrainStage::RIDGED_NOISE, "noise_ridged"sv },
+	pair{ TerrainStage::ABS_NOISE, "noise_abs"sv },
+	pair{ TerrainStage::SQUARED_NOISE, "noise_squared"sv },
+	pair{ TerrainStage::CUBED_NOISE, "noise_cubed"sv },
+	pair{ TerrainStage::CELLULAR_NOISE, "noise_cellular"sv },
+	pair{ TerrainStage::CELLULAR_SQUARED_NOISE, "noise_cellular_squared"sv },
+	pair{ TerrainStage::CELLULAR_CUBED_NOISE, "noise_cellular_cubed"sv },
+	pair{ TerrainStage::CONSTANT, "constant"sv },
+	pair{ TerrainStage::PASS_THROUGH, "passthrough"sv }
+);
 
 enum class TerrainOp {
 	ADD = 0,
@@ -36,7 +49,12 @@ enum class TerrainOp {
 	MUL,
 	DIV
 };
-KEG_ENUM_DECL(TerrainOp);
+SERIALIZABLE_ENUM_SAME_NAME(TerrainOp,
+    pair{ TerrainOp::ADD, "add"sv },
+    pair{ TerrainOp::SUB, "sub"sv },
+    pair{ TerrainOp::MUL, "mul"sv },
+    pair{ TerrainOp::DIV, "div"sv }
+);
 
 struct TerrainFuncProperties {
 	TerrainStage func = TerrainStage::NOISE;
@@ -47,15 +65,24 @@ struct TerrainFuncProperties {
 	f64 low = -1.0;
 	f64 high = 1.0;
 	f64v2 clamp = f64v2(0.0);
-	Array<TerrainFuncProperties> children;
+	std::vector<TerrainFuncProperties> children;
 };
-KEG_TYPE_DECL(TerrainFuncProperties);
+SERIALIZABLE_SIMPLE(TerrainFuncProperties,
+	make_field(o.func, "type"sv),
+	make_field(o.op, "op"sv),
+	make_field(o.octaves, "octaves"sv),
+	make_field(o.persistence, "persistence"sv),
+	make_field(o.frequency, "frequency"sv),
+	make_field(o.low, "low"sv),
+	make_field(o.high, "high"sv),
+	make_field(o.clamp, "clamp"sv),
+	make_field(o.children, "children"sv)
+)
 
 struct NoiseBase {
 	f64 base = 0.0f;
-	Array<TerrainFuncProperties> funcs;
+	std::vector<TerrainFuncProperties> funcs;
 };
-KEG_TYPE_DECL(NoiseBase);
 
 namespace Noise {
     f64v2 cellularEuclidean(const f64v2& P);

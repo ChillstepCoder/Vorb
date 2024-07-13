@@ -58,7 +58,6 @@ using UnorderedFlatSet = boost::unordered_flat_set<Key, Hasher, KeyEqual, Alloca
 #include <Vorb/Constants.h>
 #include <Vorb/types.h>
 #include <Vorb/Timing.h>
-#include <Vorb/io/Keg.h>
 #include <Vorb/io/Path.h>
 #include <Vorb/decorators.h>
 #include <Vorb/colors.h>

@@ -26,6 +26,7 @@
 #include "gtypes.h"
 
 #include "Vorb/graphics/SamplerState.h"
+#include <vector>
 
 /*********************************************************************************/
 /*           Deferred PBR GBuffer breakdown                                      */

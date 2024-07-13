@@ -3,10 +3,8 @@
 
 #include <Vorb/utils.h>
 
-
 constexpr f64 SQRT_3 = 1.7320508075688772935274463415058723669428052538103806280558069794; // Eliminate sqrt3
 constexpr f64 SQRT_5 = 2.2360679774997896964091736687312762354406183596115257242708972454; // Eliminate sqrt5
-
 
 // The gradients are the midpoints of the vertices of a cube.
 constexpr f64 grad3[12][3] = {
@@ -69,47 +67,6 @@ constexpr int simplex[64][4] = {
     { 2, 0, 1, 3 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 3, 0, 1, 2 }, { 3, 0, 2, 1 }, { 0, 0, 0, 0 }, { 3, 1, 2, 0 },
     { 2, 1, 0, 3 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 0, 0, 0, 0 }, { 3, 1, 0, 2 }, { 0, 0, 0, 0 }, { 3, 2, 0, 1 }, { 3, 2, 1, 0 }
 };
-
-KEG_TYPE_DEF_SAME_NAME(NoiseBase, kt) {
-	KEG_TYPE_INIT_ADD_MEMBER(kt, NoiseBase, base, F64);
-	kt.addValue("funcs", keg::Value::array(offsetof(NoiseBase, funcs), keg::Value::custom(0, "TerrainFuncProperties", false)));
-}
-
-KEG_ENUM_DEF(TerrainStage, TerrainStage, kt) {
-	kt.addValue("noise", TerrainStage::NOISE);
-	kt.addValue("squared", TerrainStage::SQUARED);
-	kt.addValue("cubed", TerrainStage::CUBED);
-	kt.addValue("noise_ridged", TerrainStage::RIDGED_NOISE);
-	kt.addValue("noise_abs", TerrainStage::ABS_NOISE);
-	kt.addValue("noise_squared", TerrainStage::SQUARED_NOISE);
-	kt.addValue("noise_cubed", TerrainStage::CUBED_NOISE);
-	kt.addValue("noise_cellular", TerrainStage::CELLULAR_NOISE);
-	kt.addValue("noise_cellular_squared", TerrainStage::CELLULAR_SQUARED_NOISE);
-	kt.addValue("noise_cellular_cubed", TerrainStage::CELLULAR_CUBED_NOISE);
-	kt.addValue("constant", TerrainStage::CONSTANT);
-	kt.addValue("passthrough", TerrainStage::PASS_THROUGH);
-}
-
-KEG_ENUM_DEF(TerrainOp, TerrainOp, kt) {
-	kt.addValue("add", TerrainOp::ADD);
-	kt.addValue("sub", TerrainOp::SUB);
-	kt.addValue("mul", TerrainOp::MUL);
-	kt.addValue("div", TerrainOp::DIV);
-}
-
-KEG_TYPE_DEF_SAME_NAME(TerrainFuncProperties, kt) {
-	kt.addValue("type", keg::Value::custom(offsetof(TerrainFuncProperties, func), "TerrainStage", true));
-	kt.addValue("op", keg::Value::custom(offsetof(TerrainFuncProperties, op), "TerrainOp", true));
-	KEG_TYPE_INIT_ADD_MEMBER(kt, TerrainFuncProperties, octaves, I32);
-	KEG_TYPE_INIT_ADD_MEMBER(kt, TerrainFuncProperties, persistence, F64);
-	KEG_TYPE_INIT_ADD_MEMBER(kt, TerrainFuncProperties, frequency, F64);
-	kt.addValue("val", keg::Value::basic(offsetof(TerrainFuncProperties, low), keg::BasicType::F64));
-	KEG_TYPE_INIT_ADD_MEMBER(kt, TerrainFuncProperties, low, F64);
-	KEG_TYPE_INIT_ADD_MEMBER(kt, TerrainFuncProperties, high, F64);
-	KEG_TYPE_INIT_ADD_MEMBER(kt, TerrainFuncProperties, clamp, F64_V2);
-	kt.addValue("children", keg::Value::array(offsetof(TerrainFuncProperties, children), keg::Value::custom(0, "TerrainFuncProperties", false)));
-}
-
 
 //
 // Description : Array and textureless 2D/3D/4D simplex 

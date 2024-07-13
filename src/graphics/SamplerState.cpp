@@ -19,19 +19,6 @@ vg::SamplerStates vg::sSamplerStates = {
 };
 static_assert(int(vg::SamplerStateType::COUNT) == 12, "Update with new");
 
-// TODO: DELETE ME
-KEG_ENUM_DEF(SamplerStateType, vg::SamplerStateType, kt) {
-    kt.addValue("POINT_WRAP", vg::SamplerStateType::POINT_WRAP);
-    kt.addValue("POINT_CLAMP", vg::SamplerStateType::POINT_CLAMP);
-    kt.addValue("LINEAR_WRAP", vg::SamplerStateType::LINEAR_WRAP);
-    kt.addValue("LINEAR_CLAMP", vg::SamplerStateType::LINEAR_CLAMP);
-    kt.addValue("LINEAR_CLAMP_BORDER", vg::SamplerStateType::LINEAR_CLAMP_BORDER);
-    kt.addValue("POINT_WRAP_MIPMAP", vg::SamplerStateType::POINT_WRAP_MIPMAP);
-    kt.addValue("POINT_CLAMP_MIPMAP", vg::SamplerStateType::POINT_CLAMP_MIPMAP);
-    kt.addValue("LINEAR_WRAP_MIPMAP", vg::SamplerStateType::LINEAR_WRAP_MIPMAP);
-    kt.addValue("LINEAR_CLAMP_MIPMAP", vg::SamplerStateType::LINEAR_CLAMP_MIPMAP);
-}
-
 vg::SamplerState::SamplerState(TextureMinFilter texMinFilter, TextureMagFilter texMagFilter, TextureWrapMode texWrapS, 
                                     TextureWrapMode texWrapT, TextureWrapMode texWrapR) :
     m_minFilter(texMinFilter),

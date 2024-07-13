@@ -48,26 +48,26 @@
 
 vui::GameWindow* sMainGameWindowHandle = nullptr;
 
-KEG_ENUM_DEF(GameSwapInterval, vui::GameSwapInterval, ke) {
-    using namespace keg;
-    ke.addValue("Unlimited", vui::GameSwapInterval::UNLIMITED_FPS);
-    ke.addValue("VSync", vui::GameSwapInterval::V_SYNC);
-    ke.addValue("LowSync", vui::GameSwapInterval::LOW_SYNC);
-    ke.addValue("PowerSaver", vui::GameSwapInterval::POWER_SAVER);
-    ke.addValue("ValueCap", vui::GameSwapInterval::USE_VALUE_CAP);
-}
-KEG_TYPE_DEF(GameDisplayMode, vui::GameDisplayMode, kt) {
-    using namespace keg;
-    kt.addValue("ScreenWidth", Value::value(&vui::GameDisplayMode::screenWidth));
-    kt.addValue("ScreenHeight", Value::value(&vui::GameDisplayMode::screenHeight));
-    kt.addValue("IsFullscreen", Value::value(&vui::GameDisplayMode::isFullscreen));
-    kt.addValue("IsBorderless", Value::value(&vui::GameDisplayMode::isBorderless));
-    kt.addValue("SwapInterval", Value::custom(offsetof(vui::GameDisplayMode, swapInterval), "GameSwapInterval", true));
-    kt.addValue("MaxFPS", Value::value(&vui::GameDisplayMode::maxFPS));
-    kt.addValue("GraphicsMajor", Value::value(&vui::GameDisplayMode::major));
-    kt.addValue("GraphicsMinor", Value::value(&vui::GameDisplayMode::minor));
-    kt.addValue("GraphicsCore", Value::value(&vui::GameDisplayMode::core));
-}
+//KEG_ENUM_DEF(GameSwapInterval, vui::GameSwapInterval, ke) {
+//    using namespace keg;
+//    ke.addValue("Unlimited", vui::GameSwapInterval::UNLIMITED_FPS);
+//    ke.addValue("VSync", vui::GameSwapInterval::V_SYNC);
+//    ke.addValue("LowSync", vui::GameSwapInterval::LOW_SYNC);
+//    ke.addValue("PowerSaver", vui::GameSwapInterval::POWER_SAVER);
+//    ke.addValue("ValueCap", vui::GameSwapInterval::USE_VALUE_CAP);
+//}
+//KEG_TYPE_DEF(GameDisplayMode, vui::GameDisplayMode, kt) {
+//    using namespace keg;
+//    kt.addValue("ScreenWidth", Value::value(&vui::GameDisplayMode::screenWidth));
+//    kt.addValue("ScreenHeight", Value::value(&vui::GameDisplayMode::screenHeight));
+//    kt.addValue("IsFullscreen", Value::value(&vui::GameDisplayMode::isFullscreen));
+//    kt.addValue("IsBorderless", Value::value(&vui::GameDisplayMode::isBorderless));
+//    kt.addValue("SwapInterval", Value::custom(offsetof(vui::GameDisplayMode, swapInterval), "GameSwapInterval", true));
+//    kt.addValue("MaxFPS", Value::value(&vui::GameDisplayMode::maxFPS));
+//    kt.addValue("GraphicsMajor", Value::value(&vui::GameDisplayMode::major));
+//    kt.addValue("GraphicsMinor", Value::value(&vui::GameDisplayMode::minor));
+//    kt.addValue("GraphicsCore", Value::value(&vui::GameDisplayMode::core));
+//}
 
 vui::GameWindow::GameWindow() {
     setDefaultSettings(&m_displayMode);
@@ -373,20 +373,22 @@ void vui::GameWindow::setDefaultSettings(GameDisplayMode* mode) {
 void vui::GameWindow::readSettings() {
     vio::IOManager iom;
     cString data = iom.readFileToString(DEFAULT_APP_CONFIG_FILE);
-    if (data) {
-        keg::parse(&m_displayMode, data, "GameDisplayMode");
-        delete[] data;
-    } else {
-        // If there is no app.config, save a default one.
-        saveSettings();
-    }
+    VORB_LOG_CRITICAL("FIX readSettings()");
+    //if (data) {
+    //    keg::parse(&m_displayMode, data, "GameDisplayMode");
+    //    delete[] data;
+    //} else {
+    //    // If there is no app.config, save a default one.
+    //    saveSettings();
+    //}
 }
 void vui::GameWindow::saveSettings() const {
-    nString data = keg::write(&m_displayMode, "GameDisplayMode", nullptr);
-    std::ofstream file(DEFAULT_APP_CONFIG_FILE);
-    file << data << std::endl;
-    file.flush();
-    file.close();
+    VORB_LOG_CRITICAL("FIX saveSettings()");
+    /*  nString data = keg::write(&m_displayMode, "GameDisplayMode", nullptr);
+      std::ofstream file(DEFAULT_APP_CONFIG_FILE);
+      file << data << std::endl;
+      file.flush();
+      file.close();*/
 }
 
 void vui::GameWindow::setScreenSize(i32 w, i32 h, bool overrideCheck /*= false*/) {
