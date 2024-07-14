@@ -103,13 +103,13 @@
     <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(SolutionDir)..\RTS\dependencies\noesisgui\Lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(SolutionDir)..\RTS\dependencies\noesisgui\Lib\windows_x86_64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugFast|x64'">
     <LibraryPath>$(SolutionDir)..\RTS\dependencies\bullet\bin;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LibraryPath>C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\release;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(SolutionDir)..\RTS\dependencies\noesisgui\Lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\release;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(SolutionDir)..\RTS\dependencies\noesisgui\Lib\windows_x86_64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
@@ -151,15 +151,15 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor;$(SolutionDir)..\RTS\dependencies\noesisgui\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor;$(SolutionDir)..\RTS\dependencies\noesisgui\Include;$(SolutionDir)..\RTS\dependencies\noesisgui\Src\Packages\App\Providers\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;NS_LICENSE_NAME="HELLO";NS_LICENSE_KEY="WEEE";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;NS_LICENSE_NAME="taliaspencer1@gmail.com - Project Kiwi";NS_LICENSE_KEY="3IyLy6OMicvEbQduZKfQ8E/8nJNBmlGD4wvfOe1jRUkEyc6X";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalOptions>/bigobj /Bt %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlibd.lib;SDL_ttfd.lib;SDL2maind.lib;SDL2d.lib;libyaml-cppmdd.lib;lua_libd.lib;pngd.lib;freetyped.lib;bz2d.lib;glewd.lib;enetd.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\base\Debug\*_d.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Debug\yojimbo.lib;$(SolutionDir)..\RTS\dependencies\meshoptimizer\Debug\meshoptimizer.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\build\Debug\ryml.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\build\Debug\c4core.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlibd.lib;SDL_ttfd.lib;SDL2maind.lib;SDL2d.lib;libyaml-cppmdd.lib;lua_libd.lib;pngd.lib;freetyped.lib;bz2d.lib;glewd.lib;enetd.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\base\Debug\*_d.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Debug\yojimbo.lib;$(SolutionDir)..\RTS\dependencies\meshoptimizer\Debug\meshoptimizer.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\build\Debug\ryml.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\build\Debug\c4core.lib;Noesis.lib;NoesisApp.lib</AdditionalDependencies>
     </Link>
     <PreLinkEvent>
       <Command>
@@ -213,9 +213,9 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor;$(SolutionDir)..\RTS\dependencies\noesisgui\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor;$(SolutionDir)..\RTS\dependencies\noesisgui\Include;SolutionDir)..\RTS\dependencies\noesisgui\Src\Packages\App\Providers\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;NS_LICENSE_NAME="taliaspencer1@gmail.com - Project Kiwi";NS_LICENSE_KEY="3IyLy6OMicvEbQduZKfQ8E/8nJNBmlGD4wvfOe1jRUkEyc6X";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
@@ -223,7 +223,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>..\build\release\vorb.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlib.lib;SDL_ttf.lib;SDL2main.lib;SDL2.lib;libyaml-cppmd.lib;lua_lib.lib;png.lib;freetype.lib;bz2.lib;glew.lib;enet.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\base\Release\*_r.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Release\yojimbo.lib;$(SolutionDir)..\RTS\dependencies\meshoptimizer\Release\meshoptimizer.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\build\Release\ryml.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\build\Release\c4core.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>..\build\release\vorb.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlib.lib;SDL_ttf.lib;SDL2main.lib;SDL2.lib;libyaml-cppmd.lib;lua_lib.lib;png.lib;freetype.lib;bz2.lib;glew.lib;enet.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\base\Release\*_r.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Release\yojimbo.lib;$(SolutionDir)..\RTS\dependencies\meshoptimizer\Release\meshoptimizer.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\build\Release\ryml.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\build\Release\c4core.lib;Noesis.lib;NoesisApp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -510,7 +510,9 @@
     <ClCompile Include="src\ui\editor\TileDistributionEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\editor\TileEditorViewportPanel.cpp" />
     <ClCompile Include="src\ui\GameWindow.cpp" />
-    <ClCompile Include="src\ui\NoesisGuiContext.cpp" />
+    <ClCompile Include="src\ui\noesis\NoesisGLRenderDevice.cpp" />
+    <ClCompile Include="src\ui\noesis\NoesisGuiContext.cpp" />
+    <ClCompile Include="src\ui\noesis\NoesisLocalFontProvider.cpp" />
     <ClCompile Include="src\ui\ScreenList.cpp" />
     <ClCompile Include="src\util\FixedSizeVector.cpp" />
     <ClCompile Include="src\util\TilingVoronoiMap.cpp" />
@@ -1029,7 +1031,11 @@
     <ClInclude Include="src\ui\GameWindow.h" />
     <ClInclude Include="src\ui\IGameScreen.h" />
     <ClInclude Include="src\ui\imgui_controls\ObjectVector.h" />
-    <ClInclude Include="src\ui\NoesisGuiContext.h" />
+    <ClInclude Include="src\ui\noesis\NoesisGLRenderDevice.h" />
+    <ClInclude Include="src\ui\noesis\NoesisGuiContext.h" />
+    <ClInclude Include="src\ui\noesis\NoesisLocalFontProvider.h" />
+    <ClInclude Include="src\ui\noesis\NoesisLocalXamlProvider.h" />
+    <ClInclude Include="src\ui\noesis\NoesisProviderFileWatcher.h" />
     <ClInclude Include="src\ui\ScreenList.h" />
     <ClInclude Include="src\util\DitherMatrix.h" />
     <ClInclude Include="src\util\GridIdUtil.h" />
@@ -1205,6 +1211,7 @@
     <None Include="src\rendering\mesh\fbx2raw.inl" />
     <None Include="src\rendering\mesh\VertexType" />
     <None Include="src\text\NameStrings.inl" />
+    <None Include="src\ui\noesis\NoesisInputMappings.inl" />
     <None Include="src\world\settlement\SettlementDebugHelpers.inl" />
     <None Include="src\world\settlement\SettlementPlot" />
   </ItemGroup>

@@ -9,6 +9,8 @@
 
 #include <SDL2/SDL.h>
 
+#include "ui/noesis/NoesisGuiContext.h"
+
 #if defined(VORB_IMPL_IMGUI)
 #include "imgui.h"
 #include "backends/imgui_impl_sdl2.h"
@@ -114,6 +116,8 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
     InputEvent ie{};
     bool suppressKeyboard = false;
     bool suppressMouse = false;
+
+    // Imgui
 #ifdef VORB_IMPL_IMGUI
     ImGuiIO& io = ImGui::GetIO();
     ImGui_ImplSDL2_ProcessEvent(e);
@@ -125,6 +129,12 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
     }
 #endif
 
+    // Noessis GUI
+    if (sNoesisGuiContext) {
+        sNoesisGuiContext->processInput(e);
+    }
+
+    // Main application
     switch (e->type) {
     case SDL_KEYDOWN:
         if (suppressKeyboard) return 0;

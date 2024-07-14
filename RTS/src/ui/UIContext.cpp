@@ -23,7 +23,7 @@
 
 #include "ui/GameWindow.h"
 
-#include "ui/NoesisGuiContext.h"
+#include "ui/noesis/NoesisGuiContext.h"
 
 #include "screens/ScreenState.h"
 
@@ -111,6 +111,8 @@ void UIContext::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedS
     if (mGameplayDebugger) {
         mGameplayDebugger->updateAndRenderImGui(camera);
     }
+
+    mNoesisGuiContext->updateAndRender();
 }
 
 void UIContext::renderEditorBrushDecals(const Camera3D& camera) {

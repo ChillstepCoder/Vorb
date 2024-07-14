@@ -1137,9 +1137,6 @@
     <ClCompile Include="src\item\ItemStack.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ui\NoesisGuiContext.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\filesystem\FileSystemWatcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1159,6 +1156,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\input\MouseEventManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\noesis\NoesisGuiContext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\noesis\NoesisLocalFontProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\noesis\NoesisGLRenderDevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2879,9 +2885,6 @@
     <ClInclude Include="src\ecs\component\ObjectPickupComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\NoesisGuiContext.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\filesystem\FileSystemWatcher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -2912,6 +2915,21 @@
     <ClInclude Include="src\input\MouseEventManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ui\noesis\NoesisGuiContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\noesis\NoesisProviderFileWatcher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\noesis\NoesisLocalXamlProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\noesis\NoesisLocalFontProvider.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\noesis\NoesisGLRenderDevice.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
@@ -2935,5 +2953,8 @@
       <Filter>Header Files</Filter>
     </None>
     <None Include="src\world\settlement\SettlementPlot" />
+    <None Include="src\ui\noesis\NoesisInputMappings.inl">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
