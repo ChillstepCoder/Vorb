@@ -30,6 +30,7 @@ public:
     void updateEditors(World* world, const Camera3D& camera, const f32v3& mousePickRay);
     void updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec, const Camera3D& camera);
     void renderEditorBrushDecals(const Camera3D& camera);
+    void updateAndRenderNoesisOnly();
 
     void activateTileInspectionPanel(const f32v2& screenPos, const TileHandle& tileHandle);
     void closeTileInspectionPanel();

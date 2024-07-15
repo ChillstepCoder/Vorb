@@ -5,6 +5,11 @@ class UIContext;
 #include <NsCore/Ptr.h>
 #include <NsGui/IView.h>
 
+enum class NoesisGuiView {
+    Inventory,
+    COUNT
+};
+
 class NoesisGuiContext {
 public:
     NoesisGuiContext(UIContext& uiContext);
@@ -12,10 +17,13 @@ public:
 
     void processInput(SDL_Event* e);
     void updateAndRender();
+    void addView(NoesisGuiView viewName);
+    void removeView(NoesisGuiView viewName);
+    void toggleView(NoesisGuiView viewName);
 
 private:
     UIContext& mUIContext;
-    Noesis::Ptr<Noesis::IView> mView;
+    FlatMap<NoesisGuiView, Noesis::Ptr<Noesis::IView>> mViews;
 };
 
 extern NoesisGuiContext* sNoesisGuiContext;

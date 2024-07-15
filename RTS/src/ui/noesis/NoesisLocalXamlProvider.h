@@ -8,22 +8,26 @@
 
 #include "ui/noesis/NoesisProviderFileWatcher.h"
 
+#include <Vorb/io/IOManager.h>
+
+
+#include <regex>
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// A XAML provider that searches in local directories
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 class NoesisLocalXamlProvider : public Noesis::XamlProvider
 {
 public:
-    NoesisLocalXamlProvider(const char* rootPath = "") {
-        Noesis::StrCopy(mRootPath, sizeof(mRootPath), rootPath);
-
-#ifdef NS_PROFILE
-        mWatcher = MakePtr<NoesisProviderFileWatcher>();
-        mWatcher->Changed() += [this](const Uri& uri)
+    NoesisLocalXamlProvider(vio::IOManager& ioManager, const char* rootPath = "") : mIOManager(ioManager) {
+        if (!ioManager.resolvePath(vio::Path(rootPath), mRootPath)) {
+            panic("Failed to resolve NoesisLocalXamlProvider root path: {}", rootPath);
+        }
+        mWatcher = Noesis::MakePtr<NoesisProviderFileWatcher>();
+        mWatcher->Changed() += [this](const Noesis::Uri& uri)
         {
             RaiseXamlChanged(uri);
         };
-#endif
     }
     ~NoesisLocalXamlProvider() {
       
@@ -34,32 +38,22 @@ private:
         Noesis::FixedString<512> path;
         uri.GetPath(path);
 
-        char filename[512];
+        vio::Path filename = mRootPath / vio::Path(path.Str());
 
-        if (Noesis::StrIsEmpty(mRootPath))
-        {
-            Noesis::StrCopy(filename, sizeof(filename), path.Str());
-        }
-        else
-        {
-            Noesis::StrCopy(filename, sizeof(filename), mRootPath);
-            Noesis::StrAppend(filename, sizeof(filename), "/");
-            Noesis::StrAppend(filename, sizeof(filename), path.Str());
-        }
 
-        Noesis::Ptr<Noesis::Stream> stream = Noesis::OpenFileStream(filename);
+        Noesis::Ptr<Noesis::Stream> stream = Noesis::OpenFileStream(filename.getCString());
 
-#ifdef NS_PROFILE
         if (stream)
         {
-            mWatcher->Watch(filename, uri);
+            nString replaced = std::regex_replace(filename.getString(), std::regex("\\\\"), "/");
+            mWatcher->Watch(replaced.c_str(), uri);
         }
-#endif
 
         return stream;
     }
 
 private:
     Noesis::Ptr<NoesisProviderFileWatcher> mWatcher;
-    char mRootPath[512];
+    vio::Path mRootPath;
+    vio::IOManager& mIOManager;
 };

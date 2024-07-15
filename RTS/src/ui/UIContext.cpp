@@ -119,6 +119,10 @@ void UIContext::renderEditorBrushDecals(const Camera3D& camera) {
     mEditorRoot->renderEditorBrushDecals(camera);
 }
 
+void UIContext::updateAndRenderNoesisOnly() {
+    mNoesisGuiContext->updateAndRender();
+}
+
 void UIContext::activateTileInspectionPanel(const f32v2& screenPos, const TileHandle& tileHandle) {
     if (tileHandle.isValid()) {
         mTileInspectionPanel = std::make_unique<TileInspectionPanel>(tileHandle.getWorld(), screenPos, tileHandle);

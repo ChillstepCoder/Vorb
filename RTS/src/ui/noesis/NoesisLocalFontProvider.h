@@ -3,6 +3,7 @@
 #include <NsCore/Noesis.h>
 #include <NsGui/CachedFontProvider.h>
 
+DECL_VIO(class IOManager);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 /// A font provider that searches fonts in local directories
@@ -10,7 +11,7 @@
 class NoesisLocalFontProvider : public Noesis::CachedFontProvider
 {
 public:
-    NoesisLocalFontProvider(const char* rootPath = "");
+    NoesisLocalFontProvider(vio::IOManager& ioManager, const char* rootPath = "");
 
 private:
     /// From CachedFontProvider
@@ -23,5 +24,6 @@ private:
     void ScanFolder(const char* path, const Noesis::Uri& folder, const char* ext);
 
 private:
-    char mRootPath[512];
+    vio::Path mRootPath;
+    vio::IOManager& mIOManager;
 };

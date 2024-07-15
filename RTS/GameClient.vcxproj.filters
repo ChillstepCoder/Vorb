@@ -1167,6 +1167,9 @@
     <ClCompile Include="src\ui\noesis\NoesisGLRenderDevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\noesis\code_behind\InventoryUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -2928,6 +2931,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\noesis\NoesisGLRenderDevice.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\noesis\code_behind\InventoryUI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

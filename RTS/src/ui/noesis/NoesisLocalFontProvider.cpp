@@ -11,6 +11,7 @@
 #include <NsGui/Uri.h>
 #include <NsCore/UTF8.h>
 
+#include <Vorb/io/IOManager.h>
 
 using namespace Noesis;
 
@@ -72,9 +73,10 @@ void FindClose(FindData& findData) {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-NoesisLocalFontProvider::NoesisLocalFontProvider(const char* rootPath)
-{
-    Noesis::StrCopy(mRootPath, sizeof(mRootPath), rootPath);
+NoesisLocalFontProvider::NoesisLocalFontProvider(vio::IOManager& ioManager, const char* rootPath) : mIOManager(ioManager) {
+    if (!ioManager.resolvePath(vio::Path(rootPath), mRootPath)) {
+        panic("Failed to resolve NoesisLocalFontProvider root path: {}", rootPath);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -82,9 +84,9 @@ void NoesisLocalFontProvider::ScanFolder(const Uri& folder)
 {
     char uri[512] = "";
 
-    if (!StrIsNullOrEmpty(mRootPath))
+    if (mRootPath.isValid())
     {
-        Noesis::StrCopy(uri, sizeof(uri), mRootPath);
+        Noesis::StrCopy(uri, sizeof(uri), mRootPath.getCString());
         Noesis::StrAppend(uri, sizeof(uri), "/");
     }
 
@@ -103,9 +105,9 @@ Ptr<Stream> NoesisLocalFontProvider::OpenFont(const Uri& folder, const char* fil
 {
     char uri[512] = "";
 
-    if (!StrIsNullOrEmpty(mRootPath))
+    if (mRootPath.isValid())
     {
-        Noesis::StrCopy(uri, sizeof(uri), mRootPath);
+        Noesis::StrCopy(uri, sizeof(uri), mRootPath.getCString());
         Noesis::StrAppend(uri, sizeof(uri), "/");
     }
 

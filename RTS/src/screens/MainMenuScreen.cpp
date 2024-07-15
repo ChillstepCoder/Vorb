@@ -20,6 +20,8 @@
 #include "screens/ScreenState.h"
 #include "network/cli/GameClient.h"
 
+#include "ui/UIContext.h"
+
 MainMenuScreen::MainMenuScreen(App* const app) : IAppScreen<App>(app) {
     MainMenuScreenGlobalState::initDefaults();
 }
@@ -152,6 +154,8 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     ImGui::EndFrame();
+
+    UIContext::getInstance().updateAndRenderNoesisOnly();
 }
 
 void MainMenuScreen::refreshSavesList() {
