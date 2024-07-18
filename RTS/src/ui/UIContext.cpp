@@ -191,6 +191,12 @@ void UIContext::toggleGameplayDebugger() {
     }
 }
 
+void UIContext::toggleGameUIPanel(GameUIPanel panel) {
+    if (mNoesisGuiContext) {
+        mNoesisGuiContext->toggleView(panel);
+    }
+}
+
 UIContext& UIContext::initInstance(const f32v2& screenResolution, SDL_Window* window) {
     if (!sInstance) {
         sInstance = new UIContext(screenResolution, window);

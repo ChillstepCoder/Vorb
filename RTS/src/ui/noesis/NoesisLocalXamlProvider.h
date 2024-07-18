@@ -10,6 +10,7 @@
 
 #include <Vorb/io/IOManager.h>
 
+#include "rendering/RenderThreadTasks.h"
 
 #include <regex>
 
@@ -26,7 +27,15 @@ public:
         mWatcher = Noesis::MakePtr<NoesisProviderFileWatcher>();
         mWatcher->Changed() += [this](const Noesis::Uri& uri)
         {
-            RaiseXamlChanged(uri);
+            struct ProviderTaskData {
+                Noesis::Uri uri;
+                NoesisLocalXamlProvider* provider;
+            };
+            ProviderTaskData* data = new ProviderTaskData({ uri, this });
+            RenderThreadTasks::getInstance().addGenericTask([](class RenderContext&, void* data) {
+                ProviderTaskData* pData = (ProviderTaskData*)data;
+                pData->provider->RaiseXamlChanged(pData->uri);
+            }, data);
         };
     }
     ~NoesisLocalXamlProvider() {

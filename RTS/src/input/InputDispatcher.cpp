@@ -120,6 +120,7 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
     // Imgui
 #ifdef VORB_IMPL_IMGUI
     ImGuiIO& io = ImGui::GetIO();
+    // TODO: Return here?
     ImGui_ImplSDL2_ProcessEvent(e);
     if (io.WantCaptureKeyboard) {
         suppressKeyboard = true;
@@ -131,7 +132,9 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
 
     // Noessis GUI
     if (sNoesisGuiContext) {
-        sNoesisGuiContext->processInput(e);
+        if (sNoesisGuiContext->processInput(e)) {
+            return 0;
+        }
     }
 
     // Main application

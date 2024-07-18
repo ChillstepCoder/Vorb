@@ -10,6 +10,7 @@
 #include <glm/gtx/rotate_vector.hpp>
 
 #include "physics/PhysicsWorld.h"
+#include "ui/UIContext.h"
 
 #include "options/DebugOptions.h"
 
@@ -86,6 +87,17 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
         inputs.right = vui::InputDispatcher::key.isKeyPressed(VKEY_D);
         inputs.back = vui::InputDispatcher::key.isKeyPressed(VKEY_S);
         inputs.interact = vui::InputDispatcher::key.isKeyPressed(VKEY_E);
+
+        // Inventory toggle
+        if (vui::InputDispatcher::key.isKeyPressed(VKEY_I)) {
+            if (!playerControlCmp.mPlayerControlFlags.isBitSet(PlayerControlFlags::InventoryKeyHeld)) {
+                UIContext::getInstance().toggleGameUIPanel(GameUIPanel::Inventory);
+                playerControlCmp.mPlayerControlFlags.setBit(PlayerControlFlags::InventoryKeyHeld);
+            }
+        }
+        else {
+            playerControlCmp.mPlayerControlFlags.clearBit(PlayerControlFlags::InventoryKeyHeld);
+        }
     }
 
     // Inputs for states, but only while we are on ground

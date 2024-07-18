@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Vorb/concurrentqueue.h>
-
 #include "terrain/HeightmapPatch.h"
 #include "world/TerrainConstants.h"
 

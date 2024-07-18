@@ -9,6 +9,7 @@ struct Camera3DGameThreadData;
 struct PlayerInputs;
 
 enum class PlayerControlFlags : ui8 {
+	InventoryKeyHeld = BIT(0),
 };
 
 struct PlayerControlComponent {

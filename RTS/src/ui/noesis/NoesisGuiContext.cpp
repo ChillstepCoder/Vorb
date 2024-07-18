@@ -24,7 +24,7 @@
 
 #include "resources/ResourceManager.h"
 
-#include "input/MouseEventManager.h"
+#include "input/InputDispatcher.h"
 
 #include "NoesisInputMappings.inl"
 /*
@@ -46,12 +46,13 @@ NoesisGuiContext* sNoesisGuiContext = nullptr;
 static Noesis::Ptr<Noesis::RenderDevice> sRenderDevice = nullptr;
 
 
-static UnorderedFlatMap<NoesisGuiView, const char*> sNoesisGuiViewToFilename = {
-    { NoesisGuiView::Inventory, "inventory/inventory.xaml" }
+static UnorderedFlatMap<GameUIPanel, const char*> sNoesisGuiViewToFilename = {
+    { GameUIPanel::Inventory, "inventory/inventory.xaml" }
 };
-static_assert(e_count(NoesisGuiView) == 1, "Update the filenames");
+static_assert(e_count(GameUIPanel) == 1, "Update the filenames");
 
 NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext) {
+    ASSERT_RENDER_THREAD();
     
     assert(!sNoesisGuiContext);
     sNoesisGuiContext = this;
@@ -99,13 +100,19 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
 
     // Register code-behind classes
     Noesis::RegisterComponent<InventoryUI>();
+    InventoryUI::RegisterChildren();
+
+
+    for (int i = 0; i < e_count(GameUIPanel); ++i) {
+        initView((GameUIPanel)i);
+    }
+
+    // TODO: REMOVE
+    toggleView(GameUIPanel::Inventory);
 
     //A view is needed to render the user interface and interact with it.A view holds a tree of elements.
     // The easiest way to build interface trees is by loading them from XAML files.This can be done using the helper function LoadXaml.
     // Once the XAML is loaded you must create a view with it and specify its dimensions.Remember to sync the size of the view each time your window or surface is resized.
-
-    addView(NoesisGuiView::Inventory);
-    
 
     // Events
     /*Slider* slider = view->GetContent()->FindName<Slider>("Luminance");
@@ -115,47 +122,50 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
 NoesisGuiContext::~NoesisGuiContext() {
     assert(sNoesisGuiContext == this);
     sNoesisGuiContext = nullptr;
-    for (auto& [name, view] : mViews) {
+    mActiveViews.clear();
+    for (auto& view : mViews) {
         view->GetRenderer()->Shutdown();
     }
     Noesis::GUI::Shutdown();
 }
 
-void NoesisGuiContext::processInput(SDL_Event* e) {
+bool NoesisGuiContext::processInput(SDL_Event* e) {
+    ASSERT_RENDER_THREAD();
+
     switch (e->type) {
         case SDL_KEYDOWN: {
             auto&& it = sSdlKeycodeToNoesisKey.find(e->key.keysym.sym);
             if (it != sSdlKeycodeToNoesisKey.end()) {
-                for (auto& [name, view] : mViews) {
-                    view->KeyDown(it->second);
-                }
+                if (forEachActiveViewHandleInput([&](Noesis::IView& view) {
+                    return view.KeyDown(it->second);
+                })) return true;
             }
             break;
         }
         case SDL_KEYUP: {
             auto&& it = sSdlKeycodeToNoesisKey.find(e->key.keysym.sym);
-            for (auto& [name, view] : mViews) {
-                view->KeyUp(it->second);
-            }
+            if (forEachActiveViewHandleInput([&](Noesis::IView& view) {
+                return view.KeyUp(it->second);
+            })) return true;
             break;
         }
         case SDL_MOUSEMOTION:
-            for (auto& [name, view] : mViews) {
-                view->MouseMove(e->motion.x, e->motion.y);
-            }
+            if (forEachActiveViewHandleInput([&](Noesis::IView& view) {
+                return view.MouseMove(e->motion.x, e->motion.y);
+            })) return true;
             break;
         case SDL_MOUSEBUTTONDOWN: {
             auto&& it = sVorbMouseButtonToNoesisMouseButton.find((vui::MouseButton)e->button.button);
             if (it != sVorbMouseButtonToNoesisMouseButton.end()) {
                 if (e->button.clicks == 2) {
-                    for (auto& [name, view] : mViews) {
-                        view->MouseDoubleClick(e->button.x, e->button.y, it->second);
-                    }
+                    if (forEachActiveViewHandleInput([&](Noesis::IView& view) {
+                        return view.MouseDoubleClick(e->button.x, e->button.y, it->second);
+                    })) return true;
                 }
                 else {
-                    for (auto& [name, view] : mViews) {
-                        view->MouseButtonDown(e->button.x, e->button.y, it->second);
-                    }
+                    if (forEachActiveViewHandleInput([&](Noesis::IView& view) {
+                        return view.MouseButtonDown(e->button.x, e->button.y, it->second);
+                    })) return true;
                 }
             }
             break;
@@ -163,18 +173,19 @@ void NoesisGuiContext::processInput(SDL_Event* e) {
         case SDL_MOUSEBUTTONUP:{
             auto&& it = sVorbMouseButtonToNoesisMouseButton.find((vui::MouseButton)e->button.button);
             if (it != sVorbMouseButtonToNoesisMouseButton.end()) {
-                for (auto& [name, view] : mViews) {
-                    view->MouseButtonUp(e->button.x, e->button.y, it->second);
-                }
+                if (forEachActiveViewHandleInput([&](Noesis::IView& view) {
+                    return view.MouseButtonUp(e->button.x, e->button.y, it->second);
+                })) return true;
             }
             break;
         }
-        case SDL_MOUSEWHEEL:
-            for (auto& [name, view] : mViews) {
-                // TODO: Is this right?
-                view->MouseWheel(e->wheel.x, e->wheel.y, e->wheel.direction == SDL_MOUSEWHEEL_NORMAL ? 1 : -1);
-            }
+        case SDL_MOUSEWHEEL: {
+            const i32v2 mousePos = vui::InputDispatcher::mouse.getPosition();
+            if (forEachActiveViewHandleInput([&](Noesis::IView& view) {
+                return view.MouseWheel(mousePos.x, mousePos.y, e->wheel.y);
+            })) return true;
             break;
+        }
         default:
             // Unrecognized event
             break;
@@ -182,19 +193,47 @@ void NoesisGuiContext::processInput(SDL_Event* e) {
 }
 
 void NoesisGuiContext::updateAndRender() {
-    if (!mViews.size()) {
-        return;
-    }
+    ASSERT_RENDER_THREAD();
 
     auto now = std::chrono::high_resolution_clock::now();
     auto duration = now.time_since_epoch();
     const double timeSeconds = std::chrono::duration<double>(duration).count();
 
-    for (auto& [name, view] : mViews) {
-        if (view->Update(timeSeconds)) {
-            view->GetRenderer()->UpdateRenderTree();
+    // Prevent having to check atomic twice, so we dont get mismatched render
+    Noesis::IView* renderViews[e_count(GameUIPanel)];
+    i32 renderViewCount = 0;
+
+    for (i32 i = 0; i < e_count(GameUIPanel); ++i) {
+        // Only check the atomic once per frame
+        if (mViewWantsActive[i]) {
+            Noesis::IView* view = mViews[i];
+            if (!mViewWasActive[i]) {
+                // Grab input focus
+                view->Activate();
+                // Force set mouse position on entry
+                const i32v2 mousePos = vui::InputDispatcher::mouse.getPosition();
+               // view->MouseMove(mousePos.x, mousePos.y);
+                LOG_CRITICAL("ACTIVATE {} {}", mousePos.x, mousePos.y);
+                mViewWasActive[i] = true;
+            }
+            // Always update render tree when we first become active
+            if (view->Update(timeSeconds) || !mViewWasActive[i]) {
+                PreciseTimer timer;
+                view->GetRenderer()->UpdateRenderTree();
+                LOG_CRITICAL("UpdateRenderTree {} ", timer.stop());
+            }
+            view->GetRenderer()->RenderOffscreen();
+            renderViews[renderViewCount++] = view;
         }
-        view->GetRenderer()->RenderOffscreen();
+        else if (mViewWasActive[i]) {
+            // Release input focus
+            mViews[i]->Deactivate();
+            mViewWasActive[i] = false;
+        }
+    }
+
+    if (!renderViewCount) {
+        return;
     }
 
     ui32v2 dims = mUIContext.getWindowDims();
@@ -205,8 +244,8 @@ void NoesisGuiContext::updateAndRender() {
     glClearStencil(0);
     glClear(GL_STENCIL_BUFFER_BIT);
 
-    for (auto& [name, view] : mViews) {
-        view->GetRenderer()->Render();
+    for (i32 i = 0; i < renderViewCount; ++i) {
+        renderViews[i]->GetRenderer()->Render();
     }
 
     checkGlError("NoesisGuiContext::updateAndRender");
@@ -216,34 +255,49 @@ void NoesisGuiContext::updateAndRender() {
     vg::GLProgram::unuse();
 }
 
-void NoesisGuiContext::addView(NoesisGuiView viewName) {
+void NoesisGuiContext::initView(GameUIPanel viewName) {
+    ASSERT_RENDER_THREAD();
     const char* viewNameStr = sNoesisGuiViewToFilename.at(viewName);
+    LOG_DEBUG("INIT VIEW {}", viewNameStr);
+
+    PreciseTimer timer;
     Noesis::Ptr<Noesis::FrameworkElement> xaml = Noesis::GUI::LoadXaml<Noesis::FrameworkElement>(viewNameStr);
+    LOG_DEBUG(" LOAD {} ", timer.stop()); timer.start();
     Noesis::Ptr<Noesis::IView> newView = Noesis::GUI::CreateView(xaml);
+    LOG_DEBUG(" VIEW {} ", timer.stop()); timer.start();
     newView->SetFlags(Noesis::RenderFlags_PPAA | Noesis::RenderFlags_LCD);
     const ui32v2 dims = mUIContext.getWindowDims();
     newView->SetSize(dims.x, dims.y);
     newView->GetRenderer()->Init(sRenderDevice);
-    assert(!mViews.contains(viewName));
-    mViews[viewName] = newView;
+    LOG_DEBUG(" INIT {} ", timer.stop()); timer.start();
+    mViews[e_cast(viewName)] = newView;
 }
 
-void NoesisGuiContext::removeView(NoesisGuiView viewName) {
-    auto&& it = mViews.find(viewName);
-    if (it != mViews.end()) {
-        it->second->GetRenderer()->Shutdown();
-        mViews.erase(it);
+bool NoesisGuiContext::forEachActiveViewHandleInput(std::function<bool(Noesis::IView&)> func) {
+    std::lock_guard lock(mActiveViewsMutex);
+    for (auto& view : mActiveViews) {
+        if (func(*view)) {
+            return true;
+        }
     }
-    else {
-        LOG_WARN("Tried to remove inactive view {}", (int)viewName);
-    }
+    return false;
 }
 
-void NoesisGuiContext::toggleView(NoesisGuiView viewName) {
-    if (mViews.contains(viewName)) {
-        removeView(viewName);
+void NoesisGuiContext::toggleView(GameUIPanel viewName) {
+    const int new_value = mViewWantsActive[e_cast(viewName)].fetch_xor(1, std::memory_order_relaxed) ^ 1;
+    LOG_WARN("TOGGLE NEW {} ", new_value);
+
+    std::lock_guard lock(mActiveViewsMutex);
+    if (new_value) {
+        mActiveViews.emplace_back(mViews[e_cast(viewName)]);
     }
     else {
-        addView(viewName);
+        for (size_t i = 0; i < mActiveViews.size(); ++i) {
+            if (mActiveViews[i] == mViews[e_cast(viewName)]) {
+                mActiveViews[i] = mActiveViews.back();
+                mActiveViews.pop_back();
+                break;
+            }
+        }
     }
 }

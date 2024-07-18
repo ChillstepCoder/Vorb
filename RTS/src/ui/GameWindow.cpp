@@ -342,6 +342,8 @@ i32v2 vui::GameWindow::getPosition() const {
 }
 
 void vui::GameWindow::pollInput() {
+
+    // Input
     SDL_Event e;
     while (SDL_PollEvent(&e) != 0) continue;
 }

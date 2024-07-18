@@ -1137,9 +1137,6 @@
     <ClCompile Include="src\item\ItemStack.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\filesystem\FileSystemWatcher.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\ui\GameWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2934,6 +2931,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\noesis\code_behind\InventoryUI.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\GameUIPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

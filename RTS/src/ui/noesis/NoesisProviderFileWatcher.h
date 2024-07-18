@@ -2,15 +2,16 @@
 
 
 #include <NsCore/Noesis.h>
+#include <NsCore/String.h>
+#include <NsCore/HashMap.h>
 #include "filesystem/FileSystemWatcher.h"
 
 class NoesisProviderFileWatcher : public Noesis::BaseRefCounted
 {
 public:
-    using FSW = FileSystemWatcher;
-
     void Watch(const char* path, const Noesis::Uri& uri)
     {
+#if NS_XAML_RELOAD_ENABLED == 1
         if (mWatchedFiles.Insert(path, uri).second)
         {
             Noesis::FixedString<512> directory;
@@ -21,21 +22,24 @@ public:
                 directory.Assign(path, pos);
             }
 
-            if (mWatchedDirectories.Insert(directory.Str()).second)
-            {
-                void* watcher = FSW::Create(directory.Str(), false);
-                FSW::Changed(watcher) += MakeDelegate(this, &NoesisProviderFileWatcher::ChangeNotification);
-                FSW::Created(watcher) += MakeDelegate(this, &NoesisProviderFileWatcher::ChangeNotification);
-                mFileSystemWatchers.PushBack(watcher);
+            if (mWatchedDirectories.Insert(directory.Str()).second) {
+
+                mFileSystemWatchers.Insert(new filewatch::FileWatch<std::string>(
+                    std::string(path),
+                    [this, dir = std::string(directory.Str())](const std::string& path, const filewatch::Event change_type) {
+                    ChangeNotification(dir + "/" + path);
+                }), Noesis::String(directory.Str()));
             }
         }
+#else
+        UNUSED(path, uri);
+#endif
     }
 
     ~NoesisProviderFileWatcher()
     {
-        for (void* watcher : mFileSystemWatchers)
-        {
-            FSW::Destroy(watcher);
+        for (auto& [watcher, directory] : mFileSystemWatchers) {
+            delete watcher;
         }
     }
 
@@ -45,22 +49,15 @@ public:
     }
 
 private:
-    void ChangeNotification(void* source, const char* filename)
-    {
-        Noesis::FixedString<512> path = FSW::Path(source);
-        if (!path.Empty()) { path += "/"; }
-        path += filename;
-
-        auto it = mWatchedFiles.Find(path);
+    void ChangeNotification(const std::string& path) {
+        auto it = mWatchedFiles.Find(Noesis::String(path.c_str()));
         if (it != mWatchedFiles.End())
         {
             mChangedCallback(it->value);
         }
     }
-
-    Noesis::Vector<void*> mFileSystemWatchers;
+    Noesis::HashMap<filewatch::FileWatch<std::string>*, Noesis::String/*directory*/> mFileSystemWatchers;
     Noesis::HashSet<Noesis::String> mWatchedDirectories;
     Noesis::HashMap<Noesis::String, Noesis::Uri> mWatchedFiles;
-
     Noesis::Delegate<void(const Noesis::Uri&)> mChangedCallback;
 };

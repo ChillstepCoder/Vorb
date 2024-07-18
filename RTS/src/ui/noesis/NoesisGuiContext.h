@@ -5,25 +5,33 @@ class UIContext;
 #include <NsCore/Ptr.h>
 #include <NsGui/IView.h>
 
-enum class NoesisGuiView {
-    Inventory,
-    COUNT
-};
+#include "util/ExclusiveCacheLine.h"
+#include "ui/GameUIPanel.h"
 
 class NoesisGuiContext {
 public:
     NoesisGuiContext(UIContext& uiContext);
     ~NoesisGuiContext();
 
-    void processInput(SDL_Event* e);
+    // Returns true if event was handled
+    bool processInput(SDL_Event* e);
     void updateAndRender();
-    void addView(NoesisGuiView viewName);
-    void removeView(NoesisGuiView viewName);
-    void toggleView(NoesisGuiView viewName);
+    void toggleView(GameUIPanel viewName);
+
 
 private:
+    void initView(GameUIPanel viewName);
+    // Returns true if event was handled
+    bool forEachActiveViewHandleInput(std::function<bool(Noesis::IView&)> func);
+
     UIContext& mUIContext;
-    FlatMap<NoesisGuiView, Noesis::Ptr<Noesis::IView>> mViews;
+    Noesis::Ptr<Noesis::IView> mViews[e_count(GameUIPanel)];
+    bool mViewWasActive[e_count(GameUIPanel)] = {};
+    // Int to enable fetch_xor
+    ExclusiveCacheLine<std::atomic_int> mViewWantsActive[e_count(GameUIPanel)] = {};
+
+    std::mutex mActiveViewsMutex;
+    std::vector<Noesis::IView*> mActiveViews; // Protected by mActiveViewsMutex
 };
 
 extern NoesisGuiContext* sNoesisGuiContext;

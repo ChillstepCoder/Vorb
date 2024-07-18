@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ui/UIContextEvents.h"
+#include "ui/GameUIPanel.h"
 
 #include "rendering/MaterialShaderDef.h"
 #include "definitions/rendering/TextureDef.h"
@@ -42,6 +43,7 @@ public:
     f32v3 getEditorCameraUp();
     void toggleEscapeMenu();
     void toggleGameplayDebugger();
+    void toggleGameUIPanel(GameUIPanel panel);;
 
     static UIContext& initInstance(const f32v2& screenResolution, SDL_Window* window);
     static UIContext& getInstance();
