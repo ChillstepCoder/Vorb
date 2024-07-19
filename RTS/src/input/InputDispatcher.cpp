@@ -133,60 +133,64 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
     // Noessis GUI
     if (sNoesisGuiContext) {
         if (sNoesisGuiContext->processInput(e)) {
-            return 0;
+            suppressKeyboard = suppressMouse = true;
         }
     }
 
     // Main application
     switch (e->type) {
-    case SDL_KEYDOWN:
-        if (suppressKeyboard) return 0;
+        case SDL_KEYDOWN:
         convert(ie.key.mod, e->key.keysym.mod);
         ie.key.keyCode = vui::impl::mapping[SDL_GetScancodeFromKey(e->key.keysym.sym) + 1];
         ie.key.scanCode = e->key.keysym.scancode;
         ie.key.repeatCount = e->key.repeat;
         vui::InputDispatcher::key.m_state[ie.key.keyCode] = true;
-        vui::InputDispatcher::key.dispatchKeyDown(ie.key);
+        if (!suppressKeyboard) {
+            vui::InputDispatcher::key.dispatchKeyDown(ie.key);
+        }
         break;
     case SDL_KEYUP:
-        if (suppressKeyboard) return 0;
         convert(ie.key.mod, e->key.keysym.mod);
         ie.key.keyCode = vui::impl::mapping[SDL_GetScancodeFromKey(e->key.keysym.sym) + 1];
         ie.key.scanCode = e->key.keysym.scancode;
         ie.key.repeatCount = e->key.repeat;
         vui::InputDispatcher::key.m_state[ie.key.keyCode] = false;
-        vui::InputDispatcher::key.dispatchKeyUp(ie.key);
+        if (!suppressKeyboard) {
+            vui::InputDispatcher::key.dispatchKeyUp(ie.key);
+        }
         break;
     case SDL_MOUSEMOTION:
-        if (suppressMouse) return 0;
         ie.mouseMotion.x = e->motion.x;
         ie.mouseMotion.y = e->motion.y;
         ie.mouseMotion.dx = e->motion.xrel;
         ie.mouseMotion.dy = e->motion.yrel;
         vui::InputDispatcher::mouse.m_lastPos.x = ie.mouseMotion.x;
         vui::InputDispatcher::mouse.m_lastPos.y = ie.mouseMotion.y;
-        vui::InputDispatcher::mouse.dispatchMotion(ie.mouseMotion);
+        if (!suppressMouse) {
+            vui::InputDispatcher::mouse.dispatchMotion(ie.mouseMotion);
+        }
         break;
     case SDL_MOUSEBUTTONDOWN:
-        if (suppressMouse) return 0;
         convert(ie.mouseButton.button, e->button.button);
         ie.mouseButton.x = e->button.x;
         ie.mouseButton.y = e->button.y;
         ie.mouseButton.clicks = e->button.clicks;
-        vui::InputDispatcher::mouse.dispatchButtonDown(ie.mouseButton);
         vui::InputDispatcher::mouse.m_state[static_cast<int>(ie.mouseButton.button)] = true;
+        if (!suppressMouse) {
+            vui::InputDispatcher::mouse.dispatchButtonDown(ie.mouseButton);
+        }
         break;
     case SDL_MOUSEBUTTONUP:
-        if (suppressMouse) return 0;
         convert(ie.mouseButton.button, e->button.button);
         ie.mouseButton.x = e->button.x;
         ie.mouseButton.y = e->button.y;
         ie.mouseButton.clicks = e->button.clicks;
-        vui::InputDispatcher::mouse.dispatchButtonUp(ie.mouseButton);
         vui::InputDispatcher::mouse.m_state[static_cast<int>(ie.mouseButton.button)] = false;
+        if (!suppressMouse) {
+            vui::InputDispatcher::mouse.dispatchButtonUp(ie.mouseButton);
+        }
         break;
     case SDL_MOUSEWHEEL:
-        if (suppressMouse) return 0;
         ie.mouseWheel.x = vui::InputDispatcher::mouse.m_lastPos.x;
         ie.mouseWheel.y = vui::InputDispatcher::mouse.m_lastPos.y;
         ie.mouseWheel.dx = e->wheel.x;
@@ -195,7 +199,9 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
         vui::InputDispatcher::mouse.m_fullScroll.y += ie.mouseWheel.dy;
         ie.mouseWheel.sx = vui::InputDispatcher::mouse.m_fullScroll.x;
         ie.mouseWheel.sy = vui::InputDispatcher::mouse.m_fullScroll.y;
-        vui::InputDispatcher::mouse.dispatchWheel(ie.mouseWheel);
+        if (!suppressMouse) {
+            vui::InputDispatcher::mouse.dispatchWheel(ie.mouseWheel);
+        }
         break;
     case SDL_QUIT:
         vui::InputDispatcher::onQuit();

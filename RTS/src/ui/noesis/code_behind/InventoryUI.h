@@ -3,18 +3,35 @@
 #include <NsGui/UserControl.h>
 
 #include <NsGui/ScrollViewer.h>
-#include <NsGui/Popup.h>
 #include <NsGui/ItemsControl.h>
 #include <NsCore/Vector.h>
+#include <NsCore/String.h>
 #include <NsGui/ObservableCollection.h>
 #include <NsGui/UIElementCollection.h>
+#include <NsApp/NotifyPropertyChangedBase.h>
 
-class InventoryItem : public Noesis::BaseComponent
+
+class InventoryItemDataModel : public NoesisApp::NotifyPropertyChangedBase
 {
 public:
-    InventoryItem() {}
-    NS_IMPLEMENT_INLINE_REFLECTION_(InventoryItem, Noesis::BaseComponent)
+    InventoryItemDataModel() : mText("Default Item Text") {}
+
+    const char* getText() const { return mText.Str(); }
+    void setText(const char* text) {
+        if (mText != text) {
+            mText = text;
+            OnPropertyChanged("ItemText");
+        }
+    }
+
+    NS_IMPLEMENT_INLINE_REFLECTION(InventoryItemDataModel, NoesisApp::NotifyPropertyChangedBase) {
+        NsProp("ItemText", &InventoryItemDataModel::getText, &InventoryItemDataModel::setText);
+    }
+
+private:
+    Noesis::String mText;
 };
+
 
 class CustomPopup;
 
@@ -38,7 +55,7 @@ private:
 
     Noesis::ScrollViewer* _scrollViewer;
     Noesis::ItemsControl* _inventoryItemsControl;
-    Noesis::Ptr<Noesis::ObservableCollection<InventoryItem>> _inventoryItems;
+    Noesis::Ptr<Noesis::ObservableCollection<InventoryItemDataModel>> _inventoryItems;
     int _totalItems;
     CustomPopup* mActivePopupBar = nullptr;
 

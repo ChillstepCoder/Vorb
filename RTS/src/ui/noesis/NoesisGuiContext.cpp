@@ -151,6 +151,7 @@ bool NoesisGuiContext::processInput(SDL_Event* e) {
         }
         case SDL_MOUSEMOTION:
             if (forEachActiveViewHandleInput([&](Noesis::IView& view) {
+                LOG_DEBUG("{} {}", e->motion.x, e->motion.y);
                 return view.MouseMove(e->motion.x, e->motion.y);
             })) return true;
             break;
@@ -182,6 +183,7 @@ bool NoesisGuiContext::processInput(SDL_Event* e) {
         case SDL_MOUSEWHEEL: {
             const i32v2 mousePos = vui::InputDispatcher::mouse.getPosition();
             if (forEachActiveViewHandleInput([&](Noesis::IView& view) {
+                LOG_DEBUG("WEEL {} {}", mousePos.x, mousePos.y);
                 return view.MouseWheel(mousePos.x, mousePos.y, e->wheel.y);
             })) return true;
             break;

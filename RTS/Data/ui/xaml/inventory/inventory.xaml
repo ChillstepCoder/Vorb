@@ -3,6 +3,8 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+  xmlns:b="http://schemas.microsoft.com/xaml/behaviors"
+  xmlns:noesis="clr-namespace:NoesisGUIExtensions"
   mc:Ignorable="d"
   xmlns:local="clr-namespace:AM"
   x:Class="AM.Inventory"
@@ -27,10 +29,32 @@
                     <ControlTemplate TargetType="Button">
                         <Border CornerRadius="5">
                             <Border.Background>
-                                <ImageBrush ImageSource="{StaticResource ButtonBackgroundImage}" Stretch="Fill"/>
+                                <ImageBrush x:Name="ButtonImageBrush" ImageSource="{StaticResource ButtonBackgroundImage}" Stretch="Fill" Opacity="0.7"/>
                             </Border.Background>
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonImageBrush" 
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="1" Duration="0:0:0.1"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="ButtonImageBrush" 
+                                                             Storyboard.TargetProperty="Opacity"
+                                                             To="0.7" Duration="0:0:0.1"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -43,39 +67,75 @@
                 <ImageBrush ImageSource="{StaticResource BackgroundImageSource}" Stretch="Uniform"/>
             </Border.Background>
             <Border ClipToBounds="True">
-                <ScrollViewer x:Name="ScrollViewer" VerticalScrollBarVisibility="Hidden" 
-                              PreviewMouseWheel="OnScrollViewerPreviewMouseWheel"
-                              Focusable="True"
-                              PanningMode="VerticalOnly"
-                              CanContentScroll="False"
-                              Padding="0,43.5,0,46"
-                              ScrollChanged="OnScrollViewerScrollChanged">
-                    <ItemsControl x:Name="InventoryItemsControl">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel Orientation="Horizontal"/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Grid>
-                                    <Button x:Name="InventoryButton" Style="{StaticResource InventoryButtonStyle}"
-                                            MouseEnter="OnInventoryButtonMouseEnter"
-                                            MouseLeave="OnInventoryButtonMouseLeave"/>
-                                    <local:CustomPopup x:Name="ItemPopup"
-                                                       PlacementTarget="{Binding ElementName=InventoryButton}">
-                                        <Border Width="462" Height="40">
-                                            <Border.Background>
-                                                <ImageBrush ImageSource="{StaticResource PopupBackgroundImage}" Stretch="Uniform"/>
-                                            </Border.Background>
-                                            <TextBlock Text="Item Description" Foreground="White"/>
-                                        </Border>
-                                    </local:CustomPopup>
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                <Grid>
+                    <ScrollViewer x:Name="ScrollViewer" VerticalScrollBarVisibility="Hidden" 
+                                  PreviewMouseWheel="OnScrollViewerPreviewMouseWheel"
+                                  Focusable="True"
+                                  PanningMode="VerticalOnly"
+                                  CanContentScroll="False"
+                                  Padding="0,43.5,0,46"
+                                  ScrollChanged="OnScrollViewerScrollChanged">
+                        <ItemsControl x:Name="InventoryItemsControl">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid>
+                                        <Button x:Name="InventoryButton" Style="{StaticResource InventoryButtonStyle}"
+                                                MouseEnter="OnInventoryButtonMouseEnter"
+                                                MouseLeave="OnInventoryButtonMouseLeave"/>
+                                        <TextBlock Text="1" FontSize="18" Foreground="White" IsHitTestVisible="False" Padding="25,23"
+                                            noesis:Text.Stroke="Black"
+                                            noesis:Text.StrokeThickness="1.5"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    
+                    <Canvas x:Name="PopupCanvas" Height="627.5" ClipToBounds="True" IsHitTestVisible="False">
+                        <local:CustomPopup x:Name="SharedItemPopup" Canvas.Left="8" Canvas.Top="0">
+                            <local:CustomPopup.Triggers>
+                                <EventTrigger RoutedEvent="local:CustomPopup.PopupOpened">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation 
+                                                Storyboard.TargetName="PopupBorder"
+                                                Storyboard.TargetProperty="(Border.Background).(ImageBrush.Opacity)"
+                                                From="0" To="1" Duration="0:0:0.1"/>
+                                            <DoubleAnimation 
+                                                Storyboard.TargetName="PopupText"
+                                                Storyboard.TargetProperty="Opacity"
+                                                From="0" To="1" Duration="0:0:0.1"/>
+                                            <DoubleAnimation 
+                                                Storyboard.TargetName="PopupScaleTransform"
+                                                Storyboard.TargetProperty="ScaleX"
+                                                From="0.8" To="1" Duration="0:0:0.1"/>
+                                            <DoubleAnimation 
+                                                Storyboard.TargetName="PopupScaleTransform"
+                                                Storyboard.TargetProperty="ScaleY"
+                                                From="0.8" To="1" Duration="0:0:0.1"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </local:CustomPopup.Triggers>
+                            <Border Width="462" Height="40" Name="PopupBorder" RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="PopupScaleTransform" ScaleX="1" ScaleY="1"/>
+                                </Border.RenderTransform>
+                                <Border.Background>
+                                    <ImageBrush ImageSource="{StaticResource PopupBackgroundImage}" Stretch="Uniform"/>
+                                </Border.Background>
+                                <TextBlock x:Name="PopupText" Text="{Binding ElementName=SharedItemPopup, Path=ItemText}" Foreground="White" Padding="12,10"
+                                    noesis:Text.Stroke="Black"
+                                    noesis:Text.StrokeThickness="1.5"/>
+                            </Border>
+                        </local:CustomPopup>
+                    </Canvas>
+                </Grid>
             </Border>
         </Border>
     </Viewbox>

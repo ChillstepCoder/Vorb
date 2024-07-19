@@ -5,15 +5,21 @@
 #include <NsGui/IntegrationAPI.h>
 #include <NsGui/FrameworkElement.h>
 #include <NsGui/Button.h>
+#include <NsGui/Canvas.h>
 #include <NsGui/Uri.h>
 #include <NsGui/VisualTreeHelper.h>
 #include <NsGui/RoutedEvent.h>
+#include <NsGui/UIElementData.h>
+#include <NsGui/INotifyPropertyChanged.h>
+#include <NsGui/UserControl.h>
 
 
-class CustomPopup : public Noesis::Popup {
+class CustomPopup : public Noesis::UserControl {
 public:
+    typedef Noesis::Delegate<void(BaseComponent*, const Noesis::RoutedEventArgs&)> ItemPopupHandler;
+
     CustomPopup() {
-        SetPlacement(Noesis::PlacementMode_AbsolutePoint);
+         SetVisibility(Noesis::Visibility_Hidden);
     }
 
     void Init(f32 x, Noesis::Button* attachedButton) {
@@ -26,25 +32,67 @@ public:
         UpdatePopupPosition();
     }
 
+    UIElement::RoutedEvent_<ItemPopupHandler> PopupOpened() {
+        return UIElement::RoutedEvent_<ItemPopupHandler>(this, PopupOpenedEvent);
+    }
+    UIElement::RoutedEvent_<ItemPopupHandler> PopupClosed() {
+        return UIElement::RoutedEvent_<ItemPopupHandler>(this, PopupClosedEvent);
+    }
+
+    const char* GetItemText() const {
+        return Noesis::DependencyObject::GetValue<Noesis::String>(ItemTextProperty).Str();
+    }
+    void SetItemText(const char* text) {
+        Noesis::DependencyObject::SetValue<Noesis::String>(ItemTextProperty, text);
+    }
+
+    void SetIsOpen(bool isOpen) {
+        SetValue<bool>(IsOpenProperty, isOpen);
+        OnIsOpenChanged(isOpen);
+    }
+    bool GetIsOpen() const {
+        return GetValue<bool>(IsOpenProperty);
+    }
+    /// Dependency properties and routed events
+    //@{
+    inline static const Noesis::DependencyProperty* ItemTextProperty;
+    inline static const Noesis::DependencyProperty* IsOpenProperty;
+    inline static const Noesis::RoutedEvent* PopupOpenedEvent;
+    inline static const Noesis::RoutedEvent* PopupClosedEvent;
+    //@}
+
 protected:
     void OnChildDesiredSizeChanged(Noesis::UIElement* child) override {
-        Noesis::Popup::OnChildDesiredSizeChanged(child);
         UpdatePopupPosition();
     }
 
 private:
     void UpdatePopupPosition() {
         if (mAttachedButton) {
-            SetHorizontalOffset(mScreenX);
-            Noesis::Point buttonBottomLeft = mAttachedButton->PointToScreen(Noesis::Point(0, mAttachedButton->GetActualHeight()));
-            SetVerticalOffset(buttonBottomLeft.y - 4);
+            Noesis::Visual* parent = GetParent();
+            if (Noesis::Canvas* canvas = Noesis::DynamicCast<Noesis::Canvas*>(parent)) {
+                Noesis::Point pos = mAttachedButton->TranslatePoint(Noesis::Point(0, mAttachedButton->GetActualHeight()), canvas);
+               // Noesis::Canvas::SetLeft(this, pos.x);
+                Noesis::Canvas::SetTop(this, pos.y - 4);
+            }
         }
+    }
+    void OnIsOpenChanged(bool newValue) {
+        SetVisibility(newValue ? Noesis::Visibility_Visible : Noesis::Visibility_Hidden);
+        Noesis::RoutedEventArgs args(this, newValue ? PopupOpenedEvent : PopupClosedEvent);
+        RaiseEvent(args);
     }
 
     f32 mScreenX = 0.0f;
     Noesis::Button* mAttachedButton = nullptr;
 
-    NS_IMPLEMENT_INLINE_REFLECTION_(CustomPopup, Noesis::Popup, "AM.CustomPopup")
+    NS_IMPLEMENT_INLINE_REFLECTION(CustomPopup, Noesis::UserControl, "AM.CustomPopup") {
+        Noesis::UIElementData* data = NsMeta<Noesis::UIElementData>(Noesis::TypeOf<SelfClass>());
+        data->RegisterEvent(PopupOpenedEvent, "PopupOpened", Noesis::RoutingStrategy_Bubble);
+        data->RegisterEvent(PopupClosedEvent, "PopupClosed", Noesis::RoutingStrategy_Bubble);
+        data->RegisterProperty<Noesis::String>(ItemTextProperty, "ItemText", Noesis::PropertyMetadata::Create(Noesis::String("Hello2")));
+        data->RegisterProperty<bool>(IsOpenProperty, "IsOpen", Noesis::PropertyMetadata::Create(false));
+    }
 };
 
 
@@ -67,7 +115,7 @@ void InventoryUI::InitializeComponent() {
     _scrollViewer = FindName<Noesis::ScrollViewer>("ScrollViewer");
     _inventoryItemsControl = FindName<Noesis::ItemsControl>("InventoryItemsControl");
 
-    _inventoryItems = *new Noesis::ObservableCollection<InventoryItem>();
+    _inventoryItems = *new Noesis::ObservableCollection<InventoryItemDataModel>();
     _inventoryItemsControl->SetItemsSource(_inventoryItems);
 }
 
@@ -120,7 +168,7 @@ void InventoryUI::OnScrollViewerMouseEnter(Noesis::BaseComponent* sender, const 
 void InventoryUI::OnInventoryButtonMouseEnter(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e) {
     Noesis::Button* button = static_cast<Noesis::Button*>(sender);
     Noesis::FrameworkElement* parent = static_cast<Noesis::FrameworkElement*>(button->GetParent());
-    CustomPopup* popup = parent->FindName<CustomPopup>("ItemPopup");
+    CustomPopup* popup = parent->FindName<CustomPopup>("SharedItemPopup");
 
     if (mActivePopupBar) {
         mActivePopupBar->SetIsOpen(false);
@@ -153,6 +201,6 @@ void InventoryUI::LoadMoreItems(int count)
 {
     for (int i = 0; i < count && _inventoryItems->Count() < _totalItems; ++i)
     {
-        _inventoryItems->Add(Noesis::MakePtr<InventoryItem>());
+        _inventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>());
     }
 }
