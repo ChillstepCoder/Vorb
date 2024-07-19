@@ -97,9 +97,9 @@
                     </ScrollViewer>
                     
                     <Canvas x:Name="PopupCanvas" Height="627.5" ClipToBounds="True" IsHitTestVisible="False">
-                        <local:CustomPopup x:Name="SharedItemPopup" Canvas.Left="8" Canvas.Top="0">
-                            <local:CustomPopup.Triggers>
-                                <EventTrigger RoutedEvent="local:CustomPopup.PopupOpened">
+                        <local:ItemDetailsBar x:Name="SharedItemDetailsBar" Canvas.Left="8" Canvas.Top="0">
+                            <local:ItemDetailsBar.Triggers>
+                                <EventTrigger RoutedEvent="local:ItemDetailsBar.Opened">
                                     <BeginStoryboard>
                                         <Storyboard>
                                             <DoubleAnimation 
@@ -121,7 +121,7 @@
                                         </Storyboard>
                                     </BeginStoryboard>
                                 </EventTrigger>
-                            </local:CustomPopup.Triggers>
+                            </local:ItemDetailsBar.Triggers>
                             <Border Width="462" Height="40" Name="PopupBorder" RenderTransformOrigin="0.5,0.5">
                                 <Border.RenderTransform>
                                     <ScaleTransform x:Name="PopupScaleTransform" ScaleX="1" ScaleY="1"/>
@@ -129,11 +129,11 @@
                                 <Border.Background>
                                     <ImageBrush ImageSource="{StaticResource PopupBackgroundImage}" Stretch="Uniform"/>
                                 </Border.Background>
-                                <TextBlock x:Name="PopupText" Text="{Binding ElementName=SharedItemPopup, Path=ItemText}" Foreground="White" Padding="12,10"
+                                <TextBlock x:Name="PopupText" Text="{Binding ElementName=SharedItemDetailsBar, Path=ItemText}" Foreground="White" Padding="12,10"
                                     noesis:Text.Stroke="Black"
                                     noesis:Text.StrokeThickness="1.5"/>
                             </Border>
-                        </local:CustomPopup>
+                        </local:ItemDetailsBar>
                     </Canvas>
                 </Grid>
             </Border>

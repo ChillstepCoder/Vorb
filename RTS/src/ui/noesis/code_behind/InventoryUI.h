@@ -33,7 +33,7 @@ private:
 };
 
 
-class CustomPopup;
+class ItemDetailsBar;
 
 class InventoryUI : public Noesis::UserControl
 {
@@ -53,11 +53,11 @@ private:
     void OnInventoryButtonMouseLeave(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e);
     void LoadMoreItems(int count);
 
-    Noesis::ScrollViewer* _scrollViewer;
-    Noesis::ItemsControl* _inventoryItemsControl;
-    Noesis::Ptr<Noesis::ObservableCollection<InventoryItemDataModel>> _inventoryItems;
-    int _totalItems;
-    CustomPopup* mActivePopupBar = nullptr;
+    Noesis::ScrollViewer* mScrollViewer;
+    Noesis::ItemsControl* mInventoryItemsControl;
+    ItemDetailsBar* mItemDetailsBar;
+    Noesis::Ptr<Noesis::ObservableCollection<InventoryItemDataModel>> mInventoryItems;
+    int mTotalItems;
 
     NS_IMPLEMENT_INLINE_REFLECTION_(InventoryUI, UserControl, "AM.Inventory")
 };

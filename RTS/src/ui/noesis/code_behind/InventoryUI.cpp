@@ -14,11 +14,11 @@
 #include <NsGui/UserControl.h>
 
 
-class CustomPopup : public Noesis::UserControl {
+class ItemDetailsBar : public Noesis::UserControl {
 public:
     typedef Noesis::Delegate<void(BaseComponent*, const Noesis::RoutedEventArgs&)> ItemPopupHandler;
 
-    CustomPopup() {
+    ItemDetailsBar() {
          SetVisibility(Noesis::Visibility_Hidden);
     }
 
@@ -86,10 +86,10 @@ private:
     f32 mScreenX = 0.0f;
     Noesis::Button* mAttachedButton = nullptr;
 
-    NS_IMPLEMENT_INLINE_REFLECTION(CustomPopup, Noesis::UserControl, "AM.CustomPopup") {
+    NS_IMPLEMENT_INLINE_REFLECTION(ItemDetailsBar, Noesis::UserControl, "AM.ItemDetailsBar") {
         Noesis::UIElementData* data = NsMeta<Noesis::UIElementData>(Noesis::TypeOf<SelfClass>());
-        data->RegisterEvent(PopupOpenedEvent, "PopupOpened", Noesis::RoutingStrategy_Bubble);
-        data->RegisterEvent(PopupClosedEvent, "PopupClosed", Noesis::RoutingStrategy_Bubble);
+        data->RegisterEvent(PopupOpenedEvent, "Opened", Noesis::RoutingStrategy_Bubble);
+        data->RegisterEvent(PopupClosedEvent, "Closed", Noesis::RoutingStrategy_Bubble);
         data->RegisterProperty<Noesis::String>(ItemTextProperty, "ItemText", Noesis::PropertyMetadata::Create(Noesis::String("Hello2")));
         data->RegisterProperty<bool>(IsOpenProperty, "IsOpen", Noesis::PropertyMetadata::Create(false));
     }
@@ -100,23 +100,25 @@ InventoryUI::InventoryUI() {
     InitializeComponent();
 
 
-    _totalItems = 1000;
+    mTotalItems = 1000;
     LoadMoreItems(16);
 }
 
 void InventoryUI::RegisterChildren() {
-    Noesis::RegisterComponent<CustomPopup>();
+    Noesis::RegisterComponent<ItemDetailsBar>();
 }
 
 void InventoryUI::InitializeComponent() {
     ASSERT_RENDER_THREAD();
     Noesis::GUI::LoadComponent(this, Noesis::Uri("inventory.xaml"));
 
-    _scrollViewer = FindName<Noesis::ScrollViewer>("ScrollViewer");
-    _inventoryItemsControl = FindName<Noesis::ItemsControl>("InventoryItemsControl");
+    mScrollViewer = FindName<Noesis::ScrollViewer>("ScrollViewer");
+    mInventoryItemsControl = FindName<Noesis::ItemsControl>("InventoryItemsControl");
 
-    _inventoryItems = *new Noesis::ObservableCollection<InventoryItemDataModel>();
-    _inventoryItemsControl->SetItemsSource(_inventoryItems);
+    mInventoryItems = *new Noesis::ObservableCollection<InventoryItemDataModel>();
+    mInventoryItemsControl->SetItemsSource(mInventoryItems);
+
+    mItemDetailsBar = FindName<ItemDetailsBar>("SharedItemDetailsBar");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -154,8 +156,8 @@ void InventoryUI::OnScrollViewerPreviewMouseWheel(Noesis::BaseComponent* sender,
 }
 
 void InventoryUI::OnScrollViewerScrollChanged(Noesis::BaseComponent* sender, const Noesis::ScrollChangedEventArgs& e) {
-    if (mActivePopupBar) {
-        mActivePopupBar->OnScroll();
+    if (mItemDetailsBar->GetIsOpen()) {
+        mItemDetailsBar->OnScroll();
     }
 }
 
@@ -168,39 +170,30 @@ void InventoryUI::OnScrollViewerMouseEnter(Noesis::BaseComponent* sender, const 
 void InventoryUI::OnInventoryButtonMouseEnter(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e) {
     Noesis::Button* button = static_cast<Noesis::Button*>(sender);
     Noesis::FrameworkElement* parent = static_cast<Noesis::FrameworkElement*>(button->GetParent());
-    CustomPopup* popup = parent->FindName<CustomPopup>("SharedItemPopup");
 
-    if (mActivePopupBar) {
-        mActivePopupBar->SetIsOpen(false);
-    }
+    // Get the View
+    Noesis::Size size = mScrollViewer->GetRenderSize();
+    Noesis::Point scrollRoot = mScrollViewer->PointToScreen(Noesis::Point(0, 0));
+    // Get the size of the rendering surface
+    uint32_t width, height;
+    Noesis::Point screenCenter(size.width / 2.0f, size.height / 2.0f);
 
-    if (popup) {
-        // Get the View
-        Noesis::Size size = _scrollViewer->GetRenderSize();
-        Noesis::Point scrollRoot = _scrollViewer->PointToScreen(Noesis::Point(0, 0));
-        // Get the size of the rendering surface
-        uint32_t width, height;
-        Noesis::Point screenCenter(size.width / 2.0f, size.height / 2.0f);
-
-        // Get button position
-        popup->SetIsOpen(true);
-        popup->Init(scrollRoot.x + 12, button);
-    }
-    mActivePopupBar = popup;
+    // Get button position
+    mItemDetailsBar->SetIsOpen(true);
+    mItemDetailsBar->Init(scrollRoot.x + 12, button);
 }
 
 void InventoryUI::OnInventoryButtonMouseLeave(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e) {
-    if (mActivePopupBar) {
-        mActivePopupBar->SetIsOpen(false);
-        mActivePopupBar = nullptr;
+    if (!mItemDetailsBar->GetIsOpen()) {
+        mItemDetailsBar->SetIsOpen(false);
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 void InventoryUI::LoadMoreItems(int count)
 {
-    for (int i = 0; i < count && _inventoryItems->Count() < _totalItems; ++i)
+    for (int i = 0; i < count && mInventoryItems->Count() < mTotalItems; ++i)
     {
-        _inventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>());
+        mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>());
     }
 }
