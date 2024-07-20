@@ -19,6 +19,7 @@
 
 #include "debugging/DebugRenderer.h"
 
+#include "ecs/component/ThreadSharedComponent.h"
 // TODO: REMOVE
 #include "ecs/factory/EntityFactory.h"
 
@@ -182,7 +183,9 @@ void PlayerControlSystem::updateSelection(entt::entity entity, PlayerControlComp
             // Interact
             if (didInteract) {
                 // TODO: ECS interact?
-                if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(selected)) {
+                if (mRegistry.all_of<TileItemContainerComponent>(selected)) {
+                    ThreadSharedComponentFactory::addItemSackUISharedComponent(mRegistry, selected);
+                } else if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(selected)) {
                     mWorld.getECS().pickupTileItem(entity, itemCmp->getTileItemUID(), itemCmp->getItemStack().count);
                 } else if (mRegistry.all_of<SimpleItemComponent>(selected)) {
                     mWorld.getECS().pickupDynamicItem(entity, selected, 1);

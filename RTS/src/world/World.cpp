@@ -549,6 +549,13 @@ void World::updateEntitiesRenderState(WorldRenderState& renderState) {
             }
         }
     }
+
+    // Render thread shared components
+    renderState.mThreadSharedComponents.clear();
+    auto view = registry.view<RenderThreadSharedComponent>();
+    for (entt::entity e : view) {
+        renderState.mThreadSharedComponents.emplace_back(view.get<RenderThreadSharedComponent>(e).mData);
+    }
 }
 
 void World::updateDebugRenderState(WorldRenderState& renderState) {

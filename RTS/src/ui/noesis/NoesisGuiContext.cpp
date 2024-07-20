@@ -1,6 +1,9 @@
 #include "stdafx.h"
 #include "NoesisGuiContext.h"
 
+#include <SDL2/SDL_events.h>
+#include <NsGui/IView.h>
+
 #include <NsCore/Noesis.h>
 #include <NsCore/ReflectionImplementEmpty.h>
 #include <NsCore/RegisterComponent.h>
@@ -20,7 +23,7 @@
 #include "ui/noesis/NoesisLocalFontProvider.h"
 #include "ui/noesis/NoesisGLRenderDevice.h"
 
-#include "ui/noesis/code_behind/InventoryUI.h"
+#include "ui/noesis/code_behind/SackContainerPanel.h"
 
 #include "resources/ResourceManager.h"
 
@@ -47,9 +50,10 @@ static Noesis::Ptr<Noesis::RenderDevice> sRenderDevice = nullptr;
 
 
 static UnorderedFlatMap<GameUIPanel, const char*> sNoesisGuiViewToFilename = {
-    { GameUIPanel::Inventory, "inventory/inventory.xaml" }
+    { GameUIPanel::Inventory, "inventory/inventory.xaml" },
+    { GameUIPanel::SackContainer, "inventory/sack_container.xaml" }
 };
-static_assert(e_count(GameUIPanel) == 1, "Update the filenames");
+static_assert(e_count(GameUIPanel) == 2, "Update the filenames");
 
 NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext) {
     ASSERT_RENDER_THREAD();
@@ -99,8 +103,8 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
 
 
     // Register code-behind classes
-    Noesis::RegisterComponent<InventoryUI>();
-    InventoryUI::RegisterChildren();
+    Noesis::RegisterComponent<SackContainerPanel>();
+    SackContainerPanel::RegisterChildren();
 
 
     for (int i = 0; i < e_count(GameUIPanel); ++i) {
@@ -108,7 +112,7 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
     }
 
     // TODO: REMOVE
-    toggleView(GameUIPanel::Inventory);
+    //toggleView(GameUIPanel::Inventory);
 
     //A view is needed to render the user interface and interact with it.A view holds a tree of elements.
     // The easiest way to build interface trees is by loading them from XAML files.This can be done using the helper function LoadXaml.
@@ -134,6 +138,12 @@ bool NoesisGuiContext::processInput(SDL_Event* e) {
 
     switch (e->type) {
         case SDL_KEYDOWN: {
+
+            // TODO: replace with a more general way to close UI
+            if (e->key.keysym.sym == SDLK_q) {
+                mViewWantsActive[e_cast(GameUIPanel::SackContainer)].store(false);
+                return true;
+            }
             auto&& it = sSdlKeycodeToNoesisKey.find(e->key.keysym.sym);
             if (it != sSdlKeycodeToNoesisKey.end()) {
                 if (forEachActiveViewHandleInput([&](Noesis::IView& view) {
@@ -285,21 +295,76 @@ bool NoesisGuiContext::forEachActiveViewHandleInput(std::function<bool(Noesis::I
     return false;
 }
 
-void NoesisGuiContext::toggleView(GameUIPanel viewName) {
-    const int new_value = mViewWantsActive[e_cast(viewName)].fetch_xor(1, std::memory_order_relaxed) ^ 1;
-    LOG_WARN("TOGGLE NEW {} ", new_value);
-
-    std::lock_guard lock(mActiveViewsMutex);
-    if (new_value) {
-        mActiveViews.emplace_back(mViews[e_cast(viewName)]);
+void NoesisGuiContext::onPanelActiveChanged(GameUIPanel panel, bool active) {
+    if (active) {
+        std::lock_guard lock(mActiveViewsMutex);
+        // Make sure its not already active
+        for (size_t i = 0; i < mActiveViews.size(); ++i) {
+            if (mActiveViews[i] == mViews[e_cast(panel)]) {
+                return;
+            }
+        }
+        mActiveViews.emplace_back(mViews[e_cast(panel)]);
     }
     else {
+        std::lock_guard lock(mActiveViewsMutex);
         for (size_t i = 0; i < mActiveViews.size(); ++i) {
-            if (mActiveViews[i] == mViews[e_cast(viewName)]) {
+            if (mActiveViews[i] == mViews[e_cast(panel)]) {
                 mActiveViews[i] = mActiveViews.back();
                 mActiveViews.pop_back();
                 break;
             }
         }
+    }
+}
+
+void NoesisGuiContext::toggleView(GameUIPanel viewName) {
+    const int newActive = mViewWantsActive[e_cast(viewName)].fetch_xor(1, std::memory_order_relaxed) ^ 1;
+    onPanelActiveChanged(viewName, (bool)newActive);
+}
+
+void NoesisGuiContext::updateItemSackUI(RenderThreadSharedComponentDataPtr data) {
+
+    Noesis::IView& view = *mViews[e_cast(GameUIPanel::SackContainer)];
+    // Get the root element of the view
+    Noesis::FrameworkElement* root = view.GetContent();
+
+    // Find your InventoryUI control
+    SackContainerPanel* panel = root->FindName<SackContainerPanel>("RootPanel");
+    if (!panel) {
+        panic("RootPanel missing from sack_container.xaml");
+    }
+
+    if (!data) {
+        mItemSackData.reset();
+    }
+    else {
+        if (mItemSackData && mItemSackData->uid != data->uid) [[unlikely]] {
+            // Close old UI
+            panel->reset();
+        }
+
+        mItemSackData = std::move(data);
+        if (mItemSackData->wasDestroyed) {
+            mItemSackData.reset();
+        }
+    }
+
+    // Set UI active
+    ExclusiveCacheLine<std::atomic_int>& wantsActive = mViewWantsActive[e_cast(GameUIPanel::SackContainer)];
+    if (mItemSackData) {
+        wantsActive.store(1, std::memory_order_relaxed);
+        onPanelActiveChanged(GameUIPanel::SackContainer, true);
+
+        // Send copy of data to UI
+        {
+            std::lock_guard lock(mItemSackData->resourceMutex);
+            panel->updateItems(mItemSackData->getItemSackData().itemStacks);
+        }
+    }
+    else {
+        wantsActive.store(0, std::memory_order_relaxed);
+        onPanelActiveChanged(GameUIPanel::SackContainer, false);
+        panel->reset();
     }
 }

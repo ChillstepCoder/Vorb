@@ -68,6 +68,8 @@ public:
 
 private:
     void initEventHandlers();
+    
+    void updateThreadSharedComponents();
 
     // Render passes
     void renderPassSky();

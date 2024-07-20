@@ -7,6 +7,7 @@
 #include "rendering/renderstate/CharacterRenderState.h"
 #include "rendering/renderstate/DynamicModelInstanceState.h"
 #include "rendering/renderstate/WorldTextRenderState.h"
+#include "ecs/component/ThreadSharedComponent.h"
 
 #include "interact/SelectedObjectData.h"
 
@@ -42,6 +43,11 @@ class WorldRenderState {
     friend class World;
     friend class GameRenderStateManager;
 public:
+    void onRenderThreadFinished() const {
+        // Release handles
+        mThreadSharedComponents.clear();
+    }
+
     const f32v2& getWorldLoadCenter() const { return mWorldLoadCenter; }
     const f32v3& getCameraOwningEntityPos() const { return mCameraOwningEntityPos; }
     bool isCameraOwned() const { return mIsCameraOwned; }
@@ -52,6 +58,7 @@ public:
     const std::vector<WorldTextRenderState>& getWorldText() const { return mWorldText; }
     WorldID getWorldId() const { return mWorldId; }
     const SelectedObjectData& getPlayerSelectedObject() const { return mPlayerSelectedObject; }
+    std::vector<RenderThreadSharedComponentDataPtr>& getThreadSharedComponents() const { return mThreadSharedComponents; }
 private:
     // ======================== Game State  ========================
     WorldID mWorldId = 0;
@@ -61,6 +68,7 @@ private:
     std::vector<CharacterRenderState> mCharacters;
     std::vector<DynamicModelInstanceState> mDynamicModels;
     std::vector<WorldTextRenderState> mWorldText;
+    mutable std::vector<RenderThreadSharedComponentDataPtr> mThreadSharedComponents;
     SelectedObjectData mPlayerSelectedObject;
 
     // ======================== Debug state ========================

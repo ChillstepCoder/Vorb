@@ -10,11 +10,11 @@
 #include <NsGui/UIElementCollection.h>
 #include <NsApp/NotifyPropertyChangedBase.h>
 
+#include "item/ItemStack.h"
 
-class InventoryItemDataModel : public NoesisApp::NotifyPropertyChangedBase
-{
+class InventoryItemDataModel : public NoesisApp::NotifyPropertyChangedBase {
 public:
-    InventoryItemDataModel() : mText("Default Item Text") {}
+    InventoryItemDataModel(LocText itemName, int count, TileItemUID uid) : mUniqueId(uid), mText(itemName.c_str()), mCount(count) {}
 
     const char* getText() const { return mText.Str(); }
     void setText(const char* text) {
@@ -23,24 +23,37 @@ public:
             OnPropertyChanged("ItemText");
         }
     }
+    int getCount() const { return mCount; }
+    void setCount(int val) {
+        if (mCount != val) {
+            mCount = val;
+            OnPropertyChanged("Count");
+        }
+    }
 
     NS_IMPLEMENT_INLINE_REFLECTION(InventoryItemDataModel, NoesisApp::NotifyPropertyChangedBase) {
         NsProp("ItemText", &InventoryItemDataModel::getText, &InventoryItemDataModel::setText);
+        NsProp("ItemCount", &InventoryItemDataModel::getCount, &InventoryItemDataModel::setCount);
     }
 
+public:
+    TileItemUID mUniqueId;
 private:
+    // Properties
     Noesis::String mText;
+    int mCount;
 };
-
 
 class ItemDetailsBar;
 
-class InventoryUI : public Noesis::UserControl
+class SackContainerPanel : public Noesis::UserControl
 {
 public:
-    InventoryUI();
+    SackContainerPanel();
 
     static void RegisterChildren();
+    void reset();
+    void updateItems(std::vector<ItemStackWithUID> items);
 
 private:
     void InitializeComponent();
@@ -59,6 +72,6 @@ private:
     Noesis::Ptr<Noesis::ObservableCollection<InventoryItemDataModel>> mInventoryItems;
     int mTotalItems;
 
-    NS_IMPLEMENT_INLINE_REFLECTION_(InventoryUI, UserControl, "AM.Inventory")
+    NS_IMPLEMENT_INLINE_REFLECTION_(SackContainerPanel, UserControl, "AM.SackContainer")
 };
 

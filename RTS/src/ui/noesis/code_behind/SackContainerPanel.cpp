@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "InventoryUI.h"
+#include "SackContainerPanel.h"
 
 #include <NsCore/RegisterComponent.h>
 #include <NsGui/IntegrationAPI.h>
@@ -13,6 +13,7 @@
 #include <NsGui/INotifyPropertyChanged.h>
 #include <NsGui/UserControl.h>
 
+#include "item/ItemRepository.h"
 
 class ItemDetailsBar : public Noesis::UserControl {
 public:
@@ -47,6 +48,7 @@ public:
     }
 
     void SetIsOpen(bool isOpen) {
+        if (isOpen == GetIsOpen()) return;
         SetValue<bool>(IsOpenProperty, isOpen);
         OnIsOpenChanged(isOpen);
     }
@@ -96,19 +98,55 @@ private:
 };
 
 
-InventoryUI::InventoryUI() {
+SackContainerPanel::SackContainerPanel() {
     InitializeComponent();
 
-
-    mTotalItems = 1000;
-    LoadMoreItems(16);
+    mTotalItems = 128;
+    LoadMoreItems(20);
 }
 
-void InventoryUI::RegisterChildren() {
+void SackContainerPanel::RegisterChildren() {
     Noesis::RegisterComponent<ItemDetailsBar>();
 }
 
-void InventoryUI::InitializeComponent() {
+void SackContainerPanel::reset() {
+    mInventoryItems->Clear();
+    mScrollViewer->ScrollToTop();
+    mItemDetailsBar->SetIsOpen(false);
+}
+
+void SackContainerPanel::updateItems(std::vector<ItemStackWithUID> items) {
+    PROFILE_FUNCTION();
+    ASSERT_RENDER_THREAD();
+    // 1. Remove any items that are no longer in the list and update existing counts
+    for (int i = mInventoryItems->Count() - 1; i >= 0; --i) {
+        for (int j = items.size() - 1; j >= 0; --j) {
+            InventoryItemDataModel* model = mInventoryItems->Get(i);
+            if (model->mUniqueId == items[j].tileItemUID) {
+                model->setCount(items[j].itemStack.count);
+                items.erase(items.begin() + j); // Remove from list (so we don't add it again later;
+                break;
+            }
+            if (j == 0) {
+                mInventoryItems->RemoveAt(i);
+            }
+        }
+    }
+
+    // 2. Add any new items
+    for (int i = 0; i < items.size(); ++i) {
+        ItemStackWithUID& stack = items[i];
+        const ItemDef& itemDef = ItemRepository::get().getLoadedOrUnloadedAsset(stack.itemStack.id);
+        mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>(itemDef.mDisplayName, stack.itemStack.count, stack.tileItemUID));
+    }
+
+    // Add some empty ones at the end
+    for (int i = 0; i < 20; ++i) {
+        mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>("Empty", 0, UINT32_MAX));
+    }
+}
+
+void SackContainerPanel::InitializeComponent() {
     ASSERT_RENDER_THREAD();
     Noesis::GUI::LoadComponent(this, Noesis::Uri("inventory.xaml"));
 
@@ -122,7 +160,7 @@ void InventoryUI::InitializeComponent() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-bool InventoryUI::ConnectEvent(Noesis::BaseComponent* source, const char* event, const char* handler)
+bool SackContainerPanel::ConnectEvent(Noesis::BaseComponent* source, const char* event, const char* handler)
 {
     NS_CONNECT_EVENT(Noesis::ScrollViewer, PreviewMouseWheel, OnScrollViewerPreviewMouseWheel);
     NS_CONNECT_EVENT(Noesis::ScrollViewer, ScrollChanged, OnScrollViewerScrollChanged);
@@ -134,7 +172,7 @@ bool InventoryUI::ConnectEvent(Noesis::BaseComponent* source, const char* event,
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void InventoryUI::OnScrollViewerPreviewMouseWheel(Noesis::BaseComponent* sender, const Noesis::MouseWheelEventArgs& e) {
+void SackContainerPanel::OnScrollViewerPreviewMouseWheel(Noesis::BaseComponent* sender, const Noesis::MouseWheelEventArgs& e) {
     Noesis::ScrollViewer* scrollViewer = static_cast<Noesis::ScrollViewer*>(sender);
 
     const f32 offsetDistance = e.wheelRotation * 20.0f;
@@ -155,21 +193,24 @@ void InventoryUI::OnScrollViewerPreviewMouseWheel(Noesis::BaseComponent* sender,
     }
 }
 
-void InventoryUI::OnScrollViewerScrollChanged(Noesis::BaseComponent* sender, const Noesis::ScrollChangedEventArgs& e) {
+void SackContainerPanel::OnScrollViewerScrollChanged(Noesis::BaseComponent* sender, const Noesis::ScrollChangedEventArgs& e) {
     if (mItemDetailsBar->GetIsOpen()) {
         mItemDetailsBar->OnScroll();
     }
 }
 
-void InventoryUI::OnScrollViewerMouseEnter(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e)
+void SackContainerPanel::OnScrollViewerMouseEnter(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e)
 {
     Noesis::ScrollViewer* scrollViewer = static_cast<Noesis::ScrollViewer*>(sender);
     scrollViewer->Focus();
 }
 
-void InventoryUI::OnInventoryButtonMouseEnter(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e) {
+void SackContainerPanel::OnInventoryButtonMouseEnter(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e) {
     Noesis::Button* button = static_cast<Noesis::Button*>(sender);
     Noesis::FrameworkElement* parent = static_cast<Noesis::FrameworkElement*>(button->GetParent());
+
+    // Get the DataContext of the parent Grid
+    InventoryItemDataModel* itemData = Noesis::DynamicCast<InventoryItemDataModel*>(parent->GetDataContext());
 
     // Get the View
     Noesis::Size size = mScrollViewer->GetRenderSize();
@@ -181,19 +222,21 @@ void InventoryUI::OnInventoryButtonMouseEnter(Noesis::BaseComponent* sender, con
     // Get button position
     mItemDetailsBar->SetIsOpen(true);
     mItemDetailsBar->Init(scrollRoot.x + 12, button);
+    mItemDetailsBar->SetItemText(itemData->getText());
 }
 
-void InventoryUI::OnInventoryButtonMouseLeave(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e) {
+void SackContainerPanel::OnInventoryButtonMouseLeave(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e) {
     if (!mItemDetailsBar->GetIsOpen()) {
         mItemDetailsBar->SetIsOpen(false);
     }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void InventoryUI::LoadMoreItems(int count)
+void SackContainerPanel::LoadMoreItems(int count)
 {
-    for (int i = 0; i < count && mInventoryItems->Count() < mTotalItems; ++i)
-    {
-        mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>());
-    }
+    // No longer
+    /*  for (int i = 0; i < count && mInventoryItems->Count() < mTotalItems; ++i)
+      {
+          mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>());
+      }*/
 }

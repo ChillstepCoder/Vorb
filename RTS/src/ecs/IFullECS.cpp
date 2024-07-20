@@ -7,6 +7,7 @@
 #include "world/chunk/SimChunkGrid.h"
 #include "ecs/component/FullEntityBindingComponent.h"
 #include "ecs/component/SimEntityTypeComponent.h"
+#include "ecs/component/ThreadSharedComponent.h"
 #include "ecs/AttachedEntityUpdater.h"
 #include "ecs/system/PlayerInteractSystem.h"
 #include "camera/Camera3D.h"
@@ -74,6 +75,8 @@ void IFullECS::tick(f32 elapsedSec) {
 	ProjectileSystem::update(mWorld, mRegistry, elapsedSec);
 
     ObjectPickupSystem::update(mWorld, mRegistry, elapsedSec);
+
+    RenderThreadSharedComponentSystem::update(mWorld, mRegistry);
 
     assert(mDebugEntityUpdater);
     mDebugEntityUpdater->update(mRegistry);
@@ -360,6 +363,9 @@ i32 IFullECS::pickupTileItem(entt::entity picker, TileItemUID itemUID, i32 quant
                 // Transform static to dynamic pickup object with no physics
                 // TODO: RECYCLE BODY
                 mRegistry.emplace<DynamicModelComponent>(entity, staticModel->modelId, staticModel->scale);
+                // TODO: Put this in a component destroy listener?
+                RenderContext::getInstance().removeLooseModelInstance(mWorld, staticModel->modelId, staticModel->staticModelInstanceId);
+
                 mRegistry.remove<StaticModelComponent>(entity);
                 StaticPhysicsComponent& staticPhysics = mRegistry.get<StaticPhysicsComponent>(entity);
                 mWorld.getPhysicsWorld().removeBody(staticPhysics.mBodyID, true);

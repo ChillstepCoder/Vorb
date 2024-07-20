@@ -1164,7 +1164,10 @@
     <ClCompile Include="src\ui\noesis\NoesisGLRenderDevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ui\noesis\code_behind\InventoryUI.cpp">
+    <ClCompile Include="src\ui\noesis\code_behind\SackContainerPanel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ecs\component\ThreadSharedComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2930,10 +2933,16 @@
     <ClInclude Include="src\ui\noesis\NoesisGLRenderDevice.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\noesis\code_behind\InventoryUI.h">
+    <ClInclude Include="src\ui\noesis\code_behind\SackContainerPanel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\GameUIPanel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\ThreadSharedComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\component\EntityUidComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

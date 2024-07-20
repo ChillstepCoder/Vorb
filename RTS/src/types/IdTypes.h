@@ -77,6 +77,9 @@ constexpr NavPathID INVALID_NAV_PATH_ID = 0;
 using LocTextID = size_t;
 constexpr LocTextID INVALID_LOC_TEXT_ID = std::numeric_limits<LocTextID>::max();
 
+using EntityUid = ui64;
+constexpr EntityUid INVALID_ENTITY_UID = 0;
+
 // UIDs
 typedef ui32 CityUID; // We dont make many cities so ui32 is fine. We can always change it later
 typedef ui32 SettlementUID;

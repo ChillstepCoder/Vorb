@@ -3,6 +3,7 @@
 
 #include "ecs/EntityRepository.h"
 #include "ecs/IFullECS.h"
+#include "Ecs/component/ThreadSharedComponent.h"
 #include "definitions/EntityDef.h"
 
 #include "resources/ModelRepository.h"
@@ -368,6 +369,7 @@ entt::entity EntityFactory::createItemContainerOnGround(World& world, f32v3 posi
 }
 
 void EntityFactory::destroyEntity(World& world, entt::entity entity) {
+    ASSERT_GAME_THREAD();
     IFullECS& ecs = world.getECS();
     entt::registry& registry = ecs.mRegistry;
 
@@ -389,6 +391,10 @@ void EntityFactory::destroyEntity(World& world, entt::entity entity) {
         // TODO: This incurs a mutex lock in getRenderDataManagerForWorld, and it also could crash during shutdown if the render data manager is destroyed after we access it
         InstancedStaticModelManager& modelMgr = RenderContext::getInstance().getRenderDataManagerForWorld(world).getInstancedStaticModelManager();
         modelMgr.removeLooseModelInstance(cmp->modelId, cmp->staticModelInstanceId);
+    }
+
+    if (RenderThreadSharedComponent* cmp = registry.try_get<RenderThreadSharedComponent>(entity)) {
+        cmp->mData->wasDestroyed = true;
     }
 
     world.dispatchOnEntityDestroyed(WorldEntityEvent(world, entity));

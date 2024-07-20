@@ -81,6 +81,7 @@ public:
     CameraController* getCameraController() const { return mCameraController; }
 
     ModelBillboardLodBuilder& getModelBillboardLodBuilder() const { return *mModelBillboardLodBuilder; }
+    void removeLooseModelInstance(World& world, ModelID modelId, StaticModelInstanceID instanceId);
 
     // Renderers
     TileContainerRenderer& getTileContainerRenderer() const;

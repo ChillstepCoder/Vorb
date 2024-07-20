@@ -49,6 +49,7 @@
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 
 #include "ui/UIContext.h"
+#include "ui/noesis/NoesisGuiContext.h"
 
 #include "camera/Camera3D.h"
 #include "physics/PhysicsWorld.h"
@@ -189,6 +190,8 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
 
     // Any per frame world render data
     mCurrentWorldRenderDataManager->frameUpdate(*camera, elapsedSec);
+
+    updateThreadSharedComponents();
 
     // Sun
     const f32v3& sun = mActiveWorld->getTimeOfDayManager().getSunPosition();
@@ -620,6 +623,21 @@ void WorldRenderer::initEventHandlers() {
 
         mEventHandles.skillsComponentListeners.reset();
     });
+}
+
+void WorldRenderer::updateThreadSharedComponents() {
+    std::vector<RenderThreadSharedComponentDataPtr>& sharedComponents = mRenderState->getThreadSharedComponents();
+    for (RenderThreadSharedComponentDataPtr& data : sharedComponents) {
+        switch (data->type) {
+            case RenderThreadSharedComponentType::ItemSack:
+                UIContext::getInstance().getNoesisGuiContext().updateItemSackUI(std::move(data));
+                break;
+            default:
+                assert(false);
+                break;
+        }
+        static_assert(e_count(RenderThreadSharedComponentType) == 1);
+    }
 }
 
 void WorldRenderer::renderPassSky() {

@@ -357,6 +357,8 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     mActiveGBufferIndex = !mActiveGBufferIndex;
 
     checkGlError("RenderContext::FrameEnd");
+
+    renderState.onRenderThreadFinished();
 }
 
 void RenderContext::endFrame() {
@@ -382,6 +384,12 @@ Camera3DGameThreadData RenderContext::getGameThreadCameraData() const {
         rv.worldPos = mCamera.getPosition();
     }
     return rv;
+}
+
+void RenderContext::removeLooseModelInstance(World& world, ModelID modelId, StaticModelInstanceID instanceId) {
+    // TODO: This incurs a mutex lock in getRenderDataManagerForWorld, and it also could crash during shutdown if the render data manager is destroyed after we access it
+    InstancedStaticModelManager& modelMgr = getRenderDataManagerForWorld(world).getInstancedStaticModelManager();
+    modelMgr.removeLooseModelInstance(modelId, instanceId);
 }
 
 TileContainerRenderer& RenderContext::getTileContainerRenderer() const {

@@ -1,12 +1,20 @@
 #pragma once
 class UIContext;
 
-#include <SDL2/SDL_events.h>
 #include <NsCore/Ptr.h>
-#include <NsGui/IView.h>
 
 #include "util/ExclusiveCacheLine.h"
 #include "ui/GameUIPanel.h"
+
+
+#include "ecs/component/ThreadSharedComponent.h"
+
+#pragma region forward_declarations
+union SDL_Event;
+namespace Noesis {
+    NS_INTERFACE IView;
+}
+#pragma endregion
 
 class NoesisGuiContext {
 public:
@@ -18,11 +26,14 @@ public:
     void updateAndRender();
     void toggleView(GameUIPanel viewName);
 
+    // UI Windows
+    void updateItemSackUI(RenderThreadSharedComponentDataPtr data);
 
 private:
     void initView(GameUIPanel viewName);
     // Returns true if event was handled
     bool forEachActiveViewHandleInput(std::function<bool(Noesis::IView&)> func);
+    void onPanelActiveChanged(GameUIPanel panel, bool active);
 
     UIContext& mUIContext;
     Noesis::Ptr<Noesis::IView> mViews[e_count(GameUIPanel)];
@@ -32,6 +43,9 @@ private:
 
     std::mutex mActiveViewsMutex;
     std::vector<Noesis::IView*> mActiveViews; // Protected by mActiveViewsMutex
+
+    // UI Windows
+    RenderThreadSharedComponentDataPtr mItemSackData;
 };
 
 extern NoesisGuiContext* sNoesisGuiContext;
