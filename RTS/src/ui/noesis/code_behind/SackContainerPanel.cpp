@@ -118,7 +118,7 @@ void SackContainerPanel::reset() {
 void SackContainerPanel::updateItems(std::vector<ItemStackWithUID> items) {
     PROFILE_FUNCTION();
     ASSERT_RENDER_THREAD();
-    // 1. Remove any items that are no longer in the list and update existing counts
+    // Remove any items that are no longer in the list and update existing counts
     for (int i = mInventoryItems->Count() - 1; i >= 0; --i) {
         for (int j = items.size() - 1; j >= 0; --j) {
             InventoryItemDataModel* model = mInventoryItems->Get(i);
@@ -133,17 +133,17 @@ void SackContainerPanel::updateItems(std::vector<ItemStackWithUID> items) {
         }
     }
 
-    // 2. Add any new items
+    // Add any new items
     for (int i = 0; i < items.size(); ++i) {
         ItemStackWithUID& stack = items[i];
         const ItemDef& itemDef = ItemRepository::get().getLoadedOrUnloadedAsset(stack.itemStack.id);
         mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>(itemDef.mDisplayName, stack.itemStack.count, stack.tileItemUID));
     }
 
-    // Add some empty ones at the end
-    for (int i = 0; i < 20; ++i) {
-        mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>("Empty", 0, UINT32_MAX));
-    }
+    //// Add some empty ones at the end
+    //for (int i = 0; i < 20; ++i) {
+    //    mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>("Empty", 0, UINT32_MAX));
+    //}
 }
 
 void SackContainerPanel::InitializeComponent() {
@@ -189,7 +189,6 @@ void SackContainerPanel::OnScrollViewerPreviewMouseWheel(Noesis::BaseComponent* 
     if (scrollViewer->GetVerticalOffset() >= scrollViewer->GetScrollableHeight() - 100)
     {
         LoadMoreItems(4); // Load 4 more items (1 row) when near the bottom
-        LOG_DEBUG("LOAD_MORE");
     }
 }
 

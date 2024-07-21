@@ -1170,6 +1170,9 @@
     <ClCompile Include="src\ecs\component\ThreadSharedComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\noesis\NoesisTextureProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -2943,6 +2946,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\EntityUidComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\noesis\NoesisTextureProvider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

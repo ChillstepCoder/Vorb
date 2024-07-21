@@ -2,7 +2,8 @@
 #include "GLTexture.h"
 
 
-GLTexture::GLTexture(VGTexture handle, vg::TextureTarget type, const ui32v2& dims) : mHandle(handle), mType(type), mDims(dims) {
+GLTexture::GLTexture(VGTexture handle, vg::TextureTarget type, const ui32v2& dims, i32 mipLevels, vg::TextureFormat format) 
+    : mHandle(handle), mType(type), mDims(dims), mMipLevels(mipLevels), mFormat(format) {
 
 }
 
@@ -10,19 +11,22 @@ GLTexture::GLTexture(GLTexture&& o) :
     mType(o.mType),
     mHandle(o.mHandle),
     mHandleBindless(o.mHandleBindless),
-    mDims(o.mDims)
+    mDims(o.mDims),
+    mMipLevels(o.mMipLevels),
+    mFormat(o.mFormat)
 {
     o.mHandle = 0;
     o.mHandleBindless = 0;
 }
 
 
-GLTexture& GLTexture::operator=(GLTexture&& o)
-{
+GLTexture& GLTexture::operator=(GLTexture&& o) {
     mType = o.mType;
     mHandle = o.mHandle;
     mHandleBindless = o.mHandleBindless;
     mDims = o.mDims;
+    mMipLevels = o.mMipLevels;
+    mFormat = o.mFormat;
 
     o.mHandle = 0;
     o.mHandleBindless = 0;
@@ -33,12 +37,14 @@ GLTexture::~GLTexture() {
     destroy();
 }
 
-void GLTexture::init(VGTexture handle, vg::TextureTarget type, const ui32v2& dims) {
+void GLTexture::init(VGTexture handle, vg::TextureTarget type, const ui32v2& dims, i32 mipLevels, vg::TextureFormat format) {
     destroy();
 
     mDims = dims;
     mHandle = handle;
     mType = type;
+    mMipLevels = mipLevels;
+    mFormat = format;
 }
 
 void GLTexture::destroy() {

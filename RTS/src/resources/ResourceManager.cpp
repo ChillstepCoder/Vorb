@@ -276,8 +276,7 @@ AssetMetadata ResourceManager::tryGetAssetMetadataForPath(const std::filesystem:
     return baseRepo.tryGetMetadata(assetName);
 }
 
-void ResourceManager::gatherRecursive(const vio::Path& folderPath)
-{
+void ResourceManager::gatherRecursive(const vio::Path& folderPath) {
     vio::Directory directory;
     if (!folderPath.asDirectory(&directory)) {
         LOG_CRITICAL("{} Could not be resolved, resource manager cannot find resources", folderPath.getString());
@@ -301,10 +300,14 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath)
             const StrToken extensionToken = StrToken(Utils::getExtension(entry.getString()));
 
             if (extensionToken == CStrToken("png")) {
+                AssetID id = TextureRepository::get().registerAssetPath(entry);
                 if (vio::containsSubpath(entry, "_brushes")) {
                     BrushRepository::get().registerAssetPath(entry);
                 }
-                TextureRepository::get().registerAssetPath(entry);
+                else if (vio::containsSubpath(entry, "data\\ui")) {
+                    // Force load all UI textures
+                    mPreloadAssetsBundle.addAssetHandle(TextureRepository::get().getAssetHandle(id));
+                }
                 continue;
             }
             //

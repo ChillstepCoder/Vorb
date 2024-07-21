@@ -15,12 +15,12 @@
 #include <NsGui/IRenderer.h>
 #include <NsGui/XamlProvider.h>
 
-#include <NsApp/LocalTextureProvider.h>
 #include <NsApp/ThemeProviders.h>
 
 #include "ui/UIContext.h"
 #include "ui/noesis/NoesisLocalXamlProvider.h"
 #include "ui/noesis/NoesisLocalFontProvider.h"
+#include "ui/noesis/NoesisTextureProvider.h"
 #include "ui/noesis/NoesisGLRenderDevice.h"
 
 #include "ui/noesis/code_behind/SackContainerPanel.h"
@@ -42,7 +42,6 @@
 
 constexpr const char* XAML_ROOT = "data\\ui\\xaml";
 constexpr const char* FONT_ROOT = "data\\ui\\fonts";
-constexpr const char* TEXTURES_ROOT = "data\\ui\\xaml";
 
 NoesisGuiContext* sNoesisGuiContext = nullptr;
 
@@ -61,8 +60,7 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
     assert(!sNoesisGuiContext);
     sNoesisGuiContext = this;
   
-    Noesis::SetLogHandler([](const char*, uint32_t, uint32_t level, const char*, const char* msg)
-    {
+    Noesis::SetLogHandler([](const char*, uint32_t, uint32_t level, const char*, const char* msg) {
         assert(level <= 4); // Noesis only has 5 levels (0-4)
         // Maps 1:1 with vorb::LoggingLevel
         vorb::LoggingLevel vLevel = (vorb::LoggingLevel)level;
@@ -79,7 +77,7 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
 
     Noesis::GUI::SetXamlProvider(Noesis::MakePtr<NoesisLocalXamlProvider>(ResourceManager::get().getIoManager(), XAML_ROOT));
     Noesis::GUI::SetFontProvider(Noesis::MakePtr<NoesisLocalFontProvider>(ResourceManager::get().getIoManager(), FONT_ROOT));
-    Noesis::GUI::SetTextureProvider(Noesis::MakePtr<NoesisApp::LocalTextureProvider>(TEXTURES_ROOT)); 
+    Noesis::GUI::SetTextureProvider(Noesis::MakePtr<NoesisTextureProvider>()); 
     
     // Set providers for the theme
     NoesisApp::SetThemeProviders();
@@ -100,7 +98,6 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
     Noesis::GUI::LoadApplicationResources(NoesisApp::Theme::DarkBlue());
 
     sRenderDevice = Noesis::Ptr<Noesis::RenderDevice>(new NoesisGLRenderDevice());
-
 
     // Register code-behind classes
     Noesis::RegisterComponent<SackContainerPanel>();

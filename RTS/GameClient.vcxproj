@@ -514,6 +514,7 @@
     <ClCompile Include="src\ui\noesis\NoesisGLRenderDevice.cpp" />
     <ClCompile Include="src\ui\noesis\NoesisGuiContext.cpp" />
     <ClCompile Include="src\ui\noesis\NoesisLocalFontProvider.cpp" />
+    <ClCompile Include="src\ui\noesis\NoesisTextureProvider.cpp" />
     <ClCompile Include="src\ui\ScreenList.cpp" />
     <ClCompile Include="src\util\FixedSizeVector.cpp" />
     <ClCompile Include="src\util\TilingVoronoiMap.cpp" />
@@ -1041,6 +1042,7 @@
     <ClInclude Include="src\ui\noesis\NoesisLocalFontProvider.h" />
     <ClInclude Include="src\ui\noesis\NoesisLocalXamlProvider.h" />
     <ClInclude Include="src\ui\noesis\NoesisProviderFileWatcher.h" />
+    <ClInclude Include="src\ui\noesis\NoesisTextureProvider.h" />
     <ClInclude Include="src\ui\ScreenList.h" />
     <ClInclude Include="src\util\DitherMatrix.h" />
     <ClInclude Include="src\util\GridIdUtil.h" />

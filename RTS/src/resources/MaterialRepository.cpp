@@ -294,7 +294,7 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
                 if (materialDef.normalTexture == GENERATE_TEXT) {
                     VGTexture normalTexture = mMaterialTextureGenerator->generateNormalTexture(albedo.gpuTexture.getHandle(), textureDims, *samplerState);
                     GLTexture& normalGLTexture = mGeneratedNormalTextures[tokenName];
-                    normalGLTexture.init(normalTexture, vg::TextureTarget::TEXTURE_2D, textureDims);
+                    normalGLTexture.init(normalTexture, vg::TextureTarget::TEXTURE_2D, textureDims, 0, vg::TextureFormat::RGB);
                     materialGpuData.normalMap = normalGLTexture.getHandleBindless();
                 }
                 else {

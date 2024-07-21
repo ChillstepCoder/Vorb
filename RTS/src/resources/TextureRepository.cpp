@@ -87,7 +87,7 @@ GLTexture TextureRepository::uploadTexture(const gli::texture2d& textureData, vg
         glGenerateTextureMipmap(handle);
     }
 
-    return GLTexture(handle, textureTarget, dims);
+    return GLTexture(handle, textureTarget, dims, mipmapLevels, uploadInfo.textureFormat);
 }
 
 GLTexture TextureRepository::uploadDDSTexture(const gli::texture2d& textureData, vg::TextureTarget textureTarget, const vg::SamplerState& samplerState, i32 maxMipLevels)
@@ -99,21 +99,27 @@ GLTexture TextureRepository::uploadDDSTexture(const gli::texture2d& textureData,
     const i32 mipmapLevels = maxMipLevels > 0 ? glm::min(maxMipLevels, (i32)textureData.levels()) : (i32)textureData.levels();
    
     VGEnum internalFormat;
+    vg::TextureFormat textureFormat;
     switch (textureData.format()) {
         case gli::FORMAT_RGB_DXT1_UNORM_BLOCK8:
             internalFormat = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+            textureFormat = vg::TextureFormat::RGB;
             break;
         case gli::FORMAT_RGBA_DXT5_UNORM_BLOCK16:
             internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+            textureFormat = vg::TextureFormat::RGBA;
             break;
         case gli::FORMAT_R_ATI1N_UNORM_BLOCK8:
             internalFormat = GL_COMPRESSED_RED_RGTC1;
+            textureFormat = vg::TextureFormat::RED;
             break;
         case gli::FORMAT_RG_ATI2N_UNORM_BLOCK16:
             internalFormat = GL_COMPRESSED_RG_RGTC2;
+            textureFormat = vg::TextureFormat::RG;
             break;
         case gli::FORMAT_RGBA_BP_UNORM_BLOCK16:
             internalFormat = GL_COMPRESSED_RGBA_BPTC_UNORM;
+            textureFormat = vg::TextureFormat::RGBA;
             break;
         default:
             assert(false && "Unsupported format in uploadDDSTexture");
@@ -155,7 +161,7 @@ GLTexture TextureRepository::uploadDDSTexture(const gli::texture2d& textureData,
         glTextureParameteri(handle, GL_TEXTURE_MAX_LEVEL, mipmapLevels);
     }
 
-    return GLTexture(handle, textureTarget, dims);
+    return GLTexture(handle, textureTarget, dims, mipmapLevels, textureFormat);
 }
 
 void TextureRepository::setSamplerState(AssetID textureId, const vg::SamplerState& samplerState) {
