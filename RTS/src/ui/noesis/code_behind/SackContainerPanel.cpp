@@ -137,7 +137,7 @@ void SackContainerPanel::updateItems(std::vector<ItemStackWithUID> items) {
     for (int i = 0; i < items.size(); ++i) {
         ItemStackWithUID& stack = items[i];
         const ItemDef& itemDef = ItemRepository::get().getLoadedOrUnloadedAsset(stack.itemStack.id);
-        mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>(itemDef.mDisplayName, stack.itemStack.count, stack.tileItemUID));
+        mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>(itemDef.mDisplayName, stack.itemStack.count, stack.tileItemUID, itemDef.mIconTextureRef.getAssetName()));
     }
 
     //// Add some empty ones at the end
@@ -225,7 +225,7 @@ void SackContainerPanel::OnInventoryButtonMouseEnter(Noesis::BaseComponent* send
 }
 
 void SackContainerPanel::OnInventoryButtonMouseLeave(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e) {
-    if (!mItemDetailsBar->GetIsOpen()) {
+    if (mItemDetailsBar->GetIsOpen()) {
         mItemDetailsBar->SetIsOpen(false);
     }
 }

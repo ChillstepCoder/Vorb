@@ -12,3 +12,4 @@ stack_size: 60
 stack_dims: [1,5,5]
 inv_bag: resources
 name: "Wood"
+icon: wood_log_icon

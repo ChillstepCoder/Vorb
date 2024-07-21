@@ -14,26 +14,53 @@
 
 class InventoryItemDataModel : public NoesisApp::NotifyPropertyChangedBase {
 public:
-    InventoryItemDataModel(LocText itemName, int count, TileItemUID uid) : mUniqueId(uid), mText(itemName.c_str()), mCount(count) {}
+    InventoryItemDataModel(LocText itemName, int count, TileItemUID uid, StrToken icon) : mUniqueId(uid), mText(itemName.c_str()), mCount(count) {
+        setIconFromAsset(icon);
+    }
+
+#define P_ITEM_TEXT "ItemText"
+#define P_ITEM_COUNT "ItemCount"
+#define P_ITEM_ICON "ItemIcon"
 
     const char* getText() const { return mText.Str(); }
     void setText(const char* text) {
         if (mText != text) {
             mText = text;
-            OnPropertyChanged("ItemText");
+            OnPropertyChanged(P_ITEM_TEXT);
         }
     }
     int getCount() const { return mCount; }
     void setCount(int val) {
         if (mCount != val) {
             mCount = val;
-            OnPropertyChanged("Count");
+            OnPropertyChanged(P_ITEM_COUNT);
         }
     }
 
+    const char* getIcon() const { return mIcon.Str(); }
+    void setIcon(const char* icon) {
+        if (mIcon != icon) {
+            mIcon = icon;
+            OnPropertyChanged(P_ITEM_ICON);
+        }
+    }
+    void setIconFromAsset(StrToken iconAsset) {
+        assert(iconAsset.isValid());
+        char icon[256];
+        ui32 length = 0;
+        iconAsset.toString(icon, &length);
+        icon[length++] = '.';
+        icon[length++] = 'p';
+        icon[length++] = 'n';
+        icon[length++] = 'g';
+        icon[length] = '\0';
+        setIcon(icon);
+    }
+
     NS_IMPLEMENT_INLINE_REFLECTION(InventoryItemDataModel, NoesisApp::NotifyPropertyChangedBase) {
-        NsProp("ItemText", &InventoryItemDataModel::getText, &InventoryItemDataModel::setText);
-        NsProp("ItemCount", &InventoryItemDataModel::getCount, &InventoryItemDataModel::setCount);
+        NsProp(P_ITEM_TEXT, &InventoryItemDataModel::getText, &InventoryItemDataModel::setText);
+        NsProp(P_ITEM_COUNT, &InventoryItemDataModel::getCount, &InventoryItemDataModel::setCount);
+        NsProp(P_ITEM_ICON, &InventoryItemDataModel::getIcon, &InventoryItemDataModel::setIcon);
     }
 
 public:
@@ -41,6 +68,7 @@ public:
 private:
     // Properties
     Noesis::String mText;
+    Noesis::String mIcon;
     int mCount;
 };
 

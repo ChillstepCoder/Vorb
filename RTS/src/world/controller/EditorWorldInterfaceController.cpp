@@ -14,6 +14,7 @@
 #include "ecs/factory/EntityFactory.h"
 #include "ui/UIContext.h"
 #include "pathfinding/NavWorld.h"
+#include "world/chunk/SimChunkGrid.h"
 
 #include "resources/TileRepository.h"
 #include "math/Random.h"
@@ -42,6 +43,7 @@ void EditorWorldInterfaceController::update()
     ASSERT_RENDER_THREAD();
     assert(mWorld);
 
+    static bool wasMPressed = false;
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_Y)) {
         // TODO: ITEMFactory
         GameThreadTasks::getInstance().addGenericTask([this]() {
@@ -51,6 +53,30 @@ void EditorWorldInterfaceController::update()
             EntityFactory::createItemProjectile(*mWorld, mWorld->getECS().getLocalPlayerPosition() + f32v3(0.0f, 0.0f, 1.0f), velocity, newStack);
             sDebugOptions.mCities = !sDebugOptions.mCities;
         });
+    }
+    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_M)) {
+        // Test item container
+        if (!wasMPressed) {
+
+            GameThreadTasks::getInstance().addGenericTask([this]() {
+                ItemStack stack1(ItemRepository::get().getAssetID(CStrToken("wood_log")), 15);
+                ItemStack stack2(ItemRepository::get().getAssetID(CStrToken("wood_log_birch")), 15);
+
+                TileItemUID uid1 = mWorld->getSimChunkGrid().tryDropItemStackOnGroundGameThread(stack1, mWorld->getECS().getLocalPlayerPosition());
+                TileItemUID uid2 = mWorld->getSimChunkGrid().tryDropItemStackOnGroundGameThread(stack2, mWorld->getECS().getLocalPlayerPosition());
+
+                TileIndex index = mWorld->getTileHandleAtWorldPos(mWorld->getECS().getLocalPlayerPosition()).tileIndex;
+                TileItemStack stacks[2];
+                stacks[0] = TileItemStack(stack1, index, uid1);
+                stacks[1] = TileItemStack(stack2, index, uid2);
+
+                EntityFactory::createItemContainerOnGround(*mWorld, mWorld->getECS().getLocalPlayerPosition(), std::span<TileItemStack>(stacks, 2));
+            });
+            wasMPressed = true;
+        }
+    }
+    else {
+        wasMPressed = false;
     }
 
     if (mIsQuerying && mWorldObjectQuery && mWorldObjectQuery->isValid()) {

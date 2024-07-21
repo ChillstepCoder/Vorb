@@ -76,7 +76,7 @@ public:
     ui32v3 mStockpileStackDims = ui32v3(5, 5, 5);
 };
 SERIALIZABLE_IMGUI_CONTROLLED(ItemDef,
-    make_field(o.mIconTextureRef, "texture"sv),
+    make_field(o.mIconTextureRef, "icon"sv),
     make_field(o.mModelRefs, "models"sv),
     make_field(o.mType, "type"sv),
     make_field(o.mStockpileShape, "shape"sv),
