@@ -276,7 +276,7 @@ void NoesisGuiContext::initView(GameUIPanel viewName) {
     LOG_DEBUG(" VIEW {} ", timer.stop()); timer.start();
     newView->SetFlags(Noesis::RenderFlags_PPAA | Noesis::RenderFlags_LCD);
     const ui32v2 dims = mUIContext.getWindowDims();
-    newView->SetSize(dims.x / 16, dims.y / 16);
+    newView->SetSize(dims.x, dims.y);
     newView->GetRenderer()->Init(sRenderDevice);
     LOG_DEBUG(" INIT {} ", timer.stop()); timer.start();
     mViews[e_cast(viewName)] = newView;
