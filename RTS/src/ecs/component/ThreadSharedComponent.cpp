@@ -32,7 +32,11 @@ void RenderThreadSharedComponentSystem::update(World& world, entt::registry& reg
     for (entt::entity e : view) {
         RenderThreadSharedComponent& cmp = view.get<RenderThreadSharedComponent>(e);
         RenderThreadSharedComponentData& data = *cmp.mData;
-        assert(!data.wasDestroyed);
+        if (data.wasDestroyed) [[unlikely]] {
+            // Removed by render thread
+            registry.remove<RenderThreadSharedComponent>(e);
+            continue;
+        }
         switch (data.type) {
             case RenderThreadSharedComponentType::ItemSack: {
                 data.resourceMutex.lock(); // LOCK

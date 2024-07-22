@@ -82,6 +82,7 @@ public:
     static void RegisterChildren();
     void reset();
     void updateItems(std::vector<ItemStackWithUID> items);
+    bool wantsClose() const { return mWantsClose; }
 
 private:
     void InitializeComponent();
@@ -92,6 +93,7 @@ private:
     void OnScrollViewerMouseEnter(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e);
     void OnInventoryButtonMouseEnter(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e);
     void OnInventoryButtonMouseLeave(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e);
+    void OnCloseButtonClick(Noesis::BaseComponent* sender, const Noesis::RoutedEventArgs& args);
     void LoadMoreItems(int count);
 
     Noesis::ScrollViewer* mScrollViewer;
@@ -99,6 +101,7 @@ private:
     ItemDetailsBar* mItemDetailsBar;
     Noesis::Ptr<Noesis::ObservableCollection<InventoryItemDataModel>> mInventoryItems;
     int mTotalItems;
+    bool mWantsClose = false;
 
     NS_IMPLEMENT_INLINE_REFLECTION_(SackContainerPanel, UserControl, "AM.SackContainer")
 };

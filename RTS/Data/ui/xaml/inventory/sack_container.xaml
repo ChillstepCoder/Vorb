@@ -87,10 +87,11 @@
                                         <Button x:Name="InventoryButton" Style="{StaticResource InventoryButtonStyle}"
                                                 MouseEnter="OnInventoryButtonMouseEnter"
                                                 MouseLeave="OnInventoryButtonMouseLeave"/>
-                                        <Image Source="{Binding ItemIcon}" Width="64" Height="64" Padding="0,0" IsHitTestVisible="False"/>
-                                        <TextBlock Text="{Binding ItemCount}" FontSize="18" Foreground="White" IsHitTestVisible="False" Padding="25,23"
+                                        <Image Source="{Binding ItemIcon}" Width="80" Height="80" Margin="8,0,0,8" IsHitTestVisible="False"/>
+                                        <TextBlock Text="{Binding ItemCount}" FontSize="18" Foreground="White" IsHitTestVisible="False" Margin="0,23,60,0"
                                             noesis:Text.Stroke="Black"
-                                            noesis:Text.StrokeThickness="1.5"/>
+                                            noesis:Text.StrokeThickness="1.5"
+                                            TextAlignment="Center"/>
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -136,6 +137,8 @@
                             </Border>
                         </local:ItemDetailsBar>
                     </Canvas>
+                    
+                    <Button Content="X" x:Name="CloseButton" Width="32" Height="32" HorizontalAlignment="Right" VerticalAlignment="Top" Click="OnCloseButtonClick"/>
                 </Grid>
             </Border>
         </Border>

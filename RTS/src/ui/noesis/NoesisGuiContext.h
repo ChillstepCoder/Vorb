@@ -25,6 +25,8 @@ public:
     bool processInput(SDL_Event* e);
     void updateAndRender();
     void toggleView(GameUIPanel viewName);
+    void disableView(GameUIPanel viewName);
+    void enableView(GameUIPanel viewName);
 
     // UI Windows
     void updateItemSackUI(RenderThreadSharedComponentDataPtr data);

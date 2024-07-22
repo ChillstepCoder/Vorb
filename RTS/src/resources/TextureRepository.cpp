@@ -20,6 +20,39 @@
 #include <gli/gli.hpp>
 #include <gli/texture.hpp>
 
+#include "gliHasAlpha.inl"
+
+
+void convertToPremultipliedAlpha(gli::texture2d& texture) {
+    if (texture.empty() || !gliHasAlpha(texture.format())) {
+        return; // No conversion needed if texture is empty or has no alpha channel
+    }
+
+    assert(texture.levels() == 0); // We don't support mipmaps for now
+
+    const gli::texture2d::extent_type extent = texture.extent();
+    const gli::texture2d::size_type totalPixels = extent.x * extent.y;
+
+    gli::byte* data = (gli::byte*)texture.data(0, 0, 0 /*level*/);
+    const gli::texture2d::size_type pixelSize = gli::detail::bits_per_pixel(texture.format()) / 8;
+
+    switch (texture.format()) {
+        case gli::FORMAT_RGBA8_UNORM_PACK8: {
+            assert(pixelSize == 1);
+            for (gli::texture2d::size_type i = 0; i < totalPixels * 4; i += 4) {
+                ui8v4& texel = *(std::bit_cast<ui8v4*>(data + i));
+                f32 a = texel.a / 255.0f;
+                texel.r = glm::round(texel.r * a);
+                texel.g = glm::round(texel.g * a);
+                texel.b = glm::round(texel.b * a);
+            }
+            break;
+        }
+        default:
+            panic("Unhandled gli format {} in convertToPremultipliedAlpha", (int)texture.format());
+    }
+}
+
 struct TextureLoadUserData {
     gli::texture2d rs; // Optional cached CPU resource data for if we want to query the pixels
     gli::texture2d ddsRs;
@@ -38,7 +71,7 @@ void TextureRepository::init() {
 
 gli::texture2d TextureRepository::loadRawPngData(AssetID textureId, bool flipV)
 {
-    return  loadRawPngData(getAssetFilePath(textureId), flipV);
+    return loadRawPngData(getAssetFilePath(textureId), flipV);
 }
 
 gli::texture2d TextureRepository::loadRawPngData(const vio::Path& filePath, bool flipV) {
@@ -238,6 +271,10 @@ AssetLoadFunc TextureRepository::getAssetLoadFunc() {
 
             if (needsGenerateDDS/* || outRs*/) {
                 loadUserData.rs = PngLoader::loadPng(stdPath, textureDef.flipV);
+                // UI assets are premultiplied alpha
+                if (vio::containsSubpath(stdPath, "data\\ui")) {
+                    convertToPremultipliedAlpha(loadUserData.rs);
+                }
 
                 loadUserData.ddsRs = TextureConvert::convertToDDS(loadUserData.rs, true /*generateMipmaps*/);
 

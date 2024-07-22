@@ -276,7 +276,7 @@ void NoesisGuiContext::initView(GameUIPanel viewName) {
     LOG_DEBUG(" VIEW {} ", timer.stop()); timer.start();
     newView->SetFlags(Noesis::RenderFlags_PPAA | Noesis::RenderFlags_LCD);
     const ui32v2 dims = mUIContext.getWindowDims();
-    newView->SetSize(dims.x, dims.y);
+    newView->SetSize(dims.x / 16, dims.y / 16);
     newView->GetRenderer()->Init(sRenderDevice);
     LOG_DEBUG(" INIT {} ", timer.stop()); timer.start();
     mViews[e_cast(viewName)] = newView;
@@ -320,16 +320,35 @@ void NoesisGuiContext::toggleView(GameUIPanel viewName) {
     onPanelActiveChanged(viewName, (bool)newActive);
 }
 
+void NoesisGuiContext::disableView(GameUIPanel viewName) {
+    mViewWantsActive[e_cast(viewName)].store(0, std::memory_order_relaxed);
+    onPanelActiveChanged(viewName, false);
+}
+
+void NoesisGuiContext::enableView(GameUIPanel viewName) {
+    mViewWantsActive[e_cast(viewName)].store(1, std::memory_order_relaxed);
+    onPanelActiveChanged(viewName, false);
+}
+
 void NoesisGuiContext::updateItemSackUI(RenderThreadSharedComponentDataPtr data) {
 
     Noesis::IView& view = *mViews[e_cast(GameUIPanel::SackContainer)];
     // Get the root element of the view
     Noesis::FrameworkElement* root = view.GetContent();
+    ExclusiveCacheLine<std::atomic_int>& wantsActive = mViewWantsActive[e_cast(GameUIPanel::SackContainer)];
 
-    // Find your InventoryUI control
     SackContainerPanel* panel = root->FindName<SackContainerPanel>("RootPanel");
     if (!panel) {
         panic("RootPanel missing from sack_container.xaml");
+    }
+
+    if (panel->wantsClose()) {
+        wantsActive.store(0, std::memory_order_relaxed);
+        onPanelActiveChanged(GameUIPanel::SackContainer, false);
+        panel->reset();
+        // Notify main thread that we closed
+        data->wasDestroyed = true;
+        return;
     }
 
     if (!data) {
@@ -347,9 +366,8 @@ void NoesisGuiContext::updateItemSackUI(RenderThreadSharedComponentDataPtr data)
         }
     }
 
-    // Set UI active
-    ExclusiveCacheLine<std::atomic_int>& wantsActive = mViewWantsActive[e_cast(GameUIPanel::SackContainer)];
     if (mItemSackData) {
+        // Activate
         wantsActive.store(1, std::memory_order_relaxed);
         onPanelActiveChanged(GameUIPanel::SackContainer, true);
 
@@ -360,6 +378,7 @@ void NoesisGuiContext::updateItemSackUI(RenderThreadSharedComponentDataPtr data)
         }
     }
     else {
+        // Deactivate
         wantsActive.store(0, std::memory_order_relaxed);
         onPanelActiveChanged(GameUIPanel::SackContainer, false);
         panel->reset();

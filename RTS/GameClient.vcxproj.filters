@@ -1173,6 +1173,9 @@
     <ClCompile Include="src\ui\noesis\NoesisTextureProvider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\noesis\NoesisWindowManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -2951,6 +2954,9 @@
     <ClInclude Include="src\ui\noesis\NoesisTextureProvider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ui\noesis\NoesisWindowManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
@@ -2975,6 +2981,9 @@
     </None>
     <None Include="src\world\settlement\SettlementPlot" />
     <None Include="src\ui\noesis\NoesisInputMappings.inl">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="src\resources\gliHasAlpha.inl">
       <Filter>Header Files</Filter>
     </None>
   </ItemGroup>

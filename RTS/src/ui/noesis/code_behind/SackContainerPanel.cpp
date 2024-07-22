@@ -113,6 +113,7 @@ void SackContainerPanel::reset() {
     mInventoryItems->Clear();
     mScrollViewer->ScrollToTop();
     mItemDetailsBar->SetIsOpen(false);
+    mWantsClose = false;
 }
 
 void SackContainerPanel::updateItems(std::vector<ItemStackWithUID> items) {
@@ -160,13 +161,13 @@ void SackContainerPanel::InitializeComponent() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-bool SackContainerPanel::ConnectEvent(Noesis::BaseComponent* source, const char* event, const char* handler)
-{
+bool SackContainerPanel::ConnectEvent(Noesis::BaseComponent* source, const char* event, const char* handler) {
     NS_CONNECT_EVENT(Noesis::ScrollViewer, PreviewMouseWheel, OnScrollViewerPreviewMouseWheel);
     NS_CONNECT_EVENT(Noesis::ScrollViewer, ScrollChanged, OnScrollViewerScrollChanged);
     NS_CONNECT_EVENT(Noesis::ScrollViewer, MouseEnter, OnScrollViewerMouseEnter);
     NS_CONNECT_EVENT(Noesis::Button, MouseEnter, OnInventoryButtonMouseEnter);
     NS_CONNECT_EVENT(Noesis::Button, MouseLeave, OnInventoryButtonMouseLeave);
+    NS_CONNECT_EVENT(Noesis::Button, Click, OnCloseButtonClick);
     NS_CONNECT_EVENT(Noesis::ScrollViewer, ScrollChanged, OnScrollViewerScrollChanged);
     return UserControl::ConnectEvent(source, event, handler);
 }
@@ -228,6 +229,10 @@ void SackContainerPanel::OnInventoryButtonMouseLeave(Noesis::BaseComponent* send
     if (mItemDetailsBar->GetIsOpen()) {
         mItemDetailsBar->SetIsOpen(false);
     }
+}
+
+void SackContainerPanel::OnCloseButtonClick(Noesis::BaseComponent* sender, const Noesis::RoutedEventArgs& args) {
+    mWantsClose = true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
