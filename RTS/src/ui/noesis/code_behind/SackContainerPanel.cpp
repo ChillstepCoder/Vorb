@@ -14,6 +14,52 @@
 #include <NsGui/UserControl.h>
 
 #include "item/ItemRepository.h"
+#include "ui/GameUIPanel.h"
+
+NS_IMPLEMENT_REFLECTION(SackContainerViewModel) {
+    NsProp("InventoryItems", &SackContainerViewModel::GetInventoryItems);
+
+    IMPLEMENT_WINDOW_BASE_REFLECTION(SackContainerViewModel);
+}
+
+NS_IMPLEMENT_REFLECTION(SackContainerPanel, "AM.SackContainer")
+{
+}
+
+SackContainerViewModel::SackContainerViewModel() : WindowViewModelBase(GameUIPanel::SackContainer) {
+    mInventoryItems = *new Noesis::ObservableCollection<InventoryItemViewModel>();
+}
+
+void SackContainerViewModel::updateItems(std::vector<ItemStackWithUID> items) {
+    PROFILE_FUNCTION();
+    ASSERT_RENDER_THREAD();
+    // Remove any items that are no longer in the list and update existing counts
+    for (int i = mInventoryItems->Count() - 1; i >= 0; --i) {
+        for (int j = items.size() - 1; j >= 0; --j) {
+            InventoryItemViewModel* model = mInventoryItems->Get(i);
+            if (model->mUniqueId == items[j].tileItemUID) {
+                model->setCount(items[j].itemStack.count);
+                items.erase(items.begin() + j); // Remove from list (so we don't add it again later;
+                break;
+            }
+            if (j == 0) {
+                mInventoryItems->RemoveAt(i);
+            }
+        }
+    }
+
+    // Add any new items
+    for (int i = 0; i < items.size(); ++i) {
+        ItemStackWithUID& stack = items[i];
+        const ItemDef& itemDef = ItemRepository::get().getLoadedOrUnloadedAsset(stack.itemStack.id);
+        mInventoryItems->Add(Noesis::MakePtr<InventoryItemViewModel>(itemDef.mDisplayName, stack.itemStack.count, stack.tileItemUID, itemDef.mIconTextureRef.getAssetName()));
+    }
+
+    //// Add some empty ones at the end
+    //for (int i = 0; i < 20; ++i) {
+    //    mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>("Empty", 0, UINT32_MAX));
+    //}
+}
 
 class ItemDetailsBar : public Noesis::UserControl {
 public:
@@ -109,55 +155,66 @@ void SackContainerPanel::RegisterChildren() {
     Noesis::RegisterComponent<ItemDetailsBar>();
 }
 
-void SackContainerPanel::reset() {
-    mInventoryItems->Clear();
-    mScrollViewer->ScrollToTop();
-    mItemDetailsBar->SetIsOpen(false);
-    mWantsClose = false;
-}
-
-void SackContainerPanel::updateItems(std::vector<ItemStackWithUID> items) {
-    PROFILE_FUNCTION();
-    ASSERT_RENDER_THREAD();
-    // Remove any items that are no longer in the list and update existing counts
-    for (int i = mInventoryItems->Count() - 1; i >= 0; --i) {
-        for (int j = items.size() - 1; j >= 0; --j) {
-            InventoryItemDataModel* model = mInventoryItems->Get(i);
-            if (model->mUniqueId == items[j].tileItemUID) {
-                model->setCount(items[j].itemStack.count);
-                items.erase(items.begin() + j); // Remove from list (so we don't add it again later;
-                break;
-            }
-            if (j == 0) {
-                mInventoryItems->RemoveAt(i);
-            }
-        }
-    }
-
-    // Add any new items
-    for (int i = 0; i < items.size(); ++i) {
-        ItemStackWithUID& stack = items[i];
-        const ItemDef& itemDef = ItemRepository::get().getLoadedOrUnloadedAsset(stack.itemStack.id);
-        mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>(itemDef.mDisplayName, stack.itemStack.count, stack.tileItemUID, itemDef.mIconTextureRef.getAssetName()));
-    }
-
-    //// Add some empty ones at the end
-    //for (int i = 0; i < 20; ++i) {
-    //    mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>("Empty", 0, UINT32_MAX));
-    //}
-}
-
 void SackContainerPanel::InitializeComponent() {
     ASSERT_RENDER_THREAD();
-    Noesis::GUI::LoadComponent(this, Noesis::Uri("inventory.xaml"));
+    Noesis::GUI::LoadComponent(this, "sack_container.xaml");
+
+}
+
+
+
+void SackContainerPanel::PrintVisualTree(Noesis::Visual* element, int depth)
+{
+    if (element == nullptr)
+        return;
+
+    // Print the current element
+    Noesis::String indentation(depth * 2, ' ');
+    NS_LOG_DEBUG("%s%s", indentation.Str(), element->GetClassType()->GetName());
+
+    // If it's a FrameworkElement, print its name
+    Noesis::FrameworkElement* fe = Noesis::DynamicCast<Noesis::FrameworkElement*>(element);
+    if (fe != nullptr && !fe->GetName())
+    {
+        NS_LOG_DEBUG("%s  (Name: %s)", indentation.Str(), fe->GetName());
+    }
+
+    // Recurse for all children
+    int childrenCount = Noesis::VisualTreeHelper::GetChildrenCount(element);
+    for (int i = 0; i < childrenCount; ++i)
+    {
+        Noesis::Visual* child = Noesis::VisualTreeHelper::GetChild(element, i);
+        PrintVisualTree(child, depth + 1);
+    }
+}
+
+void SackContainerPanel::OnInit() {
+    UserControl::OnInit();
+
+    // Debug: Print the visual tree
+    PrintVisualTree(this, 0);
 
     mScrollViewer = FindName<Noesis::ScrollViewer>("ScrollViewer");
     mInventoryItemsControl = FindName<Noesis::ItemsControl>("InventoryItemsControl");
 
-    mInventoryItems = *new Noesis::ObservableCollection<InventoryItemDataModel>();
-    mInventoryItemsControl->SetItemsSource(mInventoryItems);
+    if (mScrollViewer == nullptr || mInventoryItemsControl == nullptr)
+    {
+        NS_LOG_ERROR("Failed to find ScrollViewer or InventoryItemsControl");
+    }
+
+    mInventoryItems = *new Noesis::ObservableCollection<InventoryItemViewModel>();
+
+    if (mInventoryItemsControl != nullptr)
+    {
+        mInventoryItemsControl->SetItemsSource(mInventoryItems);
+    }
 
     mItemDetailsBar = FindName<ItemDetailsBar>("SharedItemDetailsBar");
+
+    if (mItemDetailsBar == nullptr)
+    {
+        NS_LOG_ERROR("Failed to find SharedItemDetailsBar");
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -167,7 +224,6 @@ bool SackContainerPanel::ConnectEvent(Noesis::BaseComponent* source, const char*
     NS_CONNECT_EVENT(Noesis::ScrollViewer, MouseEnter, OnScrollViewerMouseEnter);
     NS_CONNECT_EVENT(Noesis::Button, MouseEnter, OnInventoryButtonMouseEnter);
     NS_CONNECT_EVENT(Noesis::Button, MouseLeave, OnInventoryButtonMouseLeave);
-    NS_CONNECT_EVENT(Noesis::Button, Click, OnCloseButtonClick);
     NS_CONNECT_EVENT(Noesis::ScrollViewer, ScrollChanged, OnScrollViewerScrollChanged);
     return UserControl::ConnectEvent(source, event, handler);
 }
@@ -210,7 +266,7 @@ void SackContainerPanel::OnInventoryButtonMouseEnter(Noesis::BaseComponent* send
     Noesis::FrameworkElement* parent = static_cast<Noesis::FrameworkElement*>(button->GetParent());
 
     // Get the DataContext of the parent Grid
-    InventoryItemDataModel* itemData = Noesis::DynamicCast<InventoryItemDataModel*>(parent->GetDataContext());
+    InventoryItemViewModel* itemData = Noesis::DynamicCast<InventoryItemViewModel*>(parent->GetDataContext());
 
     // Get the View
     Noesis::Size size = mScrollViewer->GetRenderSize();
@@ -229,10 +285,6 @@ void SackContainerPanel::OnInventoryButtonMouseLeave(Noesis::BaseComponent* send
     if (mItemDetailsBar->GetIsOpen()) {
         mItemDetailsBar->SetIsOpen(false);
     }
-}
-
-void SackContainerPanel::OnCloseButtonClick(Noesis::BaseComponent* sender, const Noesis::RoutedEventArgs& args) {
-    mWantsClose = true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

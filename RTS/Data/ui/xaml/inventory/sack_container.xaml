@@ -7,7 +7,7 @@
   xmlns:noesis="clr-namespace:NoesisGUIExtensions"
   mc:Ignorable="d"
   xmlns:local="clr-namespace:AM"
-  x:Class="AM.SackContainer"
+  x:Class="AM.SackContainerPanel"
   d:DesignWidth="1280" d:DesignHeight="720"
   Background="#FF242C32"
   FontFamily="titilium_bold"
@@ -75,7 +75,7 @@
                                   CanContentScroll="False"
                                   Padding="0,43.5,0,46"
                                   ScrollChanged="OnScrollViewerScrollChanged">
-                        <ItemsControl x:Name="InventoryItemsControl">
+                        <ItemsControl x:Name="InventoryItemsControl" ItemsSource="{Binding InventoryItems}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <WrapPanel Orientation="Horizontal"/>
@@ -138,7 +138,7 @@
                         </local:ItemDetailsBar>
                     </Canvas>
                     
-                    <Button Content="X" x:Name="CloseButton" Width="32" Height="32" HorizontalAlignment="Right" VerticalAlignment="Top" Click="OnCloseButtonClick"/>
+                    <Button Content="X" x:Name="CloseButton" Width="32" Height="32" HorizontalAlignment="Right" VerticalAlignment="Top" Command="{Binding CloseCommand}"/>
                 </Grid>
             </Border>
         </Border>

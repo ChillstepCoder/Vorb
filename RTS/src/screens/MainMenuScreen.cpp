@@ -86,6 +86,7 @@ const ImVec2 buttonSize(200, 50);
 
 void MainMenuScreen::draw(const vui::GameTime& gameTime)
 {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);

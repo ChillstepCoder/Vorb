@@ -1,20 +1,48 @@
 #pragma once
 #include <NsCore/Noesis.h>
+#include <NsCore/Ptr.h>
 #include <NsGui/ObservableCollection.h>
 #include <NsCore/ReflectionImplement.h>
 #include <NsGui/UserControl.h>
 
-class WindowManager : public Noesis::BaseComponent
+#include "ui/GameUIPanel.h"
+#include "ui/noesis/WindowViewModelBase.h"
+
+#include "util/ExclusiveCacheLine.h"
+
+class SackContainerViewModel;
+
+class NoesisWindowManager : public Noesis::UserControl
 {
 public:
-    WindowManager();
+    NoesisWindowManager();
 
-    Noesis::ObservableCollection<Noesis::UserControl>* GetActiveWindows() const;
-    void AddWindow(Noesis::UserControl* window);
-    void RemoveWindow(Noesis::UserControl* window);
+    static void RegisterChildren();
+
+    // Returns true if we have any active windows
+    bool update();
+
+    Noesis::ObservableCollection<WindowViewModelBase>* GetActiveWindows() const;
+
+    void AddWindow(GameUIPanel panel);
+    void RemoveWindow(GameUIPanel panel);
+    void ToggleWindow(GameUIPanel panel);
+
+    // Get specific windows
+    SackContainerViewModel* GetSackContainerViewModel() const;
 
 private:
-    Noesis::Ptr<Noesis::ObservableCollection<Noesis::UserControl>> mActiveWindows;
+    // Return true if panel is active
+    bool UpdatePanel(GameUIPanel panel);
+    void AddWindowInternal(WindowViewModelBase* window);
+    void RemoveWindowInternal(WindowViewModelBase* window);
 
-    NS_DECLARE_REFLECTION(WindowManager, BaseComponent)
+    void OnWindowCloseRequested(BaseComponent* sender, const Noesis::EventArgs&);
+
+    Noesis::Ptr<Noesis::ObservableCollection<WindowViewModelBase>> mActiveWindows;
+
+    bool mPanelWasActive[e_count(GameUIPanel)] = {};
+    ExclusiveCacheLine<std::atomic_int> mPanelWantsActive[e_count(GameUIPanel)] = {};
+
+    NS_DECLARE_REFLECTION(NoesisWindowManager, Noesis::UserControl)
 };

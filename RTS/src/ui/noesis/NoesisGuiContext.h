@@ -6,8 +6,9 @@ class UIContext;
 #include "util/ExclusiveCacheLine.h"
 #include "ui/GameUIPanel.h"
 
-
 #include "ecs/component/ThreadSharedComponent.h"
+
+class NoesisWindowManager;
 
 #pragma region forward_declarations
 union SDL_Event;
@@ -32,19 +33,12 @@ public:
     void updateItemSackUI(RenderThreadSharedComponentDataPtr data);
 
 private:
-    void initView(GameUIPanel viewName);
-    // Returns true if event was handled
-    bool forEachActiveViewHandleInput(std::function<bool(Noesis::IView&)> func);
-    void onPanelActiveChanged(GameUIPanel panel, bool active);
+    void initView();
 
     UIContext& mUIContext;
-    Noesis::Ptr<Noesis::IView> mViews[e_count(GameUIPanel)];
-    bool mViewWasActive[e_count(GameUIPanel)] = {};
+    Noesis::Ptr<Noesis::IView> mView;
     // Int to enable fetch_xor
-    ExclusiveCacheLine<std::atomic_int> mViewWantsActive[e_count(GameUIPanel)] = {};
-
-    std::mutex mActiveViewsMutex;
-    std::vector<Noesis::IView*> mActiveViews; // Protected by mActiveViewsMutex
+    NoesisWindowManager* mWindowManager = nullptr;
 
     // UI Windows
     RenderThreadSharedComponentDataPtr mItemSackData;
