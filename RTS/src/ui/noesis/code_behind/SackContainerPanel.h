@@ -15,6 +15,8 @@
 #include "ui/noesis/WindowViewModelBase.h"
 #include "ui/noesis/inventory/InventoryItemViewModel.h"
 
+#include "ecs/component/ThreadSharedComponent.h"
+
 class ItemDetailsBar;
 
 class SackContainerViewModel : public WindowViewModelBase {
@@ -26,20 +28,16 @@ public:
         return mInventoryItems;
     }
 
-    void updateItems(std::vector<ItemStackWithUID> items);
-
-    Noesis::EventHandler& CloseRequested() { return mCloseRequested; }
+    void updateItems(RenderThreadSharedComponentDataPtr& data, std::vector<ItemStackWithUID> items);
 
 private:
-    void Close(BaseComponent* param) {
-        mCloseRequested(this, Noesis::EventArgs::Empty);
-    }
-
-    Noesis::EventHandler mCloseRequested;
+    void onClose() override;
 
     Noesis::Ptr<Noesis::ObservableCollection<InventoryItemViewModel>> mInventoryItems;
 
-    NS_DECLARE_REFLECTION(SackContainerViewModel, NoesisApp::NotifyPropertyChangedBase)
+    NS_DECLARE_REFLECTION(SackContainerViewModel, WindowViewModelBase)
+
+    RenderThreadSharedComponentDataPtr mSharedData;
 };
 
 class SackContainerPanel : public Noesis::UserControl
@@ -66,7 +64,6 @@ private:
     Noesis::ScrollViewer* mScrollViewer;
     Noesis::ItemsControl* mInventoryItemsControl;
     ItemDetailsBar* mItemDetailsBar;
-    Noesis::Ptr<Noesis::ObservableCollection<InventoryItemViewModel>> mInventoryItems;
     int mTotalItems;
 
     NS_DECLARE_REFLECTION(SackContainerPanel, UserControl, "AM.SackContainerPanel")

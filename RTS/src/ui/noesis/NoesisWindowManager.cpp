@@ -11,45 +11,22 @@
 
 NoesisWindowManager* sInstance = nullptr;
 
-class WindowDataTemplateSelector : public Noesis::DataTemplateSelector {
-public:
-    Noesis::DataTemplate* SelectTemplate(BaseComponent* item, Noesis::DependencyObject* container) override {
-        if (Noesis::DynamicCast<SackContainerViewModel*>(item)) {
-            return SackContainerTemplate;
-        }
-        assert(false);
-    }
-
-    Noesis::DataTemplate* GetSackContainerTemplate() const {
-        return SackContainerTemplate;
-    }
-    void SetSackContainerTemplate(Noesis::DataTemplate* pTemplate) {
-        SackContainerTemplate.Reset(pTemplate);
-    }
-    Noesis::Ptr<Noesis::DataTemplate> SackContainerTemplate;
-
-    NS_IMPLEMENT_INLINE_REFLECTION(WindowDataTemplateSelector, Noesis::DataTemplateSelector, "AM.WindowDataTemplateSelector") {
-        NsProp("SackContainerTemplate", &WindowDataTemplateSelector::GetSackContainerTemplate, &WindowDataTemplateSelector::SetSackContainerTemplate);
-    }
-};
-
 NS_IMPLEMENT_REFLECTION(NoesisWindowManager, "AM.NoesisWindowManager") {
     NsProp("ActiveWindows", &NoesisWindowManager::GetActiveWindows);
 }
 
 NoesisWindowManager::NoesisWindowManager() {
     mActiveWindows = *new Noesis::ObservableCollection<WindowViewModelBase>();
-    mPanelWantsActive[e_cast(GameUIPanel::SackContainer)].store(1);
+    
+    // TEST
+    //mPanelWantsActive[e_cast(GameUIPanel::SackContainer)].store(1);
+
     sInstance = this;
 }
 
 NoesisWindowManager::~NoesisWindowManager() {
     assert(sInstance == this);
     sInstance = nullptr;
-}
-
-void NoesisWindowManager::RegisterChildren() {
-    Noesis::RegisterComponent<WindowDataTemplateSelector>();
 }
 
 NoesisWindowManager* NoesisWindowManager::GetInstance() {
@@ -148,10 +125,10 @@ SackContainerViewModel* NoesisWindowManager::GetSackContainerViewModel() const {
             return sackContainer;
         }
     }
-    nullptr;
+    return nullptr;
 }
 
 void NoesisWindowManager::OnWindowCloseRequested(BaseComponent* sender, const Noesis::EventArgs&) {
     WindowViewModelBase* window = static_cast<WindowViewModelBase*>(sender);
-    RemoveWindowInternal(window);
+    RemoveWindow(window->GetWindowType());
 }

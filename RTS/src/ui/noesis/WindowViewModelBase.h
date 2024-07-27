@@ -49,11 +49,12 @@ public:
     GameUIPanel GetWindowType() const { return mPanel; }
 
 protected:
-    virtual void Close(BaseComponent* param) {
+    void Close(BaseComponent* param) {
+        onClose();
         mCloseRequested(this, Noesis::EventArgs::Empty);
     }
+    virtual void onClose() {}
 
-private:
     float mX = 0.0f;
     float mY = 0.0f;
     float mMinWidth = -1.0f;

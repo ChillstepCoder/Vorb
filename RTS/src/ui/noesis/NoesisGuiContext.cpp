@@ -105,7 +105,6 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
 
     // Register code-behind classes
     Noesis::RegisterComponent<NoesisWindowManager>();
-    NoesisWindowManager::RegisterChildren();
     Noesis::RegisterComponent<SackContainerViewModel>();
     Noesis::RegisterComponent<SackContainerPanel>();
     SackContainerPanel::RegisterChildren();
@@ -328,6 +327,7 @@ void NoesisGuiContext::updateItemSackUI(RenderThreadSharedComponentDataPtr data)
         // Add sack container
         mgr->AddWindow(GameUIPanel::SackContainer);
         containerVM = mgr->GetSackContainerViewModel();
+        assert(containerVM);
     }
 
    
@@ -336,6 +336,7 @@ void NoesisGuiContext::updateItemSackUI(RenderThreadSharedComponentDataPtr data)
         mgr->RemoveWindow(GameUIPanel::SackContainer);
         mgr->AddWindow(GameUIPanel::SackContainer);
         containerVM = mgr->GetSackContainerViewModel();
+        assert(containerVM);
     }
 
     mItemSackData = std::move(data);
@@ -349,6 +350,6 @@ void NoesisGuiContext::updateItemSackUI(RenderThreadSharedComponentDataPtr data)
     // Send copy of data to UI
     {
         std::lock_guard lock(mItemSackData->resourceMutex);
-        containerVM->updateItems(mItemSackData->getItemSackData().itemStacks);
+        containerVM->updateItems(mItemSackData, mItemSackData->getItemSackData().itemStacks);
     }
 }

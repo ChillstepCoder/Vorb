@@ -12,17 +12,17 @@
     <UserControl.Resources>
 
         <!-- All window templates -->
-        <DataTemplate x:Key="SackContainerTemplate">
-            <local:SackContainerPanel Width="1200"/>
+        <DataTemplate DataType="local:SackContainerViewModel">
+            <Viewbox Stretch="Fill">
+                <local:SackContainerPanel/>
+            </Viewbox>
         </DataTemplate>
 
         <local:NoesisWindowManager x:Key="WindowDataModel"/>
-        <local:WindowDataTemplateSelector x:Key="ViewModelTemplateSelector"
-            SackContainerTemplate="{StaticResource SackContainerTemplate}"/>
 
     </UserControl.Resources>
     <Grid Background="Transparent" DataContext="{StaticResource WindowDataModel}">
-        <ItemsControl ItemsSource="{Binding ActiveWindows}" ItemTemplateSelector="{StaticResource ViewModelTemplateSelector}">
+        <ItemsControl ItemsSource="{Binding ActiveWindows}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <Canvas/>

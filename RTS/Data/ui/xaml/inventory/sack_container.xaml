@@ -9,9 +9,9 @@
   xmlns:local="clr-namespace:AM"
   x:Class="AM.SackContainerPanel"
   d:DesignWidth="1280" d:DesignHeight="720"
-  Background="Transparent"
+  Background="#3800FFFF"
   FontFamily="titilium_bold"
-  x:Name="RootPanel">
+  x:Name="SackContainerPanel">
     <UserControl.Resources>
         <ImageSource x:Key="BackgroundImageSource">ui_sack_background.png</ImageSource>
         <ImageSource x:Key="ButtonBackgroundImage">inventory_tile.png</ImageSource>

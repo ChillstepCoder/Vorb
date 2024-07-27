@@ -16,10 +16,11 @@
 #include "item/ItemRepository.h"
 #include "ui/GameUIPanel.h"
 
-NS_IMPLEMENT_REFLECTION(SackContainerViewModel) {
-    NsProp("InventoryItems", &SackContainerViewModel::GetInventoryItems);
+NS_IMPLEMENT_REFLECTION(SackContainerViewModel, "AM.SackContainerViewModel") {
 
     IMPLEMENT_WINDOW_BASE_REFLECTION(SackContainerViewModel);
+
+    NsProp("InventoryItems", &SackContainerViewModel::GetInventoryItems);
 }
 
 NS_IMPLEMENT_REFLECTION(SackContainerPanel, "AM.SackContainerPanel")
@@ -30,9 +31,14 @@ SackContainerViewModel::SackContainerViewModel() : WindowViewModelBase(GameUIPan
     mInventoryItems = *new Noesis::ObservableCollection<InventoryItemViewModel>();
 }
 
-void SackContainerViewModel::updateItems(std::vector<ItemStackWithUID> items) {
+void SackContainerViewModel::updateItems(RenderThreadSharedComponentDataPtr& data, std::vector<ItemStackWithUID> items) {
     PROFILE_FUNCTION();
     ASSERT_RENDER_THREAD();
+
+    if (!mSharedData) {
+        mSharedData = data;
+    }
+
     // Remove any items that are no longer in the list and update existing counts
     for (int i = mInventoryItems->Count() - 1; i >= 0; --i) {
         for (int j = items.size() - 1; j >= 0; --j) {
@@ -55,10 +61,12 @@ void SackContainerViewModel::updateItems(std::vector<ItemStackWithUID> items) {
         mInventoryItems->Add(Noesis::MakePtr<InventoryItemViewModel>(itemDef.mDisplayName, stack.itemStack.count, stack.tileItemUID, itemDef.mIconTextureRef.getAssetName()));
     }
 
-    //// Add some empty ones at the end
-    //for (int i = 0; i < 20; ++i) {
-    //    mInventoryItems->Add(Noesis::MakePtr<InventoryItemDataModel>("Empty", 0, UINT32_MAX));
-    //}
+}
+
+void SackContainerViewModel::onClose() {
+    if (mSharedData) {
+        mSharedData->wasDestroyed = true;
+    }
 }
 
 class ItemDetailsBar : public Noesis::UserControl {
@@ -204,12 +212,6 @@ void SackContainerPanel::OnInit() {
         NS_LOG_ERROR("Failed to find ScrollViewer or InventoryItemsControl");
     }
 
-    mInventoryItems = *new Noesis::ObservableCollection<InventoryItemViewModel>();
-
-    if (mInventoryItemsControl != nullptr)
-    {
-        mInventoryItemsControl->SetItemsSource(mInventoryItems);
-    }
 
     mItemDetailsBar = FindName<ItemDetailsBar>("SharedItemDetailsBar");
 
