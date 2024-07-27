@@ -60,7 +60,6 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
     
     assert(!sNoesisGuiContext);
     sNoesisGuiContext = this;
-  
     Noesis::SetLogHandler([](const char*, uint32_t, uint32_t level, const char*, const char* msg) {
         assert(level <= 4); // Noesis only has 5 levels (0-4)
         // Maps 1:1 with vorb::LoggingLevel
@@ -68,7 +67,11 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
 
         // [TRACE] [DEBUG] [INFO] [WARNING] [ERROR]
         const char* prefixes[] = { "T", "D", "I", "W", "E" };
+        
         LOG_MSG(vLevel, "[NOESIS/{}] {}\n", prefixes[level], msg);
+        if (level == 4) {
+            __debugbreak();
+        }
     });
 
     Noesis::GUI::SetLicense(NS_LICENSE_NAME, NS_LICENSE_KEY);
@@ -130,13 +133,17 @@ NoesisGuiContext::~NoesisGuiContext() {
 
 bool NoesisGuiContext::processInput(SDL_Event* e) {
     ASSERT_RENDER_THREAD();
+    NoesisWindowManager* mgr = NoesisWindowManager::GetInstance();
+    if (!mgr) {
+        return false;
+    }
 
     switch (e->type) {
         case SDL_KEYDOWN: {
 
             // TODO: replace with a more general way to close UI
             if (e->key.keysym.sym == SDLK_q) {
-                mWindowManager->RemoveWindow(GameUIPanel::SackContainer);
+                mgr->RemoveWindow(GameUIPanel::SackContainer);
                 return true;
             }
             auto&& it = sSdlKeycodeToNoesisKey.find(e->key.keysym.sym);
@@ -153,7 +160,9 @@ bool NoesisGuiContext::processInput(SDL_Event* e) {
             break;
         }
         case SDL_MOUSEMOTION:
-            if (mView->MouseMove(e->motion.x, e->motion.y)) return true;
+            if (mView->MouseMove(e->motion.x, e->motion.y)) {
+                return true;
+            }
             break;
         case SDL_MOUSEBUTTONDOWN: {
             auto&& it = sVorbMouseButtonToNoesisMouseButton.find((vui::MouseButton)e->button.button);
@@ -187,12 +196,15 @@ bool NoesisGuiContext::processInput(SDL_Event* e) {
 
 void NoesisGuiContext::updateAndRender() {
     ASSERT_RENDER_THREAD();
-
     auto now = std::chrono::high_resolution_clock::now();
     auto duration = now.time_since_epoch();
     const double timeSeconds = std::chrono::duration<double>(duration).count();
 
-    bool renderView = mWindowManager->update();
+    NoesisWindowManager* mgr = NoesisWindowManager::GetInstance();
+    if (!mgr) {
+        return;
+    }
+    bool renderView = mgr->update();
 
     if (mView->Update(timeSeconds)) {
         PreciseTimer timer;
@@ -205,6 +217,51 @@ void NoesisGuiContext::updateAndRender() {
     }
 
     mView->GetRenderer()->RenderOffscreen();
+    mView->GetRenderer()->Render();
+
+    checkGlError("NoesisGuiContext::updateAndRender");
+
+    // Reset vertex array binding
+    glBindVertexArray(0);
+
+    // Reset buffer bindings
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+
+
+    // Reset blend state
+    glDisable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_ONE, GL_ZERO);
+
+    // Reset depth testing
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
+
+    // Reset stencil testing
+    glDisable(GL_STENCIL_TEST);
+    glStencilMask(0xFF);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+    glStencilFunc(GL_ALWAYS, 0, 0xFF);
+
+    // Reset color mask
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+    // Reset face culling
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+
+    // Reset texture and sampler bindings
+    for (GLuint i = 0; i < 5; ++i) {  // Assuming 5 texture units were used
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glBindSampler(i, 0);
+    }
+    glActiveTexture(GL_TEXTURE0);  // Set active texture back to 0
+
+    // Reset viewport and scissor test
     ui32v2 dims = mUIContext.getWindowDims();
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, dims.x, dims.y);
@@ -212,9 +269,9 @@ void NoesisGuiContext::updateAndRender() {
     glClearStencil(0);
     glClear(GL_STENCIL_BUFFER_BIT);
 
-    mView->GetRenderer()->Render();
-
-    checkGlError("NoesisGuiContext::updateAndRender");
+    // Disable sample coverage and alpha to coverage
+    glDisable(GL_SAMPLE_COVERAGE);
+    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
     // Clear any mInUse program so we don't assume it is bound
     // TODO: Better state API
@@ -222,11 +279,11 @@ void NoesisGuiContext::updateAndRender() {
 }
 
 void NoesisGuiContext::initView() {
+    PreciseTimer timer;
     ASSERT_RENDER_THREAD();
     const char* viewNameStr = "main_view.xaml";
     LOG_DEBUG("INIT VIEW {}", viewNameStr);
 
-    PreciseTimer timer;
     Noesis::Ptr<Noesis::FrameworkElement> xaml = Noesis::GUI::LoadXaml<Noesis::FrameworkElement>(viewNameStr);
     LOG_DEBUG(" LOAD {} ", timer.stop()); timer.start();
     mView = Noesis::GUI::CreateView(xaml);
@@ -236,49 +293,56 @@ void NoesisGuiContext::initView() {
     mView->SetSize(dims.x, dims.y);
     mView->GetRenderer()->Init(sRenderDevice);
     LOG_DEBUG(" INIT {} ", timer.stop()); timer.start();
-
-    mWindowManager = mView->GetContent()->FindName<NoesisWindowManager>("WindowManager");
 }
 
 void NoesisGuiContext::toggleView(GameUIPanel viewName) {
-    mWindowManager->ToggleWindow(viewName);
+    if (NoesisWindowManager* mgr = NoesisWindowManager::GetInstance()) {
+        mgr->ToggleWindow(viewName);
+    }
 }
 
 void NoesisGuiContext::disableView(GameUIPanel viewName) {
-    mWindowManager->RemoveWindow(viewName);
+    if (NoesisWindowManager* mgr = NoesisWindowManager::GetInstance()) {
+        mgr->RemoveWindow(viewName);
+    }
 }
 
 void NoesisGuiContext::enableView(GameUIPanel viewName) {
-    mWindowManager->AddWindow(viewName);
+    if (NoesisWindowManager* mgr = NoesisWindowManager::GetInstance()) {
+        mgr->AddWindow(viewName);
+    }
 }
 
 void NoesisGuiContext::updateItemSackUI(RenderThreadSharedComponentDataPtr data) {
-
+    NoesisWindowManager* mgr = NoesisWindowManager::GetInstance();
+    if (!mgr) {
+        return;
+    }
     if (!data) {
-        mWindowManager->RemoveWindow(GameUIPanel::SackContainer);
+        mgr->RemoveWindow(GameUIPanel::SackContainer);
         return;
     }
 
-    SackContainerViewModel* containerVM = mWindowManager->GetSackContainerViewModel();
+    SackContainerViewModel* containerVM = mgr->GetSackContainerViewModel();
     if (!containerVM) {
         // Add sack container
-        mWindowManager->AddWindow(GameUIPanel::SackContainer);
-        containerVM = mWindowManager->GetSackContainerViewModel();
+        mgr->AddWindow(GameUIPanel::SackContainer);
+        containerVM = mgr->GetSackContainerViewModel();
     }
 
    
     if (mItemSackData && mItemSackData->uid != data->uid) [[unlikely]] {
         // Close old UI (RARE CASE)
-        mWindowManager->RemoveWindow(GameUIPanel::SackContainer);
-        mWindowManager->AddWindow(GameUIPanel::SackContainer);
-        containerVM = mWindowManager->GetSackContainerViewModel();
+        mgr->RemoveWindow(GameUIPanel::SackContainer);
+        mgr->AddWindow(GameUIPanel::SackContainer);
+        containerVM = mgr->GetSackContainerViewModel();
     }
 
     mItemSackData = std::move(data);
     if (mItemSackData->wasDestroyed) {
         // Destroyed by main thread
         mItemSackData.reset();
-        mWindowManager->RemoveWindow(GameUIPanel::SackContainer);
+        mgr->RemoveWindow(GameUIPanel::SackContainer);
         return;
     }
 

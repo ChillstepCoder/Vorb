@@ -37,8 +37,6 @@ private:
 
     UIContext& mUIContext;
     Noesis::Ptr<Noesis::IView> mView;
-    // Int to enable fetch_xor
-    NoesisWindowManager* mWindowManager = nullptr;
 
     // UI Windows
     RenderThreadSharedComponentDataPtr mItemSackData;

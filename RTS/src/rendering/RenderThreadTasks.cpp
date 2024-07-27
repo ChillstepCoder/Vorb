@@ -13,6 +13,7 @@
 
 void RenderThreadTasks::processRenderThread(RenderContext& context){
     ASSERT_RENDER_THREAD();
+    checkGlError("RenderThreadTasks::processRenderThread - begin");
 
     // TODO: We could bulk dequeue more, and then
     // process them in a loop until we hit a time limit,
@@ -37,7 +38,7 @@ void RenderThreadTasks::processRenderThread(RenderContext& context){
     if (timer.stop() > 16.0f) {
         LOG_WARN("{} ms ***RENDER SPIKE WARNING***", timer.stop());
     }
-    checkGlError("RenderThreadTasks::processRenderThread");
+    checkGlError("RenderThreadTasks::processRenderThread - end");
 }
 
 RenderThreadTasks* RenderThreadTasks::sInstance = nullptr;

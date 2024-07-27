@@ -64,34 +64,32 @@ namespace vorb {
         // Correctly retrieve initial path
 //        vio::Path path = fs::initial_path().string();
         vio::Path path = fs::current_path().string(); // Only ever called once so it really is just current path.
+        assert(path.isValid());
+
+        vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
 
         // Set the executable directory
-#ifdef VORB_OS_WINDOWS
         {
             nString buf(1024, 0);
             GetModuleFileName(nullptr, &buf[0], 1024 * sizeof(TCHAR));
             path = buf;
             path--;
         }
-#else
-        // TODO: Investigate options
-
-#endif // VORB_OS_WINDOWS
         if (!path.isValid()) path = "."; // No other option
         vio::IOManager::setExecutableDirectory(path.asCanonical());
 
-
-        if (IsDebuggerPresent()) {
-            VORB_LOG_DEBUG("Debugger detected, setting CWD to current_path");
-            // Set the current working directory
-            path = fs::current_path().string();
-            if (!path.isValid()) path = "."; // No other option
-            if (path.isValid()) vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
-        }
-        else {
-            // No debugger means we are running a packaged build, so CWD should be same as exe
-            if (path.isValid()) vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
-        }
+        // OLD
+        //if (IsDebuggerPresent()) {
+        //    VORB_LOG_DEBUG("Debugger detected, setting CWD to current_path");
+        //    // Set the current working directory
+        //    path = fs::current_path().string();
+        //    if (!path.isValid()) path = "."; // No other option
+        //    if (path.isValid()) vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
+        //}
+        //else {
+        //    // No debugger means we are running a packaged build, so CWD should be same as exe
+        //    if (path.isValid()) vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
+        //}
 
 #ifdef DEBUG
         printf("Executable Directory:\n    %s\n", vio::IOManager::getExecutableDirectory().getCString());

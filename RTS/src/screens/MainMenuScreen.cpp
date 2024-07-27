@@ -78,22 +78,23 @@ void MainMenuScreen::onExit(const vui::GameTime& gameTime)
 
 void MainMenuScreen::update(const vui::GameTime& gameTime) {
     // Keep preloading assets
+    checkGlError("MainMenuScreen::update1");
     AssetLoader::getInstance().update();
+    checkGlError("MainMenuScreen::update2");
     RenderContext::getInstance().updateRenderThreadProcs();
 }
 
 const ImVec2 buttonSize(200, 50);
 
-void MainMenuScreen::draw(const vui::GameTime& gameTime)
-{
+void MainMenuScreen::draw(const vui::GameTime& gameTime) {
+    checkGlError("MainMenuScreen::drawBegin");
+
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     vg::DepthState::NONE.set();
     vg::BlendState::set(vg::BlendStateType::ALPHA);
 
     glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     vui::GameWindow& window = m_app->getWindow();
 
     ImGui_ImplOpenGL3_NewFrame();
@@ -156,7 +157,12 @@ void MainMenuScreen::draw(const vui::GameTime& gameTime)
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     ImGui::EndFrame();
 
+    checkGlError("MainMenuScreen::imguiFinish");
+
     UIContext::getInstance().updateAndRenderNoesisOnly();
+
+
+    checkGlError("MainMenuScreen::drawFinish");
 }
 
 void MainMenuScreen::refreshSavesList() {

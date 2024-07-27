@@ -12,12 +12,14 @@
 
 class SackContainerViewModel;
 
-class NoesisWindowManager : public Noesis::UserControl
-{
+class NoesisWindowManager : public NoesisApp::NotifyPropertyChangedBase {
 public:
     NoesisWindowManager();
+    ~NoesisWindowManager();
 
     static void RegisterChildren();
+
+    static NoesisWindowManager* GetInstance();
 
     // Returns true if we have any active windows
     bool update();
@@ -44,5 +46,5 @@ private:
     bool mPanelWasActive[e_count(GameUIPanel)] = {};
     ExclusiveCacheLine<std::atomic_int> mPanelWantsActive[e_count(GameUIPanel)] = {};
 
-    NS_DECLARE_REFLECTION(NoesisWindowManager, Noesis::UserControl)
+    NS_DECLARE_REFLECTION(NoesisWindowManager, NoesisApp::NotifyPropertyChangedBase)
 };

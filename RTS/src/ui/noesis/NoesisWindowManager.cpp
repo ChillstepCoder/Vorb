@@ -8,19 +8,28 @@
 
 #include "ui/noesis/code_behind/SackContainerPanel.h"
 
+
+NoesisWindowManager* sInstance = nullptr;
+
 class WindowDataTemplateSelector : public Noesis::DataTemplateSelector {
 public:
     Noesis::DataTemplate* SelectTemplate(BaseComponent* item, Noesis::DependencyObject* container) override {
-        throw std::logic_error("The method or operation is not implemented.");
+        if (Noesis::DynamicCast<SackContainerViewModel*>(item)) {
+            return SackContainerTemplate;
+        }
+        assert(false);
     }
 
     Noesis::DataTemplate* GetSackContainerTemplate() const {
         return SackContainerTemplate;
     }
+    void SetSackContainerTemplate(Noesis::DataTemplate* pTemplate) {
+        SackContainerTemplate.Reset(pTemplate);
+    }
     Noesis::Ptr<Noesis::DataTemplate> SackContainerTemplate;
 
     NS_IMPLEMENT_INLINE_REFLECTION(WindowDataTemplateSelector, Noesis::DataTemplateSelector, "AM.WindowDataTemplateSelector") {
-        NsProp("SackContainerTemplate", &WindowDataTemplateSelector::GetSackContainerTemplate);
+        NsProp("SackContainerTemplate", &WindowDataTemplateSelector::GetSackContainerTemplate, &WindowDataTemplateSelector::SetSackContainerTemplate);
     }
 };
 
@@ -31,10 +40,20 @@ NS_IMPLEMENT_REFLECTION(NoesisWindowManager, "AM.NoesisWindowManager") {
 NoesisWindowManager::NoesisWindowManager() {
     mActiveWindows = *new Noesis::ObservableCollection<WindowViewModelBase>();
     mPanelWantsActive[e_cast(GameUIPanel::SackContainer)].store(1);
+    sInstance = this;
+}
+
+NoesisWindowManager::~NoesisWindowManager() {
+    assert(sInstance == this);
+    sInstance = nullptr;
 }
 
 void NoesisWindowManager::RegisterChildren() {
     Noesis::RegisterComponent<WindowDataTemplateSelector>();
+}
+
+NoesisWindowManager* NoesisWindowManager::GetInstance() {
+    return sInstance;
 }
 
 bool NoesisWindowManager::update() {

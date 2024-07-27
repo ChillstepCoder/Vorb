@@ -46,6 +46,7 @@ class SackContainerPanel : public Noesis::UserControl
 {
 public:
     SackContainerPanel();
+    ~SackContainerPanel();
 
     static void RegisterChildren();
 

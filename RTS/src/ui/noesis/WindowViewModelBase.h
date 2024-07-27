@@ -11,6 +11,10 @@
 #define IMPLEMENT_WINDOW_BASE_REFLECTION(MyClass) \
         NsProp("X", &MyClass::GetX, &MyClass::SetX); \
         NsProp("Y", &MyClass::GetY, &MyClass::SetY); \
+        NsProp("MinWidth", &MyClass::GetMinWidth, &MyClass::SetMinWidth); \
+        NsProp("MinHeight", &MyClass::GetMinHeight, &MyClass::SetMinHeight); \
+        NsProp("MaxWidth", &MyClass::GetMaxWidth, &MyClass::SetMaxWidth); \
+        NsProp("MaxHeight", &MyClass::GetMaxHeight, &MyClass::SetMaxHeight); \
         NsProp("CloseCommand", &MyClass::GetCloseCommand); \
         NsProp("WindowType", &MyClass::GetWindowType);
 
@@ -26,6 +30,18 @@ public:
     float GetY() const { return mY; }
     void SetY(float y) { mY = y; OnPropertyChanged("Y"); }
 
+    float GetMinWidth() const { return mMinWidth; }
+    void SetMinWidth(float width) { mMinWidth = width; OnPropertyChanged("MinWidth"); }
+
+    float GetMinHeight() const { return mMinHeight; }
+    void SetMinHeight(float height) { mMinHeight = height; OnPropertyChanged("MinHeight"); }
+
+    float GetMaxWidth() const { return mMaxWidth; }
+    void SetMaxWidth(float width) { mMaxWidth = width; OnPropertyChanged("MaxWidth"); }
+
+    float GetMaxHeight() const { return mMaxHeight; }
+    void SetMaxHeight(float height) { mMaxHeight = height; OnPropertyChanged("MaxHeight"); }
+
     const NoesisApp::DelegateCommand* GetCloseCommand() const { return mCloseCommand; }
 
     Noesis::EventHandler& CloseRequested() { return mCloseRequested; }
@@ -40,7 +56,10 @@ protected:
 private:
     float mX = 0.0f;
     float mY = 0.0f;
-    Noesis::String mTitle;
+    float mMinWidth = -1.0f;
+    float mMinHeight = -1.0f;
+    float mMaxWidth = -1.0f;
+    float mMaxHeight = -1.0f;
     Noesis::Ptr<NoesisApp::DelegateCommand> mCloseCommand;
     Noesis::EventHandler mCloseRequested;
     GameUIPanel mPanel;

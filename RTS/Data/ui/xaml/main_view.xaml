@@ -7,14 +7,21 @@
     xmlns:noesis="clr-namespace:NoesisGUIExtensions"
     mc:Ignorable="d"
     xmlns:local="clr-namespace:AM"
-    x:Class="AM.NoesisWindowManager"
     d:DesignWidth="1280" d:DesignHeight="720"
-    x:Name="WindowManager"
-    IsHitTestVisible="False">
+    x:Name="WindowManager">
     <UserControl.Resources>
-        <AM.WindowDataTemplateSelector x:Key="ViewModelTemplateSelector"/>
+
+        <!-- All window templates -->
+        <DataTemplate x:Key="SackContainerTemplate">
+            <local:SackContainerPanel Width="1200"/>
+        </DataTemplate>
+
+        <local:NoesisWindowManager x:Key="WindowDataModel"/>
+        <local:WindowDataTemplateSelector x:Key="ViewModelTemplateSelector"
+            SackContainerTemplate="{StaticResource SackContainerTemplate}"/>
+
     </UserControl.Resources>
-    <Grid Background="Transparent">
+    <Grid Background="Transparent" DataContext="{StaticResource WindowDataModel}">
         <ItemsControl ItemsSource="{Binding ActiveWindows}" ItemTemplateSelector="{StaticResource ViewModelTemplateSelector}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -25,15 +32,10 @@
                 <Style TargetType="ContentPresenter">
                     <Setter Property="Canvas.Left" Value="{Binding X}"/>
                     <Setter Property="Canvas.Top" Value="{Binding Y}"/>
+                    <Setter Property="MaxWidth" Value="{Binding MaxWidth}"/>
+                    <Setter Property="MaxHeight" Value="{Binding MaxHeight}"/>
                 </Style>
             </ItemsControl.ItemContainerStyle>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <ContentControl Content="{Binding}">
-                    </ContentControl>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Button Content="HelloWorld" Width="64" Height="64"/>
     </Grid>
 </UserControl>

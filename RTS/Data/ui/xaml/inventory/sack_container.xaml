@@ -9,7 +9,7 @@
   xmlns:local="clr-namespace:AM"
   x:Class="AM.SackContainerPanel"
   d:DesignWidth="1280" d:DesignHeight="720"
-  Background="#FF242C32"
+  Background="Transparent"
   FontFamily="titilium_bold"
   x:Name="RootPanel">
     <UserControl.Resources>

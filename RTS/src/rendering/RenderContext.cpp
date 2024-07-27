@@ -92,7 +92,50 @@
 
 #define USE_STENCIL 1
 
+#include <psapi.h>
+#pragma comment(lib, "psapi.lib")
 // TODO: This video is cool for hallucination effect https://www.youtube.com/watch?v=f4s1h2YETNY
+
+bool IsRunningUnderNsight() {
+    HMODULE hMods[1024];
+    DWORD cbNeeded;
+    unsigned int i;
+
+    static int cachedValue = 0;
+    if (cachedValue == 1) return true;
+    if (cachedValue == 2) return false;
+
+    // Get a handle to the current process
+    HANDLE hProcess = GetCurrentProcess();
+
+    // Get a list of all the modules in this process
+    if (EnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded))
+    {
+        for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++)
+        {
+            TCHAR szModName[MAX_PATH];
+
+            // Get the full path to the module's file
+            if (GetModuleFileNameEx(hProcess, hMods[i], szModName, sizeof(szModName) / sizeof(TCHAR)))
+            {
+                // Convert to lowercase for case-insensitive comparison
+                std::string moduleName = szModName;
+                std::transform(moduleName.begin(), moduleName.end(), moduleName.begin(), ::tolower);
+
+                LOG_DEBUG("Module name: {}", moduleName.c_str());
+
+                // Check if the module name contains "injection"
+                if (moduleName.find("injection") != std::wstring::npos)
+                {
+                    cachedValue = 1;
+                    return true;  // Running under Nsight
+                }
+            }
+        }
+    }
+    cachedValue = 2;
+    return false;  // Not running under Nsight
+}
 
 // Opengl debugging
 void APIENTRY glDebugOutput(GLenum source,
@@ -143,7 +186,10 @@ void APIENTRY glDebugOutput(GLenum source,
     } ss << std::endl;
     ss << std::endl;
     LOG_CRITICAL("{}", ss.str());
-    __debugbreak();
+    // Debug break crashes NSight
+    if (!IsRunningUnderNsight()) {
+        __debugbreak();
+    }
     //panic(ss.str()); //  Dont want to crash on program link errors
     //assert(false);
 }

@@ -135,7 +135,10 @@ void App::refreshElapsedTime() {
 
 void App::onUpdateFrame() {
     PROFILE_FUNCTION();
+    checkGlError("App::onUpdateFrame begin");
     MainGame::onUpdateFrame();
     // Update window settings
     getWindow().setSwapInterval(sDebugOptions.mVSYNC ? vorb::ui::GameSwapInterval::V_SYNC : vorb::ui::GameSwapInterval::UNLIMITED_FPS);
+
+    checkGlError("App::onUpdateFrame end");
 }

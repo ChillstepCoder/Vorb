@@ -311,7 +311,9 @@ void vui::GameWindow::setPosition(int x, int y) {
 void vui::GameWindow::sync(ui32 frameTime) {
     pollInput();
 
+    checkGlError("vui::GameWindow::sync pre");
     SDL_GL_SwapWindow(VUI_WINDOW_HANDLE(m_window));
+    checkGlError("vui::GameWindow::sync post");
 
     // Limit FPS
     if (m_displayMode.swapInterval == GameSwapInterval::USE_VALUE_CAP) {

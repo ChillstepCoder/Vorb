@@ -22,7 +22,7 @@ NS_IMPLEMENT_REFLECTION(SackContainerViewModel) {
     IMPLEMENT_WINDOW_BASE_REFLECTION(SackContainerViewModel);
 }
 
-NS_IMPLEMENT_REFLECTION(SackContainerPanel, "AM.SackContainer")
+NS_IMPLEMENT_REFLECTION(SackContainerPanel, "AM.SackContainerPanel")
 {
 }
 
@@ -151,17 +151,19 @@ SackContainerPanel::SackContainerPanel() {
     LoadMoreItems(20);
 }
 
+SackContainerPanel::~SackContainerPanel()
+{
+}
+
 void SackContainerPanel::RegisterChildren() {
     Noesis::RegisterComponent<ItemDetailsBar>();
 }
 
 void SackContainerPanel::InitializeComponent() {
     ASSERT_RENDER_THREAD();
-    Noesis::GUI::LoadComponent(this, "sack_container.xaml");
+    Noesis::GUI::LoadComponent(this, "inventory/sack_container.xaml");
 
 }
-
-
 
 void SackContainerPanel::PrintVisualTree(Noesis::Visual* element, int depth)
 {
