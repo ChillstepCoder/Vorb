@@ -18,10 +18,10 @@
             </Viewbox>
         </DataTemplate>
 
-        <local:NoesisWindowManager x:Key="WindowDataModel"/>
+        <local:PanelManager x:Key="ManagerDataModel"/>
 
     </UserControl.Resources>
-    <Grid Background="Transparent" DataContext="{StaticResource WindowDataModel}">
+    <Grid Background="Transparent" DataContext="{StaticResource ManagerDataModel}">
         <ItemsControl ItemsSource="{Binding ActiveWindows}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>

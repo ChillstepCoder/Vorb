@@ -4,10 +4,13 @@
 #include <NsCore/ReflectionDeclare.h>
 #include <NsCore/String.h>
 #include <NsCore/ReflectionDeclareEnum.h>
+#include <NsApp/DelegateCommand.h>
+
+#include "item/ItemStack.h"
 
 class InventoryItemViewModel : public NoesisApp::NotifyPropertyChangedBase {
 public:
-    InventoryItemViewModel(LocText itemName, int count, TileItemUID uid, StrToken icon);
+    InventoryItemViewModel(LocText itemName, ItemStack stack, TileItemUID uid, StrToken icon);
 
 #define P_ITEM_TEXT "ItemText"
 #define P_ITEM_COUNT "ItemCount"
@@ -23,13 +26,25 @@ public:
     void setIcon(const char* icon);
     void setIconFromAsset(StrToken iconAsset);
 
-    NS_DECLARE_REFLECTION(InventoryItemViewModel, NoesisApp::NotifyPropertyChangedBase);
+    ItemStack getItemStack() const {
+        return mStack;
+    }
 
+    const NoesisApp::DelegateCommand* GetPickupCommand() const {
+        return mPickupCommand;
+    }
+
+    Noesis::EventHandler& OnPickup() { return mPickupEvent; }
+
+    NS_DECLARE_REFLECTION(InventoryItemViewModel, NoesisApp::NotifyPropertyChangedBase);
 public:
+    Noesis::Ptr<NoesisApp::DelegateCommand> mPickupCommand;
+    Noesis::EventHandler mPickupEvent;
+
     TileItemUID mUniqueId;
 private:
     // Properties
     Noesis::String mText;
     Noesis::String mIcon;
-    int mCount;
+    ItemStack mStack;
 };

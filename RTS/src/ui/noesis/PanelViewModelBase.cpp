@@ -1,14 +1,14 @@
 #include "stdafx.h"
-#include "WindowViewModelBase.h"
+#include "PanelViewModelBase.h"
 
 #include <NsCore/ReflectionImplement.h>
 #include <NsCore/ReflectionImplementEnum.h>
 
-NS_IMPLEMENT_REFLECTION(WindowViewModelBase) {
-    IMPLEMENT_WINDOW_BASE_REFLECTION(WindowViewModelBase);
+NS_IMPLEMENT_REFLECTION(PanelViewModelBase) {
+    IMPLEMENT_PANEL_BASE_REFLECTION(PanelViewModelBase);
 }
 
-WindowViewModelBase::WindowViewModelBase(GameUIPanel panel) : mPanel(panel) {
+PanelViewModelBase::PanelViewModelBase(GameUIPanel panel) : mPanel(panel) {
     mCloseCommand = Noesis::MakePtr<NoesisApp::DelegateCommand>([this](BaseComponent* param) {
         Close(param);
     });

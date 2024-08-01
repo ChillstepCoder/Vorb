@@ -631,7 +631,7 @@ void WorldRenderer::updateThreadSharedComponents() {
     for (RenderThreadSharedComponentDataPtr& data : sharedComponents) {
         switch (data->type) {
             case RenderThreadSharedComponentType::ItemSack:
-                UIContext::getInstance().getNoesisGuiContext().updateItemSackUI(std::move(data));
+                UIContext::getInstance().getNoesisGuiContext().addRenderThreadSharedComponentData(std::move(data));
                 break;
             default:
                 assert(false);

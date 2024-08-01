@@ -63,7 +63,7 @@ void NavThread::addPathfindToHarvestableTask(std::shared_ptr<NavPath>& path, con
 }
 
 // Yield CPU resources
-constexpr int64_t MAX_PATH_WAIT_TIME_MICROSECONDS = 2000; // 3000
+constexpr int64_t MAX_PATH_WAIT_TIME_MICROSECONDS = 5000;
 
 void NavThread::navThreadFunc() {
     NAV_THREAD_ID = std::this_thread::get_id();

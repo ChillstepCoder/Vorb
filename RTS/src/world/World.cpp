@@ -447,6 +447,10 @@ Building* World::tryGetStructureAtWorldPos(TileCoord worldPos) const {
     return mStructureGrid->tryGetBuildingAtWorldPos(worldPos);
 }
 
+entt::entity World::getLocalPlayer() {
+    return getECS().getLocalPlayer();
+}
+
 World* World::tryGetWorld(WorldID id) {
     std::shared_lock lock(sWorldsMutex);
     auto&& it = sWorlds.find(id);

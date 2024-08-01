@@ -23,7 +23,7 @@
 #include "ui/noesis/NoesisTextureProvider.h"
 #include "ui/noesis/NoesisGLRenderDevice.h"
 
-#include "ui/noesis/NoesisWindowManager.h"
+#include "ui/noesis/NoesisPanelManager.h"
 #include "ui/noesis/code_behind/SackContainerPanel.h"
 
 #include "resources/ResourceManager.h"
@@ -40,6 +40,8 @@
 #include <NsApp/Window.h>
 #include <NsApp/RichText.h>*/
 
+//extern "C" void NsRegisterReflectionAppInteractivity();
+//extern "C" void NsInitPackageAppInteractivity();
 
 constexpr const char* XAML_ROOT = "data\\ui\\xaml";
 constexpr const char* FONT_ROOT = "data\\ui\\fonts";
@@ -79,6 +81,10 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
     // Noesis initialization. This must be the first step before using any NoesisGUI functionality
     Noesis::GUI::Init();
 
+    // Register app components. 
+   // NsRegisterReflectionAppInteractivity();
+    //NsInitPackageAppInteractivity();
+
     Noesis::GUI::SetXamlProvider(Noesis::MakePtr<NoesisLocalXamlProvider>(ResourceManager::get().getIoManager(), XAML_ROOT));
     Noesis::GUI::SetFontProvider(Noesis::MakePtr<NoesisLocalFontProvider>(ResourceManager::get().getIoManager(), FONT_ROOT));
     Noesis::GUI::SetTextureProvider(Noesis::MakePtr<NoesisTextureProvider>()); 
@@ -104,7 +110,7 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
     sRenderDevice = Noesis::Ptr<Noesis::RenderDevice>(new NoesisGLRenderDevice());
 
     // Register code-behind classes
-    Noesis::RegisterComponent<NoesisWindowManager>();
+    Noesis::RegisterComponent<NoesisPanelManager>();
     Noesis::RegisterComponent<SackContainerViewModel>();
     Noesis::RegisterComponent<SackContainerPanel>();
     SackContainerPanel::RegisterChildren();
@@ -132,7 +138,7 @@ NoesisGuiContext::~NoesisGuiContext() {
 
 bool NoesisGuiContext::processInput(SDL_Event* e) {
     ASSERT_RENDER_THREAD();
-    NoesisWindowManager* mgr = NoesisWindowManager::GetInstance();
+    NoesisPanelManager* mgr = NoesisPanelManager::GetInstance();
     if (!mgr) {
         return false;
     }
@@ -195,20 +201,21 @@ bool NoesisGuiContext::processInput(SDL_Event* e) {
 
 void NoesisGuiContext::updateAndRender() {
     ASSERT_RENDER_THREAD();
+
+    updateSackUI();
+
     auto now = std::chrono::high_resolution_clock::now();
     auto duration = now.time_since_epoch();
     const double timeSeconds = std::chrono::duration<double>(duration).count();
 
-    NoesisWindowManager* mgr = NoesisWindowManager::GetInstance();
+    NoesisPanelManager* mgr = NoesisPanelManager::GetInstance();
     if (!mgr) {
         return;
     }
     bool renderView = mgr->update();
 
     if (mView->Update(timeSeconds)) {
-        PreciseTimer timer;
         mView->GetRenderer()->UpdateRenderTree();
-        LOG_CRITICAL("UpdateRenderTree {} ", timer.stop());
     }
 
     if (!renderView) {
@@ -216,6 +223,17 @@ void NoesisGuiContext::updateAndRender() {
     }
 
     mView->GetRenderer()->RenderOffscreen();
+
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+    // Reset viewport and scissor test
+    ui32v2 dims = mUIContext.getWindowDims();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, dims.x, dims.y);
+    glDisable(GL_SCISSOR_TEST);
+    glClearStencil(0);
+    glClear(GL_STENCIL_BUFFER_BIT);
+
     mView->GetRenderer()->Render();
 
     checkGlError("NoesisGuiContext::updateAndRender");
@@ -260,18 +278,14 @@ void NoesisGuiContext::updateAndRender() {
     }
     glActiveTexture(GL_TEXTURE0);  // Set active texture back to 0
 
-    // Reset viewport and scissor test
-    ui32v2 dims = mUIContext.getWindowDims();
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, dims.x, dims.y);
-    glDisable(GL_SCISSOR_TEST);
-    glClearStencil(0);
-    glClear(GL_STENCIL_BUFFER_BIT);
+    
 
     // Disable sample coverage and alpha to coverage
     glDisable(GL_SAMPLE_COVERAGE);
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
+
+    vg::sBlendStates.ALPHA.set();
     // Clear any mInUse program so we don't assume it is bound
     // TODO: Better state API
     vg::GLProgram::unuse();
@@ -294,31 +308,22 @@ void NoesisGuiContext::initView() {
     LOG_DEBUG(" INIT {} ", timer.stop()); timer.start();
 }
 
-void NoesisGuiContext::toggleView(GameUIPanel viewName) {
-    if (NoesisWindowManager* mgr = NoesisWindowManager::GetInstance()) {
-        mgr->ToggleWindow(viewName);
-    }
-}
-
-void NoesisGuiContext::disableView(GameUIPanel viewName) {
-    if (NoesisWindowManager* mgr = NoesisWindowManager::GetInstance()) {
-        mgr->RemoveWindow(viewName);
-    }
-}
-
-void NoesisGuiContext::enableView(GameUIPanel viewName) {
-    if (NoesisWindowManager* mgr = NoesisWindowManager::GetInstance()) {
-        mgr->AddWindow(viewName);
-    }
-}
-
-void NoesisGuiContext::updateItemSackUI(RenderThreadSharedComponentDataPtr data) {
-    NoesisWindowManager* mgr = NoesisWindowManager::GetInstance();
+void NoesisGuiContext::updateSackUI() {
+    NoesisPanelManager* mgr = NoesisPanelManager::GetInstance();
     if (!mgr) {
         return;
     }
+
+    auto&& it = mRenderThreadSharedComponentData.find(RenderThreadSharedComponentType::ItemSack);
+    if (it == mRenderThreadSharedComponentData.end()) {
+        return;
+    }
+
+    RenderThreadSharedComponentDataPtr& data = it->second;
+
     if (!data) {
         mgr->RemoveWindow(GameUIPanel::SackContainer);
+        mRenderThreadSharedComponentData.erase(it);
         return;
     }
 
@@ -330,26 +335,60 @@ void NoesisGuiContext::updateItemSackUI(RenderThreadSharedComponentDataPtr data)
         assert(containerVM);
     }
 
-   
-    if (mItemSackData && mItemSackData->uid != data->uid) [[unlikely]] {
-        // Close old UI (RARE CASE)
+    if (data->wasDestroyed) {
+        // Destroyed by main thread or due to empty
+        data.reset();
         mgr->RemoveWindow(GameUIPanel::SackContainer);
-        mgr->AddWindow(GameUIPanel::SackContainer);
-        containerVM = mgr->GetSackContainerViewModel();
-        assert(containerVM);
-    }
-
-    mItemSackData = std::move(data);
-    if (mItemSackData->wasDestroyed) {
-        // Destroyed by main thread
-        mItemSackData.reset();
-        mgr->RemoveWindow(GameUIPanel::SackContainer);
+        mRenderThreadSharedComponentData.erase(it);
         return;
     }
 
     // Send copy of data to UI
     {
-        std::lock_guard lock(mItemSackData->resourceMutex);
-        containerVM->updateItems(mItemSackData, mItemSackData->getItemSackData().itemStacks);
+        std::lock_guard lock(data->resourceMutex);
+        containerVM->updateItems(data, data->getItemSackData().itemStacks);
     }
+}
+
+void NoesisGuiContext::toggleView(GameUIPanel viewName) {
+    if (NoesisPanelManager* mgr = NoesisPanelManager::GetInstance()) {
+        mgr->ToggleWindow(viewName);
+    }
+}
+
+void NoesisGuiContext::disableView(GameUIPanel viewName) {
+    if (NoesisPanelManager* mgr = NoesisPanelManager::GetInstance()) {
+        mgr->RemoveWindow(viewName);
+    }
+}
+
+void NoesisGuiContext::enableView(GameUIPanel viewName) {
+    if (NoesisPanelManager* mgr = NoesisPanelManager::GetInstance()) {
+        mgr->AddWindow(viewName);
+    }
+}
+
+void NoesisGuiContext::addRenderThreadSharedComponentData(RenderThreadSharedComponentDataPtr data) {
+    ASSERT_RENDER_THREAD();
+    assert(data);
+    RenderThreadSharedComponentDataPtr& prevData = mRenderThreadSharedComponentData[data->type];
+
+    if (prevData && prevData->uid != data->uid) [[unlikely]] {
+        if (NoesisPanelManager* mgr = NoesisPanelManager::GetInstance()) {
+            GameUIPanel panel = GameUIPanel::COUNT;
+            switch (prevData->type) {
+                case RenderThreadSharedComponentType::ItemSack:
+                    panel = GameUIPanel::SackContainer;
+                    break;
+                default:
+                    break;
+            }
+            static_assert(e_count(RenderThreadSharedComponentType) == 1);
+            // Close old UI (RARE CASE)
+            if (panel != GameUIPanel::COUNT) {
+                mgr->RemoveWindow(panel);
+            }
+        }
+    }
+    prevData = std::move(data);
 }

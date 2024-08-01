@@ -6,25 +6,25 @@
 #include <NsGui/UserControl.h>
 
 #include "ui/GameUIPanel.h"
-#include "ui/noesis/WindowViewModelBase.h"
+#include "ui/noesis/PanelViewModelBase.h"
 
 #include "util/ExclusiveCacheLine.h"
 
 class SackContainerViewModel;
 
-class NoesisWindowManager : public NoesisApp::NotifyPropertyChangedBase {
+class NoesisPanelManager : public NoesisApp::NotifyPropertyChangedBase {
 public:
-    NoesisWindowManager();
-    ~NoesisWindowManager();
+    NoesisPanelManager();
+    ~NoesisPanelManager();
 
     static void RegisterChildren();
 
-    static NoesisWindowManager* GetInstance();
+    static NoesisPanelManager* GetInstance();
 
     // Returns true if we have any active windows
     bool update();
 
-    Noesis::ObservableCollection<WindowViewModelBase>* GetActiveWindows() const;
+    Noesis::ObservableCollection<PanelViewModelBase>* GetActiveWindows() const;
 
     void AddWindow(GameUIPanel panel);
     void RemoveWindow(GameUIPanel panel);
@@ -36,15 +36,15 @@ public:
 private:
     // Return true if panel is active
     bool UpdatePanel(GameUIPanel panel);
-    void AddWindowInternal(WindowViewModelBase* window);
-    void RemoveWindowInternal(WindowViewModelBase* window);
+    void AddWindowInternal(PanelViewModelBase* window);
+    void RemoveWindowInternal(PanelViewModelBase* window);
 
     void OnWindowCloseRequested(BaseComponent* sender, const Noesis::EventArgs&);
 
-    Noesis::Ptr<Noesis::ObservableCollection<WindowViewModelBase>> mActiveWindows;
+    Noesis::Ptr<Noesis::ObservableCollection<PanelViewModelBase>> mActiveWindows;
 
     bool mPanelWasActive[e_count(GameUIPanel)] = {};
     ExclusiveCacheLine<std::atomic_int> mPanelWantsActive[e_count(GameUIPanel)] = {};
 
-    NS_DECLARE_REFLECTION(NoesisWindowManager, NoesisApp::NotifyPropertyChangedBase)
+    NS_DECLARE_REFLECTION(NoesisPanelManager, NoesisApp::NotifyPropertyChangedBase)
 };

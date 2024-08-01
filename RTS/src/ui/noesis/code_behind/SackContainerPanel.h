@@ -12,14 +12,14 @@
 #include <NsApp/DelegateCommand.h>
 
 #include "item/ItemStack.h"
-#include "ui/noesis/WindowViewModelBase.h"
+#include "ui/noesis/PanelViewModelBase.h"
 #include "ui/noesis/inventory/InventoryItemViewModel.h"
 
 #include "ecs/component/ThreadSharedComponent.h"
 
 class ItemDetailsBar;
 
-class SackContainerViewModel : public WindowViewModelBase {
+class SackContainerViewModel : public PanelViewModelBase {
 public:
     SackContainerViewModel();
 
@@ -30,12 +30,15 @@ public:
 
     void updateItems(RenderThreadSharedComponentDataPtr& data, std::vector<ItemStackWithUID> items);
 
+    f32v3 getWorldPosition();
+
 private:
+    void addItemInternal(Noesis::Ptr<InventoryItemViewModel> itemModel);
     void onClose() override;
 
     Noesis::Ptr<Noesis::ObservableCollection<InventoryItemViewModel>> mInventoryItems;
 
-    NS_DECLARE_REFLECTION(SackContainerViewModel, WindowViewModelBase)
+    NS_DECLARE_REFLECTION(SackContainerViewModel, PanelViewModelBase)
 
     RenderThreadSharedComponentDataPtr mSharedData;
 };
@@ -50,21 +53,17 @@ public:
 
 private:
     void InitializeComponent();
-    void PrintVisualTree(Noesis::Visual* element, int depth);
     void OnInit() override;
     bool ConnectEvent(Noesis::BaseComponent* source, const char* event, const char* handler) override;
 
     void OnScrollViewerPreviewMouseWheel(Noesis::BaseComponent* sender, const Noesis::MouseWheelEventArgs& e);
     void OnScrollViewerScrollChanged(Noesis::BaseComponent* sender, const Noesis::ScrollChangedEventArgs& e);
-    void OnScrollViewerMouseEnter(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e);
     void OnInventoryButtonMouseEnter(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e);
     void OnInventoryButtonMouseLeave(Noesis::BaseComponent* sender, const Noesis::MouseEventArgs& e);
-    void LoadMoreItems(int count);
+    void OnMouseDownRight(Noesis::BaseComponent* sender, const Noesis::MouseButtonEventArgs& e);
 
     Noesis::ScrollViewer* mScrollViewer;
-    Noesis::ItemsControl* mInventoryItemsControl;
     ItemDetailsBar* mItemDetailsBar;
-    int mTotalItems;
 
     NS_DECLARE_REFLECTION(SackContainerPanel, UserControl, "AM.SackContainerPanel")
 };

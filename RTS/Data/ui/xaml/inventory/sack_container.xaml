@@ -9,9 +9,10 @@
   xmlns:local="clr-namespace:AM"
   x:Class="AM.SackContainerPanel"
   d:DesignWidth="1280" d:DesignHeight="720"
-  Background="#3800FFFF"
+  Background="#0000FFFF"
   FontFamily="titilium_bold"
-  x:Name="SackContainerPanel">
+  x:Name="SackContainerPanel"
+  MouseRightButtonDown="OnMouseDownRight">
     <UserControl.Resources>
         <ImageSource x:Key="BackgroundImageSource">ui_sack_background.png</ImageSource>
         <ImageSource x:Key="ButtonBackgroundImage">inventory_tile.png</ImageSource>
@@ -61,7 +62,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Viewbox Stretch="Uniform">
+    <Viewbox Stretch="UniformToFill" Width="1400" Height="1000">
         <Border Width="1280" Height="720" Padding="400,0,360,0">
             <Border.Background>
                 <ImageBrush ImageSource="{StaticResource BackgroundImageSource}" Stretch="Uniform"/>
@@ -86,10 +87,24 @@
                                     <Grid>
                                         <Button x:Name="InventoryButton" Style="{StaticResource InventoryButtonStyle}"
                                                 MouseEnter="OnInventoryButtonMouseEnter"
-                                                MouseLeave="OnInventoryButtonMouseLeave"/>
+                                                MouseLeave="OnInventoryButtonMouseLeave">
+                                            <Button.ContextMenu>
+                                                <ContextMenu>
+                                                    <ContextMenu.Background>
+                                                        <SolidColorBrush Color="#EEC46743"/>
+                                                    </ContextMenu.Background>
+                                                    <MenuItem Header="Pickup" Command="{Binding PickupCommand}"/>
+                                                </ContextMenu>
+                                            </Button.ContextMenu>
+                                            <!--<b:Interaction.Triggers>
+                                                <b:EventTrigger EventName="MouseDoubleClick">
+                                                    <b:InvokeCommandAction Command="{Binding PickupCommand}"/>
+                                                </b:EventTrigger>
+                                            </b:Interaction.Triggers>-->
+                                        </Button>
                                         <Image Source="{Binding ItemIcon}" Width="80" Height="80" Margin="8,0,0,8" IsHitTestVisible="False"/>
                                         <TextBlock Text="{Binding ItemCount}" FontSize="18" Foreground="White" IsHitTestVisible="False" Margin="0,23,60,0"
-                                            noesis:Text.Stroke="Black"
+                                            noesis:Text.Stroke="#FF945A5A"
                                             noesis:Text.StrokeThickness="1.5"
                                             TextAlignment="Center"/>
                                     </Grid>

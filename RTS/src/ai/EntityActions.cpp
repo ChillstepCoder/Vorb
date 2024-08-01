@@ -6,6 +6,8 @@
 #include "ecs/component/PositionComponent.h"
 #include "ecs/factory/EntityFactory.h"
 
+#include "ecs/IFullECS.h"
+
 #include "world/chunk/SimChunkGrid.h"
 
 // =====================================================================================================================
@@ -28,8 +30,8 @@ void EntityActions::dropBundleSim(World& world, entt::registry& simRegistry, ent
 }
 
 void EntityActions::dropBundleFull(World& world, entt::registry& fullRegistry, entt::entity fullAgent) {
-    IFullECS& ecs = world.getECS();
     ASSERT_GAME_THREAD();
+    IFullECS& ecs = world.getECS();
     if (DualResourceBundleComponent* bundle = fullRegistry.try_get<DualResourceBundleComponent>(fullAgent)) {
         const f32v3 worldPos(fullRegistry.get<PositionComponent>(fullAgent).mPosition);
 

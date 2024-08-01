@@ -18,23 +18,41 @@ void ThreadUtilizationTimer::beginFrame() {
 
     if (totalElapsedNS != 0) {
         // TODO: Rolling average is better?
-        constexpr f32 AVG_LERP_PERCENT = 0.02f;
-        constexpr f32 AVG_LERP_TIME = 0.1f;
+        constexpr f32 AVG_LERP_TIME = 0.15f;
         const ui64 sleepElapsedNS = mSleepTimeElapsed.time_since_epoch().count();
         const ui64 frameTimeNS = totalElapsedNS - sleepElapsedNS;
-        const f64 percentageTimeSleeping = (f64)sleepElapsedNS / (f64)totalElapsedNS;
 
         // Soft average so it doesn't jump around so much
         const f32 prevFrameTimeMS = mCurrentFrameTimeMS;
         mCurrentFrameTimeMS = lerp(prevFrameTimeMS, f32((f64)frameTimeNS / NS_PER_MS), AVG_LERP_TIME);
-        const f32 prevUtilization = mCurrentUtilizationPercentage;
-        // TODO: This is not right, because a single frame with a massive sleep followed by a single tick frame will average together 1:1 and become 50% instead of averaging over
-        // the total time
-        mCurrentUtilizationPercentage = lerp(prevUtilization, (f32)(100.0 * (1.0 - percentageTimeSleeping)), AVG_LERP_PERCENT);
+
+        mThreadUtilizationPercentRollingAverage[mRollingAverageIndex] = f32v2(sleepElapsedNS / NS_PER_MS, totalElapsedNS / NS_PER_MS);
+    }
+    else {
+        mThreadUtilizationPercentRollingAverage[mRollingAverageIndex] = f32v2(0.0f);
+    }
+
+    // Rolling average percentages
+    f32v2 rollingTotal(0.0f);
+    for (i32 i = 0; i < ROLLING_AVERAGE_SIZE; ++i) {
+        rollingTotal += mThreadUtilizationPercentRollingAverage[i];
+    }
+    if (rollingTotal.y > 0.0f) {
+
+        const f32 totalActiveTime = rollingTotal.y - rollingTotal.x;
+        const f32 percent = totalActiveTime / rollingTotal.y;
+
+
+        if (IS_SIM_THREAD() && percent >= 0.99f) {
+            LOG_INFO("{} {} {} {}", rollingTotal.y, rollingTotal.x, totalActiveTime, percent * 100.0f);
+        }
+
+
+        mCurrentUtilizationPercentage = percent * 100.0f;
         assert(mCurrentUtilizationPercentage <= 100.0f);
     }
 
-
+    mRollingAverageIndex = (mRollingAverageIndex + 1) % ROLLING_AVERAGE_SIZE;
     mFrameBegin = currentTime;
     mSleepTimeElapsed = std::chrono::high_resolution_clock::time_point();
 }

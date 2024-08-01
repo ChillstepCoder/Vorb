@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "NoesisWindowManager.h"
+#include "NoesisPanelManager.h"
 
 #include <NsCore/ReflectionImplementEnum.h>
 #include <NsCore/RegisterComponent.h>
@@ -9,14 +9,14 @@
 #include "ui/noesis/code_behind/SackContainerPanel.h"
 
 
-NoesisWindowManager* sInstance = nullptr;
+NoesisPanelManager* sInstance = nullptr;
 
-NS_IMPLEMENT_REFLECTION(NoesisWindowManager, "AM.NoesisWindowManager") {
-    NsProp("ActiveWindows", &NoesisWindowManager::GetActiveWindows);
+NS_IMPLEMENT_REFLECTION(NoesisPanelManager, "AM.PanelManager") {
+    NsProp("ActiveWindows", &NoesisPanelManager::GetActiveWindows);
 }
 
-NoesisWindowManager::NoesisWindowManager() {
-    mActiveWindows = *new Noesis::ObservableCollection<WindowViewModelBase>();
+NoesisPanelManager::NoesisPanelManager() {
+    mActiveWindows = *new Noesis::ObservableCollection<PanelViewModelBase>();
     
     // TEST
     //mPanelWantsActive[e_cast(GameUIPanel::SackContainer)].store(1);
@@ -24,16 +24,16 @@ NoesisWindowManager::NoesisWindowManager() {
     sInstance = this;
 }
 
-NoesisWindowManager::~NoesisWindowManager() {
+NoesisPanelManager::~NoesisPanelManager() {
     assert(sInstance == this);
     sInstance = nullptr;
 }
 
-NoesisWindowManager* NoesisWindowManager::GetInstance() {
+NoesisPanelManager* NoesisPanelManager::GetInstance() {
     return sInstance;
 }
 
-bool NoesisWindowManager::update() {
+bool NoesisPanelManager::update() {
     bool hasAnyWindow = false;
     for (i32 i = 0; i < e_count(GameUIPanel); ++i) {
         GameUIPanel uiPanel = (GameUIPanel)i;
@@ -42,11 +42,11 @@ bool NoesisWindowManager::update() {
     return hasAnyWindow;
 }
 
-Noesis::ObservableCollection<WindowViewModelBase>* NoesisWindowManager::GetActiveWindows() const {
+Noesis::ObservableCollection<PanelViewModelBase>* NoesisPanelManager::GetActiveWindows() const {
     return mActiveWindows;
 }
 
-void NoesisWindowManager::AddWindow(GameUIPanel panel) {
+void NoesisPanelManager::AddWindow(GameUIPanel panel) {
     mPanelWantsActive[e_cast(panel)].store(1);
     // Render thread immediately updates
     if (IS_RENDER_THREAD()) {
@@ -54,7 +54,7 @@ void NoesisWindowManager::AddWindow(GameUIPanel panel) {
     }
 }
 
-void NoesisWindowManager::RemoveWindow(GameUIPanel panel) {
+void NoesisPanelManager::RemoveWindow(GameUIPanel panel) {
     mPanelWantsActive[e_cast(panel)].store(0);
     // Render thread immediately updates
     if (IS_RENDER_THREAD()) {
@@ -62,7 +62,7 @@ void NoesisWindowManager::RemoveWindow(GameUIPanel panel) {
     }
 }
 
-void NoesisWindowManager::ToggleWindow(GameUIPanel panel) {
+void NoesisPanelManager::ToggleWindow(GameUIPanel panel) {
     mPanelWantsActive[e_cast(panel)].fetch_xor(1, std::memory_order_relaxed) ^ 1;
     // Render thread immediately updates
     if (IS_RENDER_THREAD()) {
@@ -70,12 +70,12 @@ void NoesisWindowManager::ToggleWindow(GameUIPanel panel) {
     }
 }
 
-bool NoesisWindowManager::UpdatePanel(GameUIPanel panel) {
+bool NoesisPanelManager::UpdatePanel(GameUIPanel panel) {
     const int i = e_cast(panel);
     // Only check the atomic once per frame
     if (mPanelWantsActive[i]) {
         if (!mPanelWasActive[i]) {
-            WindowViewModelBase* newWindow;
+            PanelViewModelBase* newWindow;
             switch (panel) {
                 case GameUIPanel::Inventory:
                     panic("IMPLEMENT INVENTORY");
@@ -98,7 +98,7 @@ bool NoesisWindowManager::UpdatePanel(GameUIPanel panel) {
         // Release input focus
         mPanelWasActive[i] = false;
         for (int i = 0; i < mActiveWindows->Count(); i++) {
-            WindowViewModelBase* window = mActiveWindows->Get(i);
+            PanelViewModelBase* window = mActiveWindows->Get(i);
             if (window->GetWindowType() == panel) {
                 RemoveWindowInternal(window);
                 break;
@@ -108,17 +108,17 @@ bool NoesisWindowManager::UpdatePanel(GameUIPanel panel) {
     return false;
 }
 
-void NoesisWindowManager::AddWindowInternal(WindowViewModelBase* window) {
+void NoesisPanelManager::AddWindowInternal(PanelViewModelBase* window) {
     mActiveWindows->Add(window);
-    window->CloseRequested() += MakeDelegate(this, &NoesisWindowManager::OnWindowCloseRequested);
+    window->CloseRequested() += MakeDelegate(this, &NoesisPanelManager::OnWindowCloseRequested);
 }
 
-void NoesisWindowManager::RemoveWindowInternal(WindowViewModelBase* window) {
-    window->CloseRequested() -= MakeDelegate(this, &NoesisWindowManager::OnWindowCloseRequested);
+void NoesisPanelManager::RemoveWindowInternal(PanelViewModelBase* window) {
+    window->CloseRequested() -= MakeDelegate(this, &NoesisPanelManager::OnWindowCloseRequested);
     mActiveWindows->Remove(window);
 }
 
-SackContainerViewModel* NoesisWindowManager::GetSackContainerViewModel() const {
+SackContainerViewModel* NoesisPanelManager::GetSackContainerViewModel() const {
     for (int i = 0; i < mActiveWindows->Count(); i++) {
         SackContainerViewModel* sackContainer = Noesis::DynamicCast<SackContainerViewModel*>(mActiveWindows->Get(i));
         if (sackContainer) {
@@ -128,7 +128,7 @@ SackContainerViewModel* NoesisWindowManager::GetSackContainerViewModel() const {
     return nullptr;
 }
 
-void NoesisWindowManager::OnWindowCloseRequested(BaseComponent* sender, const Noesis::EventArgs&) {
-    WindowViewModelBase* window = static_cast<WindowViewModelBase*>(sender);
+void NoesisPanelManager::OnWindowCloseRequested(BaseComponent* sender, const Noesis::EventArgs&) {
+    PanelViewModelBase* window = static_cast<PanelViewModelBase*>(sender);
     RemoveWindow(window->GetWindowType());
 }

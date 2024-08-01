@@ -117,25 +117,36 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
     bool suppressKeyboard = false;
     bool suppressMouse = false;
 
-    // Imgui
-#ifdef VORB_IMPL_IMGUI
-    ImGuiIO& io = ImGui::GetIO();
-    // TODO: Return here?
-    ImGui_ImplSDL2_ProcessEvent(e);
-    if (io.WantCaptureKeyboard) {
-        suppressKeyboard = true;
-    }
-    if (io.WantCaptureMouse) {
-        suppressMouse = true;
-    }
-#endif
-
     // Noessis GUI
     if (sNoesisGuiContext) {
         if (sNoesisGuiContext->processInput(e)) {
             suppressKeyboard = suppressMouse = true;
         }
     }
+
+    // Imgui
+#ifdef VORB_IMPL_IMGUI
+    ImGuiIO& io = ImGui::GetIO();
+    // TODO: Return here?
+    if (io.WantCaptureMouse || io.WantCaptureKeyboard) {
+        ImGui_ImplSDL2_ProcessEvent(e);
+        // Handle noesis suppression
+        if (!suppressMouse && e->type == SDL_MOUSEMOTION || e->type == SDL_MOUSEWHEEL || e->type == SDL_MOUSEBUTTONUP || e->type == SDL_MOUSEBUTTONDOWN) {
+            ImGui_ImplSDL2_ProcessEvent(e);
+        } else if (!suppressKeyboard && e->type == e->type == SDL_KEYDOWN || e->type == SDL_KEYUP || e->type == SDL_TEXTINPUT) {
+            ImGui_ImplSDL2_ProcessEvent(e);
+        }
+        else {
+            ImGui_ImplSDL2_ProcessEvent(e);
+        }
+        if (io.WantCaptureKeyboard) {
+            suppressKeyboard = true;
+        }
+        if (io.WantCaptureMouse) {
+            suppressMouse = true;
+        }
+    }
+#endif
 
     // Main application
     switch (e->type) {

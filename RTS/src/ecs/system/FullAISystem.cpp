@@ -9,6 +9,9 @@
 
 #include "ai/jobs/SimTaskHandle.h"
 #include "options/DebugOptions.h"
+#include "math/Random.h"
+
+#include "world/IHeightmapGrid.h"
 
 // TODO: Investigate maslows hierarchy (probability weight?) (Concern probability gradually increases for things that didnt run recently?
 // 1. Self Actuation
@@ -48,6 +51,22 @@ void FullAISystem::updateCharacter(entt::entity entity)
    
     if (taskQueue.taskQueue.size()) {
         updateTask(entity, taskQueue);
+    }
+    else {
+        // Random wander
+        NavigationComponent& navCmp = mRegistry.get<NavigationComponent>(entity);
+        if (navCmp.getStatus() != NavigationStatus::IN_PROGRESS) {
+            PositionComponent& posCmp = mRegistry.get<PositionComponent>(entity);
+
+            constexpr f32 MAX_DISTANCE = 128.0f;
+
+            const f32v2 randomOffset = f32v2(Random::getCachedRandomf() * 2.0f - 1.0f, Random::getCachedRandomf() * 2.0f - 1.0f) * MAX_DISTANCE;
+            f32v2 targetPos = f32v2(posCmp.mPosition) + randomOffset;
+            targetPos = glm::clamp(targetPos, f32v2(0.0f), f32v2(mWorld.getWidthTiles(), mWorld.getWidthTiles()));
+            const f32 height = mWorld.getHeightmapGrid().computeHeightAtPoint<false>(targetPos);
+            navCmp.requestCoarsePath(posCmp.mPosition, f32v3(targetPos.x, targetPos.y, height), 3.0f);
+        }
+
     }
 
     // Employee stuff

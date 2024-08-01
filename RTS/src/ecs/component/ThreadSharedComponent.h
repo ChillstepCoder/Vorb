@@ -10,18 +10,39 @@ enum class RenderThreadSharedComponentType {
 };
 
 struct RenderThreadSharedComponentItemSackResource {
+    RenderThreadSharedComponentItemSackResource(f32v3 pos) : worldPosition(pos) {}
+
     std::vector<ItemStackWithUID> itemStacks;
+    f32v3 worldPosition;
 };
 
 struct RenderThreadSharedComponentData {
-    RenderThreadSharedComponentData(RenderThreadSharedComponentType type, EntityUid uid) : type(type), uid(uid) {}
+    RenderThreadSharedComponentData(RenderThreadSharedComponentType type, EntityUid uid, entt::entity ownerEntity) : type(type), uid(uid), ownerEntity(ownerEntity) {}
 
-    RenderThreadSharedComponentItemSackResource& getItemSackData() {
+    void runFuncOnItemSackResourceThreadSafe(std::function<void(RenderThreadSharedComponentItemSackResource& res)> func) {
+        assert(type == RenderThreadSharedComponentType::ItemSack);
+        std::lock_guard<std::mutex> lock(resourceMutex);
+        func(*static_cast<RenderThreadSharedComponentItemSackResource*>(resource.get()));
+    }
+
+    // USER MUST USE resourceMutex
+    const RenderThreadSharedComponentItemSackResource& getItemSackData() {
         assert(resource);
         assert(type == RenderThreadSharedComponentType::ItemSack);
         return *static_cast<RenderThreadSharedComponentItemSackResource*>(resource.get());
     }
 
+    void setOwnerEntity(entt::entity entity) {
+        ASSERT_GAME_THREAD();
+        ownerEntity = entity;
+    }
+    entt::entity getOwnerEntity() {
+        ASSERT_GAME_THREAD();
+        return ownerEntity;
+    }
+private:
+    entt::entity ownerEntity; // Game thread access only
+public:
     const RenderThreadSharedComponentType type;
     std::atomic_bool wasDestroyed = false;
     const EntityUid uid;

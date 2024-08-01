@@ -122,7 +122,7 @@ bool IsRunningUnderNsight() {
                 std::string moduleName = szModName;
                 std::transform(moduleName.begin(), moduleName.end(), moduleName.begin(), ::tolower);
 
-                LOG_DEBUG("Module name: {}", moduleName.c_str());
+                //LOG_DEBUG("Module name: {}", moduleName.c_str());
 
                 // Check if the module name contains "injection"
                 if (moduleName.find("injection") != std::wstring::npos)
@@ -147,7 +147,7 @@ void APIENTRY glDebugOutput(GLenum source,
     const void* userParam) {
     // ignore non-significant error/warning codes
     // 131218 - performance - recompiling shader... hmmm
-    if (/*id == 131169 || */id == 131185 || id == 131218 || id == 131204 || id == 131186/*Buffer Performance warning*/) return;
+    if (id == 131169/*driver allocated storage**/ || id == 131185 || id == 131218 || id == 131204 || id == 131186/*Buffer Performance warning*/) return;
 
     std::stringstream ss;
 

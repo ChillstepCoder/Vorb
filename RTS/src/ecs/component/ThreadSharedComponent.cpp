@@ -3,6 +3,7 @@
 
 #include "ecs/component/TileItemComponent.h"
 #include "ecs/component/EntityUidComponent.h"
+#include "ecs/component/PositionComponent.h"
 
 RenderThreadSharedComponent& ThreadSharedComponentFactory::addItemSackUISharedComponent(entt::registry& registry, entt::entity entity) {
     ASSERT_GAME_THREAD();
@@ -20,8 +21,8 @@ RenderThreadSharedComponent& ThreadSharedComponentFactory::addItemSackUISharedCo
     const EntityUid uid = registry.get_or_emplace<EntityUidComponent>(entity).mUid;
 
     RenderThreadSharedComponent& newCmp = registry.emplace<RenderThreadSharedComponent>(entity);
-    newCmp.mData = std::make_shared<RenderThreadSharedComponentData>(RenderThreadSharedComponentType::ItemSack, uid);
-    newCmp.mData->resource = std::make_shared<RenderThreadSharedComponentItemSackResource>();
+    newCmp.mData = std::make_shared<RenderThreadSharedComponentData>(RenderThreadSharedComponentType::ItemSack, uid, entity);
+    newCmp.mData->resource = std::make_shared<RenderThreadSharedComponentItemSackResource>(registry.get<PositionComponent>(entity).mPosition);
     return newCmp;
 }
 

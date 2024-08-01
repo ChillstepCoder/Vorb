@@ -107,6 +107,7 @@ void NavWorld::updateNavThread()
     // Destroy tile containers 
     std::vector<TileContainerToDestroy> containersToDestroy;
     mContainersToDestroy.workerThreadAquireAllDirtyObjects(containersToDestroy);
+
     for (size_t i = 0; i < containersToDestroy.size(); ++i) {
         TileContainerToDestroy containerData = containersToDestroy[i];
         mNavGraphs.erase(containerData.id);

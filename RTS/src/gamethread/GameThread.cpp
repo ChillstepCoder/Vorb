@@ -83,7 +83,7 @@ void GameThread::mainFunc() {
 
     // Init time
     TimestepManager& TimestepManager = Services::TimestepManager::ref();
-    TimestepManager.init(1.0 / SERVER_TICK_RATE_HZ);
+    TimestepManager.init(1.0 / SERVER_TICK_RATE_HZ, 2 /*maxFramesAhead*/);
 
     // TODO: Load world data
 

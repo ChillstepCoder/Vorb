@@ -341,20 +341,22 @@ i32 IFullECS::pickupTileItem(entt::entity picker, TileItemUID itemUID, i32 quant
     auto&& it = mTileItemEntityMap.find(itemUID);
     assert(it != mTileItemEntityMap.end());
     entt::entity entity = it->second;
-    i32 remaining;
 
     DualInventoryComponent& inventoryCmp = mRegistry.get<DualInventoryComponent>(picker);
 
     if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(entity)) {
         assert(quantity <= itemCmp->itemStack.count);
-        itemCmp->itemStack.count -= quantity;
-        remaining = itemCmp->itemStack.count;
         assert(itemCmp->tileItemUID == itemUID);
 
         // Add to inventory
         ItemStack newItems = itemCmp->itemStack;
         newItems.count = quantity;
-        inventoryCmp.addItemStack(newItems);
+        if (!inventoryCmp.tryAddItemStack(newItems)) {
+            return quantity;
+        }
+
+        itemCmp->itemStack.count -= quantity;
+        const i32 remaining = itemCmp->itemStack.count;
 
         if (remaining == 0) {
             mTileItemEntityMap.erase(it);
@@ -379,6 +381,7 @@ i32 IFullECS::pickupTileItem(entt::entity picker, TileItemUID itemUID, i32 quant
             }
             mRegistry.emplace<ObjectPickupComponent>(entity, picker);
         }
+        return remaining;
     }
     else {
         TileItemContainerComponent& containerCmp = mRegistry.get<TileItemContainerComponent>(entity);
@@ -392,12 +395,10 @@ i32 IFullECS::pickupTileItem(entt::entity picker, TileItemUID itemUID, i32 quant
             }
         }
         if (takenStack.count > 0) {
-            inventoryCmp.addItemStack(takenStack);
+            inventoryCmp.tryAddItemStack(takenStack);
         }
+        return remaining;
     }
-
-  
-    return remaining;
 }
 
 i32 IFullECS::pickupDynamicItem(entt::entity picker, entt::entity itemEntity, i32 quantity) {
@@ -415,7 +416,7 @@ i32 IFullECS::pickupDynamicItem(entt::entity picker, entt::entity itemEntity, i3
     // Add to inventory
     ItemStack newItems = itemCmp.itemStack;
     newItems.count = quantity;
-    inventoryCmp.addItemStack(newItems);
+    inventoryCmp.tryAddItemStack(newItems);
 
     if (remaining == 0) {
         mRegistry.remove<SimpleItemComponent>(itemEntity);

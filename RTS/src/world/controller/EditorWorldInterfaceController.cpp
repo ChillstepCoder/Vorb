@@ -62,8 +62,8 @@ void EditorWorldInterfaceController::update()
                 ItemStack stack1(ItemRepository::get().getAssetID(CStrToken("wood_log")), 15);
                 ItemStack stack2(ItemRepository::get().getAssetID(CStrToken("wood_log_birch")), 15);
 
-                TileItemUID uid1 = mWorld->getSimChunkGrid().tryDropItemStackOnGroundGameThread(stack1, mWorld->getECS().getLocalPlayerPosition());
-                TileItemUID uid2 = mWorld->getSimChunkGrid().tryDropItemStackOnGroundGameThread(stack2, mWorld->getECS().getLocalPlayerPosition());
+                TileItemUID uid1 = mWorld->getSimChunkGrid().tryDropItemStackOnGroundGameThread(stack1, mWorld->getECS().getLocalPlayerPosition(), false /*creatEntity*/);
+                TileItemUID uid2 = mWorld->getSimChunkGrid().tryDropItemStackOnGroundGameThread(stack2, mWorld->getECS().getLocalPlayerPosition(), false /*creatEntity*/);
 
                 TileIndex index = mWorld->getTileHandleAtWorldPos(mWorld->getECS().getLocalPlayerPosition()).tileIndex;
                 TileItemStack stacks[2];

@@ -68,7 +68,7 @@ public:
     // On fail returns INVALID_TILE_ITEM_UID
     TileItemUID tryDropItemStackOnGroundSimThread(ItemStack stack, TileCoord worldPos);
     // On fail returns INVALID_TILE_ITEM_UID
-    TileItemUID tryDropItemStackOnGroundGameThread(ItemStack stack, f32v3 worldPos);
+    TileItemUID tryDropItemStackOnGroundGameThread(ItemStack stack, f32v3 worldPos, bool createEntity = true);
     // On fail returns INVALID_TILE_ITEM_UID
     TileItemUID connectItemEntityToGroundGameThreadNoMerge(ItemStack stack, f32v3 worldPos);
     TileItemUID connectItemEntityToGroundGameThreadAllowMerge(ItemStack stack, f32v3 worldPos);

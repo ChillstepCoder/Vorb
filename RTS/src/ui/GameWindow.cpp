@@ -179,7 +179,6 @@ void vui::GameWindow::dispose() {
 
     if (m_glc) {
         SDL_GL_DeleteContext((SDL_GLContext)m_glc);
-        delete m_glc;
     }
     if (m_window) {
         SDL_DestroyWindow(VUI_WINDOW_HANDLE(m_window));

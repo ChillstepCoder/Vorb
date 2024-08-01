@@ -516,8 +516,8 @@
     <ClCompile Include="src\ui\noesis\NoesisGuiContext.cpp" />
     <ClCompile Include="src\ui\noesis\NoesisLocalFontProvider.cpp" />
     <ClCompile Include="src\ui\noesis\NoesisTextureProvider.cpp" />
-    <ClCompile Include="src\ui\noesis\NoesisWindowManager.cpp" />
-    <ClCompile Include="src\ui\noesis\WindowViewModelBase.cpp" />
+    <ClCompile Include="src\ui\noesis\NoesisPanelManager.cpp" />
+    <ClCompile Include="src\ui\noesis\PanelViewModelBase.cpp" />
     <ClCompile Include="src\ui\ScreenList.cpp" />
     <ClCompile Include="src\util\FixedSizeVector.cpp" />
     <ClCompile Include="src\util\TilingVoronoiMap.cpp" />
@@ -1047,8 +1047,8 @@
     <ClInclude Include="src\ui\noesis\NoesisLocalXamlProvider.h" />
     <ClInclude Include="src\ui\noesis\NoesisProviderFileWatcher.h" />
     <ClInclude Include="src\ui\noesis\NoesisTextureProvider.h" />
-    <ClInclude Include="src\ui\noesis\NoesisWindowManager.h" />
-    <ClInclude Include="src\ui\noesis\WindowViewModelBase.h" />
+    <ClInclude Include="src\ui\noesis\NoesisPanelManager.h" />
+    <ClInclude Include="src\ui\noesis\PanelViewModelBase.h" />
     <ClInclude Include="src\ui\ScreenList.h" />
     <ClInclude Include="src\util\DitherMatrix.h" />
     <ClInclude Include="src\util\GridIdUtil.h" />

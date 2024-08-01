@@ -8,10 +8,15 @@ NS_IMPLEMENT_REFLECTION(InventoryItemViewModel) {
     NsProp(P_ITEM_TEXT, &InventoryItemViewModel::getText, &InventoryItemViewModel::setText);
     NsProp(P_ITEM_COUNT, &InventoryItemViewModel::getCount, &InventoryItemViewModel::setCount);
     NsProp(P_ITEM_ICON, &InventoryItemViewModel::getIcon, &InventoryItemViewModel::setIcon);
+    NsProp("PickupCommand", &InventoryItemViewModel::GetPickupCommand);
 }
 
-InventoryItemViewModel::InventoryItemViewModel(LocText itemName, int count, TileItemUID uid, StrToken icon) : mUniqueId(uid), mText(itemName.c_str()), mCount(count) {
+InventoryItemViewModel::InventoryItemViewModel(LocText itemName, ItemStack stack, TileItemUID uid, StrToken icon) : mUniqueId(uid), mText(itemName.c_str()), mStack(stack) {
     setIconFromAsset(icon);
+
+    mPickupCommand = Noesis::MakePtr<NoesisApp::DelegateCommand>([this](BaseComponent* param) {
+        mPickupEvent(this, Noesis::EventArgs::Empty);
+    });
 }
 
 const char* InventoryItemViewModel::getText() const {
@@ -26,12 +31,12 @@ void InventoryItemViewModel::setText(const char* text) {
 }
 
 int InventoryItemViewModel::getCount() const {
-    return mCount;
+    return mStack.count;
 }
 
 void InventoryItemViewModel::setCount(int val) {
-    if (mCount != val) {
-        mCount = val;
+    if (mStack.count != val) {
+        mStack.count = val;
         OnPropertyChanged(P_ITEM_COUNT);
     }
 }

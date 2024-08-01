@@ -1173,13 +1173,13 @@
     <ClCompile Include="src\ui\noesis\NoesisTextureProvider.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ui\noesis\NoesisWindowManager.cpp">
+    <ClCompile Include="src\ui\noesis\NoesisPanelManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\noesis\inventory\InventoryItemViewModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ui\noesis\WindowViewModelBase.cpp">
+    <ClCompile Include="src\ui\noesis\PanelViewModelBase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2960,13 +2960,13 @@
     <ClInclude Include="src\ui\noesis\NoesisTextureProvider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\noesis\NoesisWindowManager.h">
+    <ClInclude Include="src\ui\noesis\NoesisPanelManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\noesis\inventory\InventoryItemViewModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ui\noesis\WindowViewModelBase.h">
+    <ClInclude Include="src\ui\noesis\PanelViewModelBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

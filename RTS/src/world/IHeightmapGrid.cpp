@@ -303,6 +303,7 @@ DECL_BOOL_TEMPLATE(CompressedHeight IHeightmapGrid::getCompressedHeightAtVert, (
 
 template <bool THREAD_SAFE>
 f32 IHeightmapGrid::computeHeightAtPoint(const f32v2 worldPos) const {
+    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
     return interpolateHeightAtWorldPos<THREAD_SAFE>(worldPos);
 }
 DECL_BOOL_TEMPLATE(f32 IHeightmapGrid::computeHeightAtPoint, (const f32v2 worldPos) const)

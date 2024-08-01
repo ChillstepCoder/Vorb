@@ -14,12 +14,16 @@ f32 DualInventoryComponent::getEncumbermentRatio(InventoryBagType bagType) const
     return 0.0f;
 }
 
-bool DualInventoryComponent::addItemStack(ItemStack itemStack) {
+bool DualInventoryComponent::tryAddItemStack(ItemStack itemStack) {
     assert(itemStack.props.bagType != InventoryBagType::COUNT);
     assert(itemStack.count);
 
     const f32 weight = ItemRepository::get().getLoadedOrUnloadedAsset(itemStack.id).getWeight();
-    // TODO: Handle inventory weight and overflow
+    if (itemStack.count * weight + mBagWeights[e_cast(itemStack.props.bagType)] > getMaxCarryWeight(itemStack.props.bagType)) {
+        return false;
+    }
+
+    // TODO: Allow overflow
     auto range = mItems.equal_range(itemStack.id);
     for (auto&& it = range.first; it != range.second; ++it) {
         if (it->second.canCombine(itemStack)) {

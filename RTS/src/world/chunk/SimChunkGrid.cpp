@@ -225,7 +225,7 @@ TileItemUID SimChunkGrid::tryDropItemStackOnGroundSimThread(ItemStack stack, Til
     return uid;
 }
 
-TileItemUID SimChunkGrid::tryDropItemStackOnGroundGameThread(ItemStack stack, f32v3 worldPos) {
+TileItemUID SimChunkGrid::tryDropItemStackOnGroundGameThread(ItemStack stack, f32v3 worldPos, bool createEntity /*= true*/) {
     ASSERT_GAME_THREAD();
     const ChunkCoord chunkCoord = ChunkCoord::fromTilePos(worldPos);
     const ChunkID chunkId = chunkCoord.toGridIDType(mWidthChunks);
@@ -233,7 +233,9 @@ TileItemUID SimChunkGrid::tryDropItemStackOnGroundGameThread(ItemStack stack, f3
     TileItemUID uid = mChunkData[chunkId].tryAddItemStackToGroundNoMerge(stack, offset.y * CHUNK_WIDTH + offset.x);
     // TODO: handle worldPos.z as in try to place it inside buildings?
     if (uid != INVALID_TILE_ITEM_UID) {
-        EntityFactory::createItemOnGround(*mWorld, f32v3(worldPos.x, worldPos.y, mWorld->getTerrainHeightAtPoint(worldPos)), stack, uid);
+        if (createEntity) {
+            EntityFactory::createItemOnGround(*mWorld, f32v3(worldPos.x, worldPos.y, mWorld->getTerrainHeightAtPoint(worldPos)), stack, uid);
+        }
     }
     else {
         assert(false);

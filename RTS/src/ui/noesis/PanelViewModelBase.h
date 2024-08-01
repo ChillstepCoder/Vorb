@@ -8,20 +8,22 @@
 
 #include "ui/GameUIPanel.h"
 
-#define IMPLEMENT_WINDOW_BASE_REFLECTION(MyClass) \
+#define IMPLEMENT_PANEL_BASE_REFLECTION(MyClass) \
         NsProp("X", &MyClass::GetX, &MyClass::SetX); \
         NsProp("Y", &MyClass::GetY, &MyClass::SetY); \
         NsProp("MinWidth", &MyClass::GetMinWidth, &MyClass::SetMinWidth); \
         NsProp("MinHeight", &MyClass::GetMinHeight, &MyClass::SetMinHeight); \
         NsProp("MaxWidth", &MyClass::GetMaxWidth, &MyClass::SetMaxWidth); \
         NsProp("MaxHeight", &MyClass::GetMaxHeight, &MyClass::SetMaxHeight); \
+        NsProp("AvailableWidth", &MyClass::GetMaxWidth, &MyClass::SetMaxWidth); \
+        NsProp("AvailableHeight", &MyClass::GetMaxHeight, &MyClass::SetMaxHeight); \
         NsProp("CloseCommand", &MyClass::GetCloseCommand); \
         NsProp("WindowType", &MyClass::GetWindowType);
 
-class WindowViewModelBase : public NoesisApp::NotifyPropertyChangedBase {
+class PanelViewModelBase : public NoesisApp::NotifyPropertyChangedBase {
 public:
-    WindowViewModelBase(GameUIPanel panel);
-    virtual ~WindowViewModelBase() = default;
+    PanelViewModelBase(GameUIPanel panel);
+    virtual ~PanelViewModelBase() = default;
 
     // Common properties for all windows
     float GetX() const { return mX; }
@@ -42,6 +44,12 @@ public:
     float GetMaxHeight() const { return mMaxHeight; }
     void SetMaxHeight(float height) { mMaxHeight = height; OnPropertyChanged("MaxHeight"); }
 
+    float GetAvailableWidth() const { return mAvailableWidth; }
+    void SetAvailableWidth(float width) { mAvailableWidth = width; OnPropertyChanged("AvailableWidth"); }
+
+    float GetAvailableHeight() const { return mAvailableHeight; }
+    void SetAvailableHeight(float height) { mAvailableHeight = height; OnPropertyChanged("AvailableHeight"); }
+
     const NoesisApp::DelegateCommand* GetCloseCommand() const { return mCloseCommand; }
 
     Noesis::EventHandler& CloseRequested() { return mCloseRequested; }
@@ -61,9 +69,11 @@ protected:
     float mMinHeight = -1.0f;
     float mMaxWidth = -1.0f;
     float mMaxHeight = -1.0f;
+    float mAvailableWidth = -1.0f;
+    float mAvailableHeight = -1.0f;
     Noesis::Ptr<NoesisApp::DelegateCommand> mCloseCommand;
     Noesis::EventHandler mCloseRequested;
     GameUIPanel mPanel;
 
-    NS_DECLARE_REFLECTION(WindowViewModelBase, NoesisApp::NotifyPropertyChangedBase)
+    NS_DECLARE_REFLECTION(PanelViewModelBase, NoesisApp::NotifyPropertyChangedBase)
 };

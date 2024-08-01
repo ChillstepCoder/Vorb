@@ -8,7 +8,7 @@ class UIContext;
 
 #include "ecs/component/ThreadSharedComponent.h"
 
-class NoesisWindowManager;
+class NoesisPanelManager;
 
 #pragma region forward_declarations
 union SDL_Event;
@@ -30,16 +30,17 @@ public:
     void enableView(GameUIPanel viewName);
 
     // UI Windows
-    void updateItemSackUI(RenderThreadSharedComponentDataPtr data);
+    void addRenderThreadSharedComponentData(RenderThreadSharedComponentDataPtr data);
 
 private:
     void initView();
+    void updateSackUI();
 
     UIContext& mUIContext;
     Noesis::Ptr<Noesis::IView> mView;
 
-    // UI Windows
-    RenderThreadSharedComponentDataPtr mItemSackData;
+    // UI Window data
+    std::map<RenderThreadSharedComponentType, RenderThreadSharedComponentDataPtr> mRenderThreadSharedComponentData;
 };
 
 extern NoesisGuiContext* sNoesisGuiContext;

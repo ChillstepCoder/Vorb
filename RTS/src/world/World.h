@@ -123,6 +123,8 @@ public:
     // Structures TODO: Needs to be StructureRef so it isnt destroyed
     Building* tryGetStructureAtWorldPos(TileCoord worldPos) const;
 
+    entt::entity getLocalPlayer();
+
     STATIC_EVENT_LISTENER_FUNCS(StaticWorld, OnWorldBeginGameThread, WorldEventType::OnWorldBeginGameThread, World&);
     STATIC_EVENT_LISTENER_FUNCS(StaticWorld, OnWorldEndGameThread, WorldEventType::OnWorldEndGameThread, World&);
     STATIC_EVENT_LISTENER_FUNCS(StaticWorld, OnWorldEndRenderThread, WorldEventType::OnWorldEndRenderThread, World&);

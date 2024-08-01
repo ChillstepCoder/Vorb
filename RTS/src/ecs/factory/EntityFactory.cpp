@@ -394,6 +394,7 @@ void EntityFactory::destroyEntity(World& world, entt::entity entity) {
     }
 
     if (RenderThreadSharedComponent* cmp = registry.try_get<RenderThreadSharedComponent>(entity)) {
+        cmp->mData->setOwnerEntity(entt::null);
         cmp->mData->wasDestroyed = true;
     }
 
