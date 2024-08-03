@@ -24,8 +24,6 @@
 #include "world/World.h"
 
 NS_IMPLEMENT_REFLECTION(SackContainerViewModel, "AM.SackContainerViewModel") {
-
-    IMPLEMENT_PANEL_BASE_REFLECTION(SackContainerViewModel);
     NsProp("InventoryItems", &SackContainerViewModel::GetInventoryItems);
 }
 

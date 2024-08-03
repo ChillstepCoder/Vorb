@@ -154,7 +154,6 @@ void PhysicsDebugRenderer::PrepareFrame(const Camera3D& camera) {
             return;
         }
     }
-    vg::sBlendStates.ALPHA.set();
     mCamera = &camera;
 
     MaterialRenderer::bindMaterialShaderForRender(*mShader);
@@ -264,6 +263,7 @@ void PhysicsDebugRenderer::EndFrame() {
         return;
     }
 
+    vg::sBlendStates.ALPHA.set();
     glUniform1f(mShader->getUniform("unAlpha"), mRenderSettings.alpha);
 
     size_t mapCount = 0;

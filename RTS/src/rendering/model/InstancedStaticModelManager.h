@@ -71,6 +71,7 @@ public:
 
     StaticModelInstanceID addLooseModelInstance(ModelID modelId, const glm::quat& orient, f32v3 position, ui8 variantIndex, f32 scale);
     void removeLooseModelInstance(ModelID modelId, StaticModelInstanceID instanceId);
+    void changeLooseModelInstanceScale(ModelID modelId, StaticModelInstanceID instanceId, const glm::quat& orient, f32v3 position, f32 scale);
 private:
     void updatePendingLooseModelInstances();
 
@@ -84,6 +85,7 @@ private:
 
     void addLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex);
     void removeLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId);
+    void updateLooseInstanceTransformInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4 transform);
 
     void updateAnimatedModels(f32 elapsedSec);
     void increfModelDef(ModelID modelId, int incCount);
@@ -107,7 +109,12 @@ private:
         ModelID modelId;
         StaticModelInstanceID instanceId;
         ui8 variantIndex;
-        bool isRemove;
+        enum class Type : ui8 {
+            Add,
+            Remove,
+            ChangeTransform,
+            COUNT
+        } type = Type::Add;
         f32 scale;
     };
     moodycamel::ConcurrentQueue<PendingLooseModelInstance> mPendingLooseModelInstances;

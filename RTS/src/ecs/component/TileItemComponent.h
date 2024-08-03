@@ -2,6 +2,8 @@
 
 #include "item/ItemStack.h"
 
+#include <NsCore/Delegate.h>
+
 // Tile items are owned by the Sim world and cannot be mutated except in result
 // to sim item changes
 class TileItemComponent {
@@ -48,6 +50,7 @@ public:
         for (ItemStackWithUID& stack : mItemStacks) {
             if (stack.tileItemUID == tileItemUID) {
                 stack.itemStack.count = newCount;
+                onChanged(*this);
                 return;
             }
         }
@@ -68,8 +71,10 @@ public:
                     // Remove
                     stack = mItemStacks.back();
                     mItemStacks.pop_back();
+                    onChanged(*this);
                     return std::make_pair(takenStack, 0);
                 }
+                onChanged(*this);
                 return std::make_pair(takenStack, stack.itemStack.count);
             }
         }
@@ -86,9 +91,10 @@ public:
 
     void addItemStack(ItemStack itemStack, TileItemUID tileItemUID) {
         mItemStacks.push_back({ itemStack, tileItemUID });
+        onChanged(*this);
     }
 
-    // TODO: EVENTS?
+    Noesis::Delegate<void(TileItemContainerComponent& cmp)> onChanged;
 private:
     std::vector<ItemStackWithUID> mItemStacks;
 };

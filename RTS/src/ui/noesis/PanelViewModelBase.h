@@ -8,17 +8,6 @@
 
 #include "ui/GameUIPanel.h"
 
-#define IMPLEMENT_PANEL_BASE_REFLECTION(MyClass) \
-        NsProp("X", &MyClass::GetX, &MyClass::SetX); \
-        NsProp("Y", &MyClass::GetY, &MyClass::SetY); \
-        NsProp("MinWidth", &MyClass::GetMinWidth, &MyClass::SetMinWidth); \
-        NsProp("MinHeight", &MyClass::GetMinHeight, &MyClass::SetMinHeight); \
-        NsProp("MaxWidth", &MyClass::GetMaxWidth, &MyClass::SetMaxWidth); \
-        NsProp("MaxHeight", &MyClass::GetMaxHeight, &MyClass::SetMaxHeight); \
-        NsProp("AvailableWidth", &MyClass::GetMaxWidth, &MyClass::SetMaxWidth); \
-        NsProp("AvailableHeight", &MyClass::GetMaxHeight, &MyClass::SetMaxHeight); \
-        NsProp("CloseCommand", &MyClass::GetCloseCommand); \
-        NsProp("WindowType", &MyClass::GetWindowType);
 
 class PanelViewModelBase : public NoesisApp::NotifyPropertyChangedBase {
 public:

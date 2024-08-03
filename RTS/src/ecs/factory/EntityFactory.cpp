@@ -327,10 +327,35 @@ entt::entity EntityFactory::createItemOnGround(World& world, f32v3 position, Ite
     return newEntity;
 }
 
+f32 buildContainerNameplateAndGetScale(World& world, TileItemContainerComponent& cmp, entt::entity entity) {
+    // TODO: loc translate + memory arena?
+    IFullECS& ecs = world.getECS();
+    entt::registry& registry = ecs.mRegistry;
+    ItemRepository& itemRepo = ItemRepository::get();
+    std::string stringBuild;
+    int strCount = 0;
+    f32 totalWeight = 0.0f;
+    for (const ItemStackWithUID& stack : cmp.getItemStacks()) {
+        totalWeight += itemRepo.getLoadedOrUnloadedAsset(stack.itemStack.id).getWeight() * stack.itemStack.count;
+
+        if (strCount < 3) {
+            stringBuild += fmt::format("{} x {}\n", stack.itemStack.count, itemRepo.getLoadedOrUnloadedAsset(stack.itemStack.id).mDisplayName);
+            ++strCount;
+            if (strCount == 3) {
+                stringBuild += "...";
+            }
+        }
+    }
+    const f32 scale = computeItemSackScale(totalWeight);
+    registry.emplace_or_replace<SimpleTextNameplateComponent>(entity, std::move(stringBuild), scale * SACK_NAMEPLATE_HEIGHT, color::White);
+    return scale;
+}
+
 entt::entity EntityFactory::createItemContainerOnGround(World& world, f32v3 position, std::span<TileItemStack> itemStacks) {
     ASSERT_GAME_THREAD();
     assert(itemStacks.size());
     IFullECS& ecs = world.getECS();
+    ItemRepository& itemRepo = ItemRepository::get();
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
 
@@ -340,29 +365,31 @@ entt::entity EntityFactory::createItemContainerOnGround(World& world, f32v3 posi
         return entt::null;
     }
 
-    f32 totalWeight = 0.0f;
-    registry.emplace<TileItemContainerComponent>(newEntity, itemStacks);
-    ItemRepository& itemRepo = ItemRepository::get();
+    TileItemContainerComponent& containerCmp = registry.emplace<TileItemContainerComponent>(newEntity, itemStacks);
 
-    // TODO: loc translate + memory arena?
-    std::string stringBuild;
-    int strCount = 0;
-    for (TileItemStack& stack : itemStacks) {
-        totalWeight += itemRepo.getLoadedOrUnloadedAsset(stack.itemId).getWeight() * stack.count;
+    containerCmp.onChanged += [newEntity, &world](TileItemContainerComponent& cmp) {
+        ASSERT_GAME_THREAD();
+        const f32 scale = buildContainerNameplateAndGetScale(world, cmp, newEntity);
 
-        if (strCount < 3) {
-            stringBuild += fmt::format("{} x {}\n", stack.count, itemRepo.getLoadedOrUnloadedAsset(stack.itemId).mDisplayName);
-            ++strCount;
-            if (strCount == 3) {
-                stringBuild += "...";
-            }
+        InstancedStaticModelManager& modelMgr = RenderContext::getInstance().getRenderDataManagerForWorld(world).getInstancedStaticModelManager();
+        entt::registry& registry = world.getECS().mRegistry;
+        if (StaticModelComponent* staticCmp = registry.try_get<StaticModelComponent>(newEntity)) {
+            modelMgr.changeLooseModelInstanceScale(
+                staticCmp->modelId,
+                staticCmp->staticModelInstanceId,
+                registry.get<OrientationComponent>(newEntity).mOrientation,
+                registry.get<PositionComponent>(newEntity).mPosition,
+                scale
+            );
+            staticCmp->scale = scale;
         }
-    }
-    const f32 scale = computeItemSackScale(totalWeight);
-    registry.emplace<SimpleTextNameplateComponent>(newEntity, std::move(stringBuild), scale * SACK_NAMEPLATE_HEIGHT, color::White);
+        if (StaticPhysicsComponent* physCmp = registry.try_get<StaticPhysicsComponent>(newEntity)) {
+            world.getPhysicsWorld().changeStaticItemBodyScale(physCmp->mBodyID, scale);
+        }
+    };
+    const f32 scale = buildContainerNameplateAndGetScale(world, containerCmp, newEntity);
 
     const ModelID modelId = getItemSackSmallID();
-
     finalizeItemOnGroundEntity(newEntity, world, position, chunkId, modelId, scale);
 
     return newEntity;

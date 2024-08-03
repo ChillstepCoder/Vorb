@@ -612,6 +612,24 @@ std::unique_ptr<JPH::CharacterBase> PhysicsWorld::createSimpleCharacter(entt::en
     return newCharacter;
 }
 
+void PhysicsWorld::changeStaticItemBodyScale(PhysBodyID id, f32 scale) {
+    JPH::BodyInterface& bodyInterface = mContext->getBodyInterfaceNonLocking();
+
+    JPH::RefConst<JPH::Shape> shapeRef = bodyInterface.GetShape(JPH::BodyID(id));
+    const JPH::Shape* shapePtr = shapeRef.GetPtr();
+
+    if (shapePtr->GetSubType() == JPH::EShapeSubType::Scaled) {
+        const JPH::ScaledShape* scaled_shape = static_cast<const JPH::ScaledShape*>(shapePtr);
+        const JPH::Shape* non_scaled_shape = scaled_shape->GetInnerShape();
+        JPH::Shape::ShapeResult new_shape = non_scaled_shape->ScaleShape(JPH::Vec3::sReplicate(scale));
+        bodyInterface.SetShape(JPH::BodyID(id), new_shape.Get(), true, JPH::EActivation::Activate);
+    }
+    else {
+        LOG_CRITICAL("Tried to scale a non scaled shape");
+        __debugbreak();
+    }
+}
+
 void PhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder) {
     PROFILE_FUNCTION();
     ASSERT_GAME_THREAD();

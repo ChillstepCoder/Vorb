@@ -16,12 +16,20 @@
 #include <NsGui/XamlProvider.h>
 
 #include <NsApp/ThemeProviders.h>
+#include <NsApp/Interaction.h>
+#include <NsApp/EventTrigger.h>
+#include <NsApp/KeyTrigger.h>
+#include <NsApp/TriggerCollection.h>
+#include <NsApp/BehaviorCollection.h>
+#include <NsApp/InvokeCommandAction.h>
+
 
 #include "ui/UIContext.h"
 #include "ui/noesis/NoesisLocalXamlProvider.h"
 #include "ui/noesis/NoesisLocalFontProvider.h"
 #include "ui/noesis/NoesisTextureProvider.h"
 #include "ui/noesis/NoesisGLRenderDevice.h"
+#include "ui/noesis/interactivity/EventTriggerWithModifier.h"
 
 #include "ui/noesis/NoesisPanelManager.h"
 #include "ui/noesis/code_behind/SackContainerPanel.h"
@@ -39,9 +47,6 @@
 #include <NsApp/Application.h>
 #include <NsApp/Window.h>
 #include <NsApp/RichText.h>*/
-
-//extern "C" void NsRegisterReflectionAppInteractivity();
-//extern "C" void NsInitPackageAppInteractivity();
 
 constexpr const char* XAML_ROOT = "data\\ui\\xaml";
 constexpr const char* FONT_ROOT = "data\\ui\\fonts";
@@ -81,9 +86,15 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
     // Noesis initialization. This must be the first step before using any NoesisGUI functionality
     Noesis::GUI::Init();
 
-    // Register app components. 
-   // NsRegisterReflectionAppInteractivity();
-    //NsInitPackageAppInteractivity();
+    // Register app components.
+    // https://www.noesisengine.com/forums/viewtopic.php?p=10692&hilit=RegisterAppComponents#p10692
+    // https://www.noesisengine.com/forums/viewtopic.php?f=3&t=1636
+    Noesis::RegisterComponent<NoesisApp::EventTrigger>();
+    Noesis::RegisterComponent<NoesisApp::KeyTrigger>();
+    Noesis::RegisterComponent<NoesisApp::BehaviorCollection>();
+    Noesis::RegisterComponent<NoesisApp::TriggerCollection>();
+    Noesis::RegisterComponent<NoesisApp::InvokeCommandAction>();
+    Noesis::TypeOf<NoesisApp::Interaction>(); // Force the creation of its reflection type
 
     Noesis::GUI::SetXamlProvider(Noesis::MakePtr<NoesisLocalXamlProvider>(ResourceManager::get().getIoManager(), XAML_ROOT));
     Noesis::GUI::SetFontProvider(Noesis::MakePtr<NoesisLocalFontProvider>(ResourceManager::get().getIoManager(), FONT_ROOT));
@@ -113,6 +124,7 @@ NoesisGuiContext::NoesisGuiContext(UIContext& uiContext) : mUIContext(uiContext)
     Noesis::RegisterComponent<NoesisPanelManager>();
     Noesis::RegisterComponent<SackContainerViewModel>();
     Noesis::RegisterComponent<SackContainerPanel>();
+    Noesis::RegisterComponent<EventTriggerWithModifier>();
     SackContainerPanel::RegisterChildren();
 
     initView();
@@ -247,11 +259,6 @@ void NoesisGuiContext::updateAndRender() {
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 
-    // Reset blend state
-    glDisable(GL_BLEND);
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_ONE, GL_ZERO);
-
     // Reset depth testing
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
@@ -278,13 +285,12 @@ void NoesisGuiContext::updateAndRender() {
     }
     glActiveTexture(GL_TEXTURE0);  // Set active texture back to 0
 
-    
-
     // Disable sample coverage and alpha to coverage
     glDisable(GL_SAMPLE_COVERAGE);
     glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 
-
+    // Reset blend state
+    glEnable(GL_BLEND);
     vg::sBlendStates.ALPHA.set();
     // Clear any mInUse program so we don't assume it is bound
     // TODO: Better state API

@@ -696,7 +696,7 @@ StaticModelInstanceID InstancedStaticModelManager::addLooseModelInstance(ModelID
         .modelId = modelId,
         .instanceId = id,
         .variantIndex = variantIndex,
-        .isRemove = false,
+        .type = PendingLooseModelInstance::Type::Add,
         .scale = scale
     };
 
@@ -709,7 +709,20 @@ void InstancedStaticModelManager::removeLooseModelInstance(ModelID modelId, Stat
     PendingLooseModelInstance pendingInstance{
         .modelId = modelId,
         .instanceId = instanceId,
-        .isRemove = true
+        .type = PendingLooseModelInstance::Type::Remove
+    };
+
+    mPendingLooseModelInstances.enqueue(pendingInstance);
+}
+
+void InstancedStaticModelManager::changeLooseModelInstanceScale(ModelID modelId, StaticModelInstanceID instanceId, const glm::quat& orient, f32v3 position, f32 scale) {
+    PendingLooseModelInstance pendingInstance{
+      .orient = orient,
+      .position = position,
+      .modelId = modelId,
+      .instanceId = instanceId,
+      .type = PendingLooseModelInstance::Type::ChangeTransform,
+      .scale = scale
     };
 
     mPendingLooseModelInstances.enqueue(pendingInstance);
@@ -723,14 +736,23 @@ void InstancedStaticModelManager::updatePendingLooseModelInstances() {
     if (size_t count = mPendingLooseModelInstances.try_dequeue_bulk(instances, MAX_DEQUEUE)) {
         for (size_t i = 0; i < count; ++i) {
             PendingLooseModelInstance& instance = instances[i];
-            if (instance.isRemove) {
-                removeLooseInstanceInternal(instance.modelId, instance.instanceId);
+            switch (instance.type) {
+                case PendingLooseModelInstance::Type::Add: {
+                    // TODO: Construct transform in place so no copy?
+                    const f32m4 transform = MathUtil::createTransformMatrix(instance.position, instance.orient, instance.scale);
+                    addLooseInstanceInternal(instance.modelId, instance.instanceId, transform, instance.variantIndex);
+                    break;
+                }
+                case PendingLooseModelInstance::Type::Remove:
+                    removeLooseInstanceInternal(instance.modelId, instance.instanceId);
+                    break;
+                case PendingLooseModelInstance::Type::ChangeTransform:
+                    updateLooseInstanceTransformInternal(instance.modelId, instance.instanceId, MathUtil::createTransformMatrix(instance.position, instance.orient, instance.scale));
+                    break;
+                default:
+                    assert(false);
             }
-            else {
-                // TODO: Construct transform in place so no copy?
-                const f32m4 transform = MathUtil::createTransformMatrix(instance.position, instance.orient, instance.scale);
-                addLooseInstanceInternal(instance.modelId, instance.instanceId, transform, instance.variantIndex);
-            }
+            static_assert(e_count(PendingLooseModelInstance::Type) == 3);
         }
     }
 }
@@ -929,6 +951,24 @@ void InstancedStaticModelManager::removeLooseInstanceInternal(ModelID modelId, S
     if (batchData.mInstanceTransforms.empty()) {
         mModelBatches.erase(it);
     }
+}
+
+void InstancedStaticModelManager::updateLooseInstanceTransformInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4 transform) {
+    auto&& it = mModelBatches.find(modelId);
+    assert(it != mModelBatches.end());
+    StaticModelBatchData& batchData = it->second;
+
+    auto&& lit = mLooseStaticModelInstances.find(modelId);
+    assert(lit != mLooseStaticModelInstances.end());
+    auto&& instanceIt = lit->second.find(instanceId);
+    assert(instanceIt != lit->second.end());
+    const ui32 instanceIndex = instanceIt->second;
+
+    if (instanceIndex < batchData.mFirstDirtyInstance) {
+        batchData.mFirstDirtyInstance = instanceIndex;
+    }
+
+    batchData.mInstanceTransforms[instanceIndex] = transform;
 }
 
 void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec)

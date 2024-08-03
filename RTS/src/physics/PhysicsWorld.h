@@ -69,6 +69,8 @@ public:
     PhysBodyID createCharacterBody(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
     std::unique_ptr<JPH::CharacterBase> createSimpleCharacter(entt::entity ownerEntity, f32v3 position, f32v2 halfExtents);
 
+    void changeStaticItemBodyScale(PhysBodyID id, f32 scale);
+
     void updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder);
 
     // This will also clear user data from the body
