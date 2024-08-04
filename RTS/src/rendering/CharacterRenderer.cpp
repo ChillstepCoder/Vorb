@@ -184,21 +184,40 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
             characterState.mAnimInstance.update(elapsedSec, variables, isVisible ? modelMatrices : OzzMatrixSpan(nullptr, (size_t)0));
 
             if (isVisible) {
-                const f32 angle = character.mRotation;
-                // TODO: Optimize or do on the GPU
-                f32m4 transform(1.0f);
-                transform = glm::rotate(transform, DEG_TO_RAD(90.0f) + angle, f32v3(0.0f, 0.0f, 1.0f));
-                transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
+               
 
                 // Manually set world translation (TODO: Can set this on transform initialize for less instructions)
                 const f32v3 offset = position - camera.getPosition();
 
                 const f32 distSQ = glm::length2(offset);
                 MeshLODLevel lod = lodParams.selectLOD(distSQ);
+                const f32 angle = character.mRotation;
 
-                transform[3][0] = offset.x;
-                transform[3][1] = offset.y;
-                transform[3][2] = offset.z;
+                // Convert degrees to radians for angles
+                const f32 angleZ = DEG_TO_RAD(90.0f) + angle;
+                const f32 angleX = DEG_TO_RAD(90.0f);
+
+                // Precompute sine and cosine values
+                const f32 cosZ = cosf(angleZ);
+                const f32 sinZ = sinf(angleZ);
+
+                const f32 cosX = cosf(angleX);
+                const f32 sinX = sinf(angleX);
+                const f32 oneMinusCosX = 1.f - cosX;
+
+                // Construct the combined transformation matrix
+                // Hand optimized form of this:
+                //transform = glm::rotate(transform, angleZ, f32v3(0.0f, 0.0f, 1.0f));
+                //transform = glm::rotate(transform, angleX, f32v3(1.0f, 0.0f, 0.0f));
+
+                const f32 tmp = cosX + oneMinusCosX;
+                glm::mat4 transform(
+                    cosZ * tmp, sinZ * tmp, 0.0f, 0.0f,
+                    -sinZ * cosX, cosZ * cosX, sinX, 0.0f,
+                    sinZ * sinX, -cosZ * sinX, cosX, 0.0f,
+                    offset.x, offset.y, offset.z, 1.0f
+                );
+
                 glUniformMatrix4fv(modelTransformUniform, 1, false, &transform[0][0]);
 
                 for (ui32 i = 0; i < modelDef.mNumMeshes; ++i) {
