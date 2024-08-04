@@ -9,6 +9,7 @@ NS_IMPLEMENT_REFLECTION(InventoryItemViewModel) {
     NsProp(P_ITEM_COUNT, &InventoryItemViewModel::getCount, &InventoryItemViewModel::setCount);
     NsProp(P_ITEM_ICON, &InventoryItemViewModel::getIcon, &InventoryItemViewModel::setIcon);
     NsProp("PickupCommand", &InventoryItemViewModel::GetPickupCommand);
+    NsProp("PickupSingleCommand", &InventoryItemViewModel::GetPickupSingleCommand);
 }
 
 InventoryItemViewModel::InventoryItemViewModel(LocText itemName, ItemStack stack, TileItemUID uid, StrToken icon) : mUniqueId(uid), mText(itemName.c_str()), mStack(stack) {
@@ -16,6 +17,10 @@ InventoryItemViewModel::InventoryItemViewModel(LocText itemName, ItemStack stack
 
     mPickupCommand = Noesis::MakePtr<NoesisApp::DelegateCommand>([this](BaseComponent* param) {
         mPickupEvent(this, Noesis::EventArgs::Empty);
+    });
+
+    mPickupSingleCommand = Noesis::MakePtr<NoesisApp::DelegateCommand>([this](BaseComponent* param) {
+        mPickupSingleEvent(this, Noesis::EventArgs::Empty);
     });
 }
 

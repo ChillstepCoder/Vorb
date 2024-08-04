@@ -10,6 +10,7 @@
 #include <glm/gtx/rotate_vector.hpp>
 
 #include "physics/PhysicsWorld.h"
+#include "Physics/PhysicsBodyFilters.h"
 #include "ui/UIContext.h"
 
 #include "options/DebugOptions.h"
@@ -22,6 +23,7 @@
 #include "ecs/component/ThreadSharedComponent.h"
 // TODO: REMOVE
 #include "ecs/factory/EntityFactory.h"
+#include "util/MathUtil.hpp"
 
 constexpr float ATTACK_RADIUS = 5.0f;
 constexpr float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
@@ -157,15 +159,31 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
 void PlayerControlSystem::updateSelection(entt::entity entity, PlayerControlComponent& playerControlCmp, const Camera3DGameThreadData& cameraData, const PlayerInputs& inputs, f32 elapsedSec) {
     // Interact input
     bool didInteract = false;
+    f32 grabRadius = 0.0f;
     if (inputs.interact) {
-        if (playerControlCmp.mInteractDuration == 0.0f) {
+        if (playerControlCmp.mInteractDurationSec == 0.0f) {
             didInteract = true;
         }
-        playerControlCmp.mInteractDuration += elapsedSec;
+        playerControlCmp.mInteractDurationSec += elapsedSec;
+
+        // Growing cone of interaction
+        constexpr f32 STRENGTH_SPEED = 1.5f;
+        constexpr f32 INITIAL_DELAY = 0.1f;
+        f32 interactStrength = (playerControlCmp.mInteractDurationSec - INITIAL_DELAY) * STRENGTH_SPEED;
+        //PositionComponent& posCmp = mRegistry.get<PositionComponent>(entity);
+        //f32v3 suckDir = result.mPosition - posCmp.mPosition;
+        if (interactStrength > 0.0f) {
+            interactStrength = glm::min(interactStrength, 1.0f);
+            interactStrength = MathUtil::Easing::easeInOutSine(interactStrength);
+            constexpr f32 MAX_GRAB_RADIUS = 5.0f;
+            grabRadius = interactStrength * MAX_GRAB_RADIUS;
+        }
     }
     else {
-        playerControlCmp.mInteractDuration = 0.0f;
+        playerControlCmp.mInteractDurationSec = 0.0f;
     }
+
+    f32v3 grabPosition;
 
     // Reset so we can select it anew below
     playerControlCmp.mSelectedObjectData.modelId = INVALID_MODEL_ID;
@@ -173,24 +191,28 @@ void PlayerControlSystem::updateSelection(entt::entity entity, PlayerControlComp
     // Selection
     const f32 rayLength = 9.0f;
     // TODO: Filters?
-    PhysHitResult result = mWorld.getPhysicsWorld().raycastFirst(cameraData.worldPos, cameraData.worldPos + cameraData.direction * rayLength);
+    const f32v3 rayTarget = cameraData.worldPos + cameraData.direction * rayLength;
+    PhysHitResult result = mWorld.getPhysicsWorld().raycastFirst(cameraData.worldPos, rayTarget);
     if (result.didHit()) {
+        grabPosition = result.mPosition;
         // TODO: Tiles as well?
         PhysicsBodyUserDataType type = result.mBodyUserData.getType();
         if (type == PhysicsBodyUserDataType::Entity || type == PhysicsBodyUserDataType::ItemEntity) {
             entt::entity selected = result.mBodyUserData.getEntity();
 
             // Interact
-            if (didInteract) {
+            if (didInteract || grabRadius) {
                 // TODO: ECS interact?
                 if (mRegistry.all_of<TileItemContainerComponent>(selected)) {
                     ThreadSharedComponentFactory::addItemSackUISharedComponent(mRegistry, selected);
                 } else if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(selected)) {
-                    mWorld.getECS().pickupTileItem(entity, itemCmp->getTileItemUID(), itemCmp->getItemStack().count);
+                    if (mWorld.getECS().pickupTileItem(entity, itemCmp->getTileItemUID(), itemCmp->getItemStack().count) == itemCmp->getItemStack().count) {
+                        // TODO: NOTIFY FULL INVENTORY
+                        LOG_INFO("Full inventory!");
+                    }
                 } else if (mRegistry.all_of<SimpleItemComponent>(selected)) {
                     mWorld.getECS().pickupDynamicItem(entity, selected, 1);
                 }
-                //EntityFactory::destroyEntity(mWorld, selected);
                 return;
             }
 
@@ -225,7 +247,26 @@ void PlayerControlSystem::updateSelection(entt::entity entity, PlayerControlComp
         }
     }
     else {
+        grabPosition = rayTarget;
         playerControlCmp.mSelectedObjectData.modelId = INVALID_MODEL_ID;
+    }
+
+    if (grabRadius > 0.0f) {
+        // Query in radius and grab
+        AM::DebugRenderer::drawWireQuadThreadSafe(grabPosition - f32v3(grabRadius * .5f, grabRadius * .5f, 0.0f), f32v2(grabRadius), color::LightGreen, 3);
+
+
+        PhysHitResult results[64];
+        int numResults = mWorld.getPhysicsWorld().collideSphere(grabPosition, grabRadius, results, {}, {}, PhysicsBodyFilterOnlyType(PhysicsBodyUserDataType::ItemEntity));
+        for (int i = 0; i < numResults; i++) {
+            entt::entity selected = results[i].mBodyUserData.getEntity();
+            if (mRegistry.all_of<TileItemComponent>(selected)) {
+                mWorld.getECS().pickupTileItem(entity, mRegistry.get<TileItemComponent>(selected).getTileItemUID(), 1);
+            }
+            else if (mRegistry.all_of<SimpleItemComponent>(selected)) {
+                mWorld.getECS().pickupDynamicItem(entity, selected, 1);
+            }
+        }
     }
 
 }

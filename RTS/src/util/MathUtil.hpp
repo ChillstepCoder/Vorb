@@ -110,6 +110,8 @@ namespace MathUtil {
         return computePointToLineSegmentDistanceSQAndT(p, p1, p2).first;
     }
 
+
+    // https://easings.net/
     namespace Easing {
         inline float easeInOutCubic(float x) {
             return x < 0.5f ? 4.0f * x * x * x : 1 - powf(-2 * x + 2, 3) / 2;

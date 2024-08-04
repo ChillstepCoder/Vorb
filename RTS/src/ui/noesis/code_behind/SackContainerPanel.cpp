@@ -102,6 +102,16 @@ void SackContainerViewModel::addItemInternal(Noesis::Ptr<InventoryItemViewModel>
             });
         }
     };
+    itemModel->OnPickupSingle() += [this](BaseComponent* sender, const Noesis::EventArgs&) {
+        ASSERT_RENDER_THREAD();
+        InventoryItemViewModel* item = static_cast<InventoryItemViewModel*>(sender);
+        ItemStack stack = item->getItemStack();
+        if (sGameWorld && mSharedData) [[likely]] {
+            GameThreadTasks::getInstance().addGenericTask([sharedData = mSharedData, stack, uid = item->mUniqueId]() {
+                sGameWorld->getECS().pickupTileItem(sGameWorld->getLocalPlayer(), uid, 1);
+            });
+        }
+    };
     mInventoryItems->Add(std::move(itemModel));
 }
 

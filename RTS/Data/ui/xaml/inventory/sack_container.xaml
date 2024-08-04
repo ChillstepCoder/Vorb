@@ -101,7 +101,7 @@
                                                     <b:InvokeCommandAction Command="{Binding PickupCommand}"/>
                                                 </b:EventTrigger>
                                                 <local:EventTriggerWithModifier EventName="PreviewMouseLeftButtonDown" Modifiers="Ctrl">
-                                                    <b:InvokeCommandAction Command="{Binding PickupCommand}"/>
+                                                    <b:InvokeCommandAction Command="{Binding PickupSingleCommand}"/>
                                                 </local:EventTriggerWithModifier>
                                             </b:Interaction.Triggers>
                                         </Button>

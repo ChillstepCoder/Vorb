@@ -15,7 +15,7 @@ enum class PlayerControlFlags : ui8 {
 struct PlayerControlComponent {
 	BitFlags<PlayerControlFlags> mPlayerControlFlags;
 	ui8 mInputLockCount = 0; // TODO: LockHandle RAII so we never leak locks
-	f32 mInteractDuration = 0.0f;
+	f32 mInteractDurationSec = 0.0f;
 	SelectedObjectData mSelectedObjectData;
 };
 

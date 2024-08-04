@@ -167,7 +167,7 @@ void IFullECS::createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransiti
             if (newEntity != entt::null) {
                 mTileItemEntityMap[stack.uniqueId] = newEntity;
                 // TODO: DELETE ME
-                AM::DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Magenta, 2000);
+                AM::DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Magenta, 300);
             }
         }
         else {
@@ -177,7 +177,7 @@ void IFullECS::createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransiti
                     mTileItemEntityMap[stack.uniqueId] = newEntity;
                 }
                 // TODO: DELETE ME
-                AM::DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Red, 2000);
+                AM::DebugRenderer::drawWireQuadThreadSafe(pos3, f32v2(1.0f), color::Red, 300);
             }
         }
     }

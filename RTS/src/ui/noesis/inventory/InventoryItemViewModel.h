@@ -33,13 +33,19 @@ public:
     const NoesisApp::DelegateCommand* GetPickupCommand() const {
         return mPickupCommand;
     }
+    const NoesisApp::DelegateCommand* GetPickupSingleCommand() const {
+        return mPickupSingleCommand;
+    }
 
     Noesis::EventHandler& OnPickup() { return mPickupEvent; }
+    Noesis::EventHandler& OnPickupSingle() { return mPickupSingleEvent; }
 
     NS_DECLARE_REFLECTION(InventoryItemViewModel, NoesisApp::NotifyPropertyChangedBase);
 public:
     Noesis::Ptr<NoesisApp::DelegateCommand> mPickupCommand;
+    Noesis::Ptr<NoesisApp::DelegateCommand> mPickupSingleCommand;
     Noesis::EventHandler mPickupEvent;
+    Noesis::EventHandler mPickupSingleEvent;
 
     TileItemUID mUniqueId;
 private:
