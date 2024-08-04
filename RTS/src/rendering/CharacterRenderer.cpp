@@ -156,6 +156,7 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
 
 
         const ModelDef& modelDef = renderData.handle->getLoadedAsset();
+        const ModelLodParams& lodParams = ModelRepository::get().getLodParams(modelID);
 
         // Render all characters with this model
         for (auto& [entityId, characterState] : renderData.entityCharacterModels) {
@@ -163,8 +164,12 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
             if (!characterState.renderStateThisFrame) [[unlikely]] {
                 continue;
             }
+
             const CharacterRenderState& character = *characterState.renderStateThisFrame;
             const RigDef& rig = characterState.mAnimInstance.getRig();
+
+            const f32v3& position = character.mPos;
+            const bool isVisible = camera.sphereIsVisible(position, lodParams.boundingSphereRadius);
 
             // TODO: combine with CharacterRenderState?
             AnimVariables variables;
@@ -175,43 +180,45 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
             OzzMatrixSpan modelMatrices(modelsBuffer, rig.mSkeleton.num_joints());
 
             // Update animation TODO: Multithreaded?
-            characterState.mAnimInstance.update(elapsedSec, variables, modelMatrices);
+            // When not visible we pass null output buffer, signaling that we dont want to update bones, only tick the anim states
+            characterState.mAnimInstance.update(elapsedSec, variables, isVisible ? modelMatrices : OzzMatrixSpan(nullptr, (size_t)0));
 
-            const f32v3& position = character.mPos;
+            if (isVisible) {
+                const f32 angle = character.mRotation;
+                // TODO: Optimize or do on the GPU
+                f32m4 transform(1.0f);
+                transform = glm::rotate(transform, DEG_TO_RAD(90.0f) + angle, f32v3(0.0f, 0.0f, 1.0f));
+                transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
 
-            // TODO: REMOVE
-            //DebugRenderer::drawFilledQuad(position, f32v2(1.0f, 1.0f), color::Red);
+                // Manually set world translation (TODO: Can set this on transform initialize for less instructions)
+                const f32v3 offset = position - camera.getPosition();
 
-            const f32 angle = character.mRotation;
-            // TODO: Optimize or do on the GPU
-            f32m4 transform(1.0f);
-            transform = glm::rotate(transform, DEG_TO_RAD(90.0f) + angle, f32v3(0.0f, 0.0f, 1.0f));
-            transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
+                const f32 distSQ = glm::length2(offset);
+                MeshLODLevel lod = lodParams.selectLOD(distSQ);
 
-            // Manually set world translation (TODO: Can set this on transform initialize for less instructions)
-            const f32v3 offset = position - camera.getPosition();
-            transform[3][0] = offset.x;
-            transform[3][1] = offset.y;
-            transform[3][2] = offset.z;
-            glUniformMatrix4fv(modelTransformUniform, 1, false, &transform[0][0]);
+                transform[3][0] = offset.x;
+                transform[3][1] = offset.y;
+                transform[3][2] = offset.z;
+                glUniformMatrix4fv(modelTransformUniform, 1, false, &transform[0][0]);
 
-            for (ui32 i = 0; i < modelDef.mNumMeshes; ++i) {
-                const SkeletalMesh& skeletalMesh = modelDef.getSkeletalMesh(i);
-                const MeshSkeletonData& skelData = skeletalMesh.getSkeletonData();
+                for (ui32 i = 0; i < modelDef.mNumMeshes; ++i) {
+                    const SkeletalMesh& skeletalMesh = modelDef.getSkeletalMesh(i);
+                    const MeshSkeletonData& skelData = skeletalMesh.getSkeletonData();
 
-                // Skin animation to mesh
-                ozz::math::Float4x4 skinningBuffer[MAX_JOINTS_IN_RIG];
-                OzzMatrixSpan skinningMatrices(skinningBuffer, skelData.mNumJoints);
-                if (!SkeletalAnimator::skinModelMatricesToMesh(ozz::make_span(modelMatrices), skelData, skinningMatrices)) {
-                    panic("Anim skinning fail!");
+                    // Skin animation to mesh
+                    ozz::math::Float4x4 skinningBuffer[MAX_JOINTS_IN_RIG];
+                    OzzMatrixSpan skinningMatrices(skinningBuffer, skelData.mNumJoints);
+                    if (!SkeletalAnimator::skinModelMatricesToMesh(ozz::make_span(modelMatrices), skelData, skinningMatrices)) {
+                        panic("Anim skinning fail!");
+                    }
+
+                    glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)skinningBuffer);
+
+                    skeletalMesh.bindSkeletalModelAttribs();
+
+                    // TODO: Indirect?
+                    MeshDrawer::draw(skeletalMesh.mGpuData, lod);
                 }
-              
-                glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)skinningBuffer);
-
-                skeletalMesh.bindSkeletalModelAttribs();
-
-                // TODO: Indirect?
-                MeshDrawer::draw(skeletalMesh.mGpuData);
             }
         }
     }

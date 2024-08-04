@@ -14,6 +14,7 @@ struct AnimMachineUpdateContext {
     ozz::math::SoaTransform transforms[MAX_ANIM_UPDATE_CONTEXT_LAYERS][MAX_JOINTS_IN_RIG];
     int numLayers = 0;
     const AnimVariables* variables = nullptr;
+    bool updatePose = false;
 };
 
 AnimMachineInstance::AnimMachineInstance(AssetID animMachineID) {
@@ -31,6 +32,7 @@ void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariab
     // This is a very large stack allocation
     AnimMachineUpdateContext updateContext;
     updateContext.variables = &animVariables;
+    updateContext.updatePose = outModelMatrices.size() != 0;
 
     AnimMachineInstanceState* currentState = &states[currentStateID];
 
@@ -99,24 +101,26 @@ void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariab
     // Add one shot animation layer
     updateOneShot(elapsedSec, updateContext);
 
-    if (updateContext.numLayers == 1) {
-        // No blend
-        if (!SkeletalAnimator::localToModel(updateContext.layers[0].transform, *rigDef, outModelMatrices)) {
-            panic("Anim LTM fail!");
+    if (updateContext.updatePose) {
+        if (updateContext.numLayers == 1) {
+            // No blend
+            if (!SkeletalAnimator::localToModel(updateContext.layers[0].transform, *rigDef, outModelMatrices)) {
+                panic("Anim LTM fail!");
+            }
         }
-    }
-    else {
-        assert(updateContext.numLayers);
-        // Blending
-        ozz::math::SoaTransform soaTransforms[MAX_JOINTS_IN_RIG];
-        OzzSoaTransformSpan blendOutput(soaTransforms, rigDef->mSkeleton.num_soa_joints());
+        else {
+            assert(updateContext.numLayers);
+            // Blending
+            ozz::math::SoaTransform soaTransforms[MAX_JOINTS_IN_RIG];
+            OzzSoaTransformSpan blendOutput(soaTransforms, rigDef->mSkeleton.num_soa_joints());
 
-        ozz::span<const ozz::animation::BlendingJob::Layer> layers(updateContext.layers, updateContext.numLayers);
-        if (!SkeletalAnimator::blendPoses(layers, *rigDef, blendOutput)) {
-            panic("Anim blend fail!");
-        }
-        if (!SkeletalAnimator::localToModel(blendOutput, *rigDef, outModelMatrices)) {
-            panic("Blended Anim LTM fail!");
+            ozz::span<const ozz::animation::BlendingJob::Layer> layers(updateContext.layers, updateContext.numLayers);
+            if (!SkeletalAnimator::blendPoses(layers, *rigDef, blendOutput)) {
+                panic("Anim blend fail!");
+            }
+            if (!SkeletalAnimator::localToModel(blendOutput, *rigDef, outModelMatrices)) {
+                panic("Blended Anim LTM fail!");
+            }
         }
     }
 }
@@ -171,49 +175,54 @@ void AnimMachineInstance::updateLoopingAnimSequence(AnimMachineInstanceState& st
         state.anim.time = fmod(state.anim.time, animDef.animation.duration());
     }
 
-    // TODO: Cache context for performance!
-    SkeletalAnimationSampleContext context;
-    context.anim = &animDef.animation;
-    context.time = state.anim.time;
-    const int NUM_JOINTS = rigDef->mSkeleton.num_joints();
-    const int NUM_SOA_JOINTS = rigDef->mSkeleton.num_soa_joints();
-    context.samplingContext.Resize(NUM_JOINTS);
-
-    assert(updateContext.numLayers < MAX_ANIM_UPDATE_CONTEXT_LAYERS);
-    auto& layer = updateContext.layers[updateContext.numLayers];
-    layer.weight = weight;
-    OzzSoaTransformSpan transforms = OzzSoaTransformSpan(updateContext.transforms[updateContext.numLayers], NUM_SOA_JOINTS);
-    if (!SkeletalAnimator::samplePose(context, *rigDef, transforms)) [[unlikely]] {
-        panic("Anim sample fail!");
-    }
-    layer.transform = transforms;
-    ++updateContext.numLayers;
-}
-
-void AnimMachineInstance::updateBlendspace1D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight) {
-    const int NUM_JOINTS = rigDef->mSkeleton.num_joints();
-    const int NUM_SOA_JOINTS = rigDef->mSkeleton.num_soa_joints();
-    assert(state.blendspace1d.playerId < numBlendspace1DPlayers);
-    Blendspace1DPlayer& player = blendspace1DPlayers[state.blendspace1d.playerId];
-    AnimSampleBlendDataPair blendData = player.updateAndGetBlendData(*updateContext.variables, elapsedSec);
-    for (int i = 0; i < blendData.validCount; ++i) {
+    if (updateContext.updatePose) {
+        // TODO: Cache context for performance!
+        SkeletalAnimationSampleContext context;
+        context.anim = &animDef.animation;
+        context.time = state.anim.time;
+        const int NUM_JOINTS = rigDef->mSkeleton.num_joints();
+        const int NUM_SOA_JOINTS = rigDef->mSkeleton.num_soa_joints();
+        context.samplingContext.Resize(NUM_JOINTS);
 
         assert(updateContext.numLayers < MAX_ANIM_UPDATE_CONTEXT_LAYERS);
         auto& layer = updateContext.layers[updateContext.numLayers];
-        const AnimSampleBlendData& data = blendData.arry[i];
-        layer.weight = data.weight * weight;
-
-        // TODO: Cache context for performance!
-        SkeletalAnimationSampleContext sampleContext;
-        sampleContext.anim = &data.anim->animation;
-        sampleContext.time = data.animTime;
-        sampleContext.samplingContext.Resize(NUM_JOINTS);
+        layer.weight = weight;
         OzzSoaTransformSpan transforms = OzzSoaTransformSpan(updateContext.transforms[updateContext.numLayers], NUM_SOA_JOINTS);
-        if (!SkeletalAnimator::samplePose(sampleContext, *rigDef, transforms)) [[unlikely]] {
+        if (!SkeletalAnimator::samplePose(context, *rigDef, transforms)) [[unlikely]] {
             panic("Anim sample fail!");
         }
         layer.transform = transforms;
         ++updateContext.numLayers;
+    }
+}
+
+void AnimMachineInstance::updateBlendspace1D(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight) {
+    assert(state.blendspace1d.playerId < numBlendspace1DPlayers);
+    Blendspace1DPlayer& player = blendspace1DPlayers[state.blendspace1d.playerId];
+    AnimSampleBlendDataPair blendData = player.updateAndGetBlendData(*updateContext.variables, elapsedSec);
+
+    if (updateContext.updatePose) {
+        const int NUM_JOINTS = rigDef->mSkeleton.num_joints();
+        const int NUM_SOA_JOINTS = rigDef->mSkeleton.num_soa_joints();
+        for (int i = 0; i < blendData.validCount; ++i) {
+
+            assert(updateContext.numLayers < MAX_ANIM_UPDATE_CONTEXT_LAYERS);
+            auto& layer = updateContext.layers[updateContext.numLayers];
+            const AnimSampleBlendData& data = blendData.arry[i];
+            layer.weight = data.weight * weight;
+
+            // TODO: Cache context for performance!
+            SkeletalAnimationSampleContext sampleContext;
+            sampleContext.anim = &data.anim->animation;
+            sampleContext.time = data.animTime;
+            sampleContext.samplingContext.Resize(NUM_JOINTS);
+            OzzSoaTransformSpan transforms = OzzSoaTransformSpan(updateContext.transforms[updateContext.numLayers], NUM_SOA_JOINTS);
+            if (!SkeletalAnimator::samplePose(sampleContext, *rigDef, transforms)) [[unlikely]] {
+                panic("Anim sample fail!");
+            }
+            layer.transform = transforms;
+            ++updateContext.numLayers;
+        }
     }
 }
 
@@ -225,10 +234,15 @@ void AnimMachineInstance::updateOneShot(f32 elapsedSec, AnimMachineUpdateContext
     if (!oneShotAnim) {
         return;
     }
+    oneShotTime += elapsedSec;
+
+    if (!updateContext.updatePose) {
+        return;
+
+    }
     const int NUM_JOINTS = rigDef->mSkeleton.num_joints();
     const int NUM_SOA_JOINTS = rigDef->mSkeleton.num_soa_joints();
 
-    oneShotTime += elapsedSec;
     const ozz::animation::Animation& anim = oneShotAnim->animation;
     if (oneShotTime > anim.duration()) {
         oneShotAnim = nullptr;

@@ -16,7 +16,15 @@ namespace ozz::animation {
 };
 
 struct ModelLodParams {
-    f32 lodDistancesSQ[4];
+
+    MeshLODLevel selectLOD(f32 distanceSQ) const {
+        for (int i = 0; i < e_count(MeshLODLevel) - 1; i++) {
+            if (distanceSQ < lodDistancesSQ[i]) return (MeshLODLevel)i;
+        }
+        return (MeshLODLevel)(e_count(MeshLODLevel) - 1);
+    }
+
+    f32 lodDistancesSQ[e_count(MeshLODLevel)];
     f32 boundingSphereRadius;
     ShadowModelDetail shadowLodDetail;
 };

@@ -4,6 +4,8 @@
 #include <NsCore/ReflectionImplement.h>
 #include <NsCore/ReflectionImplementEnum.h>
 
+#include "input/InputDispatcher.h"
+
 NS_IMPLEMENT_REFLECTION(InventoryItemViewModel) {
     NsProp(P_ITEM_TEXT, &InventoryItemViewModel::getText, &InventoryItemViewModel::setText);
     NsProp(P_ITEM_COUNT, &InventoryItemViewModel::getCount, &InventoryItemViewModel::setCount);
@@ -16,7 +18,9 @@ InventoryItemViewModel::InventoryItemViewModel(LocText itemName, ItemStack stack
     setIconFromAsset(icon);
 
     mPickupCommand = Noesis::MakePtr<NoesisApp::DelegateCommand>([this](BaseComponent* param) {
-        mPickupEvent(this, Noesis::EventArgs::Empty);
+        if (!vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) && !vui::InputDispatcher::key.isKeyPressed(VKEY_RCTRL)) {
+            mPickupEvent(this, Noesis::EventArgs::Empty);
+        }
     });
 
     mPickupSingleCommand = Noesis::MakePtr<NoesisApp::DelegateCommand>([this](BaseComponent* param) {
