@@ -78,6 +78,7 @@ public:
 
     // TODO: DOES NOT FIX REFERENCES!
     void renameAsset(AssetDescriptor prevDesc, const std::filesystem::path& newPath) {
+        panic("renameAsset needs to be fixed to not require newPath");
         StrToken newName(newPath.stem().string());
         auto it = mAssetLookup.find(prevDesc.getName());
         if (it == mAssetLookup.end()) return;

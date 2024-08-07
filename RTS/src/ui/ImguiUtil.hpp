@@ -80,7 +80,7 @@ namespace ImguiUtil {
 
     class AssetPopup {
     public:
-        AssetPopup(const char* id, const nString& assetName, void* assetPtr) : id(id), assetName(assetName), assetPtr(assetPtr) {
+        AssetPopup(const char* id, const nString& assetName, void* assetPtr, int assetType) : id(id), assetName(assetName), assetPtr(assetPtr), assetType(assetType) {
             ImGui::OpenPopup(id);
         }
         virtual ~AssetPopup() {
@@ -92,15 +92,19 @@ namespace ImguiUtil {
         const nString& getAssetName() const {
             return assetName;
         }
+        int getAssetType() const {
+            return assetType;
+        }
     protected:
         const char* id;
         nString assetName;
         void* assetPtr;
+        int assetType;
     };
 
     class ConfirmDeletePopup : public AssetPopup {
     public:
-        ConfirmDeletePopup(const nString& assetName, void* assetPtr) : AssetPopup("ConfirmDelete", assetName, assetPtr) {};
+        ConfirmDeletePopup(const nString& assetName, void* assetPtr, int assetType) : AssetPopup("ConfirmDelete", assetName, assetPtr, assetType) {};
         // Return true when closed
         bool updateAndRender() {
             if (ImGui::BeginPopupModal(id, nullptr)) {
@@ -138,7 +142,7 @@ namespace ImguiUtil {
 
     class RenameAssetPopup : public AssetPopup {
     public:
-        RenameAssetPopup(const nString& assetName, void* assetPtr) : AssetPopup("RenameAsset", assetName, assetPtr) {};
+        RenameAssetPopup(const nString& assetName, void* assetPtr, int assetType) : AssetPopup("RenameAsset", assetName, assetPtr, assetType) {};
         // Return true when closed
         bool updateAndRender() {
             if (ImGui::BeginPopupModal(id, nullptr)) {
@@ -174,7 +178,7 @@ namespace ImguiUtil {
 
     class CustomSelectorPopup : public AssetPopup, public PopupFilterInterface {
     public:
-        CustomSelectorPopup(const std::vector<nString>& names) : mNames(names), AssetPopup("Select", "", nullptr) {
+        CustomSelectorPopup(const std::vector<nString>& names) : mNames(names), AssetPopup("Select", "", nullptr, 0) {
             runSort();
             setFilter(mNames);
         };
@@ -239,7 +243,7 @@ namespace ImguiUtil {
 
     class AssetSelectorPopup : public AssetPopup, public PopupFilterInterface {
     public:
-        AssetSelectorPopup(const std::vector<AssetMetadata>& assets) : mAssets(assets), AssetPopup("AssetSelector", "", nullptr) {
+        AssetSelectorPopup(const std::vector<AssetMetadata>& assets) : mAssets(assets), AssetPopup("AssetSelector", "", nullptr, 0) {
             char nameBuf1[MAX_CHARS_IN_STRTOKEN + 1];
             char nameBuf2[MAX_CHARS_IN_STRTOKEN + 1];
             ui32 size1 = 0;

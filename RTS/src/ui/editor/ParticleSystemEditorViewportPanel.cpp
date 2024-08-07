@@ -37,6 +37,11 @@ const nString SAVE_DIALOG_NAME = "SaveFileDialog";
 #define POP_COLOR() ImGui::PopStyleColor(3);
 #define SELECTED_BUTTON(b) PUSH_SELECTED_STYLE(); (b); POP_COLOR();
 
+enum class PartcileSystemPopupAssetType {
+    ParticleSystem,
+    ParticleEmitter
+};
+
 ParticleSystemEditorViewportPanel::ParticleSystemEditorViewportPanel() {
 
 }
@@ -126,7 +131,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         ImGui::Separator();
         ImGui::Text("System: %s", mAssetData->getName().toString().c_str());
         if (ImGui::Button("Rename")) {
-            mRenamePopup = std::make_unique<ImguiUtil::RenameAssetPopup>(mAssetData->getName().toString(), (void*)mAssetData);
+            mRenamePopup = std::make_unique<ImguiUtil::RenameAssetPopup>(mAssetData->getName().toString(), (void*)mAssetData, (int)PartcileSystemPopupAssetType::ParticleSystem);
         }
         ImGui::SliderFloat("Lifetime", &mAssetData->mLifetimeSec, 0.0f, 60.0f);
         if (ImGui::Button("Save")) {
@@ -142,7 +147,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         }
         ImGui::SameLine();
         if (ImGui::Button("Delete")) {
-            mConfirmDeletePopup = std::make_unique<ImguiUtil::ConfirmDeletePopup>(mAssetData->getName().toString(), (void*)mAssetData);
+            mConfirmDeletePopup = std::make_unique<ImguiUtil::ConfirmDeletePopup>(mAssetData->getName().toString(), (void*)mAssetData, (int)PartcileSystemPopupAssetType::ParticleSystem);
         }
         ImGui::Separator();
         ImGui::Spacing();
@@ -198,6 +203,20 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                     unselect();
                     mSelectedEmitter = &emitter;
                 }
+            }
+
+            if (ImGui::BeginPopupContextItem(emitter.mEmitterName.toString().c_str())) {
+                if (ImGui::MenuItem("Delete")) {
+                    if (mSelectedEmitter == &emitter) {
+                        unselect();
+                    }
+                    mAssetData->mEmitters.erase(mAssetData->mEmitters.begin() + i);
+                }
+                if (ImGui::MenuItem("Rename"))
+                {
+                    mRenamePopup = std::make_unique<ImguiUtil::RenameAssetPopup>(emitter.mEmitterName.toString(), (void*)&emitter, (int)PartcileSystemPopupAssetType::ParticleEmitter);
+                }
+                ImGui::EndPopup();
             }
             ImGui::SameLine();
             if (mShowEmitters[i]) {
@@ -473,7 +492,12 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
         if (mRenamePopup->updateAndRender()) {
             const nString& result = mRenamePopup->getResult();
             if (result.size()) {
-                assert(false);
+                if (mRenamePopup->getAssetType() == (int)PartcileSystemPopupAssetType::ParticleSystem) {
+                    ParticleSystemRepository::get().renameAsset(AssetDescriptor::fromIAsset(*((ParticleSystemDef*)mRenamePopup->getAssetPtr())), result);
+                } else if (mRenamePopup->getAssetType() == (int)PartcileSystemPopupAssetType::ParticleEmitter) {
+                    ParticleEmitterDef* emitterDef = (ParticleEmitterDef*)mRenamePopup->getAssetPtr();
+                    emitterDef->mEmitterName = StrToken(result);
+                }
             }
             mRenamePopup.reset();
         }

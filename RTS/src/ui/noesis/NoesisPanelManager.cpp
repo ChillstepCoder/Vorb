@@ -78,7 +78,8 @@ bool NoesisPanelManager::UpdatePanel(GameUIPanel panel) {
             PanelViewModelBase* newWindow;
             switch (panel) {
                 case GameUIPanel::Inventory:
-                    panic("IMPLEMENT INVENTORY");
+                    return false;
+                    //panic("IMPLEMENT INVENTORY");
                     break;
                 case GameUIPanel::SackContainer:
                     newWindow = new SackContainerViewModel();

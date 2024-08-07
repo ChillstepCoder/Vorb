@@ -68,6 +68,10 @@ struct AssetDescriptor {
         return descriptor;
     }
 
+    static AssetDescriptor fromIAsset(IAsset& asset) {
+        return AssetDescriptor{ asset.getID(), asset.getAssetType() };
+    }
+
     UniqueId64 getUUID() const {
         return UniqueId64((ui64)id | ((ui64)assetType << 32ull));
     }
