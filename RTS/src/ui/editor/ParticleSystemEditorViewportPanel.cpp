@@ -90,6 +90,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
     const ImVec2 contentAvail = ImGui::GetContentRegionAvail();
 
     bool is_open = true;
+    std::tuple<std::string, void*, int> renamePopupData;
 
     if (ImGui::BeginPopupModal("SystemModal", &is_open))
     {
@@ -131,7 +132,11 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         ImGui::Separator();
         ImGui::Text("System: %s", mAssetData->getName().toString().c_str());
         if (ImGui::Button("Rename")) {
-            mRenamePopup = std::make_unique<ImguiUtil::RenameAssetPopup>(mAssetData->getName().toString(), (void*)mAssetData, (int)PartcileSystemPopupAssetType::ParticleSystem);
+            renamePopupData = std::make_tuple(
+                mAssetData->getName().toString(),
+                (void*)mAssetData,
+                (int)PartcileSystemPopupAssetType::ParticleSystem
+            );
         }
         ImGui::SliderFloat("Lifetime", &mAssetData->mLifetimeSec, 0.0f, 60.0f);
         if (ImGui::Button("Save")) {
@@ -214,7 +219,11 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 }
                 if (ImGui::MenuItem("Rename"))
                 {
-                    mRenamePopup = std::make_unique<ImguiUtil::RenameAssetPopup>(emitter.mEmitterName.toString(), (void*)&emitter, (int)PartcileSystemPopupAssetType::ParticleEmitter);
+                    renamePopupData = std::make_tuple(
+                        emitter.mEmitterName.toString(),
+                        (void*)&emitter,
+                        (int)PartcileSystemPopupAssetType::ParticleEmitter
+                    );
                 }
                 ImGui::EndPopup();
             }
@@ -235,6 +244,14 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
             }
             ImGui::PopID();
             ++i;
+        }
+
+        if (std::get<0>(renamePopupData).size()) {
+            mRenamePopup = std::make_unique<ImguiUtil::RenameAssetPopup>(
+                std::get<0>(renamePopupData),
+                std::get<1>(renamePopupData),
+                std::get<2>(renamePopupData)
+            );
         }
 
         // Popups are opened in this panel
