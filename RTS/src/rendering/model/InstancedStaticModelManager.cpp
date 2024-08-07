@@ -230,11 +230,12 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     );
 
                     // Refresh all damage zones except the first one every time
+                    // TODO: We likely only need to do this if a damage zone was added or removed
                     glNamedBufferSubData(
                         batchData.mDamageZonesSSBO,
                         sizeof(ModelDamageZoneGpuData), // Skip first
                         sizeof(ModelDamageZoneGpuData) * (batchData.mModelDamageZonesGpuData.size() - 1),
-                        batchData.mModelDamageZonesGpuData.data()
+                        batchData.mModelDamageZonesGpuData.data() + 1
                     );
                 }
             }
