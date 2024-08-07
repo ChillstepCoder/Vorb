@@ -317,7 +317,7 @@ void RenderContext::initPostLoad() {
     initEvents();
 }
 
-void RenderContext::beginFrame(const WorldRenderState* renderState, f32v3 playerPos, f32 frameAlpha) {
+void RenderContext::beginFrame(WorldRenderState* renderState, f32v3 playerPos, f32 frameAlpha) {
 
     PROFILE_FUNCTION();
 
@@ -354,7 +354,7 @@ void RenderContext::beginFrame(const WorldRenderState* renderState, f32v3 player
 
 void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec) {
     PROFILE_FUNCTION();
-    const WorldRenderState& renderState = GameRenderStateManager::getInstance().getRenderStateForRender();
+    WorldRenderState& renderState = GameRenderStateManager::getInstance().getRenderStateForRender();
     mCurrentFrameAlpha = frameAlpha;
     mCurrentFrameElapsedSec = elapsedSec;
     mCameraController = &cameraController;

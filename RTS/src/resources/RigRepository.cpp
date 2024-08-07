@@ -93,6 +93,12 @@ AssetLoadFunc RigRepository::getAssetLoadFunc() {
 
         AnimationRepository& animRepo = AnimationRepository::get();
 
+        // Map joint names
+        def.mJointNameToIndex.reserve(def.mSkeleton.num_joints());
+        for (int i = 0; i < def.mSkeleton.num_joints(); ++i) {
+            def.mJointNameToIndex[StrToken(def.mSkeleton.joint_names()[i])] = i;
+        }
+
         //// TODO: This fileData copy is expensive, use userdata
         //assetLoader.requestAssetLoadWithDependencies([&, fileData]ASSET_LOAD_LAMBDA(AssetID, filePath, assetDataPtr) {
         //    def.mNumAnimations = fileData.mAnimationNames.size();

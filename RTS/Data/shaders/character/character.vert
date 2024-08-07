@@ -38,6 +38,7 @@ void main() {
   vec3 tangent = normalize(vTangent);
   
   vec4 localPos = boneTransform * vec4(vPosition.xyz, 1.0);
+  
   // TODO: Should this be a 3x3?
   vec4 localNormal = boneTransform * vec4(normal, 0.0);
   vec4 localTangent = boneTransform * vec4(tangent, 0.0);
@@ -51,7 +52,7 @@ void main() {
   
   //https://learnopengl.com/Advanced-Lighting/Normal-Mapping
   // re-orthogonalize T with respect to N
-  localTangent = normalize(localTangent - dot(localTangent, localNormal) * localNormal);
+  //localTangent = normalize(localTangent - dot(localTangent, localNormal) * localNormal);
 
   vec3 bitangent = cross(localNormal.xyz, localTangent.xyz);
   fTBN = mat3(localTangent.xyz, bitangent, localNormal.xyz);

@@ -12,13 +12,13 @@
 #include "camera/Camera3D.h"
 
 InstancedDynamicModelRenderer::InstancedDynamicModelRenderer() {
-    mStandardMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("standard_model"));
+    mStandardMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("dynamic_model"));
     mSmudgeShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("smudge"));
 }
 
 InstancedDynamicModelRenderer::~InstancedDynamicModelRenderer() = default;
 
-void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelInstanceState>& dynamicModels, const Camera3D& camera) {
+void InstancedDynamicModelRenderer::prepareFrame(std::span<const DynamicModelInstanceState> dynamicModels, const Camera3D& camera) {
     
     if (sDebugOptions.mHideDynamicModels) {
         return;
@@ -68,7 +68,7 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
         }
 
         // CPU Culling
-        if (camera.sphereIsVisible(dynamicModel.position, batch.mBoundingSphereRadius)) {
+        if (camera.sphereIsVisible(dynamicModel.getPositionLowPrecision(), batch.mBoundingSphereRadius)) {
             for (auto& meshData : batch.mMeshData) {
                 ++meshData.visibleCount;
             }
@@ -131,10 +131,11 @@ void InstancedDynamicModelRenderer::prepareFrame(const std::vector<DynamicModelI
             for (ui32 index : batch.mVisibleIndices) {
                 const DynamicModelInstanceState& dynamicModel = dynamicModels[index];
                 // Set transform for this instance
-                if (camera.sphereIsVisible(dynamicModel.position, lodParams.boundingSphereRadius)) {
-                    const f32 distance2 = glm::length2(dynamicModel.position - camera.getPosition());
+                if (camera.sphereIsVisible(dynamicModel.getPositionLowPrecision(), lodParams.boundingSphereRadius)) {
+                    const f32v3 cameraRelativePos = f32v3(f64v3(dynamicModel.positionXY.x, dynamicModel.positionXY.y, dynamicModel.positionZ) - f64v3(camera.getPosition()));
+                    const f32 distance2 = glm::length2(cameraRelativePos);
                     if (distance2 < lodParams.lodDistancesSQ[3]) {
-                        transformsArray[transformIndex] = MathUtil::createTransformMatrix(dynamicModel.position, dynamicModel.orientation, 1.0f);
+                        transformsArray[transformIndex] = MathUtil::createTransformMatrix(cameraRelativePos, dynamicModel.orientation, 1.0f);
                         variantsArray[transformIndex] = 0; //dynamicModel.variantIndex; // TODO: Variants
                         for (auto& meshData : batch.mMeshData) {
                             MeshLODDrawInfo* drawInfos = meshData.drawInfos;
@@ -195,7 +196,6 @@ void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType rende
     PROFILE_FUNCTION();
 
     MaterialRenderer::bindMaterialShaderForRender(*mStandardMaterial);
-    const VGUniform windUniform = mStandardMaterial->getUniform("unWindType");
 
     for (auto& drawCommandPair : mDrawCommandsThisFrame[e_cast(renderPass)]) {
         GLDrawCommandBuffer* drawCommands = drawCommandPair.first;
@@ -209,8 +209,6 @@ void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType rende
         // TODO: I think this might be cheaper as an SSBO so we aren't binding to every mesh
         mTransformsBuffer->bindAsVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, 0, sizeof(f32m4));
         mVariantsBuffer->bindAsVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_VARIANT_INDICES_BINDING_POINT, 0, sizeof(ui8));
-
-        glUniform1i(windUniform, (GLint)mesh.getSubmeshData()->windType);
 
         MeshDrawer::drawIndirect(mesh.mGpuData, drawCommands);
     }

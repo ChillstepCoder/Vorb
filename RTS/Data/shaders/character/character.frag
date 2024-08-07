@@ -26,6 +26,6 @@ void main() {
 	normal.rgb = normalize(fTBN * normal);
 	oNormal.rgb = (normal + 1.0) * 0.5;
     
-    oMetallicRoughness.r = roughness;
-    oMetallicRoughness.g = metallic;
+    oMetallicRoughness.r = metallic;
+    oMetallicRoughness.g = roughness;
 }

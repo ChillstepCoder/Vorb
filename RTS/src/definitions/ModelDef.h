@@ -67,6 +67,7 @@ public:
     // TODO: single unique_ptr? <mesh[]>
     std::unique_ptr<Mesh> mMeshes[MAX_MODEL_MESH_COUNT];
     ui32 mNumMeshes = 0;
+    ui32 mTotalSubmeshJointTransformsNeeded = 0;
     StrToken mModelFileName;
     RigAssetRef mRigRef;
     AnimMachineAssetRef mMachineRef;

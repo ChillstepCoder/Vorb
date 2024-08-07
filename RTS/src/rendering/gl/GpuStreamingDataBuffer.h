@@ -7,6 +7,9 @@ public:
 
     VORB_NON_COPYABLE(GpuStreamingDataBuffer);
 
+    // Invalidates the buffer. Call before frameBegin
+    void setMaxElements(ui32 maxElements);
+
     // Get start of location to copy data to
     void* frameBeginAndGetDataForUpdate();
 
@@ -23,6 +26,8 @@ public:
     VGBuffer getBufferObject() const { return mBufferObject; }
 
 private:
+    void initBuffer();
+
     void* mMappedBuffer;
     VGBuffer mBufferObject;
     int mFrameIndex = 0;

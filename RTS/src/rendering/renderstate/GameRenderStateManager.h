@@ -27,7 +27,7 @@ public:
     /// must call for every call to getRenderStateForUpdate.
     void finishUpdating();
     /// Gets the state for rendering. Only call once per frame.
-    const WorldRenderState& getRenderStateForRender();
+    WorldRenderState& getRenderStateForRender();
 private:
     const World* mActiveWorld = nullptr;
     int mUpdating = 0; ///< Currently updating state

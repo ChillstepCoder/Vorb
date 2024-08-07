@@ -256,8 +256,21 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
         if (def.mNumMeshes != def.mSubmeshesData.size()) {
             def.mSubmeshesData.resize(def.mNumMeshes);
         }
-        for (ui32 i = 0; i < def.mNumMeshes; ++i) {
-            def.mMeshes[i]->setSubmeshData(&def.mSubmeshesData[i]);
+
+        // Track for efficient gpu upload later
+        def.mTotalSubmeshJointTransformsNeeded = 0;
+        if (def.isSkeletalModel()) {
+            for (ui32 i = 0; i < def.mNumMeshes; ++i) {
+                def.mMeshes[i]->setSubmeshData(&def.mSubmeshesData[i]);
+                const SkeletalMesh& skeletalMesh = def.getSkeletalMesh(i);
+                const MeshSkeletonData& skelData = skeletalMesh.getSkeletonData();
+                def.mTotalSubmeshJointTransformsNeeded += skelData.mNumJoints;
+            }
+        }
+        else {
+            for (ui32 i = 0; i < def.mNumMeshes; ++i) {
+                def.mMeshes[i]->setSubmeshData(&def.mSubmeshesData[i]);
+            }
         }
 
         return true;

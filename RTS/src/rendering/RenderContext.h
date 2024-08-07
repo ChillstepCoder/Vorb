@@ -61,7 +61,7 @@ public:
 
     void initPostLoad();
 
-    void beginFrame(const WorldRenderState* renderState, f32v3 playerPos, f32 frameAlpha); // Called automatically by beginFrame
+    void beginFrame(WorldRenderState* renderState, f32v3 playerPos, f32 frameAlpha); // Called automatically by beginFrame
     void renderFrame(CameraController& cameraController, f32 frameAlpha, f32 elapsedSec);
     void endFrame();
 

@@ -141,7 +141,7 @@ void WorldRenderer::initPostLoad() {
     mPassthroughMaterial = shaderRepo.getAssetHandle(CStrToken("pass_through"));
 }
 
-void WorldRenderer::onBeginFrame(const WorldRenderState* renderState, f32v3 playerPos) {
+void WorldRenderer::onBeginFrame(WorldRenderState* renderState, f32v3 playerPos) {
 
     World* world = World::tryGetWorld(renderState->getWorldId());
     if (!world) {
@@ -208,15 +208,18 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     // Static meshes
     mTileContainerRenderer->renderStaticMeshes(tileContainerMeshManager.getStaticMeshes(), *mCamera);
 
+    // Fill with linked submodels
+    std::vector<DynamicModelInstanceState>& dynamicModels = mRenderState->getDynamicModels();
+
     if (!sDebugOptions.mHideCharacters) {
-        mCharacterRenderer->renderCharacters(*mCamera, mRenderState->getCharacterRenderState(), elapsedSec, frameAlpha);
+        mCharacterRenderer->renderCharactersAndGatherSubmodels(*mCamera, mRenderState->getCharacterRenderState(), elapsedSec, frameAlpha, dynamicModels);
     }
 
     // Instanced models
     MaterialRepository::get().bindMaterialBuffer();
     mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), *mCamera, MaterialRenderPassType::Default, nullptr);
 
-    mDynamicModelRenderer->prepareFrame(mRenderState->getDynamicModels(), *camera);
+    mDynamicModelRenderer->prepareFrame(dynamicModels, *camera);
     mDynamicModelRenderer->renderModelPass(MaterialRenderPassType::Default);
 
     // Fish

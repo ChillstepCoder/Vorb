@@ -6,16 +6,21 @@ GpuStreamingDataBuffer::GpuStreamingDataBuffer(ui32 maxElements, ui32 elementSiz
     mElementSize(elementSize) {
     assert(mMaxElements > 0 && mElementSize > 0);
 
-    const size_t bufferSize = mMaxElements * mElementSize * 3;
-
-    glCreateBuffers(1, &mBufferObject);
-    glNamedBufferStorage(mBufferObject, bufferSize, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
-    mMappedBuffer = glMapNamedBufferRange(mBufferObject, 0, bufferSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
+    initBuffer();
 }
 
 GpuStreamingDataBuffer::~GpuStreamingDataBuffer() {
     glUnmapNamedBuffer(mBufferObject);
     glDeleteBuffers(1, &mBufferObject);
+}
+
+void GpuStreamingDataBuffer::setMaxElements(ui32 maxElements) {
+    mMaxElements = maxElements;
+    const size_t bufferSize = mMaxElements * mElementSize * 3;
+
+    glUnmapNamedBuffer(mBufferObject);
+    glDeleteBuffers(1, &mBufferObject);
+    initBuffer();
 }
 
 void* GpuStreamingDataBuffer::frameBeginAndGetDataForUpdate() {
@@ -53,4 +58,13 @@ void GpuStreamingDataBuffer::bindBufferAsSSBO(GLuint bindingPoint) {
 
 void GpuStreamingDataBuffer::bindAsVertexArrayVertexBuffer(VGBuffer targetVao, GLuint bindingIndex, GLintptr offset, GLsizei stride) {
     glVertexArrayVertexBuffer(targetVao, bindingIndex, mBufferObject, offset, stride);
+}
+
+void GpuStreamingDataBuffer::initBuffer()
+{
+    const size_t bufferSize = mMaxElements * mElementSize * 3;
+
+    glCreateBuffers(1, &mBufferObject);
+    glNamedBufferStorage(mBufferObject, bufferSize, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
+    mMappedBuffer = glMapNamedBufferRange(mBufferObject, 0, bufferSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
 }

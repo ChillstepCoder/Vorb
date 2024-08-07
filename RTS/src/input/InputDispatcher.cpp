@@ -129,7 +129,6 @@ i32 vui::impl::InputDispatcherEventCatcher::onSDLEvent(void*, SDL_Event* e) {
     ImGuiIO& io = ImGui::GetIO();
     // TODO: Return here?
     if (io.WantCaptureMouse || io.WantCaptureKeyboard) {
-        ImGui_ImplSDL2_ProcessEvent(e);
         // Handle noesis suppression
         if (!suppressMouse && e->type == SDL_MOUSEMOTION || e->type == SDL_MOUSEWHEEL || e->type == SDL_MOUSEBUTTONUP || e->type == SDL_MOUSEBUTTONDOWN) {
             ImGui_ImplSDL2_ProcessEvent(e);

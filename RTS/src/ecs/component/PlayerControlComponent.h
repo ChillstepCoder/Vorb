@@ -10,6 +10,7 @@ struct PlayerInputs;
 
 enum class PlayerControlFlags : ui8 {
 	InventoryKeyHeld = BIT(0),
+	StowKeyHeld = BIT(1),
 };
 
 struct PlayerControlComponent {

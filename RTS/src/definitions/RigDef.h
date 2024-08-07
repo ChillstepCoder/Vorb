@@ -38,6 +38,7 @@ public:
     ozz::vector<ozz::math::SimdFloat4> mUpperBodyJointWeights;
     ozz::vector<ozz::math::SimdFloat4> mLowerBodyJointWeights;
     ui32 mRigId;
+    UnorderedFlatMap<StrToken, ui8> mJointNameToIndex;
 
     // Cached editor view data used by imguiRenderSkeletonHierarchy
 private:

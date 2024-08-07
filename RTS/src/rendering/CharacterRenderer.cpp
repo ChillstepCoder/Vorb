@@ -34,10 +34,20 @@
 #include "ozz/base/containers/vector.h"
 #include "ozz/base/maths/simd_math.h"
 
+// TODO: Utility?
+void decomposeMatrix(const f64m4& m, f64v3& pos, f64q& rot) {
+    pos = m[3];
+    rot = glm::quat_cast(m);
+}
+
+// How many extra spots for transforms are allocated in the GPU streaming buffer
+constexpr i32 TRANSFORMS_PADDING_SIZE = 4;
+
 struct CharacterRendererCharacterState {
     //CharacterAnimState animState;
     AnimMachineInstance mAnimInstance;
     const CharacterRenderState* renderStateThisFrame = nullptr;
+    std::vector<LinkedSubmodel> mLinkedSubmodels;
 };
 
 CharacterRenderer::CharacterRenderer() :
@@ -45,19 +55,27 @@ CharacterRenderer::CharacterRenderer() :
 }
 
 CharacterRenderer::~CharacterRenderer() {
-    if (mRegisteredECS) {
-        mRegisteredECS->on_construct<CharacterModelComponent>().disconnect<&CharacterRenderer::onCharacterModelConstruct>(this);
-        mRegisteredECS->on_destroy<CharacterModelComponent>().disconnect<&CharacterRenderer::onCharacterModelDestroy>(this);
+    if (mRegistry) {
+        mRegistry->on_construct<CharacterModelComponent>().disconnect<&CharacterRenderer::onCharacterModelConstruct>(this);
+        mRegistry->on_destroy<CharacterModelComponent>().disconnect<&CharacterRenderer::onCharacterModelDestroy>(this);
+        mCharacterModelListeners.reset();
     }
 }
 
 void CharacterRenderer::onWorldBegin(World& world) {
     ASSERT_GAME_THREAD();
     // Only register once
-    if (!mRegisteredECS) {
-        mRegisteredECS = &world.getECS().mRegistry;
-        mRegisteredECS->on_construct<CharacterModelComponent>().connect<&CharacterRenderer::onCharacterModelConstruct>(this);
-        mRegisteredECS->on_destroy<CharacterModelComponent>().connect<&CharacterRenderer::onCharacterModelDestroy>(this);
+    if (!mRegistry) {
+        mRegistry = &world.getECS().mRegistry;
+        mRegistry->on_construct<CharacterModelComponent>().connect<&CharacterRenderer::onCharacterModelConstruct>(this);
+        mRegistry->on_destroy<CharacterModelComponent>().connect<&CharacterRenderer::onCharacterModelDestroy>(this);
+        CharacterModelEvents::registerCharacterModelListeners(mCharacterModelListeners);
+        CharacterModelEvents::addSubmodelAddedListener(mCharacterModelListeners, [this](const CharacterModelEvent& event) {
+            onCharacterModelSubmodelAdded(event.owner, event.submodel);
+        });
+        CharacterModelEvents::addSubmodelRemovedListener(mCharacterModelListeners, [this](const CharacterModelEvent& event) {
+            onCharacterModelSubmodelRemoved(event.owner, event.submodel);
+        });
     }
 }
 
@@ -70,12 +88,25 @@ void CharacterRenderer::frameBegin() {
     if (const size_t count = mModelsToUpdate.try_dequeue_bulk(modelsToUpdate, BULK_DEQUEUE_SIZE)) {
         for (size_t i = 0; i < count; ++i) {
             CharacterModelUpdateData& updateData = modelsToUpdate[i];
-            if (updateData.isAdd) {
-                addCharacterModelInternal(updateData.entityId, updateData.modelId);
+            switch (updateData.type) {
+                case CharacterModelUpdateType::Add:
+                    addCharacterModelInternal(updateData.entityId, updateData.modelId);
+                    break;
+                case CharacterModelUpdateType::Remove:
+                    removeCharacterModelInternal(updateData.entityId, updateData.modelId);
+                    break;
+                case CharacterModelUpdateType::AddSubmodel:
+                    addSubmodelInternal(updateData.entityId, updateData.submodel);
+                    break;
+                case CharacterModelUpdateType::RemoveSubmodel:
+                    removeSubmodelInternal(updateData.entityId, updateData.submodel);
+                    break;
+                default:
+                    assert(false);
+                    break;
+
             }
-            else {
-                removeCharacterModelInternal(updateData.entityId, updateData.modelId);
-            }
+            static_assert(e_count(CharacterModelUpdateType) == 4);
         }
     }
 }
@@ -85,7 +116,7 @@ void CharacterRenderer::addCharacterModel(entt::entity entityId, AssetID modelId
         addCharacterModelInternal(entityId, modelId);
     }
     else {
-        mModelsToUpdate.enqueue({ entityId, modelId, true });
+        mModelsToUpdate.enqueue({ entityId, modelId, CharacterModelUpdateType::Add });
     }
 }
 
@@ -94,7 +125,7 @@ void CharacterRenderer::removeCharacterModel(entt::entity entityId, AssetID mode
         removeCharacterModelInternal(entityId, modelId);
     }
     else {
-        mModelsToUpdate.enqueue({ entityId, modelId, false });
+        mModelsToUpdate.enqueue({ entityId, modelId, CharacterModelUpdateType::Remove });
     }
 }
 
@@ -111,7 +142,7 @@ void CharacterRenderer::playOneShotAnimation(entt::entity entityId, AssetID anim
     }
 }
 
-void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha) {
+void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha, std::vector<DynamicModelInstanceState>& outLinkedSubmodels) {
     UNUSED(frameAlpha);
     PROFILE_FUNCTION();
 
@@ -145,6 +176,14 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                 AssetID machineId = modelDefPtr->mAnimMachine->getID();
                 for (auto& [entityId, characterState] : renderData.entityCharacterModels) {
                     characterState.mAnimInstance = AnimMachineInstance(machineId);
+
+                    // Update any linked submodel cached bones
+                    const RigDef& rig = characterState.mAnimInstance.getRig();
+                    for (LinkedSubmodel& submodel : characterState.mLinkedSubmodels) {
+                        auto&& jit = rig.mJointNameToIndex.find(submodel.attachBone);
+                        assert(jit != rig.mJointNameToIndex.end());
+                        submodel.cachedAttachBoneIndex = jit->second;
+                    }
                 }
                 renderData.needsInitialize = false;
             }
@@ -157,6 +196,23 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
 
         const ModelDef& modelDef = renderData.handle->getLoadedAsset();
         const ModelLodParams& lodParams = ModelRepository::get().getLodParams(modelID);
+        const RigDef& rig = *modelDef.mRig;
+
+        const i32 numEntities = (i32)renderData.entityCharacterModels.size();
+        const i32 transformsNeeded = modelDef.mTotalSubmeshJointTransformsNeeded;
+        // Update transforms capacity if needed
+        if (!renderData.boneTransformsBuffer) {
+            renderData.boneTransformsBuffer = std::make_unique<GpuStreamingDataBuffer>(transformsNeeded * (numEntities + TRANSFORMS_PADDING_SIZE), sizeof(f32m4));
+        } else if (renderData.boneTransformsBuffer->getMaxElements() < transformsNeeded * numEntities) {
+            // Grow
+            renderData.boneTransformsBuffer->setMaxElements((transformsNeeded + 1) * (numEntities + TRANSFORMS_PADDING_SIZE));
+        } else if (renderData.boneTransformsBuffer->getMaxElements() > transformsNeeded * (numEntities + TRANSFORMS_PADDING_SIZE * 4)) {
+            // Shrink
+            renderData.boneTransformsBuffer->setMaxElements(transformsNeeded * (numEntities + TRANSFORMS_PADDING_SIZE));
+        }
+        LOG_INFO("  TRANSFORMS DATA SIZE {} mb", 3.0f * (f32)renderData.boneTransformsBuffer->getMaxElements() * sizeof(f32m4) / 1024.0f / 1024.0f);
+
+        //f32m4* transformsPtr = (f32m4*)renderData.boneTransformsBuffer->frameBeginAndGetDataForUpdate();
 
         // Render all characters with this model
         for (auto& [entityId, characterState] : renderData.entityCharacterModels) {
@@ -166,7 +222,6 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
             }
 
             const CharacterRenderState& character = *characterState.renderStateThisFrame;
-            const RigDef& rig = characterState.mAnimInstance.getRig();
 
             const f32v3& position = character.mPos;
             const bool isVisible = camera.sphereIsVisible(position, lodParams.boundingSphereRadius);
@@ -189,18 +244,13 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                 // Manually set world translation (TODO: Can set this on transform initialize for less instructions)
                 const f32v3 offset = position - camera.getPosition();
 
-                const f32 distSQ = glm::length2(offset);
-                MeshLODLevel lod = lodParams.selectLOD(distSQ);
                 const f32 angle = character.mRotation;
 
-                // Convert degrees to radians for angles
                 const f32 angleZ = DEG_TO_RAD(90.0f) + angle;
                 const f32 angleX = DEG_TO_RAD(90.0f);
 
-                // Precompute sine and cosine values
                 const f32 cosZ = cosf(angleZ);
                 const f32 sinZ = sinf(angleZ);
-
                 const f32 cosX = cosf(angleX);
                 const f32 sinX = sinf(angleX);
                 const f32 oneMinusCosX = 1.f - cosX;
@@ -209,16 +259,18 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                 // Hand optimized form of this:
                 //transform = glm::rotate(transform, angleZ, f32v3(0.0f, 0.0f, 1.0f));
                 //transform = glm::rotate(transform, angleX, f32v3(1.0f, 0.0f, 0.0f));
-
                 const f32 tmp = cosX + oneMinusCosX;
-                glm::mat4 transform(
+                const glm::mat4 cameraRelTransform(
                     cosZ * tmp, sinZ * tmp, 0.0f, 0.0f,
                     -sinZ * cosX, cosZ * cosX, sinX, 0.0f,
                     sinZ * sinX, -cosZ * sinX, cosX, 0.0f,
                     offset.x, offset.y, offset.z, 1.0f
                 );
 
-                glUniformMatrix4fv(modelTransformUniform, 1, false, &transform[0][0]);
+                glUniformMatrix4fv(modelTransformUniform, 1, false, &cameraRelTransform[0][0]);
+
+                const f32 distSQ = glm::length2(offset);
+                MeshLODLevel lod = lodParams.selectLOD(distSQ);
 
                 for (ui32 i = 0; i < modelDef.mNumMeshes; ++i) {
                     const SkeletalMesh& skeletalMesh = modelDef.getSkeletalMesh(i);
@@ -238,8 +290,35 @@ void CharacterRenderer::renderCharacters(const Camera3D& camera, const std::vect
                     // TODO: Indirect?
                     MeshDrawer::draw(skeletalMesh.mGpuData, lod);
                 }
+
+
+                // Submodels
+                for (LinkedSubmodel& submodel : characterState.mLinkedSubmodels) {
+                    AssetHandlePtr<ModelDef> submodelHandle = ModelRepository::get().getAssetHandle(submodel.submodelId);
+                    if (const ModelDef* def = submodelHandle->tryGetLoadedAsset()) {
+
+                        const f32m4 boneTransform = std::bit_cast<f32m4>(modelMatrices[submodel.cachedAttachBoneIndex]);
+
+                        DynamicModelInstanceState& submodelState = outLinkedSubmodels.emplace_back();
+                        submodelState.modelId = submodel.submodelId;
+
+                        const f64m4 worldTransform(
+                            cameraRelTransform[0][0], cameraRelTransform[0][1], 0.0f, 0.0f,
+                            cameraRelTransform[1][0], cameraRelTransform[1][1], cameraRelTransform[1][2], 0.0f,
+                            cameraRelTransform[2][0], cameraRelTransform[2][1], cameraRelTransform[2][2], 0.0f,
+                            position.x, position.y, position.z, 1.0f
+                        );
+                        f64q rotation;
+                        f64v3 worldPosition;
+                        decomposeMatrix(worldTransform * f64m4(boneTransform), worldPosition, rotation);
+                        submodelState.positionXY = worldPosition;
+                        submodelState.positionZ = worldPosition.z;
+                        submodelState.orientation = rotation;
+                    }
+                }
             }
         }
+        //renderData.boneTransformsBuffer->flushDataAndIncrementFrame(1 /*TODO real count*/);
     }
 }
 
@@ -275,6 +354,40 @@ void CharacterRenderer::removeCharacterModelInternal(entt::entity entityId, Asse
     // TODO: Deallocate handle if needed
 }
 
+void CharacterRenderer::addSubmodelInternal(entt::entity entityId, LinkedSubmodel submodel) {
+    auto&& it = mEntityCharacterRenderData.find(entityId);
+    if (it != mEntityCharacterRenderData.end()) {
+        if (it->second->mAnimInstance.isValid()) {
+            const RigDef& rig = it->second->mAnimInstance.getRig();
+            auto&& jit = rig.mJointNameToIndex.find(submodel.attachBone);
+            assert(jit != rig.mJointNameToIndex.end());
+            submodel.cachedAttachBoneIndex = jit->second;
+        }
+        it->second->mLinkedSubmodels.push_back(submodel);
+    }
+    else {
+        // TODO: Is this a failure?
+        __debugbreak();
+    }
+}
+
+void CharacterRenderer::removeSubmodelInternal(entt::entity entityId, LinkedSubmodel submodel) {
+    auto&& it = mEntityCharacterRenderData.find(entityId);
+    if (it != mEntityCharacterRenderData.end()) {
+        for (size_t i = 0; i < it->second->mLinkedSubmodels.size(); ++i) {
+            if (it->second->mLinkedSubmodels[i] == submodel) {
+                it->second->mLinkedSubmodels[i] = std::move(it->second->mLinkedSubmodels[it->second->mLinkedSubmodels.size() - 1]);
+                it->second->mLinkedSubmodels.pop_back();
+                return;
+            }
+        }
+    }
+    else {
+        // TODO: Is this a failure?
+        __debugbreak();
+    }
+}
+
 void CharacterRenderer::onCharacterModelConstruct(entt::registry& registry, entt::entity entity) {
     ModelID modelId = registry.get<CharacterModelComponent>(entity).modelId;
     LOG_DEBUG("Added model ID {} for entity {}", modelId, e_cast(entity));
@@ -284,4 +397,22 @@ void CharacterRenderer::onCharacterModelConstruct(entt::registry& registry, entt
 void CharacterRenderer::onCharacterModelDestroy(entt::registry& registry, entt::entity entity) {
     LOG_DEBUG("Destroying model for entity {}", e_cast(entity));
     removeCharacterModel(entity, registry.get<CharacterModelComponent>(entity).modelId);
+}
+
+void CharacterRenderer::onCharacterModelSubmodelAdded(entt::entity entityId, LinkedSubmodel submodel) {
+     if (IS_RENDER_THREAD()) {
+         addSubmodelInternal(entityId, submodel);
+     }
+     else {
+         mModelsToUpdate.enqueue({ entityId, submodel, CharacterModelUpdateType::AddSubmodel });
+     }
+}
+
+void CharacterRenderer::onCharacterModelSubmodelRemoved(entt::entity entityId, LinkedSubmodel submodel) {
+    if (IS_RENDER_THREAD()) {
+        addSubmodelInternal(entityId, submodel);
+    }
+    else {
+        mModelsToUpdate.enqueue({ entityId, submodel, CharacterModelUpdateType::RemoveSubmodel });
+    }
 }

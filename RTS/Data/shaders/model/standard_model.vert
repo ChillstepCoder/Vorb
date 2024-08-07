@@ -74,7 +74,6 @@ void main() {
     normal = modelMatrix3 * normal;
     tangent = modelMatrix3 * tangent;
     
-    
 	vec3 bitangent = cross(normal, tangent);
 	fTBN = mat3(tangent, bitangent, normal);
     
@@ -108,13 +107,5 @@ void main() {
     fViewTangent  = vec3(0.0); // tfTBN * CameraPos; // TODO: Is this right?
     fFragPosTangent  = tfTBN * relativeWorldPos.xyz;
     
-    // THIS IS FUNNY
-   // fTint.rgb *= (sin(Time * fTint.g + height * 4.0 + trueWorldPos.x - trueWorldPos.y) + 1.0) * 0.5 + 0.5;
-   // vec2 center = vec2(0.0, 0.0); // Assuming the center of the screen is (0,0) in NDC
-   // vec2 toCenter = center - gl_Position.xy;
-   // float distanceFromCenter = length(toCenter);
-    //float angle = atan(toCenter.y, toCenter.x);
-   // float spiralEffect = sin(angle + distanceFromCenter * 2.1); 
-   // fTint.rgb += (vec3(spiralEffect) + vec3(1.0)) * 0.5;
 
 }

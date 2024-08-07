@@ -46,7 +46,7 @@ void GameRenderStateManager::finishUpdating() {
     mLastUpdated = mUpdating;
 }
 
-const WorldRenderState& GameRenderStateManager::getRenderStateForRender() {
+WorldRenderState& GameRenderStateManager::getRenderStateForRender() {
     ASSERT_RENDER_THREAD();
     {
         std::lock_guard<std::mutex> lock(mLock);

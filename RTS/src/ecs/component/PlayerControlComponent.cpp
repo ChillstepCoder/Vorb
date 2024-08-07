@@ -6,6 +6,8 @@
 #include "world/World.h"
 #include "debugging/DebugRenderer.h"
 
+#include "resources/ModelRepository.h"
+
 #include "input/InputDispatcher.h"
 #include <glm/gtx/rotate_vector.hpp>
 
@@ -44,6 +46,7 @@ struct PlayerInputs {
     bool right = false;
     bool back = false;
     bool interact = false;
+    bool stow = false;
 };
 
 f32v2 getMovementDir(const PlayerInputs& inputs, f32 cameraYaw) {
@@ -90,6 +93,7 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
         inputs.right = vui::InputDispatcher::key.isKeyPressed(VKEY_D);
         inputs.back = vui::InputDispatcher::key.isKeyPressed(VKEY_S);
         inputs.interact = vui::InputDispatcher::key.isKeyPressed(VKEY_E);
+        inputs.stow = vui::InputDispatcher::key.isKeyPressed(VKEY_R);
 
         // Inventory toggle
         if (vui::InputDispatcher::key.isKeyPressed(VKEY_I)) {
@@ -154,6 +158,18 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
     
     updateSelection(entity, playerControlCmp, cameraData, inputs, elapsedSec);
 
+
+    // Update stow
+    if (inputs.stow) {
+        if (!playerControlCmp.mPlayerControlFlags.isBitSet(PlayerControlFlags::StowKeyHeld)) {
+            playerControlCmp.mPlayerControlFlags.setBit(PlayerControlFlags::StowKeyHeld);
+            const ModelID swordId = ModelRepository::get().getAssetID(CStrToken("sword"));
+            mRegistry.get_or_emplace<CharacterLinkedSubmodelComponent>(entity).toggleLinkedSubmodel(entity, { CStrToken("Sword_joint"), swordId });
+        }
+    }
+    else {
+        playerControlCmp.mPlayerControlFlags.clearBit(PlayerControlFlags::StowKeyHeld);
+    }
 }
 
 void PlayerControlSystem::updateSelection(entt::entity entity, PlayerControlComponent& playerControlCmp, const Camera3DGameThreadData& cameraData, const PlayerInputs& inputs, f32 elapsedSec) {

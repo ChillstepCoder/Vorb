@@ -19,7 +19,7 @@ public:
     InstancedDynamicModelRenderer();
     ~InstancedDynamicModelRenderer();
 
-    void prepareFrame(const std::vector<DynamicModelInstanceState>& dynamicModels, const Camera3D& camera);
+    void prepareFrame(std::span<const DynamicModelInstanceState> dynamicModels, const Camera3D& camera);
     void renderModelPass(MaterialRenderPassType renderPass);
     // TODO: Shadows?
 

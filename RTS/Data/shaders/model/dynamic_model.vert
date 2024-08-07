@@ -35,26 +35,16 @@ void main() {
 	vec3 bitangent = cross(normal, tangent);
 	fTBN = mat3(tangent, bitangent, normal);
     
-    vec4 trueWorldPos = (vModelMatrix * vPosition);
+    vec4 relativeWorldPos = (vModelMatrix * vPosition);
     vec3 modelRoot = vModelMatrix[3].xyz;
     
     float height = vPosition.z;
     
-    vec4 relativeWorldPos = trueWorldPos - vec4(CameraPos, 0.0);
     gl_Position = VP * relativeWorldPos;
     
     // For displacement, get our world space -> tangent space
     mat3 tfTBN = transpose(fTBN); // Transpose is same as inverse for tbn because it is orthogonal, apparently
     fViewTangent  = vec3(0.0); // tfTBN * CameraPos; // TODO: Is this right?
     fFragPosTangent  = tfTBN * relativeWorldPos.xyz;
-    
-    // THIS IS FUNNY
-   // fTint.rgb *= (sin(Time * fTint.g + height * 4.0 + trueWorldPos.x - trueWorldPos.y) + 1.0) * 0.5 + 0.5;
-   // vec2 center = vec2(0.0, 0.0); // Assuming the center of the screen is (0,0) in NDC
-   // vec2 toCenter = center - gl_Position.xy;
-   // float distanceFromCenter = length(toCenter);
-    //float angle = atan(toCenter.y, toCenter.x);
-   // float spiralEffect = sin(angle + distanceFromCenter * 2.1); 
-   // fTint.rgb += (vec3(spiralEffect) + vec3(1.0)) * 0.5;
 
 }

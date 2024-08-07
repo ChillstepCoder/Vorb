@@ -49,7 +49,7 @@ public:
     ~WorldRenderer();
 
     void initPostLoad();
-    void onBeginFrame(const WorldRenderState* renderState, f32v3 playerPos);
+    void onBeginFrame(WorldRenderState* renderState, f32v3 playerPos);
     void renderWorld(const Camera3D* camera, const GlobalRenderData& renderData, vg::GBuffer* activeGBuffer, f32 frameAlpha, f32 elapsedSec, vg::GBuffer* targetGBuffer);
     void renderDebug();
 
@@ -114,7 +114,7 @@ private:
     f32v2 mScreenResolution;
     f32v3 mPlayerPos = f32v3(0.0f);
     const Camera3D* mCamera = nullptr;
-    const WorldRenderState* mRenderState = nullptr;
+    WorldRenderState* mRenderState = nullptr;
     World* mActiveWorld = nullptr;
 
     int mPassthroughRenderMode = 0;

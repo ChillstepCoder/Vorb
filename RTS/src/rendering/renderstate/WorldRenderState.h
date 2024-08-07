@@ -54,7 +54,7 @@ public:
     const std::vector<DebugChunkRenderState>& getDebugChunks() const { return mDebugChunks; }
     const std::vector<DebugWireQuadState>& getDebugQuads() const { return mDebugQuads; }
     const std::vector<CharacterRenderState>& getCharacterRenderState() const { return mCharacters; }
-    const std::vector<DynamicModelInstanceState>& getDynamicModels() const { return mDynamicModels; }
+    std::vector<DynamicModelInstanceState>& getDynamicModels() { return mDynamicModels; }
     const std::vector<WorldTextRenderState>& getWorldText() const { return mWorldText; }
     WorldID getWorldId() const { return mWorldId; }
     const SelectedObjectData& getPlayerSelectedObject() const { return mPlayerSelectedObject; }
