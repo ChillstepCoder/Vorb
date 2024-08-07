@@ -28,8 +28,6 @@ void convertToPremultipliedAlpha(gli::texture2d& texture) {
         return; // No conversion needed if texture is empty or has no alpha channel
     }
 
-    assert(texture.levels() == 0); // We don't support mipmaps for now
-
     const gli::texture2d::extent_type extent = texture.extent();
     const gli::texture2d::size_type totalPixels = extent.x * extent.y;
 
@@ -38,7 +36,7 @@ void convertToPremultipliedAlpha(gli::texture2d& texture) {
 
     switch (texture.format()) {
         case gli::FORMAT_RGBA8_UNORM_PACK8: {
-            assert(pixelSize == 1);
+            assert(pixelSize == 4);
             for (gli::texture2d::size_type i = 0; i < totalPixels * 4; i += 4) {
                 ui8v4& texel = *(std::bit_cast<ui8v4*>(data + i));
                 f32 a = texel.a / 255.0f;

@@ -163,6 +163,7 @@ gli::texture2d PngLoader::loadPng(const fs::path& path, bool flipV) {
     }
 
     res = allocateTexture(width, height, byteDepth, channels);
+
     { // Error checks
         const int num_channels = gli::component_count(res.format());
         const int block_size = gli::block_size(res.format());
