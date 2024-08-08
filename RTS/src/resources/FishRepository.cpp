@@ -22,7 +22,7 @@ AssetLoadFunc FishRepository::getAssetLoadFunc() {
         def.addDependency(def.mItemRef.getAssetHandleBase());
         def.addDependency(def.mModelRef.getAssetHandleBase());
 
-        LOAD_DEPENDENCIES_HELPER(def,
+        LOAD_DEPENDENCIES_HELPER(def, &,
             FishDef& def = *static_cast<FishDef*>(assetDataPtr);
             def.mItemId = def.mItemRef.getAssetID();
             def.mModelId = def.mModelRef.getAssetID();

@@ -51,7 +51,7 @@ public:
     MeshCpuData(MeshCpuData&& o);
     MeshCpuData& operator=(MeshCpuData&& o);
 
-    // These are cleaned up in destrutor
+    // These are cleaned up in destructor
     void* mVertsPtr = nullptr;
     void* mElementsPtr = nullptr;
     ui32 mVertsCount = 0;

@@ -20,6 +20,6 @@ AssetLoadFunc ItemRepository::getAssetLoadFunc() {
             }
         }
 
-        LOAD_DEPENDENCIES_HELPER(def);
+        LOAD_DEPENDENCIES_HELPER(def, &);
     };
 }

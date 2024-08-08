@@ -9,7 +9,7 @@ DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 DECL_VG(class Texture);
 
-class FBXLoadContext;
+class ModelLoadContext;
 
 namespace ozz::animation {
     class Skeleton;
@@ -51,7 +51,9 @@ private:
     AssetLoadFunc getAssetLoadFunc() override;
 
     void loadModelInternal(ModelDef& def, StrToken modelName, const vio::Path& modelPath);
-    void loadRawModelFromFBX(FBXLoadContext& loadContext, FBXRawMesh& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton);
+    void loadRawModelFromFBX(ModelLoadContext& loadContext, FBXRawMesh& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton);
+    void loadCachedRuntimeModel(ModelDef& def, const vio::Path& modelPath, const ozz::animation::Skeleton* skeleton, OUT MeshCpuData meshData[e_count(MaterialRenderPassType)]);
+    void saveCachedRuntimeModel(ModelDef& def, const vio::Path& modelPath, MeshCpuData meshData[e_count(MaterialRenderPassType)]);
 
     void onRegisteredAsset(AssetID id) override;
     void onAllAssetTypesRegistered() override;
@@ -63,7 +65,6 @@ private:
     std::mutex mRawModelsMutex;
     std::map<StrToken, std::unique_ptr<FBXRawMesh>> mRawModels;
 
-    std::mutex mFbxSdkMutex; // FBX SDK IS NOT THREAD SAFE >_<
     // TODO: Pooled allocate
     std::vector<std::unique_ptr<ModelBatch>> mModelBatches;
 
