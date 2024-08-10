@@ -266,7 +266,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
                     }
                 }
 
-                loadContextPtr->meshData[def.mNumMeshes] = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(combinedMeshData, rawMeshPtr->mMaterials, &rawMaterialIdSlotMapping);
+                loadContextPtr->meshData[def.mNumMeshes] = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(combinedMeshData, rawMeshPtr->mMaterials, def.mBaseOptimizeErrorThresold, &rawMaterialIdSlotMapping);
 
 
                 // Apply scale if needed
@@ -392,6 +392,7 @@ void ModelRepository::loadRawModelFromFBX(ModelLoadContext& loadContext, FBXRawM
         FbxMesh* fbxMesh = loadContext.fbxLoadContext->sceneLoader.scene()->GetSrcObject<FbxMesh>(m);
         RawSubMesh& subMesh = rawFbxMesh.mSubMeshes.emplace_back();
 
+        LOG_DEBUG("Processing mesh: {} {} deformer count {}", fbxMesh->GetName(), filePath.getString(), fbxMesh->GetDeformerCount(FbxDeformer::eSkin));
         ControlPointsRemap remap;
         if (!fbx2raw::buildRawSubmesh(fbxMesh, loadContext.fbxLoadContext->sceneLoader.converter(), &remap, subMesh, rawFbxMesh.mMaterials, skeleton == nullptr)) {
             panic("Failed to read submesh for: {}", filePath.getString());
@@ -426,10 +427,14 @@ void ModelRepository::loadRawModelFromFBX(ModelLoadContext& loadContext, FBXRawM
 
     // Skin data
     if (hasSkin) {
-        assert(numMeshes == 1 && "Currently skinned meshes must be a single submesh only");
+        // TODO: SPLIT SUBMESHES
         const RawSubMesh& baseSubMesh = rawFbxMesh.mSubMeshes[0];
         const int baseMaterialIndex = baseSubMesh.mVertices[0].rawMaterialIndex;
         const MaterialRenderPassType baseRenderPass = rawFbxMesh.mMaterials[baseMaterialIndex].defaultMaterialDef->renderPass;
+        for (int i = 0; i < numMeshes; ++i) {
+            // Make sure they are all the same render pass
+            assert(baseRenderPass == rawFbxMesh.mMaterials[rawFbxMesh.mSubMeshes[i].mVertices[0].rawMaterialIndex].defaultMaterialDef->renderPass);
+        }
         rawFbxMesh.mCombinedMeshData[e_cast(baseRenderPass)].mHasSkin = hasSkin;
         rawFbxMesh.mCombinedMeshData[e_cast(baseRenderPass)].mSkeletonData = std::move(rawFbxMesh.mSubMeshes[0].mSkeletonData);
     }

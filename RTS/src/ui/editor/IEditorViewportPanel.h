@@ -104,6 +104,7 @@ protected:
     f32 mYaw = 0.0f;
     bool mRotate90 = false;
     bool mDisableBackfaceCulling = true;
+    f32 mCameraSpeed = 1.0f;
 
     // Blend test
     int mBlendTestPasses = 1;

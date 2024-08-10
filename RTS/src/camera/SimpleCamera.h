@@ -54,7 +54,7 @@ public:
         , up_(up)
     {}
 
-    void update(double deltaSeconds, const glm::vec2& mousePos, bool mousePressed, f32 aspectRatio)
+    void update(double deltaSeconds, const glm::vec2& mousePos, bool mousePressed, f32 aspectRatio, f32 speedMult)
     {
         mAspectRatio = aspectRatio;
         if (mousePressed)
@@ -107,7 +107,7 @@ public:
         else
         {
             // acceleration
-            moveSpeed_ += accel * acceleration_ * static_cast<float>(deltaSeconds);
+            moveSpeed_ += accel * acceleration_ * static_cast<float>(deltaSeconds) * speedMult;
             const float maxSpeed = movement_.fastSpeed_ ? maxSpeed_ * fastCoef_ : maxSpeed_;
             if (glm::length(moveSpeed_) > maxSpeed) moveSpeed_ = glm::normalize(moveSpeed_) * maxSpeed;
         }

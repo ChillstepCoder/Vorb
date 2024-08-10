@@ -565,6 +565,10 @@ namespace fbx2raw {
             std::sort(inv.begin(), inv.end(), &SortInfluenceWeights);
         }
 
+        if (maxInfluences == 0) {
+            panic("Skeletal mesh {} loading with no joint influences", fbxMesh->GetName());
+        }
+
         // Allocates indices and weights.
         std::vector<ui8> jointIndices(vertexCount * maxInfluences);
         std::vector<float> jointWeights(vertexCount * maxInfluences);

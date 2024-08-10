@@ -78,4 +78,5 @@ void main() {
     mat3 tfTBN = inverse(fTBN);
     fViewTangent  = tfTBN * unCameraPos;
     fFragPosTangent  = tfTBN * fWorldPos;
+    
 }

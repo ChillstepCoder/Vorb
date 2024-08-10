@@ -48,7 +48,9 @@ const MaterialShaderDef* AssetEditorViewportPanelBase::getModelRenderShader() co
 void AssetEditorViewportPanelBase::renderMeshStatic(const ModelDef* modelAsset, int variantIndex, int lod, bool showSingleSubmesh, int singleSubmeshIndex) {
     if (!modelAsset) return;
     const MaterialShaderDef* shader = getShader();
-    glUniform1i(shader->getUniform("unVariantIndex"), variantIndex);
+    if (const VGUniform* varUniform = shader->tryGetUniform("unVariantIndex")) {
+        glUniform1i(*varUniform, variantIndex);
+    }
     glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
     if (showSingleSubmesh) {
         singleSubmeshIndex = glm::min((int)modelAsset->getNumMeshes() - 1, singleSubmeshIndex);

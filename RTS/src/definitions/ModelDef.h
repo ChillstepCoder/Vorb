@@ -84,6 +84,7 @@ public:
     std::vector<f32v3> mDamageZoneSpline = { f32v3(0.0f), f32v3(0.0f, 0.0f, 8.0f) }; // Damage zones align to this spline
     ModelCollider mColliderData;
     CollisionShapeID mCollisionShapeID = INVALID_COLLISION_SHAPE_ID;
+    f32 mBaseOptimizeErrorThresold = 0.0003f;
 
     // Variants
     std::vector<ModelVariantData> mVariants;
@@ -105,5 +106,6 @@ SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
     make_field(o.mForceNormalsUp, "force_normals_up"sv),
     make_field(o.mDamageZoneSpline, "dmg_spline"sv),
     make_field(o.mVariants, "variants"sv),
-    make_field(o.mColliderData, "collider"sv)
+    make_field(o.mColliderData, "collider"sv),
+    make_field(o.mBaseOptimizeErrorThresold, "opt_thresh"sv)
 );

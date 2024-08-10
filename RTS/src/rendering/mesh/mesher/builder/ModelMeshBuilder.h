@@ -25,6 +25,7 @@ public:
     static MeshCpuData buildRuntimeOptimizedMeshFromRawMesh(
         RawSubMesh& subMesh,
         const std::vector<FBXRawMaterialData>& rawMaterials,
+        f32 baseOptimizeErrorThreshold,
         std::vector<ui16>* rawMaterialIdToSlots = nullptr // For static model loading
     );
 

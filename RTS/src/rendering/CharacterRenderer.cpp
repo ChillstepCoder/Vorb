@@ -272,6 +272,7 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
                 const f32 distSQ = glm::length2(offset);
                 MeshLODLevel lod = lodParams.selectLOD(distSQ);
 
+                // TODO: We should batch render these
                 for (ui32 i = 0; i < modelDef.mNumMeshes; ++i) {
                     const SkeletalMesh& skeletalMesh = modelDef.getSkeletalMesh(i);
                     const MeshSkeletonData& skelData = skeletalMesh.getSkeletonData();
@@ -283,6 +284,8 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
                         panic("Anim skinning fail!");
                     }
 
+                    // TODO: We shouldn't do this for each submesh
+                    glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, skeletalMesh.mVariantDataUbo);
                     glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)skinningBuffer);
 
                     skeletalMesh.bindSkeletalModelAttribs();

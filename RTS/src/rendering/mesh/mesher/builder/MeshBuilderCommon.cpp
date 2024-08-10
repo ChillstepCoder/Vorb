@@ -67,6 +67,8 @@ template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMes
 template<typename VERTEX>
 void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<VERTEX>& vertices) {
     PROFILE_FUNCTION();
+    panic("DEPRECATED optimizeMeshAndGenerateLODs FUNCTION CALLED");
+
     assert(!subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO));
 
     static_assert(sizeof(unsigned int) == sizeof(ui32));
@@ -82,7 +84,7 @@ void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::v
 
     // Optimize initial mesh to get rid of mostly useless polygons
     constexpr float threshold = 0.25f; // 0.2f
-    {
+     {
         std::vector<ui32> optimizedIndices;
         optimizedIndices.resize(remappedIndices.size());
         constexpr f32 targetError = 0.0003f; // 0.0006f
@@ -152,7 +154,7 @@ template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMes
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<StandardModelVertex>& vertices);
 template void MeshBuilderCommon::optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<SkinnedModelVertex>& vertices);
 
-OptimizedCpuMeshData MeshBuilderCommon::optimizeMeshAndGenerateLODs(const std::vector<ui32>& indices, const std::vector<RawMeshVertex>& vertices) {
+OptimizedCpuMeshData MeshBuilderCommon::optimizeMeshAndGenerateLODs(const std::vector<ui32>& indices, const std::vector<RawMeshVertex>& vertices, f32 baseOptimizeErrorThreshold) {
     PROFILE_FUNCTION();
 
     static_assert(sizeof(unsigned int) == sizeof(ui32));
@@ -172,12 +174,11 @@ OptimizedCpuMeshData MeshBuilderCommon::optimizeMeshAndGenerateLODs(const std::v
 
     // Optimize initial mesh to get rid of mostly useless polygons
     constexpr float threshold = 0.2f;
-    {
+    if (baseOptimizeErrorThreshold > 0.0f) {
         std::vector<ui32> optimizedIndices;
         optimizedIndices.resize(remappedIndices.size());
-        constexpr f32 targetError = 0.0006f;
         const size_t targetIndexCount = size_t(remappedIndices.size() * threshold);
-        ui32 newSize = meshopt_simplify(&optimizedIndices[0], &remappedIndices[0], remappedIndices.size(), (const f32*)(&remappedVertices[0]), vertexCount, sizeof(RawMeshVertex), targetIndexCount, targetError);
+        ui32 newSize = meshopt_simplify(&optimizedIndices[0], &remappedIndices[0], remappedIndices.size(), (const f32*)(&remappedVertices[0]), vertexCount, sizeof(RawMeshVertex), targetIndexCount, baseOptimizeErrorThreshold);
         optimizedIndices.resize(newSize);
         remappedIndices.swap(optimizedIndices);
     }

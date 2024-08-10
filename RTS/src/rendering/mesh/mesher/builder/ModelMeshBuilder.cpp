@@ -16,13 +16,13 @@
 #include <fbxsdk/core/base/fbxstring.h>
 #include <fbxsdk/scene/geometry/fbxlayer.h>
 
-MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& subMesh, const std::vector<FBXRawMaterialData>& rawMaterials, std::vector<ui16>* rawMaterialIdToSlots) {
+MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& subMesh, const std::vector<FBXRawMaterialData>& rawMaterials, f32 baseOptimizeErrorThreshold, std::vector<ui16>* rawMaterialIdToSlots) {
 
     MeshCpuData rv;
     MaterialRepository& materialRepo = MaterialRepository::get();
 
     // Optimize + LOD
-    OptimizedCpuMeshData meshData = MeshBuilderCommon::optimizeMeshAndGenerateLODs(subMesh.mIndices, subMesh.mVertices);
+    OptimizedCpuMeshData meshData = MeshBuilderCommon::optimizeMeshAndGenerateLODs(subMesh.mIndices, subMesh.mVertices, baseOptimizeErrorThreshold);
     rv.mLodData = meshData.lodData;
 
     // Grab material IDs from material names
@@ -38,6 +38,16 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
         }
     }
 
+    // Slots
+    std::vector<ui16> rawMaterialIdSlotMapping;
+    // If we have specified slots, use them
+    if (rawMaterialIdToSlots) {
+        rawMaterialIdSlotMapping = *rawMaterialIdToSlots;
+    }
+    else {
+        rawMaterialIdSlotMapping.reserve(4);
+    }
+
     // Different vertex format based on skin or no
     rv.mVertsCount = meshData.vertices.size();
     if (subMesh.mHasSkin) {
@@ -47,39 +57,12 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
         for (int i = 0; i < rv.mVertsCount; ++i) {
             const RawMeshVertex& rawVert = meshData.vertices[i];
             SkinnedModelVertex& myVert = verts[i];
-            myVert.pos = rawVert.pos;
-            assert(rawVert.uvs.x >= 0.0f && rawVert.uvs.x <= 1.0f && rawVert.uvs.y >= 0.0f && rawVert.uvs.y <= 1.0f);
-            myVert.uvsPacked = PackUVs(rawVert.uvs);
-            myVert.normalPacked = Pack_INT_2_10_10_10_REV(rawVert.normal.x, rawVert.normal.y, rawVert.normal.z, 0.0f);
-            myVert.tangentPacked = Pack_INT_2_10_10_10_REV(rawVert.tangent.x, rawVert.tangent.y, rawVert.tangent.z, 0.0f);
-            myVert.color = rawVert.color;
-            memcpy(myVert.boneWeights, rawVert.boneWeights, sizeof(f32) * MAX_BONES_PER_VERTEX);
-            memcpy(myVert.boneIDs, rawVert.boneIDs, sizeof(ui8) * MAX_BONES_PER_VERTEX);
-        }
-    }
-    else {
-        StandardModelVertex* verts = new StandardModelVertex[rv.mVertsCount];
-        rv.mVertsPtr = verts;
-        rv.mVertexType = VertexType::STANDARD_MODEL;
-
-        // Slots
-        std::vector<ui16> rawMaterialIdSlotMapping;
-        // If we have specified slots, use them
-        if (rawMaterialIdToSlots) {
-            rawMaterialIdSlotMapping = *rawMaterialIdToSlots;
-        }
-        else {
-            rawMaterialIdSlotMapping.reserve(4);
-        }
-       
-        for (int i = 0; i < rv.mVertsCount; ++i) {
-            const RawMeshVertex& rawVert = meshData.vertices[i];
 
             // Assign slot index
             ui16 materialSlot = UINT16_MAX;
             for (size_t slotIndex = 0; slotIndex < rawMaterialIdSlotMapping.size(); ++slotIndex) {
                 if (rawMaterialIdSlotMapping[slotIndex] == rawVert.rawMaterialIndex) {
-                    verts[i].materialSlot = (ui16)slotIndex;
+                    myVert.materialSlot = (ui16)slotIndex;
                     materialSlot = (ui16)slotIndex;
                     break;
                 }
@@ -93,7 +76,47 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
                 rawMaterialIdSlotMapping.push_back(rawVert.rawMaterialIndex);
             }
 
+            myVert.pos = rawVert.pos;
+            LOG_CRITICAL("TODO: ALLOW NEGATIVE UVS");
+            //assert(rawVert.uvs.x >= 0.0f && rawVert.uvs.x <= 1.0f && rawVert.uvs.y >= 0.0f && rawVert.uvs.y <= 1.0f);
+            f32v2 uvsClamped = glm::clamp(rawVert.uvs, 0.0f, 1.0f);
+            myVert.uvsPacked = PackUVs(uvsClamped);
+            myVert.normalPacked = Pack_INT_2_10_10_10_REV(rawVert.normal.x, rawVert.normal.y, rawVert.normal.z, 0.0f);
+            myVert.tangentPacked = Pack_INT_2_10_10_10_REV(rawVert.tangent.x, rawVert.tangent.y, rawVert.tangent.z, 0.0f);
+            myVert.color = rawVert.color;
+            memcpy(myVert.boneWeights, rawVert.boneWeights, sizeof(f32) * MAX_BONES_PER_VERTEX);
+            memcpy(myVert.boneIDs, rawVert.boneIDs, sizeof(ui8) * MAX_BONES_PER_VERTEX);
+        }
+    }
+    else {
+        StandardModelVertex* verts = new StandardModelVertex[rv.mVertsCount];
+        rv.mVertsPtr = verts;
+        rv.mVertexType = VertexType::STANDARD_MODEL;
+
+      
+       
+        for (int i = 0; i < rv.mVertsCount; ++i) {
+            const RawMeshVertex& rawVert = meshData.vertices[i];
             StandardModelVertex& myVert = verts[i];
+
+            // Assign slot index
+            ui16 materialSlot = UINT16_MAX;
+            for (size_t slotIndex = 0; slotIndex < rawMaterialIdSlotMapping.size(); ++slotIndex) {
+                if (rawMaterialIdSlotMapping[slotIndex] == rawVert.rawMaterialIndex) {
+                    myVert.materialSlot = (ui16)slotIndex;
+                    materialSlot = (ui16)slotIndex;
+                    break;
+                }
+            }
+            if (materialSlot == UINT16_MAX) [[unlikely]] {
+                // Assign new slot
+                if (rawMaterialIdSlotMapping.size() >= 4) [[unlikely]] {
+                    panic("Submesh with more than 4 materials found");
+                }
+                materialSlot = (ui16)rawMaterialIdSlotMapping.size();
+                rawMaterialIdSlotMapping.push_back(rawVert.rawMaterialIndex);
+            }
+
             myVert.build(
                 rawVert.pos,
                 rawVert.normal,

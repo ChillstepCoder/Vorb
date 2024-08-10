@@ -1,10 +1,11 @@
 #include "GlobalUbo.glsl"
 #include "util/uv.glsl"
+#include "model/model_variant.glsl"
 
 // Input
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
-layout(location = 2) in uint vMaterialIndex;
+layout(location = 2) in uint vMaterialSlot;
 layout(location = 3) in vec4 vTint;
 layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec3 vTangent;
@@ -27,7 +28,8 @@ uniform mat4 unBoneTransforms[MAX_BONES];
 void main() {
   fTint = vTint;
   fUV = unpackUV(vUV);
-  fMaterialIndex = vMaterialIndex;
+  // TODO: Support other variants than just the first
+  fMaterialIndex = inVariantData[0].materials[vMaterialSlot];
   
   mat4 boneTransform = unBoneTransforms[vBoneIds[0]] * vBoneWeights[0];
   boneTransform += unBoneTransforms[vBoneIds[1]] * vBoneWeights[1];

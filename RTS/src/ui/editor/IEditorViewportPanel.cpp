@@ -254,6 +254,7 @@ void IEditorViewportPanel::updateAndRenderSharedControls() {
 
         // Culling
         ImGui::Checkbox("Disable Backface Cull", &mDisableBackfaceCulling);
+        ImGui::SliderFloat("Camera Speed", &mCameraSpeed, 0.01f, 10.0f);
 
         // Transform
         ImGui::SliderFloat("Yaw", &mYaw, 0.0f, M_2_PIF);
@@ -323,7 +324,7 @@ void IEditorViewportPanel::updateCamera(f32 aspectRatio) {
     mCameraPositioner->movement_.fastSpeed_ = vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT);
 
     // TODO: Deltatime
-    mCameraPositioner->update(1.0f / 60.0f, f32v2(ImGui::GetMousePos().x / ImGui::GetWindowWidth(), ImGui::GetMousePos().y / ImGui::GetWindowHeight()), ImGui::IsMouseDown(ImGuiMouseButton_Right), aspectRatio);
+    mCameraPositioner->update(1.0f / 60.0f, f32v2(ImGui::GetMousePos().x / ImGui::GetWindowWidth(), ImGui::GetMousePos().y / ImGui::GetWindowHeight()), ImGui::IsMouseDown(ImGuiMouseButton_Right), aspectRatio, mCameraSpeed);
 }
 
 void IEditorViewportPanel::initGBuffers(ui32v2 imageDims) {

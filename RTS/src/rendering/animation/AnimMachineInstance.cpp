@@ -25,6 +25,12 @@ AnimMachineInstance::AnimMachineInstance(AssetID animMachineID) {
 
 void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariables, OzzMatrixSpan outModelMatrices) {
     PROFILE_FUNCTION();
+    if (!numStates) [[unlikely]] {
+        for (size_t i = 0; i < outModelMatrices.size(); ++i) {
+            outModelMatrices[i] = ozz::math::Float4x4::identity();
+        }
+        return;
+    }
 
     assert(states);
     assert(currentStateID < numStates);
@@ -141,12 +147,16 @@ void AnimMachineInstance::initInternal(const AnimMachineDef& def) {
     // Fast initialization using the template
     machineDefHandle = AnimMachineRepository::get().getAssetHandle(def.getID());
     rigDef = defaultInstance.rigDef;
-    numStates = defaultInstance.numStates;
-    numBlendspace1DPlayers = defaultInstance.numBlendspace1DPlayers;
-    states = std::make_unique<AnimMachineInstanceState[]>(numStates);
-    blendspace1DPlayers = std::make_unique<Blendspace1DPlayer[]>(numBlendspace1DPlayers);
-    memcpy(states.get(), defaultInstance.states.get(), numStates * sizeof(AnimMachineInstanceState));
-    memcpy(blendspace1DPlayers.get(), defaultInstance.blendspace1DPlayers.get(), numBlendspace1DPlayers * sizeof(Blendspace1DPlayer));
+    if (defaultInstance.numStates) {
+        numStates = defaultInstance.numStates;
+        states = std::make_unique<AnimMachineInstanceState[]>(numStates);
+        memcpy(states.get(), defaultInstance.states.get(), numStates * sizeof(AnimMachineInstanceState));
+    }
+    if (defaultInstance.numBlendspace1DPlayers) {
+        numBlendspace1DPlayers = defaultInstance.numBlendspace1DPlayers;
+        blendspace1DPlayers = std::make_unique<Blendspace1DPlayer[]>(numBlendspace1DPlayers);
+        memcpy(blendspace1DPlayers.get(), defaultInstance.blendspace1DPlayers.get(), numBlendspace1DPlayers * sizeof(Blendspace1DPlayer));
+    }
 }
 
 void AnimMachineInstance::updateState(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight) {

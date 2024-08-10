@@ -33,7 +33,7 @@ public:
     static void optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui16>& indices, std::vector<VERTEX>& vertices);
     template<typename VERTEX>
     static void optimizeMeshAndGenerateLODs(MeshGpuData& subMesh, std::vector<ui32>& indices, std::vector<VERTEX>& vertices);
-    static OptimizedCpuMeshData optimizeMeshAndGenerateLODs(const std::vector<ui32>& indices, const std::vector<RawMeshVertex>& vertices);
+    static OptimizedCpuMeshData optimizeMeshAndGenerateLODs(const std::vector<ui32>& indices, const std::vector<RawMeshVertex>& vertices, f32 baseOptimizeErrorThreshold);
     // Requires VAO still bound
     static void uploadIndexData(MeshGpuData& subMesh, const std::vector<ui32>& indices, GLbitfield flags);
     static void uploadIndexData(MeshGpuData& subMesh, const ui16* indices, int indexCount, GLbitfield flags);

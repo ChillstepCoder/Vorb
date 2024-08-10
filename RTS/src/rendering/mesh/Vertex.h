@@ -80,7 +80,7 @@ struct alignas(16) Vertex32 {
 static_assert(sizeof(Vertex32) == 32, "16 byte alignment needed");
 
 // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices
-struct alignas(16) SkinnedModelVertex {
+struct SkinnedModelVertex {
 public:
     SkinnedModelVertex() {};
 
@@ -92,11 +92,12 @@ public:
     // TODO: ui16 or ui8 weights
     f32 boneWeights[MAX_BONES_PER_VERTEX] = {}; // 0 Weight default 
     ui8 boneIDs[MAX_BONES_PER_VERTEX] = {}; //
+    ui16 materialSlot; // Used by models
 
 
     static VertexType bindVertexAttribs(VGBuffer vao);
     static VertexType vertexType() { return VertexType::SKINNED_MODEL; }
 };
-static_assert(sizeof(SkinnedModelVertex) == 48, "16 byte alignment needed");
+static_assert(sizeof(SkinnedModelVertex) == 52, "keep small");
 
 extern constexpr size_t getVertexSize(VertexType type);
