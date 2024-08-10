@@ -135,6 +135,7 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
     rv.mIndexType = MeshIndexType::SHORT;
     ui16* indices = new ui16[meshData.indices.size()];
     rv.mElementsPtr = (void*)indices;
+    rv.mElementsCount = meshData.indices.size();
     for (int i = 0; i < meshData.indices.size(); ++i) {
         assert(meshData.indices[i] <= UINT16_MAX);
         indices[i] = (ui16)meshData.indices[i];

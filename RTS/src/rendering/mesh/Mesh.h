@@ -18,6 +18,7 @@ struct MeshLODData {
     ui32 mTotalIndexCount = 0;
 
     MeshLODDrawInfo getDrawInfoForLOD(MeshLODLevel lod) const {
+        assert(lod != MeshLODLevel::COUNT && "Invalid LOD level");
         const ui32 start = mLODStarts[e_cast(lod)];
         // TODO: Remove branching?
         if (lod == MeshLODLevel::Lowest) {
@@ -55,6 +56,7 @@ public:
     void* mVertsPtr = nullptr;
     void* mElementsPtr = nullptr;
     ui32 mVertsCount = 0;
+    ui32 mElementsCount = 0;
     MeshIndexType mIndexType = MeshIndexType::INVALID;
     VertexType mVertexType = VertexType::INVALID;
     MeshLODData mLodData;
@@ -137,6 +139,7 @@ public:
     //static void operator delete(void* pointer, size_t size);
 
     // TODO: Protected
+    MeshCpuData            mCpuData;
     MeshGpuData            mGpuData;
     VGBuffer               mVariantDataUbo = 0; // Managed by ModelDef
 protected:
@@ -174,6 +177,7 @@ class SkeletalMesh : public Mesh {
     friend class ModelRepository;
 public:
     const MeshSkeletonData& getSkeletonData() const { return mSkeletonData; }
+
 
 protected:
     MeshSkeletonData mSkeletonData;

@@ -29,16 +29,12 @@ void MeshOperations::applyScale(MeshCpuData& mesh, f32 scale) {
 }
 
 void MeshOperations::setAllNormals(FBXRawMesh& rawMesh, const f32v3& normal, const f32v3& tangent) {
-    for (auto&& subMesh : rawMesh.mSubMeshes) {
-        for (auto&& v : subMesh.mVertices) {
-            v.normal = normal;
-            v.tangent = tangent;
-        }
-    }
-    for (int i = 0; i < e_count(MaterialRenderPassType); ++i) {
-        for (auto&& v : rawMesh.mCombinedMeshData[i].mVertices) {
-            v.normal = normal;
-            v.tangent = tangent;
+    for (auto& [renderPass, submeshList] : rawMesh.mSubMeshes) {
+        for (auto&& subMesh : submeshList) {
+            for (auto&& v : subMesh.mVertices) {
+                v.normal = normal;
+                v.tangent = tangent;
+            }
         }
     }
 }

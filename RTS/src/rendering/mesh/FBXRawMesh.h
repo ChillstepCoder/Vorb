@@ -47,7 +47,15 @@ struct RawSubMesh {
     std::vector<RawMeshVertex> mVertices;
     std::vector<ui32> mIndices;
     RawMeshSkeletonData mSkeletonData;
+    MaterialRenderPassType mRenderPassType = MaterialRenderPassType::COUNT;
     bool mHasSkin = false;
+};
+
+struct VertexSubspan {
+    i32 startVert = 0;
+    i32 vertLength = 0;
+    i32 startIndex = 0;
+    i32 indexLength = 0;
 };
 
 // Contains everything that a mesh could need, skeleton, vertex data, vertex types,
@@ -55,7 +63,7 @@ struct RawSubMesh {
 class FBXRawMesh {
 public:
     std::vector<FBXRawMaterialData> mMaterials;
-    std::vector<RawSubMesh> mSubMeshes;
-    RawSubMesh mCombinedMeshData[e_count(MaterialRenderPassType)];
+    std::map<MaterialRenderPassType, std::vector<RawSubMesh>> mSubMeshes;
+    bool mHasSkin = false;
 };
 

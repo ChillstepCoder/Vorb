@@ -57,15 +57,16 @@ public:
     void update(double deltaSeconds, const glm::vec2& mousePos, bool mousePressed, f32 aspectRatio, f32 speedMult)
     {
         mAspectRatio = aspectRatio;
+        // TODO: Improve this camera
         if (mousePressed)
         {
             glm::vec2 delta = mousePos - mousePos_;
             const glm::mat4 v = glm::mat4_cast(cameraOrientation_);
             // Simple clamp up and down
-            if (v[2][2] >= 0.9f && delta.y > 0.0f) {
+            if (v[2][2] >= 0.94f && delta.y > 0.0f) {
                 delta.y = 0.0f;
             }
-            else if (v[2][2] <= -0.9f && delta.y < 0.0f) {
+            else if (v[2][2] <= -0.94f && delta.y < 0.0f) {
                 delta.y = 0.0f;
             }
 

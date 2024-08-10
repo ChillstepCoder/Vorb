@@ -77,7 +77,7 @@ void AssetEditorViewportPanelBase::renderMeshStatic(const ModelDef* modelAsset, 
                 mesh.unbindCurrentAttribs(); // Editor doesnt use these
                 assert(mesh.mVariantDataUbo);
                 glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
-                MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(i));
+                MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(l));
             }
             ++x;
         }

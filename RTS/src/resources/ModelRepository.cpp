@@ -29,39 +29,35 @@
 static std::mutex gFbxSdkMutex; // FBX SDK IS NOT THREAD SAFE >_<
 
 
-struct FbxLoadContext {
-    FbxLoadContext(const char* filePath) : fbxManager(), settings(fbxManager), sceneLoader(filePath, "", fbxManager, settings) { }
+struct FbxLoadContextData {
+    FbxLoadContextData(const char* filePath) : fbxManager(), settings(fbxManager), sceneLoader(filePath, "", fbxManager, settings) { }
     ozz::animation::offline::fbx::FbxManagerInstance fbxManager;
     ozz::animation::offline::fbx::FbxDefaultIOSettings settings;
     ozz::animation::offline::fbx::FbxSceneLoader sceneLoader;
 };
 
-class ModelLoadContext {
+class FbxLoadContext {
 public:
-    ModelLoadContext() = default;
-    ~ModelLoadContext() {
-        if (fbxLoadContext) {
-            // FBX SDK IS NOT THREAD SAFE
-            gFbxSdkMutex.lock();
-            fbxLoadContext.reset();
-            gFbxSdkMutex.unlock();
-        }
-    }
-
-    void initFbxSceneLoader(const char* filePath) {
+    FbxLoadContext(const char* filePath) {
         // FBX SDK IS NOT THREAD SAFE
         gFbxSdkMutex.lock();
-        fbxLoadContext = std::make_unique<FbxLoadContext>(filePath);
+        data = std::make_unique<FbxLoadContextData>(filePath);
 
-        if (!fbxLoadContext->sceneLoader.scene()) {
+        if (!data->sceneLoader.scene()) {
             panic("Failed to load fbx file: {}", filePath);
         }
         gFbxSdkMutex.unlock();
     }
+    ~FbxLoadContext() {
+        if (data) {
+            // FBX SDK IS NOT THREAD SAFE
+            gFbxSdkMutex.lock();
+            data.reset();
+            gFbxSdkMutex.unlock();
+        }
+    }
 
-
-    std::unique_ptr<FbxLoadContext> fbxLoadContext;
-    MeshCpuData meshData[e_count(MaterialRenderPassType)];
+    std::unique_ptr<FbxLoadContextData> data;
 };
 
 bool ModelRepository::loadFbxFile(const vio::Path& filePath) {
@@ -137,7 +133,6 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
     AssetLoader::getInstance().requestAssetLoadWithDependencies([this, rawMeshPtr, modelPath]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
         ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
 
-        std::shared_ptr<ModelLoadContext> loadContextPtr = std::make_shared<ModelLoadContext>();
         
         // Rig + animation
         if (def.mRigRef.isValid()) {
@@ -165,16 +160,16 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             // Find target path
             assert(fs::exists(fbxPath) && fs::is_regular_file(fbxPath));
             if (FileSystem::getLastFileWriteTime(fbxPath) <= fileLastWriteTime) {
-                loadCachedRuntimeModel(def, rnmdlPath, def.mRig ? &def.mRig->mSkeleton : nullptr, loadContextPtr->meshData);
+                loadCachedRuntimeModel(def, rnmdlPath, def.mRig ? &def.mRig->mSkeleton : nullptr);
                 needsLoadFBX = false;
             }
         }
 
         if (needsLoadFBX) {
-            loadContextPtr->initFbxSceneLoader(modelPath.getCString());
+            FbxLoadContext fbxLoadContext(modelPath.getCString());
 
             // Default Material dependencies
-            const int materialCount = loadContextPtr->fbxLoadContext->sceneLoader.scene()->GetMaterialCount();
+            const int materialCount = fbxLoadContext.data->sceneLoader.scene()->GetMaterialCount();
             rawMeshPtr->mMaterials.resize(materialCount);
 
             const bool needsConstructDefaultVariant = def.mVariants.empty();
@@ -189,7 +184,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             MaterialRepository& materialRepo = MaterialRepository::get();
 
             for (int i = 0; i < materialCount; ++i) {
-                FbxSurfaceMaterial* fbxMaterial = loadContextPtr->fbxLoadContext->sceneLoader.scene()->GetMaterial(i);
+                FbxSurfaceMaterial* fbxMaterial = fbxLoadContext.data->sceneLoader.scene()->GetMaterial(i);
                 assert(fbxMaterial);
                 rawMeshPtr->mMaterials[i] = fbx2raw::readFbxMaterial(*fbxMaterial);
                 AssetHandlePtr<MaterialDef> materialHandle = materialRepo.getAssetHandle(StrToken(rawMeshPtr->mMaterials[i].materialName));
@@ -200,7 +195,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             }
 
             // Load model to raw
-            loadRawModelFromFBX(*loadContextPtr, *rawMeshPtr, filePath, def.mRig ? &def.mRig->mSkeleton : nullptr);
+            loadRawModelFromFBX(fbxLoadContext, *rawMeshPtr, filePath, def.mRig ? &def.mRig->mSkeleton : nullptr);
             if (def.mForceNormalsUp) {
                 MeshOperations::setAllNormals(*rawMeshPtr, f32v3(0.0f, 0.0f, 1.0f), f32v3(1.0f, 0.0f, 0.0f));
             }
@@ -212,135 +207,135 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             f32 minZ = FLT_MAX;
             f32 maxZ = -FLT_MAX;
 
+            // TODO: Configure
+            const bool shouldCombineMeshes = rawMeshPtr->mHasSkin;
+            if (shouldCombineMeshes) {
+                combineSubmeshesByRenderPass(*rawMeshPtr);
+            }
+
+            std::vector<ui16> rawMaterialIdSlotMapping;
+            rawMaterialIdSlotMapping.reserve(4);
+
+
             // TODO: Handle other submeshes?
-            for (int renderPassType = 0; renderPassType < e_count(MaterialRenderPassType); ++renderPassType) {
-                RawSubMesh& combinedMeshData = rawMeshPtr->mCombinedMeshData[renderPassType];
-                if (combinedMeshData.mVertices.empty()) {
-                    continue;
-                }
+            for (auto& [renderPassIndex, subMeshList] : rawMeshPtr->mSubMeshes) {
+                for (RawSubMesh& subMesh : subMeshList) {
+                    assert(subMesh.mVertices.size());
 
-                // Assign material slots and construct AABB
-                std::vector<ui16> rawMaterialIdSlotMapping;
-                rawMaterialIdSlotMapping.reserve(4);
+                    // Assign material slots and construct AABB
+                    rawMaterialIdSlotMapping.clear();
 
-                for (size_t i = 0; i < combinedMeshData.mVertices.size(); ++i) {
-                    RawMeshVertex& rawVert = combinedMeshData.mVertices[i];
-                    // Build AABB
-                    if (rawVert.pos.x < minX) minX = rawVert.pos.x;
-                    if (rawVert.pos.x > maxX) maxX = rawVert.pos.x;
-                    if (rawVert.pos.y < minY) minY = rawVert.pos.y;
-                    if (rawVert.pos.y > maxY) maxY = rawVert.pos.y;
-                    if (rawVert.pos.z < minZ) minZ = rawVert.pos.z;
-                    if (rawVert.pos.z > maxZ) maxZ = rawVert.pos.z;
+                    for (size_t i = 0; i < subMesh.mVertices.size(); ++i) {
+                        RawMeshVertex& rawVert = subMesh.mVertices[i];
+                        // Build AABB
+                        if (rawVert.pos.x < minX) minX = rawVert.pos.x;
+                        if (rawVert.pos.x > maxX) maxX = rawVert.pos.x;
+                        if (rawVert.pos.y < minY) minY = rawVert.pos.y;
+                        if (rawVert.pos.y > maxY) maxY = rawVert.pos.y;
+                        if (rawVert.pos.z < minZ) minZ = rawVert.pos.z;
+                        if (rawVert.pos.z > maxZ) maxZ = rawVert.pos.z;
 
-                    // Assign slot index
-                    bool foundSlot = false;
-                    for (size_t slotIndex = 0; slotIndex < rawMaterialIdSlotMapping.size(); ++slotIndex) {
-                        if (rawMaterialIdSlotMapping[slotIndex] == rawVert.rawMaterialIndex) {
-                            foundSlot = true;
-                            break;
+                        // Assign slot index
+                        bool foundSlot = false;
+                        for (size_t slotIndex = 0; slotIndex < rawMaterialIdSlotMapping.size(); ++slotIndex) {
+                            if (rawMaterialIdSlotMapping[slotIndex] == rawVert.rawMaterialIndex) {
+                                foundSlot = true;
+                                break;
+                            }
+                        }
+                        if (!foundSlot) {
+                            rawMaterialIdSlotMapping.push_back(rawVert.rawMaterialIndex);
+                        }
+
+                        if (rawVert.pos.z >= 1.0f && rawVert.pos.z <= 2.0f) {
+
+                            // Damage model index binding
+                            const float angle = atan2f(rawVert.pos.y, rawVert.pos.x) + M_PIF;
+                            int slice = int(floor(angle / (M_2_PIF / MAX_DAMAGE_ZONE_RADIAL_SECTORS)));
+                            slice = std::clamp(slice, 0, MAX_DAMAGE_ZONE_RADIAL_SECTORS - 1);
+                            rawVert.damageZoneIndex = slice;
+                        }
+                        else {
+                            rawVert.damageZoneIndex = std::numeric_limits<decltype(rawVert.damageZoneIndex)>::max();
                         }
                     }
-                    if (!foundSlot) {
-                        rawMaterialIdSlotMapping.push_back(rawVert.rawMaterialIndex);
+
+                    // Assign default materials to slots
+                    if (needsConstructDefaultVariant) {
+                        def.mVariants[0].submeshMaterials.emplace_back();
+                        for (size_t i = 0; i < rawMaterialIdSlotMapping.size(); ++i) {
+                            def.mVariants[0].submeshMaterials.back()[i].setAssetName(StrToken(rawMeshPtr->mMaterials[rawMaterialIdSlotMapping[i]].materialName));
+                        }
                     }
 
-                    if (rawVert.pos.z >= 1.0f && rawVert.pos.z <= 2.0f) {
+                    MeshCpuData newMeshCpuData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(subMesh, rawMeshPtr->mMaterials, def.mBaseOptimizeErrorThresold, &rawMaterialIdSlotMapping);
 
-                        // Damage model index binding
-                        const float angle = atan2f(rawVert.pos.y, rawVert.pos.x) + M_PIF;
-                        int slice = int(floor(angle / (M_2_PIF / MAX_DAMAGE_ZONE_RADIAL_SECTORS)));
-                        slice = std::clamp(slice, 0, MAX_DAMAGE_ZONE_RADIAL_SECTORS - 1);
-                        rawVert.damageZoneIndex = slice;
+                    // Apply scale if needed
+                    if (def.mScale != 1.0f) {
+                        MeshOperations::applyScale(newMeshCpuData, def.mScale);
+                    }
+                    RawMeshSkeletonData& rawSkeletonData = subMesh.mSkeletonData;
+
+                    // Allocate and fill skeleton data
+                    if (rawSkeletonData.mNumJoints) {
+                        std::unique_ptr<SkeletalMesh> newMesh = std::make_unique<SkeletalMesh>();
+                        assert(def.mRig && "Missing rig for skeletal model");
+                        MeshSkeletonData& skeletonData = newMesh->mSkeletonData;
+                        skeletonData.mNumJoints = rawSkeletonData.mNumJoints;
+                        skeletonData.mJointRemaps = std::unique_ptr<ui8[]>(new ui8[skeletonData.mNumJoints]);
+                        memcpy(skeletonData.mJointRemaps.get(), rawSkeletonData.mJointRemaps.data(), sizeof(ui8) * skeletonData.mNumJoints);
+                        skeletonData.mInverseBindPoses = std::unique_ptr<ozz::math::Float4x4[]>(new ozz::math::Float4x4[skeletonData.mNumJoints]);
+                        memcpy(skeletonData.mInverseBindPoses.get(), rawSkeletonData.mInverseBindPoses.data(), sizeof(ozz::math::Float4x4) * skeletonData.mNumJoints);
+                        def.addMesh(std::move(newMesh));
                     }
                     else {
-                        rawVert.damageZoneIndex = std::numeric_limits<decltype(rawVert.damageZoneIndex)>::max();
+                        def.addMesh(std::make_unique<Mesh>());
                     }
+
+                    Mesh& newMesh = *def.mMeshes.back();
+                    newMesh.mCpuData = std::move(newMeshCpuData);
+                    newMesh.setRenderPass((MaterialRenderPassType)renderPassIndex);
                 }
 
-                // Assign default materials to slots
-                if (needsConstructDefaultVariant) {
-                    def.mVariants[0].submeshMaterials.emplace_back();
-                    for (size_t i = 0; i < rawMaterialIdSlotMapping.size(); ++i) {
-                        def.mVariants[0].submeshMaterials.back()[i].setAssetName(StrToken(rawMeshPtr->mMaterials[rawMaterialIdSlotMapping[i]].materialName));
+                minX *= def.mScale;
+                maxX *= def.mScale;
+                minY *= def.mScale;
+                maxY *= def.mScale;
+                minZ *= def.mScale;
+                maxZ *= def.mScale;
+                def.mAABB = f32AABB3(f32v3(minX, minY, minZ), f32v3(maxX - minX, maxY - minY, maxZ - minZ));
+
+
+                // Track for efficient gpu upload later
+                def.mTotalSubmeshJointTransformsNeeded = 0;
+                def.mSubmeshesData.resize(def.getNumMeshes());
+                if (def.isSkeletalModel()) {
+                    for (ui32 i = 0; i < def.getNumMeshes(); ++i) {
+                        def.mMeshes[i]->setSubmeshData(&def.mSubmeshesData[i]);
+                        const SkeletalMesh& skeletalMesh = def.getSkeletalMesh(i);
+                        const MeshSkeletonData& skelData = skeletalMesh.getSkeletonData();
+                        def.mTotalSubmeshJointTransformsNeeded += skelData.mNumJoints;
                     }
-                }
-
-                loadContextPtr->meshData[def.mNumMeshes] = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(combinedMeshData, rawMeshPtr->mMaterials, def.mBaseOptimizeErrorThresold, &rawMaterialIdSlotMapping);
-
-
-                // Apply scale if needed
-                if (def.mScale != 1.0f) {
-                    MeshOperations::applyScale(loadContextPtr->meshData[def.mNumMeshes], def.mScale);
-                }
-                RawMeshSkeletonData& rawSkeletonData = combinedMeshData.mSkeletonData;
-
-                // Allocate and fill skeleton data
-                if (rawSkeletonData.mNumJoints) {
-                    std::unique_ptr<SkeletalMesh> newMesh = std::make_unique<SkeletalMesh>();
-                    assert(def.mRig && "Missing rig for skeletal model");
-                    MeshSkeletonData& skeletonData = newMesh->mSkeletonData;
-                    skeletonData.mNumJoints = rawSkeletonData.mNumJoints;
-                    skeletonData.mJointRemaps = std::unique_ptr<ui8[]>(new ui8[skeletonData.mNumJoints]);
-                    memcpy(skeletonData.mJointRemaps.get(), rawSkeletonData.mJointRemaps.data(), sizeof(ui8) * skeletonData.mNumJoints);
-                    skeletonData.mInverseBindPoses = std::unique_ptr<ozz::math::Float4x4[]>(new ozz::math::Float4x4[skeletonData.mNumJoints]);
-                    memcpy(skeletonData.mInverseBindPoses.get(), rawSkeletonData.mInverseBindPoses.data(), sizeof(ozz::math::Float4x4) * skeletonData.mNumJoints);
-                    def.addMesh(std::move(newMesh));
                 }
                 else {
-                    def.addMesh(std::make_unique<Mesh>());
+                    for (ui32 i = 0; i < def.getNumMeshes(); ++i) {
+                        def.mMeshes[i]->setSubmeshData(&def.mSubmeshesData[i]);
+                    }
                 }
 
-                Mesh& newMesh = *def.mMeshes[def.mNumMeshes - 1];
-                newMesh.setRenderPass((MaterialRenderPassType)renderPassType);
+                saveCachedRuntimeModel(def, rnmdlPath);
             }
-
-            minX *= def.mScale;
-            maxX *= def.mScale;
-            minY *= def.mScale;
-            maxY *= def.mScale;
-            minZ *= def.mScale;
-            maxZ *= def.mScale;
-            def.mAABB = f32AABB3(f32v3(minX, minY, minZ), f32v3(maxX - minX, maxY - minY, maxZ - minZ));
-
-            // Make sure we have proper submesh data linked
-            if (def.mNumMeshes != def.mSubmeshesData.size()) {
-                def.mSubmeshesData.resize(def.mNumMeshes);
-            }
-
-            // Track for efficient gpu upload later
-            def.mTotalSubmeshJointTransformsNeeded = 0;
-            if (def.isSkeletalModel()) {
-                for (ui32 i = 0; i < def.mNumMeshes; ++i) {
-                    def.mMeshes[i]->setSubmeshData(&def.mSubmeshesData[i]);
-                    const SkeletalMesh& skeletalMesh = def.getSkeletalMesh(i);
-                    const MeshSkeletonData& skelData = skeletalMesh.getSkeletonData();
-                    def.mTotalSubmeshJointTransformsNeeded += skelData.mNumJoints;
-                }
-            }
-            else {
-                for (ui32 i = 0; i < def.mNumMeshes; ++i) {
-                    def.mMeshes[i]->setSubmeshData(&def.mSubmeshesData[i]);
-                }
-            }
-
-            saveCachedRuntimeModel(def, rnmdlPath, loadContextPtr->meshData);
         }
         // Load material dependencies
         assetLoader.requestAssetLoadWithDependencies([=](AssetLoader& assetLoader, AssetID assetId, const vio::Path& filePath, void* assetDataPtr, std::any&) -> bool {
             ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
             return true;
         },
-            [this]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
+        [this]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
             ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
-            std::shared_ptr<ModelLoadContext>& loadContextPtr = std::any_cast<std::shared_ptr<ModelLoadContext>&>(userData);
-            ModelLoadContext& loadContext = *loadContextPtr;
-            for (ui32 i = 0; i < def.mNumMeshes; ++i) {
-                if (loadContext.meshData[i].mVertsCount) {
-                    ModelMeshBuilder::uploadCpuMeshToGpu(loadContext.meshData[i], def.mMeshes[i]->mGpuData);
-                }
+            for (auto& mesh : def.mMeshes) {
+                ModelMeshBuilder::uploadCpuMeshToGpu(mesh->mCpuData, mesh->mGpuData);
             }
-            loadContextPtr.reset();
 
             updateModelVariantData(def.getID());
 
@@ -352,7 +347,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             &def,
             modelPath,
             mLoadedAssets[def.getID()].get(),
-            std::move(loadContextPtr),
+            nullptr,
             def.getDependencies()
         );
         return false;
@@ -367,17 +362,17 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
 
 }
 
-void ModelRepository::loadRawModelFromFBX(ModelLoadContext& loadContext, FBXRawMesh& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton) {
+void ModelRepository::loadRawModelFromFBX(FbxLoadContext& loadContext, FBXRawMesh& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton) {
     MaterialRepository& materialRepo = MaterialRepository::get();
     
     // FBX sdk is not thread safe...
     std::unique_lock lock(gFbxSdkMutex);
 
-    if (!loadContext.fbxLoadContext) {
+    if (!loadContext.data) {
         panic("Failed to import fbx scene: {}", filePath.getString());
     }
 
-    const int numMeshes = loadContext.fbxLoadContext->sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
+    const int numMeshes = loadContext.data->sceneLoader.scene()->GetSrcObjectCount<FbxMesh>();
     if (numMeshes == 0) {
         panic("No mesh to process in this file: {}", filePath.getString());
     }
@@ -386,85 +381,75 @@ void ModelRepository::loadRawModelFromFBX(ModelLoadContext& loadContext, FBXRawM
     ui32 totalVertices[e_count(MaterialRenderPassType)] = {};
     ui32 totalIndices[e_count(MaterialRenderPassType)] = {};
     int hasSkin = INT32_MAX;
-    rawFbxMesh.mSubMeshes.reserve(numMeshes);
     for (int m = 0; m < numMeshes; ++m) {
 
-        FbxMesh* fbxMesh = loadContext.fbxLoadContext->sceneLoader.scene()->GetSrcObject<FbxMesh>(m);
-        RawSubMesh& subMesh = rawFbxMesh.mSubMeshes.emplace_back();
+        FbxMesh* fbxMesh = loadContext.data->sceneLoader.scene()->GetSrcObject<FbxMesh>(m);
+        RawSubMesh newSubMesh;
 
         LOG_DEBUG("Processing mesh: {} {} deformer count {}", fbxMesh->GetName(), filePath.getString(), fbxMesh->GetDeformerCount(FbxDeformer::eSkin));
         ControlPointsRemap remap;
-        if (!fbx2raw::buildRawSubmesh(fbxMesh, loadContext.fbxLoadContext->sceneLoader.converter(), &remap, subMesh, rawFbxMesh.mMaterials, skeleton == nullptr)) {
+        if (!fbx2raw::buildRawSubmesh(fbxMesh, loadContext.data->sceneLoader.converter(), &remap, newSubMesh, rawFbxMesh.mMaterials, skeleton == nullptr)) {
             panic("Failed to read submesh for: {}", filePath.getString());
         }
 
         if (fbxMesh->GetDeformerCount(FbxDeformer::eSkin) > 0) {
             assert(hasSkin == true || hasSkin == INT32_MAX);
-            subMesh.mHasSkin = true;
+            newSubMesh.mHasSkin = true;
             hasSkin = true;
             assert(skeleton && "Needs to have skeleton explicitly passed in");
-            if (!fbx2raw::buildSkin(fbxMesh, loadContext.fbxLoadContext->sceneLoader.converter(), remap, *skeleton, subMesh)) {
+            if (!fbx2raw::buildSkin(fbxMesh, loadContext.data->sceneLoader.converter(), remap, *skeleton, newSubMesh)) {
                 panic("Failed to read skinning data: {}", filePath.getString());
             }
         }
         else {
             assert(hasSkin == false || hasSkin == INT32_MAX);
-            subMesh.mHasSkin = false;
+            newSubMesh.mHasSkin = false;
             hasSkin = false;
         }
 
-        if (subMesh.mVertices.size()) {
-            const int materialIndex = subMesh.mVertices[0].rawMaterialIndex;
+        if (newSubMesh.mVertices.size()) {
+            const int materialIndex = newSubMesh.mVertices[0].rawMaterialIndex;
             assert(rawFbxMesh.mMaterials[materialIndex].defaultMaterialDef);
-            const MaterialRenderPassType renderPass = rawFbxMesh.mMaterials[materialIndex].defaultMaterialDef->renderPass;
-            totalVertices[e_cast(renderPass)] += subMesh.mVertices.size();
-            totalIndices[e_cast(renderPass)] += subMesh.mIndices.size();
+            newSubMesh.mRenderPassType = rawFbxMesh.mMaterials[materialIndex].defaultMaterialDef->renderPass;
+            rawFbxMesh.mSubMeshes[newSubMesh.mRenderPassType].emplace_back(std::move(newSubMesh));
         }
     }
     assert(hasSkin != INT32_MAX);
-
     lock.unlock();
+}
 
-    // Skin data
-    if (hasSkin) {
-        // TODO: SPLIT SUBMESHES
-        const RawSubMesh& baseSubMesh = rawFbxMesh.mSubMeshes[0];
-        const int baseMaterialIndex = baseSubMesh.mVertices[0].rawMaterialIndex;
-        const MaterialRenderPassType baseRenderPass = rawFbxMesh.mMaterials[baseMaterialIndex].defaultMaterialDef->renderPass;
-        for (int i = 0; i < numMeshes; ++i) {
-            // Make sure they are all the same render pass
-            assert(baseRenderPass == rawFbxMesh.mMaterials[rawFbxMesh.mSubMeshes[i].mVertices[0].rawMaterialIndex].defaultMaterialDef->renderPass);
+void ModelRepository::combineSubmeshesByRenderPass(OUT FBXRawMesh& rawFbxMesh) {
+    assert(!rawFbxMesh.mHasSkin); // Not supported yet, intended for only static props
+
+    std::map<int/*renderPassIndex*/, RawSubMesh> combinedSubMeshes;
+
+    for (auto& [renderPassIndex, subMeshList] : rawFbxMesh.mSubMeshes) {
+        i32 totalVerts = 0;
+        i32 totalInds = 0;
+        for (RawSubMesh& subMesh : subMeshList) {
+            totalVerts += subMesh.mVertices.size();
+            totalInds += subMesh.mIndices.size();
         }
-        rawFbxMesh.mCombinedMeshData[e_cast(baseRenderPass)].mHasSkin = hasSkin;
-        rawFbxMesh.mCombinedMeshData[e_cast(baseRenderPass)].mSkeletonData = std::move(rawFbxMesh.mSubMeshes[0].mSkeletonData);
-    }
-    for (int i = 0; i < e_count(MaterialRenderPassType); ++i) {
-        rawFbxMesh.mCombinedMeshData[i].mVertices.resize(totalVertices[i]);
-        rawFbxMesh.mCombinedMeshData[i].mIndices.resize(totalIndices[i]);
-    }
-    // Combine all submeshes by render pass
-    int v[e_count(MaterialRenderPassType)] = {};
-    int i[e_count(MaterialRenderPassType)] = {};
-    int iStart[e_count(MaterialRenderPassType)] = {};
-    for (int m = 0; m < numMeshes; ++m) {
-        const RawSubMesh& subMesh = rawFbxMesh.mSubMeshes[m];
-        const int materialIndex = subMesh.mVertices[0].rawMaterialIndex;
-        const int renderPassIndex = e_cast(rawFbxMesh.mMaterials[materialIndex].defaultMaterialDef->renderPass);
-        for (int j = 0; j < subMesh.mVertices.size(); ++j) {
-            rawFbxMesh.mCombinedMeshData[renderPassIndex].mVertices[v[renderPassIndex]++] = subMesh.mVertices[j];
+
+        RawSubMesh& combined = combinedSubMeshes[(int)renderPassIndex];
+
+        combined.mVertices.reserve(totalVerts);
+        combined.mIndices.reserve(totalInds);
+
+        for (RawSubMesh& subMesh : subMeshList) {
+            combined.mVertices.insert(combined.mVertices.end(), subMesh.mVertices.begin(), subMesh.mVertices.end());
+            combined.mIndices.insert(combined.mIndices.end(), subMesh.mIndices.begin(), subMesh.mIndices.end());
         }
-        for (int j = 0; j < subMesh.mIndices.size(); ++j) {
-            rawFbxMesh.mCombinedMeshData[renderPassIndex].mIndices[i[renderPassIndex]++] = subMesh.mIndices[j] + iStart[renderPassIndex];
-        }
-        iStart[renderPassIndex] += subMesh.mVertices.size();
+        combined.mRenderPassType = renderPassIndex;
+        combined.mHasSkin = false;
     }
 }
 
-void ModelRepository::loadCachedRuntimeModel(ModelDef& def, const vio::Path& modelPath, const ozz::animation::Skeleton* skeleton, OUT MeshCpuData meshData[e_count(MaterialRenderPassType)]) {
+void ModelRepository::loadCachedRuntimeModel(ModelDef& def, const vio::Path& modelPath, const ozz::animation::Skeleton* skeleton) {
 
 }
 
-void ModelRepository::saveCachedRuntimeModel(ModelDef& def, const vio::Path& modelPath, MeshCpuData meshData[e_count(MaterialRenderPassType)])
+void ModelRepository::saveCachedRuntimeModel(ModelDef& def, const vio::Path& modelPath)
 {
 
 }
@@ -526,7 +511,7 @@ void ModelRepository::updateModelVariantData(AssetID id) {
             }
         }
 
-        assert(submeshIndex < def.mNumMeshes);
+        assert(submeshIndex < def.getNumMeshes());
 
         // Upload
         GLBuffer& buffer = def.mVariantsGpuBuffers[submeshIndex];

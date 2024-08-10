@@ -273,7 +273,7 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
                 MeshLODLevel lod = lodParams.selectLOD(distSQ);
 
                 // TODO: We should batch render these
-                for (ui32 i = 0; i < modelDef.mNumMeshes; ++i) {
+                for (ui32 i = 0; i < modelDef.getNumMeshes(); ++i) {
                     const SkeletalMesh& skeletalMesh = modelDef.getSkeletalMesh(i);
                     const MeshSkeletonData& skelData = skeletalMesh.getSkeletonData();
 

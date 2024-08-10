@@ -11,8 +11,6 @@
 #include <ozz/animation/runtime/skeleton.h>
 
 
-constexpr int MAX_MODEL_MESH_COUNT = e_count(MaterialRenderPassType);
-
 class RigDef;
 class AnimMachineDef;
 
@@ -55,18 +53,16 @@ public:
     VORB_NON_COPYABLE_BUT_MOVABLE(ModelDef);
 
     bool isSkeletalModel() const { return mRig != nullptr; }
-    ui32 getNumMeshes() const { return mNumMeshes; }
+    ui32 getNumMeshes() const { return mMeshes.size(); }
     const SkeletalMesh& getSkeletalMesh(ui32 meshIndex) const { assert(isSkeletalModel()); return dynamic_cast<const SkeletalMesh&>(*mMeshes[meshIndex]); }
     Mesh& getMesh(ui32 meshIndex) { return *mMeshes[meshIndex]; }
     const Mesh& getMesh(ui32 meshIndex) const { return *mMeshes[meshIndex]; }
-    void addMesh(std::unique_ptr<Mesh>&& mesh);
+    void addMesh(std::unique_ptr<Mesh> mesh);
 
     // TODO: AssetHandle
     const RigDef* mRig = nullptr;
     const AnimMachineDef* mAnimMachine = nullptr;
-    // TODO: single unique_ptr? <mesh[]>
-    std::unique_ptr<Mesh> mMeshes[MAX_MODEL_MESH_COUNT];
-    ui32 mNumMeshes = 0;
+    std::vector<std::unique_ptr<Mesh>> mMeshes;
     ui32 mTotalSubmeshJointTransformsNeeded = 0;
     StrToken mModelFileName;
     RigAssetRef mRigRef;
