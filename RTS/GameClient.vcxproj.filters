@@ -504,7 +504,7 @@
     <ClCompile Include="src\rendering\mesh\MeshOperations.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\mesh\FBXRawMesh.cpp">
+    <ClCompile Include="src\rendering\mesh\FBXRawModel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ui\editor\MaterialEditorViewportPanel.cpp">
@@ -2051,7 +2051,7 @@
     <ClInclude Include="src\rendering\mesh\VertexType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\mesh\FBXRawMesh.h">
+    <ClInclude Include="src\rendering\mesh\FBXRawModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\mesh\MeshSkeletonData.h">

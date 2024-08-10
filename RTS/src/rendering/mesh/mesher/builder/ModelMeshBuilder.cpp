@@ -4,7 +4,7 @@
 #include "rendering/mesh/mesher/builder/MeshBuilderCommon.h"
 #include "rendering/model/StaticModelInstance.h"
 
-#include "rendering/mesh/FBXRawMesh.h"
+#include "rendering/mesh/FBXRawModel.h"
 #include "rendering/mesh/Mesh.h"
 
 #include <ozz/base/io/archive.h>

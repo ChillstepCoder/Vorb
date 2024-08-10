@@ -25,7 +25,7 @@
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 static const f32v2 THUMBNAIL_SIZE = f32v2(50.0f);
-static std::unique_ptr<ImguiUtil::AssetSelectorPopup> sAssetSelectorPopup;
+static std::unique_ptr<ImguiUtil::AssetSelectorPopup> sVariantAssetSelectorPopup;
 static std::vector<nString> sFilterNames;
 static char sFilterBuf[64] = {};
 static nString sFilterStr;
@@ -43,13 +43,13 @@ AssetSelectPanelResult AssetSelectPanel::updateAndRender(float ySize) {
     ImGui::BeginChild("Asset Selector", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
     ImGui::Text("Asset Selector");
 
-    if (sAssetSelectorPopup) {
-        if (sAssetSelectorPopup->updateAndRender(UIContext::getWindowDims().y * 0.9f)) {
-            StrToken result = sAssetSelectorPopup->getResult().mName;
+    if (sVariantAssetSelectorPopup) {
+        if (sVariantAssetSelectorPopup->updateAndRender(UIContext::getWindowDims().y * 0.9f)) {
+            StrToken result = sVariantAssetSelectorPopup->getResult().mName;
             if (result.isValid()) {
-                UIContext::getInstance().getEditorRoot().tryOpenAssetForEdit(sAssetSelectorPopup->getResult().mDescriptor);
+                UIContext::getInstance().getEditorRoot().tryOpenAssetForEdit(sVariantAssetSelectorPopup->getResult().mDescriptor);
             }
-            sAssetSelectorPopup.reset();
+            sVariantAssetSelectorPopup.reset();
         }
     }
     else {
@@ -67,8 +67,8 @@ AssetSelectPanelResult AssetSelectPanel::updateAndRender(float ySize) {
             if (sFilterStr.empty() || nameLower.find(sFilterStr) != nameLower.npos) {
                 if (ImGui::Button(name, size)) {
                     auto& repo = ResourceManager::get().getAssetRepository((AssetType)i);
-                    sAssetSelectorPopup = std::make_unique<ImguiUtil::AssetSelectorPopup>(repo.getAssetRegistry());
-                    sAssetSelectorPopup->setThumbnailFunc(ImguiAssetThumbnails::getThumbnailFunction((AssetType)i), THUMBNAIL_SIZE);
+                    sVariantAssetSelectorPopup = std::make_unique<ImguiUtil::AssetSelectorPopup>(repo.getAssetRegistry());
+                    sVariantAssetSelectorPopup->setThumbnailFunc(ImguiAssetThumbnails::getThumbnailFunction((AssetType)i), THUMBNAIL_SIZE);
                     break;
                 }
             }

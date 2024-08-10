@@ -3,7 +3,7 @@
 
 #include "resources/ResourceManager.h"
 
-inline StrToken LiteAssetRefBase::getAssetNameInternal(AssetType type) const {
+StrToken LiteAssetRefBase::getAssetNameInternal(AssetType type) const {
     if (!isValid()) [[unlikely]] {
         return StrToken();
     }
@@ -21,13 +21,7 @@ void LiteAssetRefBase::setAssetNameInternal(StrToken name, AssetType type) {
 }
 
 bool LiteAssetRefBase::updateAndRenderImguiInternal(const char* label, AssetType type, AssetFilterFunc filterFunc)  {
-    // Share soft asset reference logic for now
-    VariantAssetRef ref(type, isValid() ? getAssetNameInternal(type) : StrToken());
-    bool changed = ImguiUtil::updateAndRenderVariantAssetReference(label, ref, filterFunc);
-    if (changed) {
-        mId = ref.getAssetID();
-    }
-    return changed;
+    return ImguiUtil::updateAndRenderAssetReference(label, *this, type, filterFunc);
 }
 
 IAsset& LiteAssetRefBase::getLoadedOrUnloadedAssetInternal(AssetType type) const {

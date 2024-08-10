@@ -2,6 +2,8 @@
 
 #include "resources/asset/AssetType.h"
 
+class LiteAssetRefBase;
+
 class VariantAssetRef {
 public:
     VariantAssetRef() = default;
@@ -30,4 +32,5 @@ public:
 
 namespace ImguiUtil {
     bool updateAndRenderVariantAssetReference(const char* label, VariantAssetRef& assetRef, AssetFilterFunc filterFunc = nullptr);
+    bool updateAndRenderAssetReference(const char* label, LiteAssetRefBase& assetRef, AssetType type, AssetFilterFunc filterFunc = nullptr);
 }

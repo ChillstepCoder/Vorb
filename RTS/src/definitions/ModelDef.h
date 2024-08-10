@@ -63,6 +63,7 @@ public:
     const RigDef* mRig = nullptr;
     const AnimMachineDef* mAnimMachine = nullptr;
     std::vector<std::unique_ptr<Mesh>> mMeshes;
+    std::vector<ModelSubmeshData> mMeshesModelData;
     ui32 mTotalSubmeshJointTransformsNeeded = 0;
     StrToken mModelFileName;
     RigAssetRef mRigRef;
@@ -76,7 +77,6 @@ public:
     ShadowModelDetail mShadowDetail = ShadowModelDetail::High;
     f32AABB3 mAABB; // Calculated from mesh data
     bool mForceNormalsUp = false;
-    std::vector<ModelSubmeshData> mSubmeshesData;
     std::vector<f32v3> mDamageZoneSpline = { f32v3(0.0f), f32v3(0.0f, 0.0f, 8.0f) }; // Damage zones align to this spline
     ModelCollider mColliderData;
     CollisionShapeID mCollisionShapeID = INVALID_COLLISION_SHAPE_ID;

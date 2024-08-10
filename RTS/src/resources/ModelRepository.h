@@ -1,7 +1,7 @@
 #pragma once
 
 #include "definitions/ModelDef.h"
-#include "rendering/mesh/FBXRawMesh.h"
+#include "rendering/mesh/FBXRawModel.h"
 
 #include "resources/IAssetRepository.h"
 
@@ -51,8 +51,8 @@ private:
     AssetLoadFunc getAssetLoadFunc() override;
 
     void loadModelInternal(ModelDef& def, StrToken modelName, const vio::Path& modelPath);
-    void loadRawModelFromFBX(FbxLoadContext& loadContext, FBXRawMesh& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton);
-    void combineSubmeshesByRenderPass(OUT FBXRawMesh& rawFbxMesh);
+    void loadRawModelFromFBX(FbxLoadContext& loadContext, FBXRawModel& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton);
+    void combineSubmeshesByRenderPass(OUT FBXRawModel& rawFbxMesh);
     void loadCachedRuntimeModel(ModelDef& def, const vio::Path& modelPath, const ozz::animation::Skeleton* skeleton);
     void saveCachedRuntimeModel(ModelDef& def, const vio::Path& modelPath);
 
@@ -62,9 +62,6 @@ private:
     void updateModelVariantData(AssetID id);
     void updateMaterialDependencies(AssetID id);
     void updateModelCollision(AssetID id);
-
-    std::mutex mRawModelsMutex;
-    std::map<StrToken, std::unique_ptr<FBXRawMesh>> mRawModels;
 
     // TODO: Pooled allocate
     std::vector<std::unique_ptr<ModelBatch>> mModelBatches;

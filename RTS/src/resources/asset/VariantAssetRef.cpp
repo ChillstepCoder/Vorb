@@ -13,12 +13,14 @@
 #include "rendering/material/MaterialData.h"
 #include "definitions/AssetDefinitions.h"
 
-static const f32v2 THUMBNAIL_SIZE = f32v2(50.0f);
-static std::map<VariantAssetRef*, std::unique_ptr<ImguiUtil::AssetSelectorPopup>> sAssetSelectorPopup;
+#include "resources/asset/LiteAssetRef.h"
 
-template <typename T>
-bool assetButton(VariantAssetRef& assetRef, AssetFilterFunc fiterFunc) {
-    IAssetRepository<T>& repo = IAssetRepository<T>::getInstance();
+static const f32v2 THUMBNAIL_SIZE = f32v2(50.0f);
+static std::map<VariantAssetRef*, std::unique_ptr<ImguiUtil::AssetSelectorPopup>> sVariantAssetSelectorPopup;
+static std::map<LiteAssetRefBase*, std::unique_ptr<ImguiUtil::AssetSelectorPopup>> sAssetSelectorPopup;
+
+bool assetButton(VariantAssetRef& assetRef, AssetType type, AssetFilterFunc fiterFunc) {
+    IAssetRepositoryBase& repo = ResourceManager::get().getAssetRepository(type);
     ImguiUtil::ScopedColor color(ImGuiCol_Button, assetRef.isValid() ? ImguiColors::Theme::highlight : ImguiColors::Theme::error);
     if (ImGui::ButtonEx(repo.getAssetTypeDisplayName(), ImVec2(0,0), ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle)) {
         // If it was a middle click, navigate to the asset if it is valid
@@ -28,9 +30,9 @@ bool assetButton(VariantAssetRef& assetRef, AssetFilterFunc fiterFunc) {
             }
         }
         else {
-            sAssetSelectorPopup[&assetRef] = std::make_unique<ImguiUtil::AssetSelectorPopup>(repo.getAssetRegistry());
-            sAssetSelectorPopup[&assetRef]->setThumbnailFunc(ImguiAssetThumbnails::getThumbnailFunction<T>(), THUMBNAIL_SIZE);
-            sAssetSelectorPopup[&assetRef]->setAssetFilterFunc(fiterFunc);
+            sVariantAssetSelectorPopup[&assetRef] = std::make_unique<ImguiUtil::AssetSelectorPopup>(repo.getAssetRegistry());
+            sVariantAssetSelectorPopup[&assetRef]->setThumbnailFunc(ImguiAssetThumbnails::getThumbnailFunction(type), THUMBNAIL_SIZE);
+            sVariantAssetSelectorPopup[&assetRef]->setAssetFilterFunc(fiterFunc);
         }
     }
     ImGui::SameLine();
@@ -42,15 +44,52 @@ bool assetButton(VariantAssetRef& assetRef, AssetFilterFunc fiterFunc) {
     }
     ImGui::SameLine();
     ImGui::Text(assetRef.name.isValid() ? assetRef.name.toString().c_str() : "NONE");
-    auto f = ImguiAssetThumbnails::getThumbnailFunction<T>();
+    auto f = ImguiAssetThumbnails::getThumbnailFunction(type);
     if (f && assetRef.name.isValid()) {
         f(repo.getAssetID(assetRef.name), f32v2(60.0f));
     }
     return false;
 }
 
-bool ImguiUtil::updateAndRenderVariantAssetReference(const char* label, VariantAssetRef& assetRef, std::function<bool(AssetID)> filterFunc /*= nullptr*/) {
+bool assetButton(LiteAssetRefBase& assetRef, AssetType type, AssetFilterFunc fiterFunc) {
+    IAssetRepositoryBase& repo = ResourceManager::get().getAssetRepository(type);
+    ImguiUtil::ScopedColor color(ImGuiCol_Button, assetRef.isValid() ? ImguiColors::Theme::highlight : ImguiColors::Theme::error);
+    if (ImGui::ButtonEx(repo.getAssetTypeDisplayName(), ImVec2(0, 0), ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle)) {
+        // If it was a middle click, navigate to the asset if it is valid
+        if (ImGui::IsMouseReleased(ImGuiMouseButton_Middle)) {
+            if (assetRef.isValid()) {
+                UIContext::getInstance().getEditorRoot().tryOpenAssetForEdit(AssetDescriptor{.id = assetRef.getAssetID(), .assetType = type});
+            }
+        }
+        else {
+            sAssetSelectorPopup[&assetRef] = std::make_unique<ImguiUtil::AssetSelectorPopup>(repo.getAssetRegistry());
+            sAssetSelectorPopup[&assetRef]->setThumbnailFunc(ImguiAssetThumbnails::getThumbnailFunction(type), THUMBNAIL_SIZE);
+            sAssetSelectorPopup[&assetRef]->setAssetFilterFunc(fiterFunc);
+        }
+    }
+    ImGui::SameLine();
+    if (assetRef.isValid()) {
+        if (ImGui::Button("x")) {
+            assetRef.invalidate();
+            return true;
+        }
+    }
+    StrToken name;
+    if (assetRef.isValid()) {
+        name = repo.getAssetName(assetRef.getAssetID());
+    }
 
+    ImGui::SameLine();
+    ImGui::Text(name.isValid() ? name.toString().c_str() : "NONE");
+    auto f = ImguiAssetThumbnails::getThumbnailFunction(type);
+    if (f && name.isValid()) {
+        f(assetRef.getAssetID(), f32v2(60.0f));
+    }
+    return false;
+}
+
+template <typename T>
+bool assetButtons(T& assetRef, AssetType type, const char* label, AssetFilterFunc filterFunc) {
     ImGui::PushID(&assetRef);
     bool changed = false;
 
@@ -59,86 +98,117 @@ bool ImguiUtil::updateAndRenderVariantAssetReference(const char* label, VariantA
         ImGui::SameLine();
     }
 
-    switch (assetRef.assetType) {
+    switch (type) {
         case AssetType::Tile:
-            changed |= assetButton<TileDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::ParticleSystem:
-            changed |= assetButton<ParticleSystemDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Effect:
-            changed |= assetButton<EffectDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Texture:
-            changed |= assetButton<TextureDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Cubemap:
-            changed |= assetButton<CubemapDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Brush:
-            changed |= assetButton<BrushDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Material:
-            changed |= assetButton<MaterialDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Rig:
-            changed |= assetButton<RigDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Animation:
-            changed |= assetButton<AnimationDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::AnimMachine:
-            changed |= assetButton<AnimMachineDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Blendspace1D:
-            changed |= assetButton<Blendspace1DDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Model:
-            changed |= assetButton<ModelDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Skill:
-            changed |= assetButton<SkillDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Item:
-            changed |= assetButton<ItemDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Fish:
-            changed |= assetButton<FishDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::MaterialShader:
-            changed |= assetButton<MaterialShaderDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::TileGrass:
-            changed |= assetButton<TileGrassDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Biome:
-            changed |= assetButton<BiomeDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::TileDistribution:
-            changed |= assetButton<TileDistributionDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Building:
-            changed |= assetButton<BuildingDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::Room:
-            changed |= assetButton<RoomDef>(assetRef, filterFunc);
+            changed |= assetButton(assetRef, type, filterFunc);
             break;
         case AssetType::NONE:
             ImGui::Button("INVALID SOFT REF");
             break;
         default:
-            panic("Unhandled asset type {} in SoftAssetReference::updateAndRenderSoftAssetReference", e_cast(assetRef.assetType));
+            panic("Unhandled asset type {} in SoftAssetReference::updateAndRenderSoftAssetReference", e_cast(type));
             break;
 
     }
     static_assert(e_count(AssetType) == 22);
 
-    auto&& it = sAssetSelectorPopup.find(&assetRef);
-    if (it != sAssetSelectorPopup.end()) {
+    return changed;
+}
+
+bool ImguiUtil::updateAndRenderVariantAssetReference(const char* label, VariantAssetRef& assetRef, std::function<bool(AssetID)> filterFunc /*= nullptr*/) {
+
+    bool changed = assetButtons(assetRef, assetRef.assetType, label, filterFunc);
+
+    auto&& it = sVariantAssetSelectorPopup.find(&assetRef);
+    if (it != sVariantAssetSelectorPopup.end()) {
+
         if (it->second->updateAndRender(UIContext::getWindowDims().y * 0.9f)) {
             StrToken result = it->second->getResult().mName;
             if (result.isValid()) {
                 assetRef.name = it->second->getResult().mName;
+            }
+            it->second.reset();
+            changed = true;
+            sVariantAssetSelectorPopup.erase(it);
+        }
+    }
+
+    ImGui::PopID();
+
+    return changed;
+}
+
+bool ImguiUtil::updateAndRenderAssetReference(const char* label, LiteAssetRefBase& assetRef, AssetType type, AssetFilterFunc filterFunc /*= nullptr*/) {
+
+    bool changed = assetButtons(assetRef, type, label, filterFunc);
+
+    auto&& it = sAssetSelectorPopup.find(&assetRef);
+    if (it != sAssetSelectorPopup.end()) {
+
+        if (it->second->updateAndRender(UIContext::getWindowDims().y * 0.9f)) {
+            StrToken result = it->second->getResult().mName;
+            if (result.isValid()) {
+                assetRef.setAssetID(it->second->getResult().getId());
             }
             it->second.reset();
             changed = true;

@@ -414,7 +414,7 @@
     <ClCompile Include="src\rendering\mesh\mesher\ITileContainerMesher.cpp" />
     <ClCompile Include="src\rendering\mesh\MeshOperations.cpp" />
     <ClCompile Include="src\rendering\mesh\PrimitiveShapeMeshes.cpp" />
-    <ClCompile Include="src\rendering\mesh\FBXRawMesh.cpp" />
+    <ClCompile Include="src\rendering\mesh\FBXRawModel.cpp" />
     <ClCompile Include="src\rendering\mesh\GrassMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\Mesh.cpp" />
     <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp" />
@@ -957,7 +957,7 @@
     <ClInclude Include="src\rendering\mesh\MeshOperations.h" />
     <ClInclude Include="src\rendering\mesh\MeshSkeletonData.h" />
     <ClInclude Include="src\rendering\mesh\PrimitiveShapeMeshes.h" />
-    <ClInclude Include="src\rendering\mesh\FBXRawMesh.h" />
+    <ClInclude Include="src\rendering\mesh\FBXRawModel.h" />
     <ClInclude Include="src\rendering\mesh\GrassMeshManager.h" />
     <ClInclude Include="src\rendering\mesh\Mesh.h" />
     <ClInclude Include="src\rendering\mesh\TerrainMeshManager.h" />

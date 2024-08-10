@@ -49,6 +49,7 @@ struct RawSubMesh {
     RawMeshSkeletonData mSkeletonData;
     MaterialRenderPassType mRenderPassType = MaterialRenderPassType::COUNT;
     bool mHasSkin = false;
+    StrToken mName;
 };
 
 struct VertexSubspan {
@@ -60,7 +61,7 @@ struct VertexSubspan {
 
 // Contains everything that a mesh could need, skeleton, vertex data, vertex types,
 // can be exported or converted into proper GPU meshes.
-class FBXRawMesh {
+class FBXRawModel {
 public:
     std::vector<FBXRawMaterialData> mMaterials;
     std::map<MaterialRenderPassType, std::vector<RawSubMesh>> mSubMeshes;

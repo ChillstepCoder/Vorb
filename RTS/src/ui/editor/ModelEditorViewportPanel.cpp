@@ -94,8 +94,8 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
                 ImGui::Text("Submesh Edit");
                 ImGui::Spacing(); ImGui::SameLine();
                 ImGui::SliderInt("Index", &mSingleIndex, 0, mAssetData->getNumMeshes() - 1);
-                ModelSubmeshData& subMeshData = mAssetData->mSubmeshesData[mSingleIndex];
-
+                ModelSubmeshData& subMeshData = mAssetData->mMeshesModelData[mSingleIndex];
+                ImGui::Text(subMeshData.name.toString().c_str());
                 changed |= updateAndRenderImguiControls(subMeshData);
 
                 ImGui::Separator();
@@ -105,12 +105,13 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
                 ImGui::SliderInt("Preview Variant", &mVariantIndex, 0, mAssetData->mVariants.size() - 1);
                 // Variant controls
                 changed |= ImguiUtil::ObjectVector<ModelVariantData>("Variants", mAssetData->mVariants,
-                    [](ModelVariantData& o, ui32) {
+                    [&](ModelVariantData& o, ui32 i) {
                         bool changed = false;
                         changed |= updateAndRenderImguiControls(o);
-                        changed |= ImguiUtil::ObjectVector<std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>>("Materials", o.submeshMaterials,
-                            [](std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>& o, ui32 i) {
+                        changed |= ImguiUtil::ObjectVector<std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>>("Submesh Materials", o.submeshMaterials,
+                            [&](std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>& o, ui32 m) {
                                 bool changed = false;
+                                ImGui::Text(mAssetData->mMeshesModelData[m].name.toString().c_str());
                                 for (auto&& r : o) {
                                     changed |= r.updateAndRenderImgui(nullptr);
                                 }

@@ -2,7 +2,7 @@
 #include "MeshOperations.h"
 #include "rendering/mesh/Mesh.h"
 #include "rendering/mesh/Vertex.h"
-#include "rendering/mesh/FBXRawMesh.h"
+#include "rendering/mesh/FBXRawModel.h"
 
 void MeshOperations::rotate90AboutAxis(MeshCpuData& mesh, const f32v3& axis) {
     assert(false);
@@ -28,7 +28,7 @@ void MeshOperations::applyScale(MeshCpuData& mesh, f32 scale) {
     static_assert(e_cast(VertexType::COUNT) == 5);
 }
 
-void MeshOperations::setAllNormals(FBXRawMesh& rawMesh, const f32v3& normal, const f32v3& tangent) {
+void MeshOperations::setAllNormals(FBXRawModel& rawMesh, const f32v3& normal, const f32v3& tangent) {
     for (auto& [renderPass, submeshList] : rawMesh.mSubMeshes) {
         for (auto&& subMesh : submeshList) {
             for (auto&& v : subMesh.mVertices) {

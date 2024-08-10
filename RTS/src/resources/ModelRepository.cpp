@@ -111,17 +111,6 @@ AssetLoadFunc ModelRepository::getAssetLoadFunc() {
 
 void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const vio::Path& modelPath) {
 
-    // Allocate raw FBX
-    FBXRawMesh* rawMeshPtr;
-
-    {
-        std::unique_ptr<FBXRawMesh> rawFbxMesh = std::make_unique<FBXRawMesh>();
-        rawMeshPtr = rawFbxMesh.get();
-        // TODO: Free this when done!
-        std::lock_guard lock(mRawModelsMutex);
-        mRawModels[std::move(modelName)] = std::move(rawFbxMesh);
-    }
-
     // If has rig, we need to load animation and skeleton info
     if (def.mRigRef.isValid()) {
         def.addDependency(def.mRigRef.getAssetHandleBase());
@@ -130,10 +119,10 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
         }
     }
 
-    AssetLoader::getInstance().requestAssetLoadWithDependencies([this, rawMeshPtr, modelPath]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
+    AssetLoader::getInstance().requestAssetLoadWithDependencies([this, modelPath]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
         ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
 
-        
+
         // Rig + animation
         if (def.mRigRef.isValid()) {
             def.mRig = &def.mRigRef.getLoadedAsset<RigDef>();
@@ -166,11 +155,12 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
         }
 
         if (needsLoadFBX) {
+            FBXRawModel rawFbxModel;
             FbxLoadContext fbxLoadContext(modelPath.getCString());
 
             // Default Material dependencies
             const int materialCount = fbxLoadContext.data->sceneLoader.scene()->GetMaterialCount();
-            rawMeshPtr->mMaterials.resize(materialCount);
+            rawFbxModel.mMaterials.resize(materialCount);
 
             const bool needsConstructDefaultVariant = def.mVariants.empty();
             if (needsConstructDefaultVariant) {
@@ -186,18 +176,18 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             for (int i = 0; i < materialCount; ++i) {
                 FbxSurfaceMaterial* fbxMaterial = fbxLoadContext.data->sceneLoader.scene()->GetMaterial(i);
                 assert(fbxMaterial);
-                rawMeshPtr->mMaterials[i] = fbx2raw::readFbxMaterial(*fbxMaterial);
-                AssetHandlePtr<MaterialDef> materialHandle = materialRepo.getAssetHandle(StrToken(rawMeshPtr->mMaterials[i].materialName));
+                rawFbxModel.mMaterials[i] = fbx2raw::readFbxMaterial(*fbxMaterial);
+                AssetHandlePtr<MaterialDef> materialHandle = materialRepo.getAssetHandle(StrToken(rawFbxModel.mMaterials[i].materialName));
                 if (materialHandle) {
-                    rawMeshPtr->mMaterials[i].defaultMaterialDef = &materialRepo.getLoadedOrUnloadedAsset(materialHandle->getAssetID());
+                    rawFbxModel.mMaterials[i].defaultMaterialDef = &materialRepo.getLoadedOrUnloadedAsset(materialHandle->getAssetID());
                     def.addDependency(std::move(materialHandle));
                 }
             }
 
             // Load model to raw
-            loadRawModelFromFBX(fbxLoadContext, *rawMeshPtr, filePath, def.mRig ? &def.mRig->mSkeleton : nullptr);
+            loadRawModelFromFBX(fbxLoadContext, rawFbxModel, filePath, def.mRig ? &def.mRig->mSkeleton : nullptr);
             if (def.mForceNormalsUp) {
-                MeshOperations::setAllNormals(*rawMeshPtr, f32v3(0.0f, 0.0f, 1.0f), f32v3(1.0f, 0.0f, 0.0f));
+                MeshOperations::setAllNormals(rawFbxModel, f32v3(0.0f, 0.0f, 1.0f), f32v3(1.0f, 0.0f, 0.0f));
             }
 
             f32 minX = FLT_MAX;
@@ -208,17 +198,18 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             f32 maxZ = -FLT_MAX;
 
             // TODO: Configure
-            const bool shouldCombineMeshes = rawMeshPtr->mHasSkin;
+            const bool shouldCombineMeshes = rawFbxModel.mHasSkin;
             if (shouldCombineMeshes) {
-                combineSubmeshesByRenderPass(*rawMeshPtr);
+                combineSubmeshesByRenderPass(rawFbxModel);
             }
 
             std::vector<ui16> rawMaterialIdSlotMapping;
             rawMaterialIdSlotMapping.reserve(4);
 
+            def.mTotalSubmeshJointTransformsNeeded = 0;
 
             // TODO: Handle other submeshes?
-            for (auto& [renderPassIndex, subMeshList] : rawMeshPtr->mSubMeshes) {
+            for (auto& [renderPassIndex, subMeshList] : rawFbxModel.mSubMeshes) {
                 for (RawSubMesh& subMesh : subMeshList) {
                     assert(subMesh.mVertices.size());
 
@@ -264,11 +255,11 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
                     if (needsConstructDefaultVariant) {
                         def.mVariants[0].submeshMaterials.emplace_back();
                         for (size_t i = 0; i < rawMaterialIdSlotMapping.size(); ++i) {
-                            def.mVariants[0].submeshMaterials.back()[i].setAssetName(StrToken(rawMeshPtr->mMaterials[rawMaterialIdSlotMapping[i]].materialName));
+                            def.mVariants[0].submeshMaterials.back()[i].setAssetName(StrToken(rawFbxModel.mMaterials[rawMaterialIdSlotMapping[i]].materialName));
                         }
                     }
 
-                    MeshCpuData newMeshCpuData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(subMesh, rawMeshPtr->mMaterials, def.mBaseOptimizeErrorThresold, &rawMaterialIdSlotMapping);
+                    MeshCpuData newMeshCpuData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(subMesh, rawFbxModel.mMaterials, def.mBaseOptimizeErrorThresold, &rawMaterialIdSlotMapping);
 
                     // Apply scale if needed
                     if (def.mScale != 1.0f) {
@@ -287,6 +278,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
                         skeletonData.mInverseBindPoses = std::unique_ptr<ozz::math::Float4x4[]>(new ozz::math::Float4x4[skeletonData.mNumJoints]);
                         memcpy(skeletonData.mInverseBindPoses.get(), rawSkeletonData.mInverseBindPoses.data(), sizeof(ozz::math::Float4x4) * skeletonData.mNumJoints);
                         def.addMesh(std::move(newMesh));
+                        def.mTotalSubmeshJointTransformsNeeded += skeletonData.mNumJoints;
                     }
                     else {
                         def.addMesh(std::make_unique<Mesh>());
@@ -295,6 +287,10 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
                     Mesh& newMesh = *def.mMeshes.back();
                     newMesh.mCpuData = std::move(newMeshCpuData);
                     newMesh.setRenderPass((MaterialRenderPassType)renderPassIndex);
+
+                    ModelSubmeshData& newSubmeshData = def.mMeshesModelData.emplace_back();
+                    newSubmeshData.name = subMesh.mName;
+                    newMesh.setSubmeshData(&newSubmeshData);
                 }
 
                 minX *= def.mScale;
@@ -305,23 +301,8 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
                 maxZ *= def.mScale;
                 def.mAABB = f32AABB3(f32v3(minX, minY, minZ), f32v3(maxX - minX, maxY - minY, maxZ - minZ));
 
-
-                // Track for efficient gpu upload later
-                def.mTotalSubmeshJointTransformsNeeded = 0;
-                def.mSubmeshesData.resize(def.getNumMeshes());
-                if (def.isSkeletalModel()) {
-                    for (ui32 i = 0; i < def.getNumMeshes(); ++i) {
-                        def.mMeshes[i]->setSubmeshData(&def.mSubmeshesData[i]);
-                        const SkeletalMesh& skeletalMesh = def.getSkeletalMesh(i);
-                        const MeshSkeletonData& skelData = skeletalMesh.getSkeletonData();
-                        def.mTotalSubmeshJointTransformsNeeded += skelData.mNumJoints;
-                    }
-                }
-                else {
-                    for (ui32 i = 0; i < def.getNumMeshes(); ++i) {
-                        def.mMeshes[i]->setSubmeshData(&def.mSubmeshesData[i]);
-                    }
-                }
+                def.mMeshesModelData.shrink_to_fit();
+                def.mMeshes.shrink_to_fit();
 
                 saveCachedRuntimeModel(def, rnmdlPath);
             }
@@ -362,7 +343,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
 
 }
 
-void ModelRepository::loadRawModelFromFBX(FbxLoadContext& loadContext, FBXRawMesh& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton) {
+void ModelRepository::loadRawModelFromFBX(FbxLoadContext& loadContext, FBXRawModel& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton) {
     MaterialRepository& materialRepo = MaterialRepository::get();
     
     // FBX sdk is not thread safe...
@@ -385,8 +366,8 @@ void ModelRepository::loadRawModelFromFBX(FbxLoadContext& loadContext, FBXRawMes
 
         FbxMesh* fbxMesh = loadContext.data->sceneLoader.scene()->GetSrcObject<FbxMesh>(m);
         RawSubMesh newSubMesh;
-
-        LOG_DEBUG("Processing mesh: {} {} deformer count {}", fbxMesh->GetName(), filePath.getString(), fbxMesh->GetDeformerCount(FbxDeformer::eSkin));
+        newSubMesh.mName = StrToken(fbxMesh->GetName());
+        //LOG_DEBUG("Processing mesh: {} {} deformer count {}", fbxMesh->GetName(), filePath.getString(), fbxMesh->GetDeformerCount(FbxDeformer::eSkin));
         ControlPointsRemap remap;
         if (!fbx2raw::buildRawSubmesh(fbxMesh, loadContext.data->sceneLoader.converter(), &remap, newSubMesh, rawFbxMesh.mMaterials, skeleton == nullptr)) {
             panic("Failed to read submesh for: {}", filePath.getString());
@@ -418,7 +399,7 @@ void ModelRepository::loadRawModelFromFBX(FbxLoadContext& loadContext, FBXRawMes
     lock.unlock();
 }
 
-void ModelRepository::combineSubmeshesByRenderPass(OUT FBXRawMesh& rawFbxMesh) {
+void ModelRepository::combineSubmeshesByRenderPass(OUT FBXRawModel& rawFbxMesh) {
     assert(!rawFbxMesh.mHasSkin); // Not supported yet, intended for only static props
 
     std::map<int/*renderPassIndex*/, RawSubMesh> combinedSubMeshes;
@@ -449,8 +430,7 @@ void ModelRepository::loadCachedRuntimeModel(ModelDef& def, const vio::Path& mod
 
 }
 
-void ModelRepository::saveCachedRuntimeModel(ModelDef& def, const vio::Path& modelPath)
-{
+void ModelRepository::saveCachedRuntimeModel(ModelDef& def, const vio::Path& modelPath) {
 
 }
 
@@ -480,8 +460,8 @@ void ModelRepository::updateModelVariantData(AssetID id) {
     ASSERT_RENDER_THREAD();
 
     ModelDef& def = *mAssets[id];
-    def.mVariantsGpuData.resize(def.mSubmeshesData.size());
-    def.mVariantsGpuBuffers.resize(def.mSubmeshesData.size());
+    def.mVariantsGpuData.resize(def.mMeshesModelData.size());
+    def.mVariantsGpuBuffers.resize(def.mMeshesModelData.size());
 
     if (def.mVariants.empty()) {
         def.mVariants.resize(1); // Must have a single variant at least
@@ -493,7 +473,7 @@ void ModelRepository::updateModelVariantData(AssetID id) {
     // Ensure no size mismatch
     for (size_t i = 0; i < def.mVariants.size(); ++i) {
         ModelVariantData& varData = def.mVariants[i];
-        varData.submeshMaterials.resize(def.mSubmeshesData.size());
+        varData.submeshMaterials.resize(def.mMeshesModelData.size());
     }
 
     // Copy all variant materials to GPU data and then upload

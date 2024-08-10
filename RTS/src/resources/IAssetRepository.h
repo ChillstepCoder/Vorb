@@ -60,6 +60,7 @@ public:
     virtual AssetHandleBasePtr editorTryAddNewAssetBase(StrToken name) = 0;
     virtual bool assetExists(StrToken assetName) const = 0;
     virtual AssetID getAssetID(StrToken assetName) const = 0;
+    virtual StrToken getAssetName(AssetID id) const = 0;
 
     virtual bool saveAsset(AssetID assetId) = 0;
 
@@ -271,7 +272,7 @@ public:
         }
         return it->second; 
     }
-    StrToken getAssetName(AssetID id) const {
+    StrToken getAssetName(AssetID id) const override {
         return mAssetRegistry[id].mName;
     }
     const T* tryGetLoadedOrUnloadedAsset(StrToken assetName) {
