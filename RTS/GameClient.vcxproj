@@ -306,7 +306,13 @@
     <ClCompile Include="src\effect\host\HostEffectContext.cpp" />
     <ClCompile Include="src\effect\IEffectContext.cpp" />
     <ClCompile Include="src\extern\bc7enc\bc7decomp.cpp" />
+    <ClCompile Include="src\extern\bc7enc\bc7decomp_ref.cpp" />
     <ClCompile Include="src\extern\bc7enc\bc7enc.cpp" />
+    <ClCompile Include="src\extern\bc7enc\ert.cpp" />
+    <ClCompile Include="src\extern\bc7enc\lodepng.cpp" />
+    <ClCompile Include="src\extern\bc7enc\rdo_bc_encoder.cpp" />
+    <ClCompile Include="src\extern\bc7enc\rgbcx.cpp" />
+    <ClCompile Include="src\extern\bc7enc\utils.cpp" />
     <ClCompile Include="src\extern\imgui-node-editor\crude_json.cpp" />
     <ClCompile Include="src\extern\imgui-node-editor\imgui_canvas.cpp" />
     <ClCompile Include="src\extern\imgui-node-editor\imgui_node_editor.cpp" />
@@ -807,8 +813,13 @@
     <ClInclude Include="src\extern\bc7enc\bc7decomp.h" />
     <ClInclude Include="src\extern\bc7enc\bc7enc.h" />
     <ClInclude Include="src\extern\bc7enc\dds_defs.h" />
+    <ClInclude Include="src\extern\bc7enc\ert.h" />
+    <ClInclude Include="src\extern\bc7enc\lodepng.h" />
+    <ClInclude Include="src\extern\bc7enc\rdo_bc_encoder.h" />
     <ClInclude Include="src\extern\bc7enc\rgbcx.h" />
     <ClInclude Include="src\extern\bc7enc\rgbcx_table4.h" />
+    <ClInclude Include="src\extern\bc7enc\rgbcx_table4_small.h" />
+    <ClInclude Include="src\extern\bc7enc\utils.h" />
     <ClInclude Include="src\extern\imgui-node-editor\crude_json.h" />
     <ClInclude Include="src\extern\imgui-node-editor\imgui_bezier_math.h" />
     <ClInclude Include="src\extern\imgui-node-editor\imgui_canvas.h" />

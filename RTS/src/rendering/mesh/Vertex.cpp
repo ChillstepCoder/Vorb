@@ -107,12 +107,16 @@ VertexType SkinnedModelVertex::bindVertexAttribs(VGBuffer vao)
     glVertexArrayAttribBinding(vao, 0, 0);
 
     glEnableVertexArrayAttrib(vao, 1);
+    glVertexArrayAttribFormat(vao, 1 /*index*/, 2 /*size*/, GL_FLOAT, false, offsetof(SkinnedModelVertex, uvs));
+    glVertexArrayAttribBinding(vao, 1, 0);
+
+    glEnableVertexArrayAttrib(vao, 1);
     glVertexArrayAttribFormat(vao, 1 /*index*/, 2 /*size*/, GL_SHORT, true, offsetof(SkinnedModelVertex, uvsPacked));
     glVertexArrayAttribBinding(vao, 1, 0);
 
-    glEnableVertexArrayAttrib(vao, 2);
-    glVertexArrayAttribIFormat(vao, 2 /*index*/, 1 /*size*/, GL_UNSIGNED_SHORT, offsetof(SkinnedModelVertex, materialSlot));
-    glVertexArrayAttribBinding(vao, 2, 0);
+    //glEnableVertexArrayAttrib(vao, 2);
+    //glVertexArrayAttribIFormat(vao, 2 /*index*/, 1 /*size*/, GL_UNSIGNED_SHORT, offsetof(SkinnedModelVertex, materialSlot));
+    //glVertexArrayAttribBinding(vao, 2, 0);
 
     glEnableVertexArrayAttrib(vao, 3);
     glVertexArrayAttribFormat(vao, 3 /*index*/, 4 /*size*/, GL_UNSIGNED_BYTE, true, offsetof(SkinnedModelVertex, color));

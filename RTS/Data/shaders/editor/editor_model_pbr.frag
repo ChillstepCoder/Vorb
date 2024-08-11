@@ -78,6 +78,4 @@ void main() {
     
     oColor.a = 1.0;
     oNormal = (normal + 1.0) * 0.5;
-    
-    //oColor.rgb = 0.0001 * oColor.rgb + fViewTangent.rgb; //fViewTangent fFragPosTangent
 }

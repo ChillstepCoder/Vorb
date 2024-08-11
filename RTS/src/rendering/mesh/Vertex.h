@@ -88,6 +88,7 @@ public:
     ui32 normalPacked;
     ui32 tangentPacked;
     i16v2 uvsPacked;
+    f32v2 uvs;
     color4 color;
     // TODO: ui16 or ui8 weights
     f32 boneWeights[MAX_BONES_PER_VERTEX] = {}; // 0 Weight default 
@@ -98,6 +99,6 @@ public:
     static VertexType bindVertexAttribs(VGBuffer vao);
     static VertexType vertexType() { return VertexType::SKINNED_MODEL; }
 };
-static_assert(sizeof(SkinnedModelVertex) == 52, "keep small");
+//static_assert(sizeof(SkinnedModelVertex) == 52, "keep small");
 
 extern constexpr size_t getVertexSize(VertexType type);

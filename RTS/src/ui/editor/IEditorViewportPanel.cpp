@@ -391,7 +391,6 @@ f32v3 IEditorViewportPanel::getCameraUp() const {
 }
 
 void IEditorViewportPanel::uploadShaderUniforms(const MaterialShaderDef* shader, ui32 availableTextureUnit) {
-    assert(availableTextureUnit == 0);
 
     if (mRotate90) {
         const f32m4 modelMatrix = ModelUtil::computeTransformMatrixForModel(f32v3(0.0f), mYaw);
@@ -442,7 +441,7 @@ void IEditorViewportPanel::uploadShaderUniforms(const MaterialShaderDef* shader,
     }
     static_assert(e_cast(EditorViewportDrawMode::COUNT) == 12, "Make sure you don't need to set any uniforms");
 
-    uploadCustomShaderUniforms(shader, 3);
+    uploadCustomShaderUniforms(shader, availableTextureUnit);
 }
 
 void IEditorViewportPanel::renderPBRArray(const MaterialShaderDef* shader) {

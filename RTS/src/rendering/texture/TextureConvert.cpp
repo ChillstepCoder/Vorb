@@ -1,27 +1,23 @@
 #include "stdafx.h"
 #include "TextureConvert.h"
 
-#include <extern/bc7enc/bc7enc.h>
-#include <extern/bc7enc/dds_defs.h>
-#include <extern/bc7enc/bc7decomp.h>
-
-#define RGBCX_IMPLEMENTATION
-#include <extern/bc7enc/rgbcx.h>
+#include <extern/bc7enc/rdo_bc_encoder.h>
 
 bool supportsBC7 = false;
 bc7enc_compress_block_params pack_params;
 
 constexpr int uber_level = 0; // Goes up to 4  // TODO: 4 FOR SHIPPING BUILDS TO PACKAGE DDS?
-constexpr int max_partitions_to_scan = BC7ENC_MAX_PARTITIONS1;
+constexpr int max_partitions_to_scan = BC7ENC_MAX_PARTITIONS;
 constexpr bool perceptual = true; // TODO: ENABLE FOR SHIPPING BUILDS TO PACKAGE DDS?
 constexpr bool y_flip = false;
 constexpr uint32_t bc45_channel0 = 0;
 constexpr uint32_t bc45_channel1 = 1;
 
-constexpr rgbcx::bc1_approx_mode bc1_mode = rgbcx::bc1_approx_mode::cBC1Ideal;
+
+constexpr rgbcx::bc1_approx_mode bc1_mode = rgbcx::bc1_approx_mode::cBC1Ideal; // TODO: nvidia vs amd instead of cBC1Ideal?
 constexpr bool use_bc1_3color_mode = true;
 constexpr bool use_bc1_3color_mode_for_black = false;
-constexpr int bc1_quality_level = 2;
+constexpr int bc1_quality_level = (int)rgbcx::MAX_LEVEL;
 
 constexpr uint32_t pixel_format_bpp = 8;
 constexpr bool force_dx10_dds = false;
@@ -81,10 +77,10 @@ void TextureConvert::initConverters() {
             bc7enc_compress_block_params_init(&pack_params);
             if (!perceptual)
                 bc7enc_compress_block_params_init_linear_weights(&pack_params);
-            pack_params.m_max_partitions_mode = max_partitions_to_scan;
+            pack_params.m_max_partitions = max_partitions_to_scan;
             pack_params.m_uber_level = std::min(BC7ENC_MAX_UBER_LEVEL, uber_level);
             bc7enc_compress_block_init();
-            printf("  BCe7 Enabled: Max mode 1 partitions: %u, uber level: %u, perceptual: %u\n", pack_params.m_max_partitions_mode, pack_params.m_uber_level, perceptual);
+            printf("  BCe7 Enabled: Max mode 1 partitions: %u, uber level: %u, perceptual: %u\n", pack_params.m_max_partitions, pack_params.m_uber_level, perceptual);
         }
 
         printf(" BC1 Level: %u, use 3-color mode: %u, use 3-color mode for black: %u, bc1_mode: %u\n",
@@ -275,6 +271,54 @@ gli::texture2d TextureConvert::convertToDDS(gli::texture2d& inputTexture, bool s
             throw std::exception("Unsupported format in convertToDDS");
     }
 
+    utils::image_u8 source_image(inputTexture.extent().x, inputTexture.extent().y);
+    for (int y = 0; y < inputTexture.extent().y; y++) {
+        for (int x = 0; x < inputTexture.extent().x; x++) {
+            const int num_channels = gli::component_count(inputTexture.format());
+            const int inputRowStride = inputTexture.extent().x * num_channels;
+            const ui8* pixelData = inputTexture.data<ui8>(0, 0, 0) + x * num_channels + y * inputRowStride;
+            source_image(x, y)[0] = pixelData[0];
+            if (num_channels >= 2) {
+                source_image(x, y)[1] = pixelData[1];
+                if (num_channels >= 3) {
+                    source_image(x, y)[2] = pixelData[2];
+                    if (num_channels >= 4) {
+                        source_image(x, y)[3] = pixelData[3];
+                    }
+                }
+            }
+        }
+    }
+    //rdo_bc::rdo_bc_encoder encoder;
+    //rdo_bc::rdo_bc_params rp;
+    //rp.m_dxgi_format = dxgi_format;
+
+    //if (!encoder.init(source_image, rp))
+    //{
+    //    fprintf(stderr, "rdo_bc_encoder::init() failed!\n");
+    //    assert(false);
+    //}
+
+    //if (rp.m_status_output)
+    //{
+    //    if (encoder.get_has_alpha())
+    //        printf("Source image has an alpha channel.\n");
+    //    else
+    //        printf("Source image is opaque.\n");
+    //}
+
+    //if (!encoder.encode())
+    //{
+    //    fprintf(stderr, "rdo_bc_encoder::encode() failed!\n");
+    //    assert(false);
+    //}
+
+    //const uint8_t* pBlock = (const uint8_t*)encoder.get_blocks();
+    //LOG_INFO("{} {}", encoder.get_total_blocks_size_in_bytes(), texture.size());
+    //assert(encoder.get_total_blocks_size_in_bytes() <= texture.size() && "Texture size mismatch");
+    //memcpy(texture.data(0,0,0), pBlock, encoder.get_total_blocks_size_in_bytes());
+
+    //return texture;
 
     // For each mip level
     for (uint32_t mip = 0; mip < srcTexture->levels(); ++mip) {

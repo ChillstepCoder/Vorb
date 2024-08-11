@@ -5,6 +5,7 @@
 #include "resources/AssetLoader.h"
 #include "rendering/RenderContext.h"
 #include "resources/MaterialRepository.h"
+#include "resources/ResourceManager.h"
 
 #include "ui/UIContext.h"
 #include "camera/Camera3D.h"
@@ -58,6 +59,16 @@ void EditorOnlyScreen::onExit(const vui::GameTime& gameTime) {
 void EditorOnlyScreen::update(const vui::GameTime& gameTime) {
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE)) {
         m_state = vorb::ui::ScreenState::CHANGE_PREVIOUS;
+    }
+
+    static bool wasReloadPressed = false;
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_R) && vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
+        if (!wasReloadPressed) {
+            Services::ResourceManager::ref().reloadMaterials();
+            wasReloadPressed = true;
+        }
+    } else {
+        wasReloadPressed = false;
     }
 
     // Keep preloading assets

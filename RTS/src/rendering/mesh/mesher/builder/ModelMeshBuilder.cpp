@@ -77,10 +77,16 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
             }
 
             myVert.pos = rawVert.pos;
-            LOG_CRITICAL("TODO: ALLOW NEGATIVE UVS");
+
+            static bool PRINT_ONCE = true;
+            if (PRINT_ONCE) {
+                LOG_CRITICAL("TODO: ALLOW NEGATIVE UVS");
+                PRINT_ONCE = false;
+            }
             //assert(rawVert.uvs.x >= 0.0f && rawVert.uvs.x <= 1.0f && rawVert.uvs.y >= 0.0f && rawVert.uvs.y <= 1.0f);
             f32v2 uvsClamped = glm::clamp(rawVert.uvs, 0.0f, 1.0f);
             myVert.uvsPacked = PackUVs(uvsClamped);
+            myVert.uvs = rawVert.uvs;
             myVert.normalPacked = Pack_INT_2_10_10_10_REV(rawVert.normal.x, rawVert.normal.y, rawVert.normal.z, 0.0f);
             myVert.tangentPacked = Pack_INT_2_10_10_10_REV(rawVert.tangent.x, rawVert.tangent.y, rawVert.tangent.z, 0.0f);
             myVert.color = rawVert.color;

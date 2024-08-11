@@ -43,9 +43,9 @@ void ThreadUtilizationTimer::beginFrame() {
         const f32 percent = totalActiveTime / rollingTotal.y;
 
 
-        if (IS_SIM_THREAD() && percent >= 0.99f) {
-            LOG_INFO("{} {} {} {}", rollingTotal.y, rollingTotal.x, totalActiveTime, percent * 100.0f);
-        }
+        //if (IS_SIM_THREAD() && percent >= 0.99f) {
+        //    LOG_INFO("SIMTHREAD TIMING {} {} {} {}", rollingTotal.y, rollingTotal.x, totalActiveTime, percent * 100.0f);
+        //}
 
 
         mCurrentUtilizationPercentage = percent * 100.0f;

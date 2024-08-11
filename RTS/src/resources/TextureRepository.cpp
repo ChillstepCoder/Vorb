@@ -57,6 +57,9 @@ struct TextureLoadUserData {
 };
 
 TextureRepository::TextureRepository(vio::IOManager& ioManager) : IAssetRepository<TextureDef>(ioManager) {
+
+    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &mMaxAniso);
+    LOG_CRITICAL("MAX ANSIO {}", mMaxAniso);
 }
 
 TextureRepository::~TextureRepository() = default;
@@ -111,10 +114,14 @@ GLTexture TextureRepository::uploadTexture(const gli::texture2d& textureData, vg
     // Setup Texture Sampling Parameters
     samplerState.setForTexture(handle);
 
+    glTextureParameterf(handle, GL_TEXTURE_MAX_ANISOTROPY_EXT, mMaxAniso);
+
     // Create Mipmaps If Necessary
     if (mipmapLevels > 0) {
-        glTextureParameteri(handle, GL_TEXTURE_MAX_LOD, mipmapLevels);
-        glTextureParameteri(handle, GL_TEXTURE_MAX_LEVEL, mipmapLevels);
+        glTextureParameteri(handle, GL_TEXTURE_MIN_LOD, 0);
+        glTextureParameteri(handle, GL_TEXTURE_MAX_LOD, mipmapLevels - 1);
+        glTextureParameteri(handle, GL_TEXTURE_BASE_LEVEL, 0);
+        glTextureParameteri(handle, GL_TEXTURE_MAX_LEVEL, mipmapLevels - 1);
         glGenerateTextureMipmap(handle);
     }
 
@@ -186,10 +193,15 @@ GLTexture TextureRepository::uploadDDSTexture(const gli::texture2d& textureData,
     // Setup Texture Sampling Parameters
     samplerState.setForTexture(handle);
 
+
+    glTextureParameterf(handle, GL_TEXTURE_MAX_ANISOTROPY_EXT, mMaxAniso);
+
     // Mipmap LOD
     if (mipmapLevels > 0) {
-        glTextureParameteri(handle, GL_TEXTURE_MAX_LOD, mipmapLevels);
-        glTextureParameteri(handle, GL_TEXTURE_MAX_LEVEL, mipmapLevels);
+        glTextureParameteri(handle, GL_TEXTURE_MIN_LOD, 0);
+        glTextureParameteri(handle, GL_TEXTURE_MAX_LOD, mipmapLevels - 1);
+        glTextureParameteri(handle, GL_TEXTURE_BASE_LEVEL, 0);
+        glTextureParameteri(handle, GL_TEXTURE_MAX_LEVEL, mipmapLevels - 1);
     }
 
     return GLTexture(handle, textureTarget, dims, mipmapLevels, textureFormat);
@@ -327,10 +339,10 @@ AssetLoadFunc TextureRepository::getAssetLoadRenderProcessFunc() {
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Handle weird texture dimensions
 
         // Prefer dds
-        if (loadUserData.ddsRs.size()) {
+        if (!loadUserData.ddsRs.empty()) {
             textureDef.gpuTexture = uploadDDSTexture(loadUserData.ddsRs, vg::TextureTarget::TEXTURE_2D, *textureDef.samplerState, INT_MAX);
         }
-        else if (loadUserData.rs.size()) {
+        else if (!loadUserData.rs.empty()) {
             textureDef.gpuTexture = uploadTexture(loadUserData.rs, vg::TextureTarget::TEXTURE_2D, *textureDef.samplerState, INT_MAX);
         }
         return true;

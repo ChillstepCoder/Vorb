@@ -290,7 +290,6 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
 
                     ModelSubmeshData& newSubmeshData = def.mMeshesModelData.emplace_back();
                     newSubmeshData.name = subMesh.mName;
-                    newMesh.setSubmeshData(&newSubmeshData);
                 }
 
                 minX *= def.mScale;
@@ -301,8 +300,15 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
                 maxZ *= def.mScale;
                 def.mAABB = f32AABB3(f32v3(minX, minY, minZ), f32v3(maxX - minX, maxY - minY, maxZ - minZ));
 
-                def.mMeshesModelData.shrink_to_fit();
+
                 def.mMeshes.shrink_to_fit();
+
+                // Set submesh data pointers after so we dont have stale pointers
+                def.mMeshesModelData.resize(def.mMeshes.size());
+                for (size_t i = 0; i < def.mMeshes.size(); ++i) {
+                    Mesh& newMesh = *def.mMeshes[i];
+                    newMesh.setSubmeshData(&def.mMeshesModelData[i]);
+                }
 
                 saveCachedRuntimeModel(def, rnmdlPath);
             }
