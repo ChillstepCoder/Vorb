@@ -88,7 +88,6 @@ public:
     ui32 normalPacked;
     ui32 tangentPacked;
     i16v2 uvsPacked;
-    f32v2 uvs;
     color4 color;
     // TODO: ui16 or ui8 weights
     f32 boneWeights[MAX_BONES_PER_VERTEX] = {}; // 0 Weight default 

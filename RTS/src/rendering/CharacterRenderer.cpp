@@ -284,6 +284,10 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
                         panic("Anim skinning fail!");
                     }
 
+                    for (size_t j = 0; j < skelData.mNumJoints; ++j) {
+                        skinningBuffer[j] = ozz::math::Float4x4::identity();
+                    }
+
                     // TODO: We shouldn't do this for each submesh
                     glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, skeletalMesh.mVariantDataUbo);
                     glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)skinningBuffer);

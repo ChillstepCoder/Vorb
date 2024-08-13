@@ -26,9 +26,6 @@ AnimMachineInstance::AnimMachineInstance(AssetID animMachineID) {
 void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariables, OzzMatrixSpan outModelMatrices) {
     PROFILE_FUNCTION();
     if (!numStates) [[unlikely]] {
-        for (size_t i = 0; i < outModelMatrices.size(); ++i) {
-            outModelMatrices[i] = ozz::math::Float4x4::identity();
-        }
         return;
     }
 

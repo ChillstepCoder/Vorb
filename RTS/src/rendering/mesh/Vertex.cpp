@@ -107,10 +107,6 @@ VertexType SkinnedModelVertex::bindVertexAttribs(VGBuffer vao)
     glVertexArrayAttribBinding(vao, 0, 0);
 
     glEnableVertexArrayAttrib(vao, 1);
-    glVertexArrayAttribFormat(vao, 1 /*index*/, 2 /*size*/, GL_FLOAT, false, offsetof(SkinnedModelVertex, uvs));
-    glVertexArrayAttribBinding(vao, 1, 0);
-
-    glEnableVertexArrayAttrib(vao, 1);
     glVertexArrayAttribFormat(vao, 1 /*index*/, 2 /*size*/, GL_SHORT, true, offsetof(SkinnedModelVertex, uvsPacked));
     glVertexArrayAttribBinding(vao, 1, 0);
 

@@ -44,5 +44,5 @@ protected:
 private:
     std::unique_ptr<MaterialTextureGenerator> mNormalMapGenerator;
     nString mDataBuffer;
-    float mMaxAniso = 0.0f;
+    float mMaxAniso = 1.0f;
 };

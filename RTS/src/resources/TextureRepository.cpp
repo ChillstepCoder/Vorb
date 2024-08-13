@@ -193,7 +193,6 @@ GLTexture TextureRepository::uploadDDSTexture(const gli::texture2d& textureData,
     // Setup Texture Sampling Parameters
     samplerState.setForTexture(handle);
 
-
     glTextureParameterf(handle, GL_TEXTURE_MAX_ANISOTROPY_EXT, mMaxAniso);
 
     // Mipmap LOD
