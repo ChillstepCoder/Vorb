@@ -106,6 +106,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             AssetHandlePtr<ModelDef>& modelDefHandle = sit->second.handle;
             if (const ModelDef* def = modelDefHandle->tryGetLoadedAsset()) {
                 batchData.mMeshCount = def->getNumMeshes();
+                assert(batchData.mMeshCount);
                 for (int m = 0; m < batchData.mMeshCount; ++m) {
                     const Mesh& mesh = def->getMesh(m);
                     batchData.mMesh[m] = &mesh;

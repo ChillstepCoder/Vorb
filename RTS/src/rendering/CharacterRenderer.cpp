@@ -200,6 +200,7 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
 
         const i32 numEntities = (i32)renderData.entityCharacterModels.size();
         const i32 transformsNeeded = modelDef.mTotalSubmeshJointTransformsNeeded;
+        assert(transformsNeeded);
         // Update transforms capacity if needed
         if (!renderData.boneTransformsBuffer) {
             renderData.boneTransformsBuffer = std::make_unique<GpuStreamingDataBuffer>(transformsNeeded * (numEntities + TRANSFORMS_PADDING_SIZE), sizeof(f32m4));
@@ -210,7 +211,7 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
             // Shrink
             renderData.boneTransformsBuffer->setMaxElements(transformsNeeded * (numEntities + TRANSFORMS_PADDING_SIZE));
         }
-        LOG_INFO("  TRANSFORMS DATA SIZE {} mb", 3.0f * (f32)renderData.boneTransformsBuffer->getMaxElements() * sizeof(f32m4) / 1024.0f / 1024.0f);
+        //LOG_INFO("  TRANSFORMS DATA SIZE {} mb", 3.0f * (f32)renderData.boneTransformsBuffer->getMaxElements() * sizeof(f32m4) / 1024.0f / 1024.0f);
 
         //f32m4* transformsPtr = (f32m4*)renderData.boneTransformsBuffer->frameBeginAndGetDataForUpdate();
 

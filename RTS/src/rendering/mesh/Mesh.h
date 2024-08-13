@@ -26,6 +26,13 @@ struct MeshLODData {
         }
         return MeshLODDrawInfo{ start, mLODStarts[e_cast(lod) + 1] - start };
     }
+
+    BINARY_SERIALIZE() {
+        for (int i = 0; i < e_count(MeshLODLevel); ++i) {
+            s.value4b(mLODStarts[i]);
+        }
+        s.value4b(mTotalIndexCount);
+    }
 };
 
 enum class MeshDrawMode {
@@ -40,8 +47,8 @@ enum class MeshFlags : ui8 {
 
 enum class MeshIndexType : ui16 {
     INVALID = 0,
-    SHORT = GL_UNSIGNED_SHORT,
-    INT = GL_UNSIGNED_INT
+    USHORT = GL_UNSIGNED_SHORT,
+    UINT = GL_UNSIGNED_INT
 };
 
 class MeshCpuData final {
@@ -60,6 +67,7 @@ public:
     MeshIndexType mIndexType = MeshIndexType::INVALID;
     VertexType mVertexType = VertexType::INVALID;
     MeshLODData mLodData;
+    // MAKE SURE TO UPDATE MOVE CONSTRUCTOR IF YOU CHANGE THIS DATA
 };
 
 struct MeshGpuData {
@@ -73,7 +81,7 @@ struct MeshGpuData {
     BitFlags<MeshFlags> mFlags;
     VertexType mVertexType = VertexType::INVALID;
 
-    ui32 getIndexSizeBytes() const { return mIndexType == MeshIndexType::INT ? sizeof(ui32) : sizeof(ui16); }
+    ui32 getIndexSizeBytes() const { return mIndexType == MeshIndexType::UINT ? sizeof(ui32) : sizeof(ui16); }
     void destroy();
 };
 
@@ -176,6 +184,7 @@ public:
 class SkeletalMesh : public Mesh {
     friend class ModelRepository;
 public:
+    MeshSkeletonData& getSkeletonData() { return mSkeletonData; }
     const MeshSkeletonData& getSkeletonData() const { return mSkeletonData; }
 
 

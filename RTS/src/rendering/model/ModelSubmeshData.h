@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/mesh/MeshConst.h"
+#include "serialization/BitseryExt.h"
 
 constexpr ui32 MAX_MODEL_VARIANTS = 16;
 
@@ -49,6 +50,37 @@ YML_READ_DEF(std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>) {
 struct ModelVariantData {
     StrToken displayName = CStrToken("new_variant");
     std::vector<std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>> submeshMaterials;
+
+    BINARY_SERIALIZE();
+    BINARY_SERIALIZE_INPUT() {
+        s.ext(displayName, bitsery::ext::PodStruct{});
+        ui16 size;
+        s.value2b(size);
+        submeshMaterials.resize(size);
+        for (auto&& arr : submeshMaterials) {
+            for (ui32 i = 0; i < MATERIAL_SLOT_COUNT; ++i) {
+                StrToken name;
+                s.ext(name, bitsery::ext::PodStruct{});
+                if (name.isValid()) {
+                    arr[i] = MaterialAssetRef(name);
+                }
+            }
+        }
+    }
+    BINARY_SERIALIZE_OUTPUT() {
+        s.ext(displayName, bitsery::ext::PodStruct{});
+        s.value2b((ui16)submeshMaterials.size());
+        for (auto&& arr : submeshMaterials) {
+            for (auto&& assetRef : arr) {
+                if (assetRef.isValid()) {
+                    s.ext(assetRef.getAssetName(), bitsery::ext::PodStruct{});
+                }
+                else {
+                    s.ext(StrToken(), bitsery::ext::PodStruct{});
+                }
+            }
+        }
+    }
 };
 SERIALIZABLE_IMGUI_CONTROLLED(ModelVariantData,
     make_field(o.displayName, "name"sv),

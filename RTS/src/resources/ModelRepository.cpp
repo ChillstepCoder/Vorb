@@ -25,9 +25,188 @@
 #include "rendering/mesh/fbx2raw.inl"
 
 #include "filesystem/FileSystem.h"
+#include "serialization/BitseryExt.h"
+
 
 static std::mutex gFbxSdkMutex; // FBX SDK IS NOT THREAD SAFE >_<
 
+constexpr ui16 RUNTIME_MODEL_SERIALIZE_VERSION = 0;
+constexpr ui8 MAX_SUBMODELS = 16;
+
+
+// Serializes a model in an efficient form
+class RuntimeModelSerializationContext {
+public:
+    RuntimeModelSerializationContext(ModelDef& modelDef, const vio::Path& path) : mModelDef(modelDef), mPath(path) {}
+
+    BINARY_SERIALIZE();
+    BINARY_SERIALIZE_OUTPUT() {
+        // Version
+        s.value2b(RUNTIME_MODEL_SERIALIZE_VERSION);
+        // Submodels
+        const ui16 numMeshes = (ui16)mModelDef.mMeshes.size();
+        s.value2b(numMeshes);
+        for (size_t i = 0; i < numMeshes; ++i) {
+            const MeshCpuData& meshData = mModelDef.mMeshes[i]->mCpuData;
+            const ModelSubmeshData& submeshData = mModelDef.mMeshesModelData[i];
+            // Name
+            s.ext(submeshData.name, bitsery::ext::PodStruct{});
+            // Render Pass
+            const ui8 renderPass = e_cast(mModelDef.mMeshes[i]->getRenderPass());
+            s.value1b(renderPass);
+            // LOD data
+            s.object(meshData.mLodData);
+            // Vertices
+            s.value1b((ui8)meshData.mVertexType);
+
+            assert(meshData.mVertsPtr);
+            assert(meshData.mVertsCount);
+            switch (meshData.mVertexType) {
+                case VertexType::STANDARD_MODEL: {
+                    StandardModelVertex* ptr = static_cast<StandardModelVertex*>(meshData.mVertsPtr);
+                    s.ext(ptr, bitsery::ext::PodStructRawPointerArray(meshData.mVertsCount));
+                    break;
+                }
+                case VertexType::SKINNED_MODEL: {
+                    SkinnedModelVertex* ptr = static_cast<SkinnedModelVertex*>(meshData.mVertsPtr);
+                    s.ext(ptr, bitsery::ext::PodStructRawPointerArray(meshData.mVertsCount));
+                    break;
+                }
+                default:
+                    panic("Saving invalid vertex type {}", (int)meshData.mVertexType);
+                    break;
+            }
+            static_assert(e_count(VertexType) == 5);
+            // Indices
+            assert(meshData.mElementsPtr);
+            assert(meshData.mElementsCount);
+            if (meshData.mIndexType == MeshIndexType::UINT) {
+                s.boolValue(1); // IsUInt 
+                ui32* ptr = static_cast<ui32*>(meshData.mElementsPtr);
+                s.ext(ptr, bitsery::ext::PodStructRawPointerArray(meshData.mElementsCount));
+            }
+            else {
+                // Short
+                s.boolValue(0); // IsUInt 
+                ui16* ptr = static_cast<ui16*>(meshData.mElementsPtr);
+                s.ext(ptr, bitsery::ext::PodStructRawPointerArray(meshData.mElementsCount));
+            }
+
+            // Variants
+            s.container(mModelDef.mVariants, (size_t)MAX_MODEL_VARIANTS);
+
+            // Skeleton
+            if (mModelDef.isSkeletalModel()) {
+                s.boolValue(1); // HasSkeleton
+                const MeshSkeletonData& skeletonData = mModelDef.getSkeletalMesh(i).getSkeletonData();
+                s.ext(skeletonData.mJointRemaps, bitsery::ext::PodStructUniquePointerArray(skeletonData.mNumJoints));
+                s.ext(skeletonData.mInverseBindPoses, bitsery::ext::PodStructUniquePointerArray(skeletonData.mNumJoints));
+            }
+            else {
+                s.boolValue(0);  // HasSkeleton
+            }
+        }
+    }
+    BINARY_SERIALIZE_INPUT() {
+        // Version
+        ui16 version;
+        s.value2b(version);
+        if (version != RUNTIME_MODEL_SERIALIZE_VERSION) [[unlikely]] {
+            panic("Tried to load model asset {} with version {} but expected {} try validating game files", mPath.getCString(), version, RUNTIME_MODEL_SERIALIZE_VERSION);
+        }
+
+        // Submodels
+        ui16 numMeshes = 0;
+        s.value2b(numMeshes);
+        assert(numMeshes && numMeshes <= MAX_SUBMODELS);
+
+        mModelDef.mMeshes.resize(numMeshes);
+        mModelDef.mMeshesModelData.resize(numMeshes);
+        mModelDef.mTotalSubmeshJointTransformsNeeded = 0;
+        for (size_t i = 0; i < numMeshes; ++i) {
+            if (mModelDef.isSkeletalModel()) {
+                mModelDef.mMeshes[i] = std::make_unique<SkeletalMesh>();
+            }
+            else {
+                mModelDef.mMeshes[i] = std::make_unique<Mesh>();
+            }
+            MeshCpuData& meshData = mModelDef.mMeshes[i]->mCpuData;
+            ModelSubmeshData& submeshData = mModelDef.mMeshesModelData[i];
+
+            mModelDef.mMeshes[i]->setSubmeshData(&submeshData);
+            // Name
+            s.ext(submeshData.name, bitsery::ext::PodStruct{});
+            // Render Pass
+            ui8 renderPass;
+            s.value1b(renderPass);
+            mModelDef.mMeshes[i]->setRenderPass(static_cast<MaterialRenderPassType>(renderPass));
+            // LOD data
+            s.object(meshData.mLodData);
+            // Vertices
+            ui8 vType;
+            s.value1b(vType);
+            meshData.mVertexType = (VertexType)vType;
+            switch (meshData.mVertexType) {
+                case VertexType::STANDARD_MODEL: {
+                    StandardModelVertex* ptr = nullptr;
+                    s.ext(ptr, bitsery::ext::PodStructRawPointerArray(meshData.mVertsCount));
+                    meshData.mVertsPtr = ptr;
+                    break;
+                }
+                case VertexType::SKINNED_MODEL: {
+                    SkinnedModelVertex* ptr = nullptr;
+                    s.ext(ptr, bitsery::ext::PodStructRawPointerArray(meshData.mVertsCount));
+                    meshData.mVertsPtr = ptr;
+                    break;
+                }
+                default:
+                    panic("Saving invalid vertex type {} on {}", (int)meshData.mVertexType, mPath.getCString());
+                    break;
+            }
+            static_assert(e_count(VertexType) == 5);
+            // Indices
+            bool isUint;
+            s.boolValue(isUint);
+            if (isUint) {
+                meshData.mIndexType = MeshIndexType::UINT;
+                ui32* ptr = nullptr;
+                s.ext(ptr, bitsery::ext::PodStructRawPointerArray(meshData.mElementsCount));
+                meshData.mElementsPtr = ptr;
+            }
+            else {
+                meshData.mIndexType = MeshIndexType::USHORT;
+                ui16* ptr = nullptr;
+                s.ext(ptr, bitsery::ext::PodStructRawPointerArray(meshData.mElementsCount));
+                meshData.mElementsPtr = ptr;
+            }
+
+            // Variants
+            s.container(mModelDef.mVariants, (size_t)MAX_MODEL_VARIANTS);
+
+            // Skeleton
+            bool hasSkeleton;
+            s.boolValue(hasSkeleton);
+            if (hasSkeleton != mModelDef.isSkeletalModel()) [[unlikely]] {
+                panic("Tried to read model {} mPath.getCString() marked as HAS_SKELETON:{} but expected {}", mPath.getCString(), hasSkeleton, mModelDef.isSkeletalModel());
+            }
+
+            if (hasSkeleton) {
+                MeshSkeletonData& skeletonData = mModelDef.getSkeletalMesh(i).getSkeletonData();
+                ui32 numRemaps;
+                ui32 numBindPoses;
+                s.ext(skeletonData.mJointRemaps, bitsery::ext::PodStructUniquePointerArray(numRemaps));
+                s.ext(skeletonData.mInverseBindPoses, bitsery::ext::PodStructUniquePointerArray(numBindPoses));
+                assert(numRemaps == numBindPoses);
+                skeletonData.mNumJoints = numRemaps;
+                mModelDef.mTotalSubmeshJointTransformsNeeded += skeletonData.mNumJoints;
+            }
+        }
+    }
+
+private:
+    ModelDef& mModelDef;
+    const vio::Path& mPath;
+};
 
 struct FbxLoadContextData {
     FbxLoadContextData(const char* filePath) : fbxManager(), settings(fbxManager), sceneLoader(filePath, "", fbxManager, settings) { }
@@ -122,7 +301,6 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
     AssetLoader::getInstance().requestAssetLoadWithDependencies([this, modelPath]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
         ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
 
-
         // Rig + animation
         if (def.mRigRef.isValid()) {
             def.mRig = &def.mRigRef.getLoadedAsset<RigDef>();
@@ -150,6 +328,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             assert(fs::exists(fbxPath) && fs::is_regular_file(fbxPath));
             if (FileSystem::getLastFileWriteTime(fbxPath) <= fileLastWriteTime) {
                 loadCachedRuntimeModel(def, rnmdlPath, def.mRig ? &def.mRig->mSkeleton : nullptr);
+                updateMaterialDependencies(def.getID());
                 needsLoadFBX = false;
             }
         }
@@ -198,10 +377,11 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             f32 maxZ = -FLT_MAX;
 
             // TODO: Configure
-            const bool shouldCombineMeshes = rawFbxModel.mHasSkin;
+            const bool shouldCombineMeshes = !rawFbxModel.mHasSkin;
             if (shouldCombineMeshes) {
                 combineSubmeshesByRenderPass(rawFbxModel);
             }
+            assert(rawFbxModel.mSubMeshes.size());
 
             std::vector<ui16> rawMaterialIdSlotMapping;
             rawMaterialIdSlotMapping.reserve(4);
@@ -291,27 +471,28 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
                     ModelSubmeshData& newSubmeshData = def.mMeshesModelData.emplace_back();
                     newSubmeshData.name = subMesh.mName;
                 }
-
-                minX *= def.mScale;
-                maxX *= def.mScale;
-                minY *= def.mScale;
-                maxY *= def.mScale;
-                minZ *= def.mScale;
-                maxZ *= def.mScale;
-                def.mAABB = f32AABB3(f32v3(minX, minY, minZ), f32v3(maxX - minX, maxY - minY, maxZ - minZ));
-
-
-                def.mMeshes.shrink_to_fit();
-
-                // Set submesh data pointers after so we dont have stale pointers
-                def.mMeshesModelData.resize(def.mMeshes.size());
-                for (size_t i = 0; i < def.mMeshes.size(); ++i) {
-                    Mesh& newMesh = *def.mMeshes[i];
-                    newMesh.setSubmeshData(&def.mMeshesModelData[i]);
-                }
-
-                saveCachedRuntimeModel(def, rnmdlPath);
             }
+
+            minX *= def.mScale;
+            maxX *= def.mScale;
+            minY *= def.mScale;
+            maxY *= def.mScale;
+            minZ *= def.mScale;
+            maxZ *= def.mScale;
+            def.mAABB = f32AABB3(f32v3(minX, minY, minZ), f32v3(maxX - minX, maxY - minY, maxZ - minZ));
+
+
+            def.mMeshes.shrink_to_fit();
+
+            // Set submesh data pointers after so we dont have stale pointers
+            def.mMeshesModelData.resize(def.mMeshes.size());
+            for (size_t i = 0; i < def.mMeshes.size(); ++i) {
+                Mesh& newMesh = *def.mMeshes[i];
+                newMesh.setSubmeshData(&def.mMeshesModelData[i]);
+                assert(newMesh.mCpuData.mElementsCount && newMesh.mCpuData.mVertsCount);
+            }
+
+            saveCachedRuntimeModel(def, rnmdlPath);
         }
         // Load material dependencies
         assetLoader.requestAssetLoadWithDependencies([=](AssetLoader& assetLoader, AssetID assetId, const vio::Path& filePath, void* assetDataPtr, std::any&) -> bool {
@@ -401,6 +582,7 @@ void ModelRepository::loadRawModelFromFBX(FbxLoadContext& loadContext, FBXRawMod
             rawFbxMesh.mSubMeshes[newSubMesh.mRenderPassType].emplace_back(std::move(newSubMesh));
         }
     }
+    rawFbxMesh.mHasSkin = hasSkin;
     assert(hasSkin != INT32_MAX);
     lock.unlock();
 }
@@ -411,6 +593,10 @@ void ModelRepository::combineSubmeshesByRenderPass(OUT FBXRawModel& rawFbxMesh) 
     std::map<int/*renderPassIndex*/, RawSubMesh> combinedSubMeshes;
 
     for (auto& [renderPassIndex, subMeshList] : rawFbxMesh.mSubMeshes) {
+        if (subMeshList.size() == 1) {
+            combinedSubMeshes[(int)renderPassIndex] = std::move(subMeshList[0]);
+            continue;
+        }
         i32 totalVerts = 0;
         i32 totalInds = 0;
         for (RawSubMesh& subMesh : subMeshList) {
@@ -420,24 +606,81 @@ void ModelRepository::combineSubmeshesByRenderPass(OUT FBXRawModel& rawFbxMesh) 
 
         RawSubMesh& combined = combinedSubMeshes[(int)renderPassIndex];
 
-        combined.mVertices.reserve(totalVerts);
-        combined.mIndices.reserve(totalInds);
+        combined.mVertices.resize(totalVerts);
+        combined.mIndices.resize(totalInds);
 
+        i32 vertexStart = 0;
+        i32 indexStart = 0;
         for (RawSubMesh& subMesh : subMeshList) {
-            combined.mVertices.insert(combined.mVertices.end(), subMesh.mVertices.begin(), subMesh.mVertices.end());
-            combined.mIndices.insert(combined.mIndices.end(), subMesh.mIndices.begin(), subMesh.mIndices.end());
+            memcpy(&combined.mVertices[vertexStart], &subMesh.mVertices[0], subMesh.mVertices.size() * sizeof(RawMeshVertex));
+            for (size_t i = 0; i < subMesh.mIndices.size(); ++i) {
+                combined.mIndices[indexStart + i] = vertexStart + subMesh.mIndices[i];
+            }
+            vertexStart += subMesh.mVertices.size();
+            indexStart += subMesh.mIndices.size();
         }
         combined.mRenderPassType = renderPassIndex;
         combined.mHasSkin = false;
     }
+
+    rawFbxMesh.mSubMeshes.clear();
+    for (auto& [renderPassIndex, combined] : combinedSubMeshes) {
+        rawFbxMesh.mSubMeshes[(MaterialRenderPassType)renderPassIndex].emplace_back(std::move(combined));
+    }
 }
 
 void ModelRepository::loadCachedRuntimeModel(ModelDef& def, const vio::Path& modelPath, const ozz::animation::Skeleton* skeleton) {
+    PreciseTimer timer;
+    fs::path stdPath = modelPath.getStdPath();
 
+    BBuffer bbuffer(fs::file_size(stdPath));
+
+    std::ifstream file(stdPath, std::ios::binary);
+    if (!file.is_open()) {
+        panic("Could not open {} for read", modelPath.getCString());
+    }
+
+    file.read(reinterpret_cast<char*>(bbuffer.data()), bbuffer.size());
+
+    RuntimeModelSerializationContext serializeContext(def, modelPath);
+    auto state = bitsery::quickDeserialization(BInputAdapter{ bbuffer.data(), bbuffer.size() }, serializeContext);
+    if (state.first != bitsery::ReaderError::NoError || !state.second) {
+        panic("deserialization error {} on {}", (int)state.first, modelPath.getCString());
+    }
+
+    file.close();
+
+    LOG_DEBUG("Loaded {} in {} ms", modelPath.getCString(), timer.stop());
 }
 
 void ModelRepository::saveCachedRuntimeModel(ModelDef& def, const vio::Path& modelPath) {
 
+    PreciseTimer timer;
+
+    vio::Path dirPath = modelPath;
+    dirPath.trimEnd();
+
+    fs::path stdDirPath = dirPath.getStdPath();
+    if (!fs::exists(stdDirPath)) {
+        if (!fs::create_directories(stdDirPath)) {
+            panic("Failed to create {} directory. Insufficient permissions?", dirPath.getCString());
+        }
+    }
+
+    std::ofstream file(modelPath.getCString(), std::ios::binary | std::ios::trunc);
+    if (!file.is_open()) {
+        panic("Could not open {} for write", modelPath.getCString());
+    }
+
+    BBuffer bbuffer;
+    bbuffer.reserve(65536); // Arbitrary
+    RuntimeModelSerializationContext serializeContext(def, modelPath);
+    const ui32 writtenBytes = bitsery::quickSerialization<BOutputAdapter>(bbuffer, serializeContext);
+
+    file.write(reinterpret_cast<const char*>(bbuffer.data()), writtenBytes);
+    file.close();
+
+    LOG_DEBUG("Saved {} in {} ms", modelPath.getCString(), timer.stop());
 }
 
 void ModelRepository::onRegisteredAsset(AssetID id) {

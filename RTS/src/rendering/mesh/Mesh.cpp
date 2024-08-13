@@ -191,10 +191,10 @@ MeshCpuData::~MeshCpuData() {
         }
         static_assert(e_cast(VertexType::COUNT) == 5, "Delete new types");
         switch (mIndexType) {
-            case MeshIndexType::SHORT:
+            case MeshIndexType::USHORT:
                 delete[] static_cast<ui16*>(mElementsPtr);
                 break;
-            case MeshIndexType::INT:
+            case MeshIndexType::UINT:
                 delete[] static_cast<ui32*>(mElementsPtr);
                 break;
             default:
@@ -207,6 +207,7 @@ MeshCpuData::MeshCpuData(MeshCpuData&& o) {
     this->mVertsPtr = o.mVertsPtr;
     this->mElementsPtr = o.mElementsPtr;
     this->mVertsCount = o.mVertsCount;
+    this->mElementsCount = o.mElementsCount;
     this->mLodData = o.mLodData;
     this->mIndexType = o.mIndexType;
     this->mVertexType = o.mVertexType;
@@ -218,6 +219,7 @@ MeshCpuData& MeshCpuData::operator=(MeshCpuData&& o) {
     this->mVertsPtr = o.mVertsPtr;
     this->mElementsPtr = o.mElementsPtr;
     this->mVertsCount = o.mVertsCount;
+    this->mElementsCount = o.mElementsCount;
     this->mLodData = o.mLodData;
     this->mIndexType = o.mIndexType;
     this->mVertexType = o.mVertexType;

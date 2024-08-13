@@ -73,7 +73,7 @@ void BillboardMeshBuilder::finishMesh(std::unique_ptr<Mesh>& mesh, const f32v3& 
     );
 
     // TODO: Support other formats
-    mesh->mGpuData.mIndexType = MeshIndexType::INT;
+    mesh->mGpuData.mIndexType = MeshIndexType::UINT;
 
     // Upload data
     uploadBufferData(mesh->mGpuData, worldPos, bufferFlags);

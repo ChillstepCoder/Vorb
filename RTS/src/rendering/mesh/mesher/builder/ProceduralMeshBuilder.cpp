@@ -502,7 +502,7 @@ void ProceduralMeshBuilder::finishMesh(Mesh& mesh, const f32v3& worldPos) {
     uploadMeshData(mesh.mGpuData, worldPos, mSubMeshesData[0], GL_DYNAMIC_STORAGE_BIT);
 
     // TODO: Support other index formats
-    mesh.mGpuData.mIndexType = MeshIndexType::INT;
+    mesh.mGpuData.mIndexType = MeshIndexType::UINT;
 
 }
 

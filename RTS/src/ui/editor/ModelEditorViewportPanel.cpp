@@ -41,6 +41,13 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
     ImGui::Text("Model Editor Controls");
     ImGui::Separator();
 
+    if (mAssetWasChanged) {
+        mSingleIndex = 0;
+        mVariantIndex = 0;
+        mDirtyModelData = false;
+        mLod = 0;
+    }
+
     bool changed = false;
 
     if (mAssetData) {

@@ -136,10 +136,11 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
 
     // Copy indices
     // TODO: Allow int?
-    rv.mIndexType = MeshIndexType::SHORT;
+    rv.mIndexType = MeshIndexType::USHORT;
     ui16* indices = new ui16[meshData.indices.size()];
     rv.mElementsPtr = (void*)indices;
     rv.mElementsCount = meshData.indices.size();
+    assert(rv.mElementsCount);
     for (int i = 0; i < meshData.indices.size(); ++i) {
         assert(meshData.indices[i] <= UINT16_MAX);
         indices[i] = (ui16)meshData.indices[i];
@@ -154,8 +155,11 @@ void ModelMeshBuilder::uploadCpuMeshToGpu(const MeshCpuData& cpuMesh, MeshGpuDat
 
 void ModelMeshBuilder::uploadCpuMeshToGpu(const void* vertsPtr, ui32 vertsCount, VertexType vertexType, const void* indicesPtr, MeshIndexType indexType, const MeshLODData& lodData, MeshGpuData& outGpuMesh) {
 
+    assert(vertsPtr);
+    assert(indicesPtr);
+
     MeshBuilderCommon::initMeshBuffers(outGpuMesh, nullptr);
-    assert(indexType == MeshIndexType::SHORT); // TODO: Support int
+    assert(indexType == MeshIndexType::USHORT); // TODO: Support int
     outGpuMesh.mLODData = lodData;
     outGpuMesh.mVertexType = vertexType;
     assert(lodData.mTotalIndexCount && "Index count is included in lodData, even if there is no LOD");

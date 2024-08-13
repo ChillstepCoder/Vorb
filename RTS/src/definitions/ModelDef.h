@@ -54,6 +54,7 @@ public:
 
     bool isSkeletalModel() const { return mRig != nullptr; }
     ui32 getNumMeshes() const { return mMeshes.size(); }
+    SkeletalMesh& getSkeletalMesh(ui32 meshIndex) { assert(isSkeletalModel()); return dynamic_cast<SkeletalMesh&>(*mMeshes[meshIndex]); }
     const SkeletalMesh& getSkeletalMesh(ui32 meshIndex) const { assert(isSkeletalModel()); return dynamic_cast<const SkeletalMesh&>(*mMeshes[meshIndex]); }
     Mesh& getMesh(ui32 meshIndex) { return *mMeshes[meshIndex]; }
     const Mesh& getMesh(ui32 meshIndex) const { return *mMeshes[meshIndex]; }

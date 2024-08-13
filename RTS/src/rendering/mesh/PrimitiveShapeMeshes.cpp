@@ -343,7 +343,7 @@ void PrimitiveShapeMeshes::uploadMesh(const std::vector<StandardModelVertex>& ve
     MeshLODData lodData;
     lodData.mTotalIndexCount = indices16.size();
     lodData.mLODStarts[1] = lodData.mTotalIndexCount;
-    ModelMeshBuilder::uploadCpuMeshToGpu(vertices.data(), (ui32)vertices.size(), StandardModelVertex::vertexType(), indices16.data(), MeshIndexType::SHORT, lodData, mesh->mGpuData);
+    ModelMeshBuilder::uploadCpuMeshToGpu(vertices.data(), (ui32)vertices.size(), StandardModelVertex::vertexType(), indices16.data(), MeshIndexType::USHORT, lodData, mesh->mGpuData);
 
     mMeshes[e_cast(shapeType)] = std::move(mesh);
 }

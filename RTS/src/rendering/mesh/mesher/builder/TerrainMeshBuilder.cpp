@@ -117,8 +117,8 @@ void TerrainMeshBuilder::finishMeshes(TerrainMesh& terrainMesh, TerrainMesh& wat
     MeshBuilderCommon::initMeshBuffers(terrainMesh.mGpuData, &sTerrainIboUI32, 0);
     MeshBuilderCommon::initMeshBuffers(waterMesh.mGpuData, &sTerrainIboUI32, 0);
 
-    terrainMesh.mGpuData.mIndexType = MeshIndexType::INT;
-    waterMesh.mGpuData.mIndexType = MeshIndexType::INT;
+    terrainMesh.mGpuData.mIndexType = MeshIndexType::UINT;
+    waterMesh.mGpuData.mIndexType = MeshIndexType::UINT;
     terrainMesh.mGpuData.mLODData.mTotalIndexCount = TERRAIN_MESH_INDICES;
     waterMesh.mGpuData.mLODData.mTotalIndexCount = WATER_MESH_INDICES;
 

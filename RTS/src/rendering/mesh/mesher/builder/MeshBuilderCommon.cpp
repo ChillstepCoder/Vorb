@@ -251,7 +251,7 @@ void MeshBuilderCommon::uploadIndexData(MeshGpuData& subMesh, const std::vector<
 
 void MeshBuilderCommon::uploadIndexData(MeshGpuData& subMesh, const ui16* indices, int indexCount, GLbitfield flags) {
     subMesh.mLODData.mTotalIndexCount = indexCount;
-    subMesh.mIndexType = MeshIndexType::SHORT;
+    subMesh.mIndexType = MeshIndexType::USHORT;
     const ui32 indexBufferSizeBytes = indexCount * sizeof(ui16);
     assert(subMesh.mIbo);
     assert(!subMesh.mFlags.isBitSet(MeshFlags::USING_SHARED_IBO));
