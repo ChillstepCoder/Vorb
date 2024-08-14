@@ -354,6 +354,9 @@ namespace bitsery
     namespace ext
     {
         // Extension for writing a single POD struct in straight binary.
+        // Note that if the class changes size between release and debug, you will crash
+        // Recommend size asserts on any class that uses this
+        // TODO: We could make this safe by requiring T derive from SizeCheck<N> that requires manually inputting the expected size
         class PodStruct
         {
         public:

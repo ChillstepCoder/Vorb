@@ -25,6 +25,8 @@ public:
             s.value1b(renderPass);
             // LOD data
             s.object(meshData.mLodData);
+            // AABB
+            s.ext(mModelDef.mAABB, bitsery::ext::PodStruct{});
             // Vertices
             s.value1b((ui8)meshData.mVertexType);
 
@@ -111,6 +113,8 @@ public:
             mModelDef.mMeshes[i]->setRenderPass(static_cast<MaterialRenderPassType>(renderPass));
             // LOD data
             s.object(meshData.mLodData);
+            // AABB
+            s.ext(mModelDef.mAABB, bitsery::ext::PodStruct{});
             // Vertices
             ui8 vType;
             s.value1b(vType);

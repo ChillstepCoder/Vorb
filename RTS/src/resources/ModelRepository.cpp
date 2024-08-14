@@ -33,7 +33,7 @@ static std::mutex gFbxSdkMutex; // FBX SDK IS NOT THREAD SAFE >_<
 constexpr bool FORCE_LOAD_FBX = false;
 
 // Debugging
-#define FORCE_ONE_AT_A_TIME = false;
+#define FORCE_ONE_AT_A_TIME 0
 
 struct FbxLoadContextData {
     FbxLoadContextData(const char* filePath) : fbxManager(), settings(fbxManager), sceneLoader(filePath, "", fbxManager, settings) { }
@@ -123,7 +123,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
     AssetLoader::getInstance().requestAssetLoadWithDependencies([this, modelPath]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
         ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
 
-#ifdef FORCE_ONE_AT_A_TIME
+#if FORCE_ONE_AT_A_TIME
         static std::mutex sMutex;
         std::lock_guard lock(sMutex);
 #endif
@@ -322,10 +322,7 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             saveCachedRuntimeModel(def, rnmdlPath);
         }
         // Load material dependencies
-        assetLoader.requestAssetLoadWithDependencies([=](AssetLoader& assetLoader, AssetID assetId, const vio::Path& filePath, void* assetDataPtr, std::any&) -> bool {
-            ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
-            return true;
-        },
+        assetLoader.requestAssetLoadWithDependencies(nullptr /* loadFunc*/,
         [this]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
             ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
             for (auto& mesh : def.mMeshes) {
