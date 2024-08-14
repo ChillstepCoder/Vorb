@@ -1289,6 +1289,7 @@
     <None Include="src\rendering\mesh\fbx2raw.inl" />
     <None Include="src\rendering\mesh\VertexType" />
     <None Include="src\resources\gliHasAlpha.inl" />
+    <None Include="src\resources\RuntimeModelSerializationContext.inl" />
     <None Include="src\text\NameStrings.inl" />
     <None Include="src\ui\noesis\NoesisInputMappings.inl" />
     <None Include="src\world\settlement\SettlementDebugHelpers.inl" />

@@ -8,7 +8,9 @@ startup:
   - [biome_grow, MaterialShader]
   - [editor_biome_height, MaterialShader]
   - [perlin_noise, Texture]
-#TODO: Not entities
+  - [*, Rig] #DO NOT REMOVE
+  - [*, AnimMachine] #DO NOT REMOVE
+#TODO: Not entities?
   - [*, Entity]
 preload:
 #  - [*, Material] #uncomment to force generate all .dds

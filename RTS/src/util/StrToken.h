@@ -16,7 +16,7 @@ const constexpr char* DEBUG_STR_EMPTY = "EMPTY";
 class StrToken
 {
 public:
-    constexpr StrToken() : mTokenLow(0u), mTokenMid(0ull), mTokenHigh(0u) {}
+    constexpr StrToken() : mTokenLow(0ull), mTokenMid(0ull), mTokenHigh(0ull) {}
     explicit StrToken(const nString& str);
 
     // Guarenteed consteval initialization
@@ -103,6 +103,12 @@ public:
         boost::hash_combine(seed, boost::hash<ui64>()(mTokenMid));
         boost::hash_combine(seed, boost::hash<ui64>()(mTokenHigh));
         return seed;
+    }
+
+    BINARY_SERIALIZE() {
+        s.value8b(mTokenLow);
+        s.value8b(mTokenMid);
+        s.value8b(mTokenHigh);
     }
 
 protected:

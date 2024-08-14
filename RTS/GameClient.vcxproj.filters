@@ -3193,5 +3193,8 @@
     <None Include="src\resources\gliHasAlpha.inl">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="src\resources\RuntimeModelSerializationContext.inl">
+      <Filter>Header Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

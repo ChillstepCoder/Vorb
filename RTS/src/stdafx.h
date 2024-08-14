@@ -118,12 +118,41 @@ typedef f64 TimeSpanSec;
 
 extern bool IS_SHUTTING_DOWN;
 
-// **************** Networking *****************
+// ================================ Binary Serialization ================================
+//https://github.com/fraillt/bitsery
+#include <bitsery/bitsery.h>
+#include <bitsery/adapter/buffer.h>
+#include <bitsery/traits/vector.h>
+using BBuffer = std::vector<uint8_t>;
+using BOutputAdapter = bitsery::OutputBufferAdapter<BBuffer>;
+using BInputAdapter = bitsery::InputBufferAdapter<uint8_t*>;
+
+
+// Usage: s.value2b(myValue) ect...
+// See bitsery documentation
+// Put this at the BOTTOM of the class definition
+#define BINARY_SERIALIZE() \
+private: \
+  friend bitsery::Access; \
+  template <typename S>  \
+  void serialize(S& s)
+
+// Must have BINARY_SERIALIZE(); defined first.
+#define BINARY_SERIALIZE_INPUT() \
+  template <> \
+  void serialize<bitsery::Deserializer<BInputAdapter>>(bitsery::Deserializer<BInputAdapter>& s)
+
+// Must have BINARY_SERIALIZE(); defined first.
+#define BINARY_SERIALIZE_OUTPUT() \
+  template <> \
+  void serialize<bitsery::Serializer<BOutputAdapter>>(bitsery::Serializer<BOutputAdapter>& s)
+
+// ================================ Networking ================================
 #define NET_SERIALIZE_DECL() \
 template <typename Stream> bool netSerialize(Stream& stream);
 
 
-// **************** LOGGING *****************
+// ================================ LOGGING ================================
 #include <Vorb/logging/Logger.h>
 #include "logging/ErrorLogging.h"
 #include "util/panic.h"
@@ -165,10 +194,10 @@ template <typename Stream> bool netSerialize(Stream& stream);
 #include "resources/asset/VariantAssetRef.h"
 #include "resources/asset/LiteAssetRef.h"
 
-// **************** Constexpr vectors *****************
+// ================================ Constexpr vectors ================================
 #include "math/ConstVectors.h"
 
-// **************** FPS *****************
+// ================================ FPS ================================
 extern float sFps;
 
 // SPDLog definitions
@@ -201,7 +230,7 @@ inline void setThreadPriorityToMax() {
 // Literals
 using namespace std::literals::string_view_literals;
 
-// **************** NEW GRAPHICS API *****************
+// ================================ NEW GRAPHICS API ================================
 #include "rendering/gl/GLObjects.h"
 
 #ifdef __GNUC__
@@ -214,13 +243,6 @@ using namespace std::literals::string_view_literals;
 // We get texture warnings if we bind a null texture. TODO: Why? (Used to bind 0 in shadow mapping)
 //#define glBindTexture(x, y) assert(y); glBindTexture(x, y)
 
-//https://github.com/fraillt/bitsery
-#include <bitsery/bitsery.h>
-#include <bitsery/adapter/buffer.h>
-#include <bitsery/traits/vector.h>
-using BBuffer = std::vector<uint8_t>;
-using BOutputAdapter = bitsery::OutputBufferAdapter<BBuffer>;
-using BInputAdapter = bitsery::InputBufferAdapter<uint8_t*>;
 // TODO: Remove this by making ryml exist in vorb or removing vorb
 #include "serialization/YmlSerializer.h"
 #include "serialization/VorbSerializableDefs.h"

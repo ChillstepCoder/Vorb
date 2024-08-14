@@ -72,22 +72,3 @@ SERIALIZABLE_ENUM_SAME_NAME(AssetType,
     ENUM_FIELD_SIMPLE(AssetType, Room),
 );
 static_assert(e_count(AssetType) == 22);
-
-// Usage: s.value2b(myValue) ect...
-// See bitsery documentation
-// Put this at the BOTTOM of the class definition
-#define BINARY_SERIALIZE() \
-private: \
-  friend bitsery::Access; \
-  template <typename S>  \
-  void serialize(S& s)
-
-// Must have BINARY_SERIALIZE(); defined first.
-#define BINARY_SERIALIZE_INPUT() \
-  template <> \
-  void serialize<bitsery::Deserializer<BInputAdapter>>(bitsery::Deserializer<BInputAdapter>& s)
-
-// Must have BINARY_SERIALIZE(); defined first.
-#define BINARY_SERIALIZE_OUTPUT() \
-  template <> \
-  void serialize<bitsery::Serializer<BOutputAdapter>>(bitsery::Serializer<BOutputAdapter>& s)
