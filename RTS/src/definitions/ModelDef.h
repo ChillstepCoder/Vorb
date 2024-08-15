@@ -14,23 +14,6 @@
 class RigDef;
 class AnimMachineDef;
 
-
-// Contains gpu buffers one or more models and their LODs, to improve batching performance
-// Currently all models in a batch must share a skeleton (or have no skeleton)
-// TODO: USE THIS
-struct ModelBatch {
-    MeshGpuData mMeshData;
-    std::unique_ptr<MeshSkeletonData> mSkeletonData;
-};
-
-struct ModelDrawInfo {
-    bool isValid() const { return mModelBatch != nullptr; }
-
-    ModelBatch* mModelBatch = nullptr;
-    GLuint mBaseVertex = 0;
-    f32 mBoundingSphereRadius = 10.0f;
-};
-
 struct ModelCollider {
     std::vector<ModelColliderShape> mSubShapes;
     // Used for determining entity rotation

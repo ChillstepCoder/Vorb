@@ -4,6 +4,7 @@
 #include "rendering/mesh/FBXRawModel.h"
 
 #include "resources/IAssetRepository.h"
+#include "rendering/model/ModelBatch.h"
 
 DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
@@ -41,17 +42,15 @@ public:
     StrToken getAssetExtension() const override { return CStrToken("model"); }
     const char* const getAssetTypeDisplayName() const override { return "Model"; }
 
-    // TODO:?
-    //void buildModelBatches();
-
     const ModelLodParams& getLodParams(AssetID id) const { return mLODParameters[id]; }
 
     void onAssetChangedByEditor(AssetID id) override;
 
+    void loadAllModelData();
     bool allModelDataLoaded() {
         return mUnloadedModelData == 0;
     }
-    void loadAllModelData();
+    void buildModelBatches();
 private:
     AssetLoadFunc getAssetLoadFunc() override;
 
@@ -68,15 +67,12 @@ private:
     void updateMaterialDependencies(AssetID id);
     void updateModelCollision(AssetID id);
 
-    // TODO: Pooled allocate
-    std::vector<std::unique_ptr<ModelBatch>> mModelBatches;
-
     // Stored separately for cache friendliness on render
     std::vector<ModelLodParams> mLODParameters;
 
     std::atomic_int mUnloadedModelData = INT32_MAX;
 
-    // We cant delete these multithreaded...
-    //std::map<const vio::Path, std::shared_ptr<FBXLoadContext>> mFbxLoadContexts;
+    std::vector<ModelBatch> mModelBatches;
+    FlatMap<ModelBatchKey, ModelBatchID> mModelBatcheLookup;
 };
 

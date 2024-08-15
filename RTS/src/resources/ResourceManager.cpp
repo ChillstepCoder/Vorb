@@ -385,6 +385,7 @@ void ResourceManager::preloadFiles() {
     } while (!modelRepo.allModelDataLoaded());
     LOG_INFO("Done");
 
+    modelRepo.buildModelBatches();
 
     // 4. Assets.preload
     constexpr StrToken WILDCARD = CStrToken("*");

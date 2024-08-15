@@ -4,36 +4,8 @@
 #include "rendering/mesh/MeshSkeletonData.h"
 #include "rendering/model/MaterialRenderPassType.h"
 #include "rendering/model/ModelSubmeshData.h"
-
-struct MeshLODData {
-
-    MeshLODData& operator=(const MeshLODData& o) {
-        this->mTotalIndexCount = o.mTotalIndexCount;
-        memcpy(this->mLODStarts, o.mLODStarts, sizeof(ui32) * e_cast(MeshLODLevel::COUNT));
-        return *this;
-    }
-
-    // TODO: High start is always 0 so why store it
-    ui32 mLODStarts[e_cast(MeshLODLevel::COUNT)] = {};
-    ui32 mTotalIndexCount = 0;
-
-    MeshLODDrawInfo getDrawInfoForLOD(MeshLODLevel lod) const {
-        assert(lod != MeshLODLevel::COUNT && "Invalid LOD level");
-        const ui32 start = mLODStarts[e_cast(lod)];
-        // TODO: Remove branching?
-        if (lod == MeshLODLevel::Lowest) {
-            return MeshLODDrawInfo{ start, mTotalIndexCount - start };
-        }
-        return MeshLODDrawInfo{ start, mLODStarts[e_cast(lod) + 1] - start };
-    }
-
-    BINARY_SERIALIZE() {
-        for (int i = 0; i < e_count(MeshLODLevel); ++i) {
-            s.value4b(mLODStarts[i]);
-        }
-        s.value4b(mTotalIndexCount);
-    }
-};
+#include "rendering/mesh/MeshLODData.h"
+#include "rendering/mesh/MeshIndexType.h"
 
 enum class MeshDrawMode {
     DYNAMIC = GL_DYNAMIC_DRAW,
@@ -45,11 +17,7 @@ enum class MeshFlags : ui8 {
     USING_SHARED_IBO = 1 << 0
 };
 
-enum class MeshIndexType : ui16 {
-    INVALID = 0,
-    USHORT = GL_UNSIGNED_SHORT,
-    UINT = GL_UNSIGNED_INT
-};
+
 
 class MeshCpuData final {
 public:
@@ -191,4 +159,3 @@ public:
 protected:
     MeshSkeletonData mSkeletonData;
 };
-//static_assert(sizeof(Mesh) == 104);

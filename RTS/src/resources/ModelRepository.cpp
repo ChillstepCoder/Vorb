@@ -109,6 +109,10 @@ void ModelRepository::loadAllModelData() {
     }
 }
 
+void ModelRepository::buildModelBatches() {
+
+}
+
 AssetLoadFunc ModelRepository::getAssetLoadFunc() {
     return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
 
