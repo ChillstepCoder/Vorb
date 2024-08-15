@@ -41,8 +41,8 @@ void AssetLoader::update() {
     std::lock_guard lock(mDependencyMapMutex);
     for (auto&& it = mTasksWaitingDependencies.begin(); it != mTasksWaitingDependencies.end();) {
         if (it->first->areAllAssetsLoaded()) {
-            requestAssetLoad(std::move(it->second));
             it->first->setLockedByAssetLoader(false);
+            requestAssetLoad(std::move(it->second));
             it = mTasksWaitingDependencies.erase(it);
         }
         else {

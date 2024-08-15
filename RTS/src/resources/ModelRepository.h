@@ -47,10 +47,15 @@ public:
     const ModelLodParams& getLodParams(AssetID id) const { return mLODParameters[id]; }
 
     void onAssetChangedByEditor(AssetID id) override;
+
+    bool allModelDataLoaded() {
+        return mUnloadedModelData == 0;
+    }
+    void loadAllModelData();
 private:
     AssetLoadFunc getAssetLoadFunc() override;
 
-    void loadModelInternal(ModelDef& def, StrToken modelName, const vio::Path& modelPath);
+    void loadModelDataInternal(ModelDef& def, StrToken modelName, const vio::Path& modelPath);
     void loadRawModelFromFBX(FbxLoadContext& loadContext, FBXRawModel& rawFbxMesh, const vio::Path& filePath, const ozz::animation::Skeleton* skeleton);
     void combineSubmeshesByRenderPass(OUT FBXRawModel& rawFbxMesh);
     void loadCachedRuntimeModel(ModelDef& def, const vio::Path& modelPath, const ozz::animation::Skeleton* skeleton);
@@ -68,6 +73,9 @@ private:
 
     // Stored separately for cache friendliness on render
     std::vector<ModelLodParams> mLODParameters;
+
+    std::atomic_int mUnloadedModelData = INT32_MAX;
+
     // We cant delete these multithreaded...
     //std::map<const vio::Path, std::shared_ptr<FBXLoadContext>> mFbxLoadContexts;
 };

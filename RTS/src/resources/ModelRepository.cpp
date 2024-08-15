@@ -81,7 +81,7 @@ bool ModelRepository::loadFbxFile(const vio::Path& filePath) {
     ModelDef& def = *mAssets[newId];
 
     panic("Need to finish ModelRepository::loadFbxFile");
-    loadModelInternal(def, newName, filePath);
+    loadModelDataInternal(def, newName, filePath);
 }
 
 void ModelRepository::onAssetChangedByEditor(AssetID id) {
@@ -90,6 +90,24 @@ void ModelRepository::onAssetChangedByEditor(AssetID id) {
     updateMaterialDependencies(id);
 }
 
+void ModelRepository::loadAllModelData() {
+    mUnloadedModelData = mAssetRegistry.size();
+
+    for (AssetID id = 0; id < mAssetRegistry.size(); ++id) {
+        ModelDef& def = *mAssets[id];
+        LOG_TRACE("Loading model {}", mAssetRegistry[id].mFilePath.getCString());
+        if (!def.mModelFileName.isValid()) {
+            panic("Model file missing model name - {}", mAssetRegistry[id].mFilePath.getString());
+        }
+
+        vio::Path rootDir = mAssetRegistry[id].mFilePath;
+        rootDir.trimEnd();
+        assert(rootDir.isDirectory());
+
+        const vio::Path modelPath = rootDir + nString("\\") + def.mModelFileName.toString();
+        loadModelDataInternal(def, def.getName(), modelPath);
+    }
+}
 
 AssetLoadFunc ModelRepository::getAssetLoadFunc() {
     return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
@@ -98,7 +116,6 @@ AssetLoadFunc ModelRepository::getAssetLoadFunc() {
         //TextureLoadUserData& loadUserData = std::any_cast<TextureLoadUserData&>(userData);
 
         LOG_TRACE("Loading model {}", filePath.getCString());
-
 
         if (!def.mModelFileName.isValid()) {
             panic("Model file missing model name - {}", filePath.getString());
@@ -109,17 +126,48 @@ AssetLoadFunc ModelRepository::getAssetLoadFunc() {
         assert(rootDir.isDirectory());
 
         const vio::Path modelPath = rootDir + nString("\\") + def.mModelFileName.toString();
-        loadModelInternal(def, def.getName(), modelPath);
+
+        updateMaterialDependencies(def.getID());
+
+        // Load material dependencies
+        assetLoader.requestAssetLoadWithDependencies(nullptr /* loadFunc*/,
+            [this]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
+            ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
+            for (auto& mesh : def.mMeshes) {
+                ModelMeshBuilder::uploadCpuMeshToGpu(mesh->mCpuData, mesh->mGpuData);
+            }
+
+            updateModelVariantData(def.getID());
+
+            RenderContext::getInstance().getModelBillboardLodBuilder().initTextureForModel(assetId);
+
+            return true;
+        },
+            def.getID(),
+            &def,
+            modelPath,
+            mLoadedAssets[def.getID()].get(),
+            nullptr,
+            def.getDependencies()
+        );
 
         return false;
     };
 }
 
-void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const vio::Path& modelPath) {
+void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, const vio::Path& modelPath) {
 
-    // Note that we do not need to add the rig or animmachine as dependent assets
-    // because rigs and animmachines are always loaded (see assets.preload)
+    // Note that we do not set material dependencies yet. We are not completing load here, we can leave
+    // materials unloaded until the asset is actually referenced. The point is to load all data in at startup so we can pack them into
+    // shared VBOs. We also dont need to add rigs or animmachines as a dependency because they are guarenteed loaded by the ResourceManager preload
+    /*if (def.mRigRef.isValid()) {
+        def.addDependency(def.mRigRef.getAssetHandleBase());
+        if (def.mMachineRef.isValid()) {
+            def.addDependency(def.mMachineRef.getAssetHandleBase());
+        }
+    }*/
 
+    assert(!def.getDependencies() || !def.getDependencies()->getCount());
     AssetLoader::getInstance().requestAssetLoadWithDependencies([this, modelPath]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
         ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
 
@@ -155,7 +203,6 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             assert(fs::exists(fbxPath) && fs::is_regular_file(fbxPath));
             if (FileSystem::getLastFileWriteTime(fbxPath) <= fileLastWriteTime) {
                 loadCachedRuntimeModel(def, rnmdlPath, def.mRig ? &def.mRig->mSkeleton : nullptr);
-                updateMaterialDependencies(def.getID());
                 needsLoadFBX = false;
             }
         }
@@ -171,10 +218,6 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
             const bool needsConstructDefaultVariant = def.mVariants.empty();
             if (needsConstructDefaultVariant) {
                 def.mVariants.resize(1);
-            }
-            else {
-                // Variant materials
-                updateMaterialDependencies(def.getID());
             }
 
             MaterialRepository& materialRepo = MaterialRepository::get();
@@ -321,33 +364,14 @@ void ModelRepository::loadModelInternal(ModelDef& def, StrToken modelName, const
 
             saveCachedRuntimeModel(def, rnmdlPath);
         }
-        // Load material dependencies
-        assetLoader.requestAssetLoadWithDependencies(nullptr /* loadFunc*/,
-        [this]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
-            ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
-            for (auto& mesh : def.mMeshes) {
-                ModelMeshBuilder::uploadCpuMeshToGpu(mesh->mCpuData, mesh->mGpuData);
-            }
 
-            updateModelVariantData(def.getID());
-
-            RenderContext::getInstance().getModelBillboardLodBuilder().initTextureForModel(assetId);
-
-            return true;
-        },
-            def.getID(),
-            &def,
-            modelPath,
-            mLoadedAssets[def.getID()].get(),
-            nullptr,
-            def.getDependencies()
-        );
+        --mUnloadedModelData;
         return false;
     }, nullptr,
         def.getID(),
         &def,
         modelPath,
-        mLoadedAssets[def.getID()].get(),
+        nullptr,
         nullptr,
         def.getDependencies()
     );
@@ -513,20 +537,6 @@ void ModelRepository::onRegisteredAsset(AssetID id) {
     mLODParameters.resize(mAssets.size());
     updateModelFlyweightData(id);
     updateModelCollision(id);
-
-    ////TextureLoadUserData& loadUserData = std::any_cast<TextureLoadUserData&>(userData);
-
-    //LOG_TRACE("Loading model {}", mAssetRegistry[id].mFilePath.getCString());
-    //if (!def.mModelFileName.isValid()) {
-    //    panic("Model file missing model name - {}", mAssetRegistry[id].mFilePath.getString());
-    //}
-
-    //vio::Path rootDir = mAssetRegistry[id].mFilePath;
-    //rootDir.trimEnd();
-    //assert(rootDir.isDirectory());
-
-    //const vio::Path modelPath = rootDir + nString("\\") + def.mModelFileName.toString();
-    //loadModelInternal(def, def.getName(), modelPath);
 }
 
 void ModelRepository::onAllAssetTypesRegistered() {

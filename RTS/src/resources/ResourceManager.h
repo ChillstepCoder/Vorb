@@ -92,6 +92,7 @@ public:
 private:
     void gatherRecursive(const vio::Path& folderPath);
     void preloadFiles();
+    void preloadBundleInternal(AssetHandleBundle& bundle);
 
     // Tasks
     // TODO: ResourceLoader?
@@ -107,6 +108,8 @@ private:
     std::vector<IAssetRepositoryBase*> mAssetRepositories;
     UnorderedFlatMap<StrToken, IAssetRepositoryBase*> mExtensionToAssetRepository;
     AssetHandleBundle mPreloadAssetsBundle;
+    AssetHandleBundle mRigsAndAnimMachinesHandles;
+    AssetHandleBasePtr mLoadscreenTextureHandle;
 
     // TODO: Replace with std::filesystem?
     std::unique_ptr<vio::IOManager> mIoManager;

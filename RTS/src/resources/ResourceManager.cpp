@@ -347,6 +347,46 @@ void ResourceManager::gatherRecursive(const vio::Path& folderPath) {
 }
 
 void ResourceManager::preloadFiles() {
+    AssetLoader& loader = AssetLoader::getInstance();
+    // Preload order goes as follows:
+    // 1. Load screen texture
+    // 2. AnimMachines + Rigs
+    // 3. Models data (not a full load, just vertex data but keep them "unloaded" i.e. without material pixel data)
+    // 4. assets.preload startup assets
+    // 5. assets.preload preload assets (non blocking)
+
+    // 1. Load screen texture (TODO)
+    mLoadscreenTextureHandle = TextureRepository::get().getAssetHandle(CStrToken("loading"));
+    do {
+        loader.update();
+        RenderContext::getInstance().updateRenderThreadProcs();
+    } while (!mLoadscreenTextureHandle->isLoaded());
+
+    // 2. AnimMachines + Rigs
+    for (size_t i = 0; i < mAssetRepositories[e_cast(AssetType::Rig)]->getNumRegisteredAssets(); ++i) {
+        mRigsAndAnimMachinesHandles.addAssetHandle(mAssetRepositories[e_cast(AssetType::Rig)]->getAssetHandleBase(i));
+    }
+    for (size_t i = 0; i < mAssetRepositories[e_cast(AssetType::AnimMachine)]->getNumRegisteredAssets(); ++i) {
+        mRigsAndAnimMachinesHandles.addAssetHandle(mAssetRepositories[e_cast(AssetType::AnimMachine)]->getAssetHandleBase(i));
+    }
+
+    LOG_INFO("Loading rigs...");
+    preloadBundleInternal(mRigsAndAnimMachinesHandles);
+    LOG_INFO("Done");
+
+    // 3. Models data
+    LOG_INFO("Loading model data...");
+    ModelRepository& modelRepo = ModelRepository::get();
+    modelRepo.loadAllModelData();
+    do {
+        loader.update();
+        Sleep(1);
+        RenderContext::getInstance().updateRenderThreadProcs();
+    } while (!modelRepo.allModelDataLoaded());
+    LOG_INFO("Done");
+
+
+    // 4. Assets.preload
     constexpr StrToken WILDCARD = CStrToken("*");
     vio::Path preloadPath = mResourceRoot / vio::Path("assets.preload");
     nString data;
@@ -377,14 +417,8 @@ void ResourceManager::preloadFiles() {
     }
 
     LOG_INFO("Loading startup assets...");
-    AssetLoader& loader = AssetLoader::getInstance();
-    while (!mPreloadAssetsBundle.areAllAssetsLoaded()) {
-        loader.update();
-        Sleep(1);
-        RenderContext::getInstance().updateRenderThreadProcs();
-    }
+    preloadBundleInternal(mPreloadAssetsBundle);
     LOG_INFO("Done");
-
 
     LOG_INFO("Loading editor assets...");
     // Editor resources
@@ -413,5 +447,13 @@ void ResourceManager::preloadFiles() {
             addAssetToBundle(mPreloadAssetsBundle, assetName, assetType);
         }
     }
+}
 
+void ResourceManager::preloadBundleInternal(AssetHandleBundle& bundle) {
+    AssetLoader& loader = AssetLoader::getInstance();
+    while (!bundle.areAllAssetsLoaded()) {
+        loader.update();
+        Sleep(1);
+        RenderContext::getInstance().updateRenderThreadProcs();
+    }
 }
