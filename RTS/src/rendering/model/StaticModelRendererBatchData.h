@@ -5,6 +5,7 @@
 
 class GLDrawCommandBuffer;
 class Mesh;
+struct ModelBatchSubmeshDrawData;
 
 struct ModelInstanceContainerOwner {
     TileContainerID containerId;
@@ -66,6 +67,9 @@ public:
     VGBuffer mDamageZonesSSBO = 0; // TODO: Not every model needs one of these!
     ui32 mTransformsVboSizeBytes = 0;
     ui32 mFirstDirtyInstance = UINT32_MAX;
+
+    std::vector<ModelBatchSubmeshDrawData*> mSubmeshes;
+
     const Mesh* mMesh[e_count(MaterialRenderPassType)] = {};
     int mMeshCount = 0;
     bool mMeshCastsShadow[e_count(MaterialRenderPassType)] = {};

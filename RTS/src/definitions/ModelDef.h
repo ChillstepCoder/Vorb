@@ -13,6 +13,7 @@
 
 class RigDef;
 class AnimMachineDef;
+struct ModelBatchSubmeshDrawData;
 
 struct ModelCollider {
     std::vector<ModelColliderShape> mSubShapes;
@@ -45,6 +46,7 @@ public:
     // TODO: AssetHandle
     const RigDef* mRig = nullptr;
     const AnimMachineDef* mAnimMachine = nullptr;
+    std::vector<ModelBatchSubmeshDrawData*> mMeshDrawData;
     std::vector<std::unique_ptr<Mesh>> mMeshes;
     std::vector<ModelSubmeshData> mMeshesModelData;
     ui32 mTotalSubmeshJointTransformsNeeded = 0;

@@ -59,7 +59,7 @@ public:
     void buildModelBatches();
 
     const ModelBatch& getModelBatch(ModelBatchID id) {
-
+        return mModelBatches[id];
     }
 private:
     AssetLoadFunc getAssetLoadFunc() override;

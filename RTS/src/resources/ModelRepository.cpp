@@ -124,6 +124,7 @@ void ModelRepository::buildModelBatches() {
     struct ModelBatchKey {
         MeshIndexType indexType;
         VertexType vertexType;
+        MaterialRenderPassType renderPass;
 
         auto operator<=>(const ModelBatchKey&) const = default;
     };
@@ -139,103 +140,91 @@ void ModelRepository::buildModelBatches() {
     std::vector<ModelBatchSubmeshSource> submeshSources;
     submeshSources.reserve(mTotalSubmeshCount);
 
-    struct ModelBatchSizeData {
+    struct ModelBatchCreationData {
         ui32 verticesSize = 0;
         ui32 indicesSize = 0;
+        ModelBatchID batchId = 0;
     };
 
-    using ModelBatchCreationDataVec = std::vector<std::pair<ModelBatchKey, ModelBatchSizeData>>;
+    FlatMap<ModelBatchKey, ModelBatchCreationData> modelBatchCreationDataMap;
+    modelBatchCreationDataMap.reserve(32);
 
-    FlatMap<MaterialRenderPassType, ModelBatchCreationDataVec> modelBatchCreationDataMap;
-    modelBatchCreationDataMap.reserve(e_count(MaterialRenderPassType));
-
+    int totalModelBatches = 0;
     for (AssetID id = 0; id < mAssetRegistry.size(); ++id) {
         ModelDef& def = *mAssets[id];
 
         ModelDrawCommandsList& drawCommandList = mModelDefaultDrawCommands[id];
 
+        def.mMeshDrawData.resize(def.mMeshes.size());
         for (size_t submeshIndex = 0; submeshIndex < def.mMeshes.size(); ++submeshIndex) {
             Mesh& mesh = *def.mMeshes[submeshIndex];
-
 
             ModelBatchKey key;
             key.indexType = mesh.mCpuData.mIndexType;
             key.vertexType = mesh.mCpuData.mVertexType;
-
-            ModelBatchCreationDataVec& creationData = modelBatchCreationDataMap[mesh.getRenderPass()];
-            int batchId = -1;
-            for (size_t i = 0; i < creationData.size(); ++i) {
-                if (creationData[i].first == key) {
-                    batchId = i;
-                    break;
-                }
+            key.renderPass = mesh.getRenderPass();
+            auto&& it = modelBatchCreationDataMap.find(key);
+            ModelBatchCreationData* creationData;
+            if (it == modelBatchCreationDataMap.end()) {
+                creationData = &modelBatchCreationDataMap.emplace(key, ModelBatchCreationData()).first->second;
+                creationData->batchId = totalModelBatches++;
             }
-            if (batchId == -1) {
-                batchId = creationData.size();
-                creationData.emplace_back(key, ModelBatchSizeData());
+            else {
+                creationData = &it->second;
             }
 
             const size_t submeshArrayIndex = submeshSources.size();
             ModelBatchSubmeshSource& submeshSource = submeshSources.emplace_back();
             submeshSource.renderPass = mesh.getRenderPass();
-            submeshSource.batchId = batchId;
-            submeshSource.startVertex = creationData[batchId].second.verticesSize;
-            submeshSource.startIndex = creationData[batchId].second.indicesSize;
+            submeshSource.batchId = creationData->batchId;
+            submeshSource.startVertex = creationData->verticesSize;
+            submeshSource.startIndex = creationData->indicesSize;
             submeshSource.cpuData = &mesh.mCpuData;
 
             ModelBatchSubmeshDrawData& drawData = mAllSubmeshDrawData[submeshArrayIndex];
-            drawData.batchID = batchId;
+            drawData.batchID = creationData->batchId;
             drawData.renderPass = mesh.getRenderPass();
             drawData.LODData = mesh.mCpuData.mLodData;
             for (int c = 0; c < e_cast(MeshLODLevel::COUNT); ++c) {
                 drawData.LODData.mLODStarts[c] += submeshSource.startIndex;
             }
 
-            creationData[batchId].second.verticesSize += mesh.mCpuData.mVertsCount;
-            creationData[batchId].second.indicesSize += mesh.mCpuData.mElementsCount;
-        }
-    }
+            def.mMeshDrawData[submeshIndex] = &drawData;
 
-    // Count for allocation of mModelBathces
-    int totalModelBatches = 0;
-    for (auto& [renderPass, dataVec] : modelBatchCreationDataMap) {
-        totalModelBatches += dataVec.size();
+            creationData->verticesSize += mesh.mCpuData.mVertsCount;
+            creationData->indicesSize += mesh.mCpuData.mElementsCount;
+        }
     }
 
     // Create all buffer objects and allocate space
     mModelBatches = std::make_unique<ModelBatch[]>(totalModelBatches);
-    int modelBatchIndex = 0;
-    for (auto& [renderPass, dataVec] : modelBatchCreationDataMap) {
+    for (auto& [key, creationData] : modelBatchCreationDataMap) {
 
-        for (int b = 0; b < dataVec.size(); ++b) {
-            auto& [key, sizeData] = dataVec[b];
-            ModelBatch& batch = mModelBatches[modelBatchIndex++];
-            batch.mRenderPass = renderPass;
-            batch.mVertexType = key.vertexType;
-            batch.mIndexType = key.indexType;
-            glCreateVertexArrays(1, &batch.mVao);
+        ModelBatch& batch = mModelBatches[creationData.batchId];
+        batch.mRenderPass = key.renderPass;
+        batch.mVertexType = key.vertexType;
+        batch.mIndexType = key.indexType;
+        glCreateVertexArrays(1, &batch.mVao);
 
-            const size_t vertexSize = getVertexSize(key.vertexType);
-            batch.mVerticesSizeBytes = sizeData.verticesSize * vertexSize;
-            glCreateBuffers(1, &batch.mVbo);
-            glNamedBufferStorage(batch.mVbo, batch.mVerticesSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
-            glVertexArrayVertexBuffer(batch.mVao, 0, batch.mVbo, 0, vertexSize);
+        const size_t vertexSize = getVertexSize(key.vertexType);
+        batch.mVerticesSizeBytes = creationData.verticesSize * vertexSize;
+        glCreateBuffers(1, &batch.mVbo);
+        glNamedBufferStorage(batch.mVbo, batch.mVerticesSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
+        glVertexArrayVertexBuffer(batch.mVao, 0, batch.mVbo, 0, vertexSize);
 
-            const size_t indexSize = util::getMeshIndexSizeBytes(key.indexType);
-            batch.mIndicesSizeBytes = sizeData.indicesSize * indexSize;
-            glCreateBuffers(1, &batch.mIbo);
-            glNamedBufferStorage(batch.mIbo, batch.mIndicesSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
-            glVertexArrayElementBuffer(batch.mVao, batch.mIbo);
+        const size_t indexSize = util::getMeshIndexSizeBytes(key.indexType);
+        batch.mIndicesSizeBytes = creationData.indicesSize * indexSize;
+        glCreateBuffers(1, &batch.mIbo);
+        glNamedBufferStorage(batch.mIbo, batch.mIndicesSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
+        glVertexArrayElementBuffer(batch.mVao, batch.mIbo);
 
-            LOG_INFO("Creating model batch {} {} with {:0.3f} mb vertex and {:0.3f} mb index", 
-                (int)renderPass, b, f32(batch.mVerticesSizeBytes / 1024.0 / 1024.0), f32(batch.mIndicesSizeBytes / 1024.0 / 1024.0));
-        }
+        LOG_INFO("Creating model batch {} {} with {:0.3f} mb vertex and {:0.3f} mb index",
+            (int)key.renderPass, creationData.batchId, f32(batch.mVerticesSizeBytes / 1024.0 / 1024.0), f32(batch.mIndicesSizeBytes / 1024.0 / 1024.0));
     }
     
     // Upload all data
     for (ModelBatchSubmeshSource& source : submeshSources) {
-        x; 
-        ModelBatch& targetBatch = mModelBatches[source.renderPass][source.batchId];
+        ModelBatch& targetBatch = mModelBatches[source.batchId];
         MeshCpuData& sourceData = *source.cpuData;
         assert(sourceData.mVertexType == targetBatch.mVertexType);
         assert(sourceData.mIndexType == targetBatch.mIndexType);
