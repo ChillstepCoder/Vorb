@@ -5,12 +5,17 @@
 #include "rendering/mesh/MeshIndexType.h"
 #include "rendering/model/MaterialRenderPassType.h"
 
+using ModelBatchID = ui8;
+constexpr ModelBatchID INVALID_MODEL_BATCH_ID = std::numeric_limits<ModelBatchID>::max();
+
 class ModelBatch {
     friend class ModelRepository; // Managed by
 public:
     ModelBatch() = default;
     ~ModelBatch();
     VORB_NON_COPYABLE(ModelBatch);
+
+    ui32 getTotalSizeBytes() const { return mVerticesSizeBytes + mIndicesSizeBytes; }
 
 private:
     VGBuffer  mVao = 0;
@@ -19,22 +24,18 @@ private:
     VertexType mVertexType = VertexType::INVALID;
     MeshIndexType mIndexType = MeshIndexType::INVALID;
     MaterialRenderPassType mRenderPass = MaterialRenderPassType::Default;
-    ui16 mBatchID = 0;
+    ModelBatchID mBatchID = 0;
+    ui32 mVerticesSizeBytes = 0; // Stores up to 4gb. If we have more than this we have a HUGE problem
+    ui32 mIndicesSizeBytes = 0; // Stores up to 4gb. If we have more than this we have a HUGE problem
 };
 
-class ModelBatchSubmesh {
-    ui16 mBatchID;
-    MeshLODData mLODData;
+
+struct ModelBatchSubmeshDrawData {
+    MaterialRenderPassType renderPass;
+    ModelBatchID batchID;
+    MeshLODData LODData;
 };
 
-// Models are batched based on their render pass, index type, and vertex type
-struct ModelBatchKey {
-    VertexType mVertexType;
-    MeshIndexType mIndexType;
-    MaterialRenderPassType mRenderPass;
-
-    auto operator<=>(const ModelBatchKey&) const = default;
-};
-
-using ModelBatchID = ui16;
-constexpr ModelBatchID INVALID_MODEL_BATCH_ID = std::numeric_limits<ModelBatchID>::max();
+using ModelBatchSubmeshDrawDataID = ui16;
+constexpr ModelBatchSubmeshDrawDataID INVALID_MODEL_BATCH_SUBMESH_DRAW_DATA_ID = std::numeric_limits<ModelBatchSubmeshDrawDataID>::max();
+constexpr int MAX_TOTAL_SUBMESHES = INVALID_MODEL_BATCH_SUBMESH_DRAW_DATA_ID - 1;

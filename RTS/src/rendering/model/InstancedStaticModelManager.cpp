@@ -99,7 +99,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
 
     // Build GPU data and cull
     for (auto& it : mModelBatches) {
-        StaticModelBatchData& batchData = it.second;
+        StaticModelRendererBatchData& batchData = it.second;
         if (!batchData.mIsLoaded) [[unlikely]] {
             auto&& sit = mModelDefRefs.find(it.first);
             assert(sit != mModelDefRefs.end());
@@ -107,6 +107,8 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             if (const ModelDef* def = modelDefHandle->tryGetLoadedAsset()) {
                 batchData.mMeshCount = def->getNumMeshes();
                 assert(batchData.mMeshCount);
+                // TODO: THIS IS A MIRACLE THAT IT WORKS AT ALL, WE SHOULDNT ASSUME MESH is 1:1 WITH RENDERPASS
+                assert(batchData.mMeshCount < e_count(MaterialRenderPassType));
                 for (int m = 0; m < batchData.mMeshCount; ++m) {
                     const Mesh& mesh = def->getMesh(m);
                     batchData.mMesh[m] = &mesh;
@@ -486,7 +488,7 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
         increfModelDef(modelId, sourceInstances.size());
 
         SpatialInstanceDataMap& tileContainerModels = mTileContainerTrackedModels[gatherer.mContainerID];
-        StaticModelBatchData& batchData = mModelBatches[modelId];
+        StaticModelRendererBatchData& batchData = mModelBatches[modelId];
 
         const size_t startIndex = batchData.mInstanceTransforms.size();
         // Track where our buffer is dirty
@@ -759,7 +761,7 @@ void InstancedStaticModelManager::updatePendingLooseModelInstances() {
     }
 }
 
-void InstancedStaticModelManager::removeModelInstanceInternal(StaticModelBatchData& batchData, ui32 instanceIndex, ModelID modelId) {
+void InstancedStaticModelManager::removeModelInstanceInternal(StaticModelRendererBatchData& batchData, ui32 instanceIndex, ModelID modelId) {
 
     if (instanceIndex < batchData.mFirstDirtyInstance) {
         batchData.mFirstDirtyInstance = instanceIndex;
@@ -806,7 +808,7 @@ void InstancedStaticModelManager::removeModelInstanceInternal(StaticModelBatchDa
 
 void InstancedStaticModelManager::addTileInstanceInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex, TileDamageDataPtr damageData) {
 
-    StaticModelBatchData& batchData = mModelBatches[modelDef.getID()];
+    StaticModelRendererBatchData& batchData = mModelBatches[modelDef.getID()];
 
     const size_t instanceIndex = batchData.mInstanceTransforms.size();
     if (instanceIndex < batchData.mFirstDirtyInstance) {
@@ -833,7 +835,7 @@ void InstancedStaticModelManager::addTileInstanceInternal(const ModelDef& modelD
 void InstancedStaticModelManager::removeTileInstanceInternal(TileModelInstance& instance) {
     auto&& it = mModelBatches.find(instance.mModelID);
     assert(it != mModelBatches.end());
-    StaticModelBatchData& batchData = it->second;
+    StaticModelRendererBatchData& batchData = it->second;
     const ui32 instanceIndex = instance.mInstanceIndex;
 
     removeModelInstanceInternal(batchData, instanceIndex, instance.mModelID);
@@ -893,7 +895,7 @@ void InstancedStaticModelManager::onTileInstanceDamageChanged(TileContainerID co
     );
 }
 
-void InstancedStaticModelManager::removeDamageModelInternal(StaticModelBatchData& batchData, ui32 damageModelIndex) {
+void InstancedStaticModelManager::removeDamageModelInternal(StaticModelRendererBatchData& batchData, ui32 damageModelIndex) {
     batchData.mModelDamageZonesGpuData[damageModelIndex] = std::move(batchData.mModelDamageZonesGpuData.back());
     batchData.mModelDamageZonesGpuData.pop_back();
     // Fixup relocated
@@ -915,7 +917,7 @@ void InstancedStaticModelManager::addLooseInstanceInternal(ModelID modelId, Stat
 
     increfModelDef(modelId, 1);
 
-    StaticModelBatchData& batchData = mModelBatches[modelId];
+    StaticModelRendererBatchData& batchData = mModelBatches[modelId];
 
     const size_t instanceIndex = batchData.mInstanceTransforms.size();
     if (instanceIndex < batchData.mFirstDirtyInstance) {
@@ -935,7 +937,7 @@ void InstancedStaticModelManager::addLooseInstanceInternal(ModelID modelId, Stat
 void InstancedStaticModelManager::removeLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId) {
     auto&& it = mModelBatches.find(modelId);
     assert(it != mModelBatches.end());
-    StaticModelBatchData& batchData = it->second;
+    StaticModelRendererBatchData& batchData = it->second;
 
     auto&& lit = mLooseStaticModelInstances.find(modelId);
     assert(lit != mLooseStaticModelInstances.end());
@@ -958,7 +960,7 @@ void InstancedStaticModelManager::removeLooseInstanceInternal(ModelID modelId, S
 void InstancedStaticModelManager::updateLooseInstanceTransformInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4 transform) {
     auto&& it = mModelBatches.find(modelId);
     assert(it != mModelBatches.end());
-    StaticModelBatchData& batchData = it->second;
+    StaticModelRendererBatchData& batchData = it->second;
 
     auto&& lit = mLooseStaticModelInstances.find(modelId);
     assert(lit != mLooseStaticModelInstances.end());
@@ -992,7 +994,7 @@ void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec)
             if (!instance) {
                 return;
             }
-            StaticModelBatchData& instanceData = mModelBatches[instance->mModelID];
+            StaticModelRendererBatchData& instanceData = mModelBatches[instance->mModelID];
             const f32m4& baseTransform = instanceData.mInstanceTransforms[instance->mInstanceIndex];
 
             f32m4 newTransform;

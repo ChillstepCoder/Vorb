@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rendering/model/StaticModelBatchData.h"
+#include "rendering/model/StaticModelRendererBatchData.h"
 #include "rendering/model/MaterialRenderPassType.h"
 #include "resources/asset/AssetHandleBundle.h"
 

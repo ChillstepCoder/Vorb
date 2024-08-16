@@ -11,7 +11,7 @@ struct MeshLODData {
     }
 
     // TODO: High start is always 0 so why store it
-    ui32 mLODStarts[e_cast(MeshLODLevel::COUNT)] = {};
+    ui32 mLODStarts[e_cast(MeshLODLevel::COUNT)] = {}; // Index buffer start for each LOD level
     ui32 mTotalIndexCount = 0;
 
     MeshLODDrawInfo getDrawInfoForLOD(MeshLODLevel lod) const {

@@ -47,11 +47,11 @@ struct alignas(8) ModelDamageZoneGpuData {
 };
 static_assert(sizeof(ModelDamageZoneGpuData) == 56, "Size mismatch with gpu");
 
-class StaticModelBatchData
+class StaticModelRendererBatchData
 {
 public:
     // Instance data for a specific mesh
-    StaticModelBatchData();
+    StaticModelRendererBatchData();
 
     std::vector<f32m4> mInstanceTransforms;
     std::vector<ui8> mInstanceVariantIndices;
@@ -79,4 +79,4 @@ public:
 };
 
 // Stores all specific instances of a given model in the world
-typedef std::map<ModelID, StaticModelBatchData> ModelBatchMap;
+typedef std::map<ModelID, StaticModelRendererBatchData> ModelBatchMap;

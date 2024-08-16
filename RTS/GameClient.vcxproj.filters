@@ -615,7 +615,7 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\model\StaticModelBatchData.cpp">
+    <ClCompile Include="src\rendering\model\StaticModelRendererBatchData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\generation\ChunkGenerator.cpp">
@@ -2222,7 +2222,7 @@
     <ClInclude Include="src\rendering\model\InstancedStaticModelManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\model\StaticModelBatchData.h">
+    <ClInclude Include="src\rendering\model\StaticModelRendererBatchData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\generation\ChunkGenerator.h">

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rendering/model/StaticModelInstance.h"
-#include "rendering/model/StaticModelBatchData.h"
+#include "rendering/model/StaticModelRendererBatchData.h"
 #include "rendering/model/MaterialRenderPassType.h"
 
 #include "definitions/ModelDef.h"
@@ -75,13 +75,13 @@ public:
 private:
     void updatePendingLooseModelInstances();
 
-    void removeModelInstanceInternal(StaticModelBatchData& batchData, ui32 instanceIndex, ModelID modelId);
+    void removeModelInstanceInternal(StaticModelRendererBatchData& batchData, ui32 instanceIndex, ModelID modelId);
 
     void addTileInstanceInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex, TileDamageDataPtr damageData);
     void removeTileInstanceInternal(TileModelInstance& instance);
 
     void onTileInstanceDamageChanged(TileContainerID containerId, TileIndex tileIndex, const TileDamageData& damageData);
-    void removeDamageModelInternal(StaticModelBatchData& batchData, ui32 damageModelIndex);
+    void removeDamageModelInternal(StaticModelRendererBatchData& batchData, ui32 damageModelIndex);
 
     void addLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex);
     void removeLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId);

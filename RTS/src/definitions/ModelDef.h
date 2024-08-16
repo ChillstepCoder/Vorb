@@ -27,8 +27,7 @@ SERIALIZABLE_SIMPLE(ModelCollider,
     make_field(o.mSubShapes, "shapes"sv)
 );
 
-// Modeldef contains all information about a 3D model including its location
-// in a ModelBatch
+// Modeldef contains all information about a 3D model
 class ModelDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(ModelDef, AssetType::Model);

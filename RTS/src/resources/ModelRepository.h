@@ -6,9 +6,15 @@
 #include "resources/IAssetRepository.h"
 #include "rendering/model/ModelBatch.h"
 
+#include "util/fixed_capacity_vector.h"
+
 DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 DECL_VG(class Texture);
+
+// If we need to go bigger, switch to a different container than FixedSizeVector as this is 24 bytes
+constexpr ui8 MAX_DRAW_COMMANDS_PER_MODEL = 11;
+using ModelDrawCommandsList = std::experimental::fixed_capacity_vector<ModelBatchSubmeshDrawDataID, MAX_DRAW_COMMANDS_PER_MODEL>;
 
 class FbxLoadContext;
 
@@ -48,9 +54,13 @@ public:
 
     void loadAllModelData();
     bool allModelDataLoaded() {
-        return mUnloadedModelData == 0;
+        return mUnloadedModelDataCount == 0;
     }
     void buildModelBatches();
+
+    const ModelBatch& getModelBatch(ModelBatchID id) {
+
+    }
 private:
     AssetLoadFunc getAssetLoadFunc() override;
 
@@ -67,12 +77,17 @@ private:
     void updateMaterialDependencies(AssetID id);
     void updateModelCollision(AssetID id);
 
+    std::atomic_int mUnloadedModelDataCount = INT32_MAX;
+    std::atomic_int mTotalSubmeshCount = 0;
+
     // Stored separately for cache friendliness on render
     std::vector<ModelLodParams> mLODParameters;
 
-    std::atomic_int mUnloadedModelData = INT32_MAX;
+    // Model batching
+    std::unique_ptr<ModelBatch[]> mModelBatches;
+    std::vector<ModelBatchSubmeshDrawData> mAllSubmeshDrawData;
 
-    std::vector<ModelBatch> mModelBatches;
-    FlatMap<ModelBatchKey, ModelBatchID> mModelBatcheLookup;
+    // One per ModelID (TODO: UniquePtr);
+    // TODO: Modular character overrides
+    std::vector<ModelDrawCommandsList> mModelDefaultDrawCommands;
 };
-

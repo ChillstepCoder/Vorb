@@ -53,14 +53,14 @@ struct ModelVariantData {
 
     BINARY_SERIALIZE();
     BINARY_SERIALIZE_INPUT() {
-        s.ext(displayName, bitsery::ext::PodStruct{});
+        s.object(displayName);
         ui16 size;
         s.value2b(size);
         submeshMaterials.resize(size);
         for (auto&& arr : submeshMaterials) {
             for (ui32 i = 0; i < MATERIAL_SLOT_COUNT; ++i) {
                 StrToken name;
-                s.ext(name, bitsery::ext::PodStruct{});
+                s.object(name);
                 if (name.isValid()) {
                     arr[i] = MaterialAssetRef(name);
                 }
@@ -68,15 +68,16 @@ struct ModelVariantData {
         }
     }
     BINARY_SERIALIZE_OUTPUT() {
-        s.ext(displayName, bitsery::ext::PodStruct{});
+        s.object(displayName);
         s.value2b((ui16)submeshMaterials.size());
         for (auto&& arr : submeshMaterials) {
             for (auto&& assetRef : arr) {
                 if (assetRef.isValid()) {
-                    s.ext(assetRef.getAssetName(), bitsery::ext::PodStruct{});
+                    s.object(assetRef.getAssetName());
                 }
                 else {
-                    s.ext(StrToken(), bitsery::ext::PodStruct{});
+                    StrToken name;
+                    s.object(name);
                 }
             }
         }
