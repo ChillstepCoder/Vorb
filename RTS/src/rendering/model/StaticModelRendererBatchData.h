@@ -29,7 +29,7 @@ static_assert(e_count(StaticModelAnimationTypes) == 1);
 // Use TileIndex as key to reference their mesh data so we can dynamically update it.
 //   Queue tile mesh updates, then do them all in a single pass then do a compaction pass on the buffer
 struct TileModelInstance {
-    ModelID mModelID = 0;
+    ModelID mModelID = 0; // TODO: No need for model ID reference
     ui32 mInstanceIndex = 0; // Index into the transforms array
 };
 static_assert(sizeof(TileModelInstance) == 8, "Keep tiny");
@@ -47,6 +47,7 @@ struct alignas(8) ModelDamageZoneGpuData {
     f32v2 radii = f32v2(1.0f, 1.0f);
 };
 static_assert(sizeof(ModelDamageZoneGpuData) == 56, "Size mismatch with gpu");
+
 
 class StaticModelRendererBatchData
 {
@@ -67,8 +68,6 @@ public:
     VGBuffer mDamageZonesSSBO = 0; // TODO: Not every model needs one of these!
     ui32 mTransformsVboSizeBytes = 0;
     ui32 mFirstDirtyInstance = UINT32_MAX;
-
-    std::vector<ModelBatchSubmeshDrawData*> mSubmeshes;
 
     const Mesh* mMesh[e_count(MaterialRenderPassType)] = {};
     int mMeshCount = 0;

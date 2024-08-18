@@ -164,7 +164,7 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
         if (!playerControlCmp.mPlayerControlFlags.isBitSet(PlayerControlFlags::StowKeyHeld)) {
             playerControlCmp.mPlayerControlFlags.setBit(PlayerControlFlags::StowKeyHeld);
             const ModelID swordId = ModelRepository::get().getAssetID(CStrToken("sword"));
-            mRegistry.get_or_emplace<CharacterLinkedSubmodelComponent>(entity).toggleLinkedSubmodel(entity, { CStrToken("Sword_joint"), swordId });
+            mRegistry.get_or_emplace<CharacterLinkedSubmodelComponent>(entity).toggleLinkedSubmodel(entity, { CStrToken("Weapon.R"), swordId });
         }
     }
     else {

@@ -12,6 +12,7 @@
 #include "rendering/post_process/ShadowDetail.h"
 #include "rendering/RenderContext.h"
 #include "rendering/post_process/ShadowPassShaderData.h"
+#include "rendering/model/InstancedStaticModelManager.h"
 #include "options/DebugOptions.h"
 #include "options/LightingOptions.h"
 #include "rendering/material/BrdfLUT.h"
@@ -29,8 +30,10 @@
 InstancedStaticModelRenderer::InstancedStaticModelRenderer() {
 
     mStandardShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("standard_model"));
+    mStandardShaderNew = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("standard_model_new"));
     mShadowMapperShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("shadow_mapper_instd"));
     mSmudgeShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("smudge_model"));
+    mSmudgeShaderNew = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("smudge_model_new"));
     mWaterShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("water_model"));
 
     static_assert(e_count(MaterialRenderPassType) == 3);
@@ -41,15 +44,25 @@ InstancedStaticModelRenderer::~InstancedStaticModelRenderer() = default;
 void InstancedStaticModelRenderer::setActiveWorld(World& world) {
     mWeatherManager = &world.getWeatherManager();
 }
-
-void InstancedStaticModelRenderer::renderModelPass(const ModelBatchMap& modelInstances, const Camera3D& camera, MaterialRenderPassType passType, const CubemapDef* skyCubeMap) {
+void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelManager& modelManager, const Camera3D& camera, MaterialRenderPassType passType, const CubemapDef* skyCubeMap)
+{
     ASSERT_RENDER_THREAD();
-    if (sDebugOptions.mHideModels)
-        return;
-    if (!mShaderAssets.areAllAssetsLoaded()) {
+    if (sDebugOptions.mHideModels) [[unlikely]] {
         return;
     }
 
+    if (!modelManager.mDrawCommandsCount[e_cast(passType)]) {
+        return;
+    }
+
+    if (!mShaderAssets.areAllAssetsLoaded()) [[unlikely]] {
+        return;
+    }
+
+    GLDrawCommandBuffer& drawCommands = *modelManager.mDrawCommands[e_cast(passType)];
+    if (!drawCommands.getNumActiveCommands()) {
+        return;
+    }
     PROFILE_FUNCTION();
 
     // TODO: Material specific, we lose 10fps disabling this
@@ -58,10 +71,10 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelBatchMap& modelIns
 
     switch (passType) {
         case MaterialRenderPassType::Default:
-            def = mStandardShader;
+            def = mStandardShaderNew;
             break;
         case MaterialRenderPassType::Smudge:
-            def = mSmudgeShader;
+            def = mSmudgeShaderNew;
             break;
         case MaterialRenderPassType::Water:
             def = mWaterShader;
@@ -129,72 +142,51 @@ void InstancedStaticModelRenderer::renderModelPass(const ModelBatchMap& modelIns
     if (def->tryGetUniform("unDamageTexture")) {
         glUniform1ui(def->getUniform("unDamageTexture"), MaterialRepository::get().getMaterialId(CStrToken("wood_chopping_texture_01")));
     }
-    for (auto& [modelId, instanceData] : modelInstances) {
-        for (int m = 0; m < instanceData.mMeshCount; ++m) {
-            if (!instanceData.mDrawCommands[m]) {
-                break;
-            }
-            const Mesh& mesh = *(instanceData.mMesh[m]);
 
-            if (mesh.getRenderPass() == passType) {
-                // Copy draw commands
-                GLDrawCommandBuffer& drawCommands = *instanceData.mDrawCommands[m];
-                if (!drawCommands.getNumActiveCommands()) {
-                    continue;
-                }
-
-                // TODO: Not uniform, instead per model when we have improved batching
-                if (windUniform) {
-                    glUniform1i(windUniform, (GLint)mesh.getSubmeshData()->windType);
-                }
-
-                // Variant data
-                assert(mesh.mVariantDataUbo);
-                glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
-                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MODEL_DAMAGE_DATA_SSBO, instanceData.mDamageZonesSSBO);
-
-                // Bind our transforms every frame as we could be using different instanced static model managers
-                GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
-                GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_VARIANT_INDICES_BINDING_POINT, instanceData.mVariantsVbo, 0, sizeof(ui8));
-                GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_DAMAGE_INDICES_BINDING_POINT, instanceData.mDamageModelIndexVbo, 0, sizeof(ui32));
-
-                // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
-                //// Make sure we created a fence for this instance
-                //assert(instanceData.mFenceSync);
-                //// Make sure all compute commands are finished
-                //while (true) {
-                //    const GLenum res = glClientWaitSync(instanceData.mFenceSync, GL_SYNC_FLUSH_COMMANDS_BIT, 100);
-                //    if (res == GL_ALREADY_SIGNALED || res == GL_CONDITION_SATISFIED) break;
-                //}
-                //glDeleteSync(instanceData.mFenceSync);
-                //instanceData.mFenceSync = 0;
-
-                //const ui32 totalCommands = *instanceData.mNumVisibleMeshesBufferPtr;
-                //assert(totalCommands == drawCommands.mDrawCommands.size());
-
-                //GL_INVALID_OPERATION is generated if no buffer is bound to the GL_ELEMENT_ARRAY_BUFFER binding, or if such a buffer's data store is currently mapped.
-                //GL_INVALID_OPERATION is generated if a non - zero buffer object name is bound to an enabled array or to the GL_DRAW_INDIRECT_BUFFER binding and the buffer object's data store is currently mapped.
-                //GL_INVALID_OPERATION is generated if a geometry shader is active and mode is incompatible with the input primitive type of the geometry shader in the currently installed program object.
-
-                mesh.bindStaticModelAttribs();
-
-                MeshDrawer::drawIndirect(mesh.mGpuData, &drawCommands);
-                break;
-            }
-        }
+    // TODO: Not uniform, instead per model when we have improved batching
+    if (windUniform) {
+        glUniform1i(windUniform, 0/*(GLint)mesh.getSubmeshData()->windType*/);
     }
-    
+
+    ModelRepository& modelRepo = ModelRepository::get();
+    // Talia said we never need more than 65536 verts
+    const ModelBatch& batch = modelRepo.getModelBatch(ModelBatchKey{ MeshIndexType::USHORT, VertexType::STANDARD_MODEL, passType });
+
+    // Variant data
+    //assert(mesh.mVariantDataUbo);
+    // TODO: VARIANTS
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_SSBO, modelRepo.getModelVariantDataSSBO());
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MODEL_DAMAGE_DATA_SSBO, modelManager.mDamageZonesSSBO);
+
+    // Bind our transforms every frame as we could be using different instanced static model managers
+    VGBuffer vao = batch.getVao();
+    GL.glVertexArrayVertexBuffer(vao, MODEL_TRANSFORMS_BINDING_POINT, modelManager.mTransformsVbo, 0, sizeof(f32m4));
+    GL.glVertexArrayVertexBuffer(vao, MODEL_VARIANT_INDICES_BINDING_POINT, modelManager.mVariantsVbo, 0, sizeof(ui32));
+    GL.glVertexArrayVertexBuffer(vao, MODEL_DAMAGE_INDICES_BINDING_POINT, modelManager.mDamageModelIndexVbo, 0, sizeof(ui32));
+
+    batch.bindStaticModelAttribs();
+
+    GL.glBindVertexArray(vao);
+    assert(batch.getIndexType() == MeshIndexType::USHORT);
+    drawCommands.multiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT);
+
     // TODO: Material specific
     glEnable(GL_CULL_FACE);
     checkGlError("InstancedStaticModelRenderer::renderModelPass");
 }
 
-void InstancedStaticModelRenderer::renderModelShadows(const ModelBatchMap& modelInstances, const ShadowPassShaderData& shaderData, const Camera3D& camera) {
+void InstancedStaticModelRenderer::renderModelShadows(const InstancedStaticModelManager& modelManager, const ShadowPassShaderData& shaderData, const Camera3D& camera)
+{
     ASSERT_RENDER_THREAD();
 
     if (!mShaderAssets.areAllAssetsLoaded()) {
         return;
     }
+
+    if (sDebugOptions.mHideModels) [[unlikely]] {
+        return;
+    }
+
     // TODO: Material specific
     glDisable(GL_CULL_FACE);
 
@@ -203,29 +195,32 @@ void InstancedStaticModelRenderer::renderModelShadows(const ModelBatchMap& model
     MaterialRenderer::bindMaterialShaderForRender(*mShadowMapperShader);
     glUniformMatrix4fv(mShadowMapperShader->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*shaderData.shadowFrustumMatrices)[0][0]);
 
-    for (auto& [modelId, instanceData] : modelInstances) {
-        for (int m = 0; m < instanceData.mMeshCount; ++m) {
-            if (!instanceData.mDrawCommandsShadows[m]) {
-                continue;
-            }
-
-            // TODO: Have a no shadow render type?
-            GLDrawCommandBuffer& drawCommands = *instanceData.mDrawCommandsShadows[m];
-            if (!drawCommands.getNumActiveCommands()) {
-                continue;
-            }
-
-            const Mesh& mesh = *instanceData.mMesh[m];
-
-            // Rebind these as the dynamic model renderer may have replaced them
-            // TODO: Have a better way to track this stuff
-            GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, instanceData.mTransformsVbo, 0, sizeof(f32m4));
-            GL.glVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_VARIANT_INDICES_BINDING_POINT, instanceData.mVariantsVbo, 0, sizeof(ui8));
-
-            mesh.bindStaticModelAttribs();
-
-            MeshDrawer::drawIndirect(mesh.mGpuData, &drawCommands);
+    ModelRepository& modelRepo = ModelRepository::get();
+    // Talia said we never need more than 65536 verts
+    for (MaterialRenderPassType passType : { MaterialRenderPassType::Default, MaterialRenderPassType::Smudge }) {
+        if (!modelManager.mDrawCommandsShadows[e_cast(passType)]) {
+            continue;
         }
+
+        GLDrawCommandBuffer& drawCommands = *modelManager.mDrawCommandsShadows[e_cast(passType)];
+        if (!drawCommands.getNumActiveCommands()) {
+            continue;
+        }
+
+        const ModelBatch& batch = modelRepo.getModelBatch(ModelBatchKey{ MeshIndexType::USHORT, VertexType::STANDARD_MODEL, passType });
+
+        // Rebind these as the dynamic model renderer may have replaced them
+        // TODO: Have a better way to track this stuff
+        VGBuffer vao = batch.getVao();
+        GL.glVertexArrayVertexBuffer(vao, MODEL_TRANSFORMS_BINDING_POINT, modelManager.mTransformsVbo, 0, sizeof(f32m4));
+        GL.glVertexArrayVertexBuffer(vao, MODEL_VARIANT_INDICES_BINDING_POINT, modelManager.mVariantsVbo, 0, sizeof(ui32));
+        GL.glVertexArrayVertexBuffer(vao, MODEL_DAMAGE_INDICES_BINDING_POINT, modelManager.mDamageModelIndexVbo, 0, sizeof(ui32));
+
+        batch.bindStaticModelAttribs();
+
+        GL.glBindVertexArray(vao);
+        assert(batch.getIndexType() == MeshIndexType::USHORT);
+        drawCommands.multiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT);
     }
     // TODO: Material specific
     glEnable(GL_CULL_FACE);

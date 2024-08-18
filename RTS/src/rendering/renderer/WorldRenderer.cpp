@@ -217,7 +217,9 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
 
     // Instanced models
     MaterialRepository::get().bindMaterialBuffer();
-    mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), *mCamera, MaterialRenderPassType::Default, nullptr);
+
+    mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager(), *mCamera, MaterialRenderPassType::Default, nullptr);
+
 
     mDynamicModelRenderer->prepareFrame(dynamicModels, *camera);
     mDynamicModelRenderer->renderModelPass(MaterialRenderPassType::Default);
@@ -230,7 +232,9 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     // Smudge
     {
         mSmudgeRenderer->beginSmudgePass(activeGBuffer);
-        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), *mCamera, MaterialRenderPassType::Smudge, nullptr);
+
+        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager(), *mCamera, MaterialRenderPassType::Smudge, nullptr);
+
         mDynamicModelRenderer->renderModelPass(MaterialRenderPassType::Smudge);
         if (!sDebugOptions.mHideGrass && !sDebugOptions.mWireframe) {
             glDisable(GL_CULL_FACE);
@@ -677,7 +681,7 @@ void WorldRenderer::renderPassShadows(const GlobalRenderData& renderData, vg::GB
             // Instanced models
             MaterialRepository::get().bindMaterialBuffer();
             if (!sDebugOptions.mHideModels) {
-                mStaticModelRenderer->renderModelShadows(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), mShadowRenderer->getShaderData(), *mCamera);
+                mStaticModelRenderer->renderModelShadows(mCurrentWorldRenderDataManager->getInstancedStaticModelManager(), mShadowRenderer->getShaderData(), *mCamera);
             }
 
             // TODO: Frustum cull
@@ -737,7 +741,7 @@ void WorldRenderer::renderPassTransparent(f32 elapsedSec) {
         // Model water
         vg::DepthState::READ.set();
         vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
-        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getModelInstanceMap(), *mCamera, MaterialRenderPassType::Water, cubeMap);
+        mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager(), *mCamera, MaterialRenderPassType::Water, cubeMap);
         vg::BlendState::restorePrevious();
         glDisable(GL_DEPTH_CLAMP);
     }

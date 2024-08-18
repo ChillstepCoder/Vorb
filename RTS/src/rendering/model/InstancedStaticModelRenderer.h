@@ -10,6 +10,7 @@ class WeatherManager;
 class MaterialShaderDef;
 class CubemapDef;
 struct ShadowPassShaderData;
+class InstancedStaticModelManager;
 
 DECL_VG(class GLProgram);
 
@@ -20,14 +21,16 @@ public:
 
     void setActiveWorld(World& world);
 
-    void renderModelPass(const ModelBatchMap& modelInstances, const Camera3D& camera, MaterialRenderPassType passType, const CubemapDef* skyCubeMap);
-    void renderModelShadows(const ModelBatchMap& modelInstances, const ShadowPassShaderData& shaderData, const Camera3D& camera);
+    void renderModelPass(const InstancedStaticModelManager& modelManager, const Camera3D& camera, MaterialRenderPassType passType, const CubemapDef* skyCubeMap);
+    void renderModelShadows(const InstancedStaticModelManager& modelManager, const ShadowPassShaderData& shaderData, const Camera3D& camera);
 
 private:
 
     const MaterialShaderDef* mStandardShader = nullptr;
+    const MaterialShaderDef* mStandardShaderNew = nullptr;
     const MaterialShaderDef* mShadowMapperShader = nullptr;
     const MaterialShaderDef* mSmudgeShader = nullptr;
+    const MaterialShaderDef* mSmudgeShaderNew = nullptr;
     const MaterialShaderDef* mWaterShader = nullptr;
     AssetHandleBundle mShaderAssets;
     WeatherManager* mWeatherManager = nullptr;

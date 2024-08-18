@@ -30,7 +30,8 @@
 
 static std::mutex gFbxSdkMutex; // FBX SDK IS NOT THREAD SAFE >_<
 
-constexpr bool FORCE_LOAD_FBX = true;
+// TODO: Make false
+constexpr bool FORCE_LOAD_FBX = false;
 
 // Debugging
 #define FORCE_ONE_AT_A_TIME 0
@@ -117,23 +118,15 @@ void ModelRepository::buildModelBatches() {
     if (mTotalSubmeshCount >= MAX_TOTAL_SUBMESHES) {
         panic("Too many model meshes allocated! Programmer needs to increase maximum submesh count!");
     }
-    mModelDefaultDrawCommands.resize(mAssetRegistry.size());
+    mVariantArrayIndexData.resize(mAssetRegistry.size());
+    mModelSubmeshSpanKeys.resize(mAssetRegistry.size());
     mAllSubmeshDrawData.resize(mTotalSubmeshCount);
-
-    // Looks up a model batch for a given render pass
-    struct ModelBatchKey {
-        MeshIndexType indexType;
-        VertexType vertexType;
-        MaterialRenderPassType renderPass;
-
-        auto operator<=>(const ModelBatchKey&) const = default;
-    };
 
     struct ModelBatchSubmeshSource {
         MaterialRenderPassType renderPass;
         ModelBatchID batchId;
-        int startVertex;
-        int startIndex;
+        i32 startVertex;
+        i32 startIndex;
         MeshCpuData* cpuData;
     };
 
@@ -149,18 +142,29 @@ void ModelRepository::buildModelBatches() {
     FlatMap<ModelBatchKey, ModelBatchCreationData> modelBatchCreationDataMap;
     modelBatchCreationDataMap.reserve(32);
 
+    ui32 numVariantData = 0;
+
     int totalModelBatches = 0;
-    for (AssetID id = 0; id < mAssetRegistry.size(); ++id) {
-        ModelDef& def = *mAssets[id];
+    for (AssetID modelId = 0; modelId < mAssetRegistry.size(); ++modelId) {
+        ModelDef& def = *mAssets[modelId];
 
-        ModelDrawCommandsList& drawCommandList = mModelDefaultDrawCommands[id];
+        // Point model to this draw command list
+        mModelSubmeshSpanKeys[modelId].index = submeshSources.size();
+        mModelSubmeshSpanKeys[modelId].count = def.mMeshesModelData.size();
 
-        def.mMeshDrawData.resize(def.mMeshes.size());
-        for (size_t submeshIndex = 0; submeshIndex < def.mMeshes.size(); ++submeshIndex) {
+        mVariantArrayIndexData[modelId].offset = numVariantData * MATERIAL_SLOT_COUNT;
+        mVariantArrayIndexData[modelId].stride = def.mMeshesModelData.size() * MATERIAL_SLOT_COUNT;
+        numVariantData += def.mMeshesModelData.size() * def.mVariants.size();
+
+        for (size_t submeshIndex = 0; submeshIndex < def.mMeshesModelData.size(); ++submeshIndex) {
             Mesh& mesh = *def.mMeshes[submeshIndex];
 
             ModelBatchKey key;
             key.indexType = mesh.mCpuData.mIndexType;
+            if (key.indexType != MeshIndexType::USHORT) [[unlikely]] {
+                // To support UINT, we need ModelRepository to support splitting batches by index type
+                panic("ModelRepository::buildModelBatches: Only ushort indices are supported but mesh loaded with more than 65536 vertices");
+            }
             key.vertexType = mesh.mCpuData.mVertexType;
             key.renderPass = mesh.getRenderPass();
             auto&& it = modelBatchCreationDataMap.find(key);
@@ -184,12 +188,15 @@ void ModelRepository::buildModelBatches() {
             ModelBatchSubmeshDrawData& drawData = mAllSubmeshDrawData[submeshArrayIndex];
             drawData.batchID = creationData->batchId;
             drawData.renderPass = mesh.getRenderPass();
-            drawData.LODData = mesh.mCpuData.mLodData;
-            for (int c = 0; c < e_cast(MeshLODLevel::COUNT); ++c) {
-                drawData.LODData.mLODStarts[c] += submeshSource.startIndex;
-            }
+            drawData.castsShadow = mesh.castsShadow();
+            drawData.windType = mesh.getSubmeshData()->windType;
+            drawData.baseVertex = creationData->verticesSize;
 
-            def.mMeshDrawData[submeshIndex] = &drawData;
+            for (int l = 0; l < (int)MeshLODLevel::COUNT; ++l) {
+                drawData.lodDrawInfo[l] = mesh.mCpuData.mLodData.getDrawInfoForLOD((MeshLODLevel)l);
+                drawData.lodDrawInfo[l].startIndex += submeshSource.startIndex;
+            }
+            drawData.modelId = modelId;
 
             creationData->verticesSize += mesh.mCpuData.mVertsCount;
             creationData->indicesSize += mesh.mCpuData.mElementsCount;
@@ -198,9 +205,10 @@ void ModelRepository::buildModelBatches() {
 
     // Create all buffer objects and allocate space
     mModelBatches = std::make_unique<ModelBatch[]>(totalModelBatches);
+    mModelBatchLookup.reserve(totalModelBatches);
     for (auto& [key, creationData] : modelBatchCreationDataMap) {
-
         ModelBatch& batch = mModelBatches[creationData.batchId];
+        mModelBatchLookup[key] = &batch;
         batch.mRenderPass = key.renderPass;
         batch.mVertexType = key.vertexType;
         batch.mIndexType = key.indexType;
@@ -221,7 +229,16 @@ void ModelRepository::buildModelBatches() {
         LOG_INFO("Creating model batch {} {} with {:0.3f} mb vertex and {:0.3f} mb index",
             (int)key.renderPass, creationData.batchId, f32(batch.mVerticesSizeBytes / 1024.0 / 1024.0), f32(batch.mIndicesSizeBytes / 1024.0 / 1024.0));
     }
+
+    // Create variant data UBO
+    glCreateBuffers(1, &mModelVariantDataSSBO);
+    glNamedBufferStorage(mModelVariantDataSSBO, numVariantData * sizeof(ModelVariantGpuData), nullptr, GL_DYNAMIC_STORAGE_BIT);
+    ui32 zero = 0;
+    // Zero the buffer (Default material), we will end up uploading materials as they are loaded
+    glClearNamedBufferData(mModelVariantDataSSBO, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
     
+    assert(numVariantData < UINT16_MAX && "If this fails we need to increase variant bits in Vertex.h");
+
     // Upload all data
     for (ModelBatchSubmeshSource& source : submeshSources) {
         ModelBatch& targetBatch = mModelBatches[source.batchId];
@@ -232,6 +249,21 @@ void ModelRepository::buildModelBatches() {
         const ui32 indexSize = (ui32)util::getMeshIndexSizeBytes(sourceData.mIndexType);
         glNamedBufferSubData(targetBatch.mVbo, source.startVertex * vertexSize, sourceData.mVertsCount * vertexSize, source.cpuData->mVertsPtr);
         glNamedBufferSubData(targetBatch.mIbo, source.startIndex * indexSize, sourceData.mElementsCount * indexSize, source.cpuData->mElementsPtr);
+    }
+
+    // Bind vertex attribs
+    for (size_t i = 0; i < mModelBatchLookup.size(); ++i) {
+        ModelBatch& batch = mModelBatches[i];
+        switch (batch.mVertexType) {
+            case VertexType::STANDARD_MODEL:
+                StandardModelVertex::bindVertexAttribs(batch.mVao);
+                break;
+            case VertexType::SKINNED_MODEL:
+                SkinnedModelVertex::bindVertexAttribs(batch.mVao);
+                break;
+            default:
+                panic("Invalid vertex type {} when building model batches", (int)batch.mVertexType);
+        }
     }
 
     checkGlError("ModelRepository::buildModelBatches");
@@ -344,11 +376,6 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
             const int materialCount = fbxLoadContext.data->sceneLoader.scene()->GetMaterialCount();
             rawFbxModel.mMaterials.resize(materialCount);
 
-            const bool needsConstructDefaultVariant = def.mVariants.empty();
-            if (needsConstructDefaultVariant) {
-                def.mVariants.resize(1);
-            }
-
             MaterialRepository& materialRepo = MaterialRepository::get();
 
             for (int i = 0; i < materialCount; ++i) {
@@ -382,12 +409,19 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
             }
             assert(rawFbxModel.mSubMeshes.size());
 
-            std::vector<ui16> rawMaterialIdSlotMapping;
-            rawMaterialIdSlotMapping.reserve(4);
+            std::experimental::fixed_capacity_vector<ui16, 4> rawMaterialIdSlotMapping;
 
             def.mTotalSubmeshJointTransformsNeeded = 0;
 
             // TODO: Handle other submeshes?
+            int variantMaterialSlotOffset = 0;
+
+            const bool needsConstructDefaultVariant = def.mVariants.empty();
+            if (needsConstructDefaultVariant) {
+                int submeshCount = 0;
+                def.mVariants.resize(1);
+            }
+
             for (auto& [renderPassIndex, subMeshList] : rawFbxModel.mSubMeshes) {
                 for (RawSubMesh& subMesh : subMeshList) {
                     assert(subMesh.mVertices.size());
@@ -414,6 +448,7 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
                             }
                         }
                         if (!foundSlot) {
+                            assert(rawMaterialIdSlotMapping.size() < 4);
                             rawMaterialIdSlotMapping.push_back(rawVert.rawMaterialIndex);
                         }
 
@@ -438,7 +473,12 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
                         }
                     }
 
-                    MeshCpuData newMeshCpuData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(subMesh, rawFbxModel.mMaterials, def.mBaseOptimizeErrorThresold, &rawMaterialIdSlotMapping);
+                    MeshCpuData newMeshCpuData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(
+                        subMesh, rawFbxModel.mMaterials, def.mBaseOptimizeErrorThresold, variantMaterialSlotOffset, &rawMaterialIdSlotMapping
+                    );
+
+                    // All material slots are stored sequentially submesh by submesh in our variant data array
+                    variantMaterialSlotOffset += MATERIAL_SLOT_COUNT;
 
                     // Apply scale if needed
                     if (def.mScale != 1.0f) {
@@ -704,6 +744,8 @@ void ModelRepository::updateModelVariantData(AssetID id) {
     }
 
     // Copy all variant materials to GPU data and then upload
+    // TODO: REMOVE
+    LOG_CRITICAL("TODO: REMOVE OLD VARIANT METHOD");
     MaterialRepository& materialRepo = MaterialRepository::get();
     for (size_t submeshIndex = 0; submeshIndex < def.mVariantsGpuData.size(); ++submeshIndex) {
         ModelVariantGpuDataContainer& gpuData = def.mVariantsGpuData[submeshIndex];
@@ -725,6 +767,31 @@ void ModelRepository::updateModelVariantData(AssetID id) {
         buffer.allocate(gpuData.size() * sizeof(ModelVariantGpuData), gpuData.data(), 0);
         def.mMeshes[submeshIndex]->mVariantDataUbo = buffer.getHandle();
     }
+
+    ModelVariantGpuDataContainer variantsGpuData;
+    variantsGpuData.resize(def.mMeshesModelData.size() * def.mVariants.size());
+    VariantIndexData indexData = mVariantArrayIndexData[id];
+    assert(def.mMeshesModelData.size() == indexData.stride / MATERIAL_SLOT_COUNT);
+
+    for (size_t variantIndex = 0; variantIndex < def.mVariants.size(); ++variantIndex) {
+        ModelVariantData& variantData = def.mVariants[variantIndex];
+
+        for (size_t submeshIndex = 0; submeshIndex < def.mVariantsGpuData.size(); ++submeshIndex) {
+            auto& mats = variantData.submeshMaterials[submeshIndex];
+            for (size_t j = 0; j < mats.size(); ++j) {
+                variantsGpuData[variantIndex * def.mMeshesModelData.size() + submeshIndex].materials[j] = mats[j].getAssetID();
+            }
+        }
+    }
+
+    assert(variantsGpuData.size() == (indexData.stride / MATERIAL_SLOT_COUNT) * def.mVariants.size());
+    glNamedBufferSubData(
+        mModelVariantDataSSBO,
+        indexData.offset * sizeof(ui32) /*VariantIndexData is indexing on individual materials, so 4 bytes*/,
+        variantsGpuData.size() * sizeof(ModelVariantGpuData),
+        variantsGpuData.data()
+    );
+    static_assert(sizeof(ModelVariantGpuData) == sizeof(ui32) * MATERIAL_SLOT_COUNT);
 }
 
 void ModelRepository::updateMaterialDependencies(AssetID id) {

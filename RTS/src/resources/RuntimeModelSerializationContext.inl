@@ -26,6 +26,7 @@ public:
             // LOD data
             s.object(meshData.mLodData);
             // AABB
+            // TODO: PodStruct needs to be fixed before release, it doesn't handle switching byte order
             s.ext(mModelDef.mAABB, bitsery::ext::PodStruct{});
             // Vertices
             s.value1b((ui8)meshData.mVertexType);

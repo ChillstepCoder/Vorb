@@ -38,9 +38,13 @@ typedef FlatMap<StaticModelInstanceID, ui32 /*instanceIndex*/> InstanceIDToIndex
 //  std::unordered_map For pointer stability
 typedef std::unordered_map<ModelID, InstanceIDToIndexMap> LooseStaticModelInstanceMap;
 
+
+using InstanceVariantIndexType = ui32;
+
 // Currently only supports one model instance per tile
 class InstancedStaticModelManager
 {
+    friend class InstancedStaticModelRenderer;
 public:
     InstancedStaticModelManager();
     ~InstancedStaticModelManager();
@@ -66,22 +70,20 @@ public:
 
     void onTileDamagedEvent(const TileContainerEvent& evnt);
 
-    // TODO: This is more data than the renderer needs?
-    const ModelBatchMap& getModelInstanceMap() const { return mModelBatches; }
-
     StaticModelInstanceID addLooseModelInstance(ModelID modelId, const glm::quat& orient, f32v3 position, ui8 variantIndex, f32 scale);
     void removeLooseModelInstance(ModelID modelId, StaticModelInstanceID instanceId);
     void changeLooseModelInstanceScale(ModelID modelId, StaticModelInstanceID instanceId, const glm::quat& orient, f32v3 position, f32 scale);
 private:
     void updatePendingLooseModelInstances();
 
-    void removeModelInstanceInternal(StaticModelRendererBatchData& batchData, ui32 instanceIndex, ModelID modelId);
+    void removeModelInstanceInternal(ui32 instanceIndex);
 
     void addTileInstanceInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex, TileDamageDataPtr damageData);
     void removeTileInstanceInternal(TileModelInstance& instance);
 
     void onTileInstanceDamageChanged(TileContainerID containerId, TileIndex tileIndex, const TileDamageData& damageData);
-    void removeDamageModelInternal(StaticModelRendererBatchData& batchData, ui32 damageModelIndex);
+
+    void removeDamageModelInternal(ui32 damageModelIndex);
 
     void addLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex);
     void removeLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId);
@@ -91,8 +93,40 @@ private:
     void increfModelDef(ModelID modelId, int incCount);
     void decrefModelDef(ModelID modelId, int decCount);
 
+    void incrementDrawCommandsCount(ModelBatchSubmeshDrawDataSpanKey drawDataKey);
+    void decrementDrawCommandsCount(ModelBatchSubmeshDrawDataSpanKey drawDataKey);
+
+    struct InstanceDrawData {
+        InstanceDrawData() = default;
+        InstanceDrawData(ModelBatchSubmeshDrawDataSpanKey key, ModelID modelId) : key(key), modelId(modelId) {}
+        ModelBatchSubmeshDrawDataSpanKey key;
+        ModelID modelId;
+    };
+
+    std::vector<f32m4> mInstanceTransforms;
+    std::vector<InstanceVariantIndexType> mInstanceVariantIndices;
+    std::vector<ui32> mInstanceDamageModelIndices;
+    std::vector<ModelInstanceOwnerVariant> mInstanceSources;
+    std::vector<InstanceDrawData> mInstanceDrawData;
+    std::vector<ModelDamageZoneGpuData> mModelDamageZonesGpuData; // 0 index is default no damage
+
+    std::unique_ptr<GLDrawCommandBuffer> mDrawCommands[e_count(MaterialRenderPassType)];
+    std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsShadows[e_count(MaterialRenderPassType)];
+    ui32 mDrawCommandsCount[e_count(MaterialRenderPassType)] = {};
+    ui32 mDrawCommandsShadowsCount[e_count(MaterialRenderPassType)] = {};
+
+    VGBuffer mTransformsVbo = 0;
+    VGBuffer mVariantsVbo = 0;
+    VGBuffer mDamageModelIndexVbo = 0;
+    VGBuffer mDamageZonesSSBO = 0; // TODO: Not every model needs one of these!
+    ui32 mTransformsVboSizeBytes = 0;
+    ui32 mFirstDirtyInstance = UINT32_MAX;
+
+    std::atomic<StaticModelInstanceID> mNextLooseInstanceID = 0;
+    FlatMap<StaticModelInstanceID, ui32 /*instanceIndex*/> mLooseStaticModelInstances;
+
     FlatMap<LiteTileHandle, StaticMeshAnimation> mAnimatedTileInstances;
-    ModelBatchMap mModelBatches;
+    // TODO: We are tracking modelID here and we no longer need it
     std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerTrackedModels;
     GLBuffer mGpuCullingUniformBuffer;
 
@@ -119,9 +153,5 @@ private:
     };
     moodycamel::ConcurrentQueue<PendingLooseModelInstance> mPendingLooseModelInstances;
 
-    LooseStaticModelInstanceMap mLooseStaticModelInstances;
-
-    std::mutex mLooseInstanceIDMutex;
-    UnorderedFlatMap<ModelID, StaticModelInstanceID> mNextLooseInstanceIDs;
 };
 

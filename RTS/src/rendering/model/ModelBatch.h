@@ -15,8 +15,18 @@ public:
     ~ModelBatch();
     VORB_NON_COPYABLE(ModelBatch);
 
+    void bindStaticModelAttribs() const;
+    void bindDynamicModelAttribs() const;
+    void unbindStaticModelAttribs() const;
+    void unbindDynamicModelAttribs() const;
+    void bindSkeletalModelAttribs() const;
+    void unbindSkeletalModelAttribs() const;
+    void unbindCurrentAttribs() const;
+
     ui32 getTotalSizeBytes() const { return mVerticesSizeBytes + mIndicesSizeBytes; }
 
+    VGBuffer getVao() const { return mVao; }
+    MeshIndexType getIndexType() const { return mIndexType; }
 private:
     VGBuffer  mVao = 0;
     VGBuffer  mVbo = 0;
@@ -27,13 +37,17 @@ private:
     ModelBatchID mBatchID = 0;
     ui32 mVerticesSizeBytes = 0; // Stores up to 4gb. If we have more than this we have a HUGE problem
     ui32 mIndicesSizeBytes = 0; // Stores up to 4gb. If we have more than this we have a HUGE problem
+    mutable AttribBinding mCurrentAttribBinding = AttribBinding::None;
 };
 
-
 struct ModelBatchSubmeshDrawData {
+    ModelID modelId;
     MaterialRenderPassType renderPass;
     ModelBatchID batchID;
-    MeshLODData LODData;
+    bool castsShadow; // TODO: Bitflags?
+    MeshWindType windType;
+    ui32 baseVertex;
+    MeshLODDrawInfo lodDrawInfo[e_count(MeshLODLevel)];
 };
 
 using ModelBatchSubmeshDrawDataID = ui16;

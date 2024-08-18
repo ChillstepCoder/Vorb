@@ -117,16 +117,9 @@ public:
     // TODO: Protected
     MeshCpuData            mCpuData;
     MeshGpuData            mGpuData;
-    VGBuffer               mVariantDataUbo = 0; // Managed by ModelDef
+    VGBuffer               mVariantDataUbo = 0; // Managed by ModelDef // TODO: REMOVE
 protected:
 
-    enum class AttribBinding {
-        None,
-        Static,
-        Dynamic,
-        Skeletal,
-        COUNT
-    };
     mutable AttribBinding mCurrentAttribBinding = AttribBinding::None;
 
     f32v3                  mPosition = f32v3(0.0f);

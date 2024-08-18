@@ -10,6 +10,13 @@
 
 #include <ozz/animation/runtime/skeleton.h>
 
+// Smaller than a 16 byte span
+struct ModelBatchSubmeshDrawDataSpanKey {
+    int index;
+    int count;
+};
+
+constexpr ui8 MAX_DRAW_COMMANDS_PER_MODEL = 12;
 
 class RigDef;
 class AnimMachineDef;
@@ -46,7 +53,6 @@ public:
     // TODO: AssetHandle
     const RigDef* mRig = nullptr;
     const AnimMachineDef* mAnimMachine = nullptr;
-    std::vector<ModelBatchSubmeshDrawData*> mMeshDrawData;
     std::vector<std::unique_ptr<Mesh>> mMeshes;
     std::vector<ModelSubmeshData> mMeshesModelData;
     ui32 mTotalSubmeshJointTransformsNeeded = 0;
@@ -69,8 +75,9 @@ public:
 
     // Variants
     std::vector<ModelVariantData> mVariants;
+    // TODO: REMOVE
     std::vector<ModelVariantGpuDataContainer> mVariantsGpuData; // One per submesh
-    std::vector<GLBuffer> mVariantsGpuBuffers; // One per submesh
+    std::vector<GLBuffer> mVariantsGpuBuffers; // One per submesh // TODO: REMOVE
     //ModelDrawInfo mDrawInfo; // TODO: USE
 };
 SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,

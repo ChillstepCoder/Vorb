@@ -21,3 +21,12 @@ inline const char* getVertexTypeName(VertexType type) {
     return VertexTypeNames[e_cast(type)];
 }
 static_assert(e_cast(VertexType::COUNT) == 5, "Update display strings");
+
+
+enum class AttribBinding {
+    None,
+    Static,
+    Dynamic,
+    Skeletal,
+    COUNT
+};

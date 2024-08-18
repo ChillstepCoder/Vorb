@@ -16,8 +16,14 @@
 #include <fbxsdk/core/base/fbxstring.h>
 #include <fbxsdk/scene/geometry/fbxlayer.h>
 
-MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& subMesh, const std::vector<FBXRawMaterialData>& rawMaterials, f32 baseOptimizeErrorThreshold, std::vector<ui16>* rawMaterialIdToSlots) {
-
+MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(
+    RawSubMesh& subMesh,
+    const std::vector<FBXRawMaterialData>& rawMaterials,
+    f32 baseOptimizeErrorThreshold,
+    ui16 materialSlotIndexOffset,
+    std::experimental::fixed_capacity_vector<ui16, 4>* rawMaterialIdToSlots)
+{
+    assert(materialSlotIndexOffset < 32768 && "Something is wrong");
     MeshCpuData rv;
     MaterialRepository& materialRepo = MaterialRepository::get();
 
@@ -39,13 +45,10 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
     }
 
     // Slots
-    std::vector<ui16> rawMaterialIdSlotMapping;
+    std::experimental::fixed_capacity_vector<ui16, 4> rawMaterialIdSlotMapping;
     // If we have specified slots, use them
     if (rawMaterialIdToSlots) {
         rawMaterialIdSlotMapping = *rawMaterialIdToSlots;
-    }
-    else {
-        rawMaterialIdSlotMapping.reserve(4);
     }
 
     // Different vertex format based on skin or no
@@ -59,21 +62,23 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
             SkinnedModelVertex& myVert = verts[i];
 
             // Assign slot index
-            ui16 materialSlot = UINT16_MAX;
-            for (size_t slotIndex = 0; slotIndex < rawMaterialIdSlotMapping.size(); ++slotIndex) {
-                if (rawMaterialIdSlotMapping[slotIndex] == rawVert.rawMaterialIndex) {
-                    myVert.materialSlot = (ui16)slotIndex;
-                    materialSlot = (ui16)slotIndex;
-                    break;
+            {
+                ui16 materialSlot = UINT16_MAX;
+                for (size_t slotIndex = 0; slotIndex < rawMaterialIdSlotMapping.size(); ++slotIndex) {
+                    if (rawMaterialIdSlotMapping[slotIndex] == rawVert.rawMaterialIndex) {
+                        myVert.materialSlot = (ui16)slotIndex + materialSlotIndexOffset;
+                        materialSlot = (ui16)slotIndex;
+                        break;
+                    }
                 }
-            }
-            if (materialSlot == UINT16_MAX) [[unlikely]] {
-                // Assign new slot
-                if (rawMaterialIdSlotMapping.size() >= 4) [[unlikely]] {
-                    panic("Submesh with more than 4 materials found");
+                if (materialSlot == UINT16_MAX) [[unlikely]] {
+                    // Assign new slot
+                    if (rawMaterialIdSlotMapping.size() >= 4) [[unlikely]] {
+                        panic("Submesh with more than 4 materials found");
+                    }
+                    myVert.materialSlot = (ui16)rawMaterialIdSlotMapping.size() + materialSlotIndexOffset;
+                    rawMaterialIdSlotMapping.push_back(rawVert.rawMaterialIndex);
                 }
-                materialSlot = (ui16)rawMaterialIdSlotMapping.size();
-                rawMaterialIdSlotMapping.push_back(rawVert.rawMaterialIndex);
             }
 
             myVert.pos = rawVert.pos;
@@ -107,7 +112,6 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
             ui16 materialSlot = UINT16_MAX;
             for (size_t slotIndex = 0; slotIndex < rawMaterialIdSlotMapping.size(); ++slotIndex) {
                 if (rawMaterialIdSlotMapping[slotIndex] == rawVert.rawMaterialIndex) {
-                    myVert.materialSlot = (ui16)slotIndex;
                     materialSlot = (ui16)slotIndex;
                     break;
                 }
@@ -117,7 +121,6 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
                 if (rawMaterialIdSlotMapping.size() >= 4) [[unlikely]] {
                     panic("Submesh with more than 4 materials found");
                 }
-                materialSlot = (ui16)rawMaterialIdSlotMapping.size();
                 rawMaterialIdSlotMapping.push_back(rawVert.rawMaterialIndex);
             }
 
@@ -127,7 +130,7 @@ MeshCpuData ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(RawSubMesh& s
                 rawVert.tangent,
                 rawVert.uvs,
                 rawVert.color,
-                materialSlot,
+                materialSlot + materialSlotIndexOffset,
                 0,
                 rawVert.damageZoneIndex
             );

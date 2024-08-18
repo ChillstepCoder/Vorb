@@ -89,8 +89,9 @@ void addModelWind(inout vec4 trueWorldPos, in vec3 modelRoot, int windType, floa
         windIntensity *= pow(h, 1.1);
         vec3 windOffset = vec3(windIntensity, windIntensity, 0.35 * windIntensity); // TODO: Follow bend like tree?
         trueWorldPos.xyz += windOffset;
-    } else {
+    } else if (windType == 2 || windType == 3) {
         // 2 == tree trunk
+        // 3 == tree leaves
         float seed = Time * 0.65 - (modelRoot.x - modelRoot.y) * 0.15;
         float windIntensity = (sin(seed * 0.5) * pow(h, 2.0)) * 0.005;
         trueWorldPos.x += windIntensity;

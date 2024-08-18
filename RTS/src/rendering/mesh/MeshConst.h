@@ -7,7 +7,7 @@ constexpr unsigned MAX_QUAD_MESH_INDICES = CHUNK_SIZE * 8 * 8 * 6 + CHUNK_SIZE *
 
 typedef i32 SubmeshIndex;
 
-enum class MeshWindType {
+enum class MeshWindType : ui8 {
     None,
     Grass,
     TreeTrunk,

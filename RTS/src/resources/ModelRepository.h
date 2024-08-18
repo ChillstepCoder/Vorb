@@ -6,15 +6,9 @@
 #include "resources/IAssetRepository.h"
 #include "rendering/model/ModelBatch.h"
 
-#include "util/fixed_capacity_vector.h"
-
 DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 DECL_VG(class Texture);
-
-// If we need to go bigger, switch to a different container than FixedSizeVector as this is 24 bytes
-constexpr ui8 MAX_DRAW_COMMANDS_PER_MODEL = 11;
-using ModelDrawCommandsList = std::experimental::fixed_capacity_vector<ModelBatchSubmeshDrawDataID, MAX_DRAW_COMMANDS_PER_MODEL>;
 
 class FbxLoadContext;
 
@@ -34,6 +28,20 @@ struct ModelLodParams {
     f32 lodDistancesSQ[e_count(MeshLODLevel)];
     f32 boundingSphereRadius;
     ShadowModelDetail shadowLodDetail;
+};
+
+// Looks up a model batch for a given render pass
+struct ModelBatchKey {
+    MeshIndexType indexType;
+    VertexType vertexType;
+    MaterialRenderPassType renderPass;
+
+    auto operator<=>(const ModelBatchKey&) const = default;
+};
+
+struct VariantIndexData {
+    ui32 offset;
+    ui32 stride; // Equal to submesh count
 };
 
 class ModelRepository : public IAssetRepository<ModelDef> {
@@ -61,6 +69,25 @@ public:
     const ModelBatch& getModelBatch(ModelBatchID id) {
         return mModelBatches[id];
     }
+
+    // Used by model renderer
+    const ModelBatchSubmeshDrawData* getSubmeshDrawDataStart(int index) const {
+        return mAllSubmeshDrawData.data() + index;
+    }
+    ModelBatchSubmeshDrawDataSpanKey getDrawDataSpanKeyForModel(ModelID modelId) const {
+        return mModelSubmeshSpanKeys[modelId];
+    }
+    const ModelBatch& getModelBatch(ModelBatchKey key) const {
+        auto it = mModelBatchLookup.find(key);
+        assert(it != mModelBatchLookup.end());
+        return *(it->second);
+    }
+    VariantIndexData getVariantArrayIndexDataForModel(ModelID modelId) const {
+        return mVariantArrayIndexData[modelId];
+    }
+    VGBuffer getModelVariantDataSSBO() const {
+        return mModelVariantDataSSBO;
+    }
 private:
     AssetLoadFunc getAssetLoadFunc() override;
 
@@ -81,13 +108,14 @@ private:
     std::atomic_int mTotalSubmeshCount = 0;
 
     // Stored separately for cache friendliness on render
-    std::vector<ModelLodParams> mLODParameters;
+    std::vector<ModelLodParams> mLODParameters; // One per ModelID
+    std::vector<VariantIndexData> mVariantArrayIndexData; // One per ModelID, stores start of the variant length
+    // Stores variant data for every model
+    VGBuffer mModelVariantDataSSBO = 0;
 
     // Model batching
+    FlatMap<ModelBatchKey, ModelBatch*> mModelBatchLookup;
     std::unique_ptr<ModelBatch[]> mModelBatches;
     std::vector<ModelBatchSubmeshDrawData> mAllSubmeshDrawData;
-
-    // One per ModelID (TODO: UniquePtr);
-    // TODO: Modular character overrides
-    std::vector<ModelDrawCommandsList> mModelDefaultDrawCommands;
+    std::vector<ModelBatchSubmeshDrawDataSpanKey> mModelSubmeshSpanKeys; // Maps AssetID to a span of mAllSubmeshDrawData
 };

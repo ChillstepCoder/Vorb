@@ -77,15 +77,24 @@ InstancedStaticModelManager::InstancedStaticModelManager() :
 {
     mCullingComputeShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("culling_and_lod"));
     mBillboardLodManager = std::make_unique<ModelBillboardLodManager>(RenderContext::getInstance().getModelBillboardLodBuilder().getBillboardTextures());
+
+    constexpr size_t RESERVE_COUNT = 1024;
+    mInstanceTransforms.reserve(RESERVE_COUNT);
+    mInstanceVariantIndices.reserve(RESERVE_COUNT);
+    mInstanceDamageModelIndices.reserve(RESERVE_COUNT);
+    mInstanceSources.reserve(RESERVE_COUNT);
+    mInstanceDrawData.reserve(RESERVE_COUNT);
+    mModelDamageZonesGpuData.emplace_back();
+
 }
 
 InstancedStaticModelManager::~InstancedStaticModelManager() {
-    for (auto& it : mModelBatches) {
-        GL.glDeleteBuffers(1, &it.second.mTransformsVbo);
-        GL.glDeleteBuffers(1, &it.second.mVariantsVbo);
-        GL.glDeleteBuffers(1, &it.second.mDamageModelIndexVbo);
-        GL.glDeleteBuffers(1, &it.second.mDamageZonesSSBO);
-    }
+
+    GL.glDeleteBuffers(1, &mTransformsVbo);
+    GL.glDeleteBuffers(1, &mVariantsVbo);
+    GL.glDeleteBuffers(1, &mDamageModelIndexVbo);
+    GL.glDeleteBuffers(1, &mDamageZonesSSBO);
+
 }
 
 void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapsedSec) {
@@ -97,319 +106,303 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
 
     updatePendingLooseModelInstances();
 
+    const int RENDER_PASS_COUNT = e_count(MaterialRenderPassType);
+
     // Build GPU data and cull
-    for (auto& it : mModelBatches) {
-        StaticModelRendererBatchData& batchData = it.second;
-        if (!batchData.mIsLoaded) [[unlikely]] {
-            auto&& sit = mModelDefRefs.find(it.first);
-            assert(sit != mModelDefRefs.end());
-            AssetHandlePtr<ModelDef>& modelDefHandle = sit->second.handle;
-            if (const ModelDef* def = modelDefHandle->tryGetLoadedAsset()) {
-                batchData.mMeshCount = def->getNumMeshes();
-                assert(batchData.mMeshCount);
-                // TODO: THIS IS A MIRACLE THAT IT WORKS AT ALL, WE SHOULDNT ASSUME MESH is 1:1 WITH RENDERPASS
-                assert(batchData.mMeshCount < e_count(MaterialRenderPassType));
-                for (int m = 0; m < batchData.mMeshCount; ++m) {
-                    const Mesh& mesh = def->getMesh(m);
-                    batchData.mMesh[m] = &mesh;
-                    batchData.mMeshCastsShadow[m] = mesh.castsShadow();
-                }
-                batchData.mIsLoaded = true;
-            }
-            else {
-                continue;
-            }
+       
+    // TODO: Move this to onRemove
+    if (!mInstanceTransforms.size()) [[unlikely]] {
+        for (int r = 0; r < RENDER_PASS_COUNT; ++r) {
+            mDrawCommands[r].reset();
+            mDrawCommandsShadows[r].reset();
         }
-        // TODO: Move this to onRemove
-        if (!batchData.mInstanceTransforms.size()) {
-            for (int i = 0; i < batchData.mMeshCount; ++i) {
-                batchData.mDrawCommands[i].reset();
-                batchData.mDrawCommandsShadows[i].reset();
-            }
-            if (batchData.mTransformsVbo) {
-                GL.glDeleteBuffers(1, &batchData.mTransformsVbo);
-                GL.glDeleteBuffers(1, &batchData.mVariantsVbo);
-                GL.glDeleteBuffers(1, &batchData.mDamageModelIndexVbo);
-                GL.glDeleteBuffers(1, &batchData.mDamageZonesSSBO);
-                batchData.mTransformsVbo = 0;
-                batchData.mVariantsVbo = 0;
-                batchData.mDamageModelIndexVbo = 0;
-                batchData.mDamageZonesSSBO = 0;
-            }
-            continue;
+        if (mTransformsVbo) {
+            GL.glDeleteBuffers(1, &mTransformsVbo);
+            GL.glDeleteBuffers(1, &mVariantsVbo);
+            GL.glDeleteBuffers(1, &mDamageModelIndexVbo);
+            GL.glDeleteBuffers(1, &mDamageZonesSSBO);
+            mTransformsVbo = 0;
+            mVariantsVbo = 0;
+            mDamageModelIndexVbo = 0;
+            mDamageZonesSSBO = 0;
         }
-        assert(batchData.mMesh);
+        return;
+    }
+       
+    if (mFirstDirtyInstance != UINT32_MAX) {
+        PROFILE_SCOPE("Rebuild Indirect Buffer");
+        // Rebuild command buffer
+        {
+            PROFILE_SCOPE("Indirect Buffer");
 
-        ModelID modelId = it.first;
-        const ModelLodParams& lodParams = ModelRepository::get().getLodParams(modelId);
-        MeshLODDrawInfo drawInfos[e_count(MaterialRenderPassType)][4];
-        for (int m = 0; m < batchData.mMeshCount; ++m) {
-            for (int i = 0; i < 4; ++i) {
-                drawInfos[m][i] = batchData.mMesh[m]->mGpuData.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
-            }
-        }
-        if (batchData.mFirstDirtyInstance != UINT32_MAX) {
-            PROFILE_SCOPE("Rebuild Indirect Buffer");
-            const size_t workGroupRoundedSize = roundToWorkGroupSize(batchData.mInstanceTransforms.size());
-            // Rebuild command buffer
-            {
-                PROFILE_SCOPE("Indirect Buffer");
-                for (int m = 0; m < batchData.mMeshCount; ++m) {
-                    batchData.mDrawCommands[m] = std::make_unique<GLDrawCommandBuffer>(workGroupRoundedSize);
-                    if (batchData.mMeshCastsShadow[m]) {
-                        batchData.mDrawCommandsShadows[m] = std::make_unique<GLDrawCommandBuffer>(workGroupRoundedSize);
+            constexpr ui32 MAX_PADDING_BEFORE_SHRINK = 256;
+            // Grow or shrink the command buffers when needed, which should be rare as we keep padding
+            for (int r = 0; r < RENDER_PASS_COUNT; ++r) {
+                std::unique_ptr<GLDrawCommandBuffer>& drawCommands = mDrawCommands[r];
+                std::unique_ptr<GLDrawCommandBuffer>& drawCommandsShadows = mDrawCommandsShadows[r];
+                const ui32 drawCommandsCount = mDrawCommandsCount[r];
+                const ui32 drawCommandsShadowsCount = mDrawCommandsShadowsCount[r];
+                if (drawCommandsCount) {
+                    if (!drawCommands ||
+                        (drawCommands->getCapacity() < drawCommandsCount) ||
+                        (drawCommands->getCapacity() > (drawCommandsCount - MAX_PADDING_BEFORE_SHRINK))) {
+                        mDrawCommands[r] = std::make_unique<GLDrawCommandBuffer>(mDrawCommandsCount[r] + (MAX_PADDING_BEFORE_SHRINK / 2));
                     }
-
-                }
-                // TODO: Only if the mesh is a shadow caster!
-            }
-
-            // Allocate VBO
-            {
-                PROFILE_SCOPE("VBO");
-                // GPU buffer is larger to accommodate the work group size, or we get corruption
-                const GLsizei gpuBufferSizeBytes = sizeof(f32m4) * workGroupRoundedSize;
-                const GLsizei cpuBufferSizeBytes = sizeof(f32m4) * batchData.mInstanceTransforms.size();
-                assert(batchData.mInstanceVariantIndices.size() == batchData.mInstanceTransforms.size());
-                if (batchData.mTransformsVbo == 0) {
-                    GL.glCreateBuffers(1, &batchData.mTransformsVbo);
-                    GL.glCreateBuffers(1, &batchData.mVariantsVbo);
-                    GL.glCreateBuffers(1, &batchData.mDamageModelIndexVbo);
-                    GL.glCreateBuffers(1, &batchData.mDamageZonesSSBO);
-                    GL.glNamedBufferStorage(batchData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(batchData.mTransformsVbo, 0, cpuBufferSizeBytes, batchData.mInstanceTransforms.data());
-                    GL.glNamedBufferStorage(batchData.mVariantsVbo, sizeof(ui8) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(batchData.mVariantsVbo, 0, sizeof(ui8) * batchData.mInstanceVariantIndices.size(), batchData.mInstanceVariantIndices.data());
-                    GL.glNamedBufferStorage(batchData.mDamageModelIndexVbo, sizeof(ui32) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(batchData.mDamageModelIndexVbo, 0, sizeof(ui32) * batchData.mInstanceDamageModelIndices.size(),
-                        batchData.mInstanceDamageModelIndices.data());
-                    // TODO: Only create this if batchData.mModelDamageZonesGpuData.size() > 0, otherwise use a global one
-                    GL.glNamedBufferStorage(batchData.mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * batchData.mModelDamageZonesGpuData.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(batchData.mDamageZonesSSBO, 0, sizeof(ModelDamageZoneGpuData) * batchData.mModelDamageZonesGpuData.size(), batchData.mModelDamageZonesGpuData.data());
-                    batchData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
-                }
-                else if (gpuBufferSizeBytes > batchData.mTransformsVboSizeBytes) {
-                    //LOG_INFO("GROW {} {}", cpuBufferSizeBytes, gpuBufferSizeBytes);
-                    // Grow to new size
-                    GL.glDeleteBuffers(1, &batchData.mTransformsVbo);
-                    GL.glDeleteBuffers(1, &batchData.mVariantsVbo);
-                    GL.glDeleteBuffers(1, &batchData.mDamageModelIndexVbo);
-                    GL.glDeleteBuffers(1, &batchData.mDamageZonesSSBO);
-                    GL.glCreateBuffers(1, &batchData.mTransformsVbo);
-                    GL.glCreateBuffers(1, &batchData.mVariantsVbo);
-                    GL.glCreateBuffers(1, &batchData.mDamageModelIndexVbo);
-                    GL.glCreateBuffers(1, &batchData.mDamageZonesSSBO);
-                    GL.glNamedBufferStorage(batchData.mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(batchData.mTransformsVbo, 0, cpuBufferSizeBytes, batchData.mInstanceTransforms.data());
-                    GL.glNamedBufferStorage(batchData.mVariantsVbo, sizeof(ui8) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(batchData.mVariantsVbo, 0, sizeof(ui8) * batchData.mInstanceVariantIndices.size(), batchData.mInstanceVariantIndices.data());
-                    GL.glNamedBufferStorage(batchData.mDamageModelIndexVbo, sizeof(ui32) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(batchData.mDamageModelIndexVbo, 0, sizeof(ui32) * batchData.mInstanceDamageModelIndices.size(), batchData.mInstanceDamageModelIndices.data());
-                    GL.glNamedBufferStorage(batchData.mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * batchData.mModelDamageZonesGpuData.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
-                    GL.glNamedBufferSubData(batchData.mDamageZonesSSBO, 0, sizeof(ModelDamageZoneGpuData) * batchData.mModelDamageZonesGpuData.size(), batchData.mModelDamageZonesGpuData.data());
-                    batchData.mTransformsVboSizeBytes = gpuBufferSizeBytes;
+                    if (drawCommandsShadowsCount) {
+                        if (!drawCommandsShadows ||
+                            (drawCommandsShadows->getCapacity() < drawCommandsShadowsCount) ||
+                            (drawCommandsShadows->getCapacity() > (drawCommandsShadowsCount - MAX_PADDING_BEFORE_SHRINK))) {
+                            drawCommandsShadows = std::make_unique<GLDrawCommandBuffer>(mDrawCommandsShadowsCount[r] + (MAX_PADDING_BEFORE_SHRINK / 2));
+                        }
+                    } else {
+                        drawCommandsShadows.reset();
+                    }
                 }
                 else {
-                    //LOG_INFO("SHRINK {} {}  {} {}", instanceData.mFirstDirtyInstance, instanceData.mInstanceTransforms.size(), cpuBufferSizeBytes, gpuBufferSizeBytes);
-                    // Only upload data after the first dirty instance, which should amortize things a bit
-                    glNamedBufferSubData(
-                        batchData.mTransformsVbo,
-                        batchData.mFirstDirtyInstance * sizeof(f32m4),
-                        cpuBufferSizeBytes - batchData.mFirstDirtyInstance * sizeof(f32m4),
-                        batchData.mInstanceTransforms.data() + batchData.mFirstDirtyInstance
-                    );
-                    glNamedBufferSubData(
-                        batchData.mVariantsVbo,
-                        batchData.mFirstDirtyInstance * sizeof(ui8),
-                        (sizeof(ui8) * batchData.mInstanceVariantIndices.size()) - batchData.mFirstDirtyInstance * sizeof(ui8),
-                        batchData.mInstanceVariantIndices.data() + batchData.mFirstDirtyInstance
-                    );
-                        
-                    glNamedBufferSubData(
-                        batchData.mDamageModelIndexVbo,
-                        batchData.mFirstDirtyInstance * sizeof(ui32),
-                        (sizeof(ui32) * batchData.mInstanceDamageModelIndices.size()) - batchData.mFirstDirtyInstance * sizeof(ui32),
-                        batchData.mInstanceDamageModelIndices.data() + batchData.mFirstDirtyInstance
-                    );
-
-                    // Refresh all damage zones except the first one every time
-                    // TODO: We likely only need to do this if a damage zone was added or removed
-                    glNamedBufferSubData(
-                        batchData.mDamageZonesSSBO,
-                        sizeof(ModelDamageZoneGpuData), // Skip first
-                        sizeof(ModelDamageZoneGpuData) * (batchData.mModelDamageZonesGpuData.size() - 1),
-                        batchData.mModelDamageZonesGpuData.data() + 1
-                    );
-                }
-            }
-
-            batchData.mFirstDirtyInstance = UINT32_MAX;
-        }
-
-        const size_t drawCommandsCapacity = batchData.mDrawCommands[0]->getCapacity();
-
-        for (int m = 0; m < batchData.mMeshCount; ++m) {
-            batchData.mDrawCommands[m]->frameBegin();
-            // TODO: Only if the mesh is a shadow caster!
-            if (batchData.mDrawCommandsShadows[m]) {
-                batchData.mDrawCommandsShadows[m]->frameBegin();
-            }
-        }
-        // TODO: Only if the mesh is a shadow caster!
-
-        if (sDebugOptions.mDisableGPUCulling == false) {
-            PROFILE_SCOPE("GPU Culling");
-            // GPU Culling
-            panic("GPU Culling is defunct");
-            //GpuCullUniformData uniformData;
-            //const f32v3& camPos = camera.getPosition();
-            //uniformData.cameraPos = f32v4(camPos.x, camPos.y, camPos.z, 1.0f);
-            //uniformData.numShapesToCull = drawCommandsCapacity;
-            //if (sDebugOptions.mDisableLOD) {
-            //    uniformData.lodDistancesSQ[0] = FLT_MAX;
-            //}
-            //else {
-            //    for (int i = 0; i < 4; ++i) {
-            //        uniformData.lodDistancesSQ[i] = lodParams.lodDistancesSQ[i];
-            //    }
-            //}
-            //for (int i = 0; i < 4; ++i) {
-            //    uniformData.frustumPlanes[i] = camera.getFrustum().getPlane(i).vec4Data;
-            //    uniformData.lodDrawInfos[i] = mesh.mGpuData.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
-            //}
-
-            //mGpuCullingUniformBuffer.updateSubData(0, sizeof(GpuCullUniformData), &uniformData);
-            ////*instanceData.mNumVisibleMeshesBufferPtr = 0; // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
-
-            //if (const MaterialShaderDef* def = mCullingComputeShader->tryGetLoadedAsset()) {
-            //    def->useCompute();
-            //    glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
-            //    GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, instanceData.mTransformsVbo);
-            //    GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, inDrawCommands.getHandle());
-            //    GL.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, inDrawCommandsShadows.getHandle());
-            //    GL.glBindBufferBase(GL_UNIFORM_BUFFER, 5, mGpuCullingUniformBuffer.getHandle());
-            //    //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, instanceData.mNumVisibleMeshesBuffer.getHandle());
-            //    //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, outDrawCommands.getHandle()); // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
-            //    if (drawCommandsCapacity % WORK_GROUP_SIZE == 0) {
-            //        glDispatchCompute((GLuint)drawCommandsCapacity / WORK_GROUP_SIZE, 1, 1);
-            //    }
-            //    else {
-            //        glDispatchCompute(1 + (GLuint)drawCommandsCapacity / WORK_GROUP_SIZE, 1, 1);
-            //    }
-            //    glMemoryBarrier(GL_COMMAND_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT); // GL_ATOMIC_COUNTER_BARRIER_BIT
-
-            //    inDrawCommands.setNumActiveCommands(drawCommandsCapacity);
-            //    inDrawCommandsShadows.setNumActiveCommands(drawCommandsCapacity);
-            //}
-        }
-        else {
-            assert(batchData.mInstanceTransforms.size() <= drawCommandsCapacity);
-            PROFILE_SCOPE("CPU Culling");
-            // CPU Culling
-            // TODO: Should the renderer handle this??
-            int activeCount[e_count(MaterialRenderPassType)] = {};
-            int shadowCount[e_count(MaterialRenderPassType)] = {};
-
-            constexpr auto setCommand = [](DrawElementsIndirectCommand& cmd, GLuint transformIndex, const MeshLODDrawInfo& drawInfo) {
-                cmd.instanceCount_ = 1;
-                cmd.baseInstance_ = transformIndex;
-                cmd.baseVertex_ = 0;
-                cmd.count_ = drawInfo.indexCount;
-                cmd.firstIndex_ = drawInfo.startIndex;
-            };
-
-            for (size_t i = 0; i < batchData.mInstanceTransforms.size(); ++i) {
-                const f32m4& transform = batchData.mInstanceTransforms[i];
-                // Columns are first
-                const f32v3& pos = reinterpret_cast<const f32v3&>(transform[3]);
-                // TODO: Real bounding sphere
-                if (camera.sphereIsVisible(pos, lodParams.boundingSphereRadius)) {
-                    MeshLODDrawInfo drawInfo;
-                    const f32 distance2 = glm::length2(pos - camera.getPosition());
-
-                    // TODO: Remove
-                    if (sDebugOptions.mDisableLOD) [[unlikely]] {
-                        for (int m = 0; m < batchData.mMeshCount; ++m) {
-                            setCommand(batchData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][1]);
-                            if (batchData.mDrawCommandsShadows[m]) [[likely]] {
-                                setCommand(batchData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][1]);
-                            }
-                        }
-                    }
-
-                    if (distance2 >= lodParams.lodDistancesSQ[3]) {
-                        // TODO: Billboard
-                        continue;
-                    }
-                    else if (distance2 >= lodParams.lodDistancesSQ[2]) {
-                        for (int m = 0; m < batchData.mMeshCount; ++m) {
-                            setCommand(batchData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][3]);
-                           
-                        }
-                        if (lodParams.shadowLodDetail > ShadowModelDetail::High) {
-                            for (int m = 0; m < batchData.mMeshCount; ++m) {
-                                if (batchData.mDrawCommandsShadows[m]) [[likely]] {
-                                    setCommand(batchData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][3]);
-                                }
-                            }
-                        }
-                    }
-                    else if (distance2 >= lodParams.lodDistancesSQ[1]) {
-                        for (int m = 0; m < batchData.mMeshCount; ++m) {
-                            setCommand(batchData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][2]);
-                        }
-                        if (lodParams.shadowLodDetail > ShadowModelDetail::Medium) {
-                            for (int m = 0; m < batchData.mMeshCount; ++m) {
-                                if (batchData.mDrawCommandsShadows[m]) [[likely]] {
-                                    setCommand(batchData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][3]);
-                                }
-                            }
-                        }
-                    }
-                    else if (distance2 >= lodParams.lodDistancesSQ[0]) {
-                        for (int m = 0; m < batchData.mMeshCount; ++m) {
-                            setCommand(batchData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][1]);
-                        }
-                        if (lodParams.shadowLodDetail > ShadowModelDetail::Low) {
-                            for (int m = 0; m < batchData.mMeshCount; ++m) {
-                                if (batchData.mDrawCommandsShadows[m]) [[likely]] {
-                                    setCommand(batchData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][2]);
-                                }
-                            }
-                        }
-                    }
-                    else {
-                        for (int m = 0; m < batchData.mMeshCount; ++m) {
-                            setCommand(batchData.mDrawCommands[m]->getDrawCommands().data()[activeCount[m]++], (GLuint)i, drawInfos[m][0]);
-                        }
-                        if (lodParams.shadowLodDetail > ShadowModelDetail::None) {
-                            for (int m = 0; m < batchData.mMeshCount; ++m) {
-                                if (batchData.mDrawCommandsShadows[m]) [[likely]] {
-                                    setCommand(batchData.mDrawCommandsShadows[m]->getDrawCommands().data()[shadowCount[m]++], (GLuint)i, drawInfos[m][1]);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            for (int m = 0; m < batchData.mMeshCount; ++m) {
-                batchData.mDrawCommands[m]->setNumActiveCommands(activeCount[m]);
-                batchData.mDrawCommands[m]->uploadDrawCommands();
-                if (batchData.mDrawCommandsShadows[m]) {
-                    batchData.mDrawCommandsShadows[m]->setNumActiveCommands(shadowCount[m]);
-                    batchData.mDrawCommandsShadows[m]->uploadDrawCommands();
+                    drawCommands.reset();
+                    drawCommandsShadows.reset();
                 }
             }
         }
 
-        // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
-        // Sync start of draw
-        /* if (inDrawCommands.mDrawCommands.size()) {
-            glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
-            instanceData.mFenceSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-        }*/
+        // TODO: Is this needed? Research
+        const size_t workGroupRoundedSize = roundToWorkGroupSize(mInstanceTransforms.size());
+        // Allocate VBO
+        {
+            PROFILE_SCOPE("VBO");
+            // GPU buffer is larger to accommodate the work group size, or we get corruption
+            const GLsizei gpuBufferSizeBytes = sizeof(f32m4) * workGroupRoundedSize;
+            const GLsizei cpuBufferSizeBytes = sizeof(f32m4) * mInstanceTransforms.size();
+            assert(mInstanceVariantIndices.size() == mInstanceTransforms.size());
+            if (mTransformsVbo == 0) {
+                GL.glCreateBuffers(1, &mTransformsVbo);
+                GL.glCreateBuffers(1, &mVariantsVbo);
+                GL.glCreateBuffers(1, &mDamageModelIndexVbo);
+                GL.glCreateBuffers(1, &mDamageZonesSSBO);
+                GL.glNamedBufferStorage(mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferSubData(mTransformsVbo, 0, cpuBufferSizeBytes, mInstanceTransforms.data());
+                GL.glNamedBufferStorage(mVariantsVbo, sizeof(InstanceVariantIndexType) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferSubData(mVariantsVbo, 0, sizeof(InstanceVariantIndexType) * mInstanceVariantIndices.size(), mInstanceVariantIndices.data());
+                GL.glNamedBufferStorage(mDamageModelIndexVbo, sizeof(ui32) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferSubData(mDamageModelIndexVbo, 0, sizeof(ui32) * mInstanceDamageModelIndices.size(),
+                    mInstanceDamageModelIndices.data());
+                // TODO: Only create this if mModelDamageZonesGpuData.size() > 0, otherwise use a global one
+                GL.glNamedBufferStorage(mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferSubData(mDamageZonesSSBO, 0, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), mModelDamageZonesGpuData.data());
+                mTransformsVboSizeBytes = gpuBufferSizeBytes;
+            }
+            else if (gpuBufferSizeBytes > mTransformsVboSizeBytes) {
+                //LOG_INFO("GROW {} {}", cpuBufferSizeBytes, gpuBufferSizeBytes);
+                // Grow to new size
+                GL.glDeleteBuffers(1, &mTransformsVbo);
+                GL.glDeleteBuffers(1, &mVariantsVbo);
+                GL.glDeleteBuffers(1, &mDamageModelIndexVbo);
+                GL.glDeleteBuffers(1, &mDamageZonesSSBO);
+                GL.glCreateBuffers(1, &mTransformsVbo);
+                GL.glCreateBuffers(1, &mVariantsVbo);
+                GL.glCreateBuffers(1, &mDamageModelIndexVbo);
+                GL.glCreateBuffers(1, &mDamageZonesSSBO);
+                GL.glNamedBufferStorage(mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferSubData(mTransformsVbo, 0, cpuBufferSizeBytes, mInstanceTransforms.data());
+                GL.glNamedBufferStorage(mVariantsVbo, sizeof(InstanceVariantIndexType) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferSubData(mVariantsVbo, 0, sizeof(InstanceVariantIndexType) * mInstanceVariantIndices.size(), mInstanceVariantIndices.data());
+                GL.glNamedBufferStorage(mDamageModelIndexVbo, sizeof(ui32) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferSubData(mDamageModelIndexVbo, 0, sizeof(ui32) * mInstanceDamageModelIndices.size(), mInstanceDamageModelIndices.data());
+                GL.glNamedBufferStorage(mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferSubData(mDamageZonesSSBO, 0, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), mModelDamageZonesGpuData.data());
+                mTransformsVboSizeBytes = gpuBufferSizeBytes;
+            }
+            else {
+                //LOG_INFO("SHRINK {} {}  {} {}", instanceData.mFirstDirtyInstance, instanceData.mInstanceTransforms.size(), cpuBufferSizeBytes, gpuBufferSizeBytes);
+                // Only upload data after the first dirty instance, which should amortize things a bit
+                glNamedBufferSubData(
+                    mTransformsVbo,
+                    mFirstDirtyInstance * sizeof(f32m4),
+                    cpuBufferSizeBytes - mFirstDirtyInstance * sizeof(f32m4),
+                    mInstanceTransforms.data() + mFirstDirtyInstance
+                );
+                glNamedBufferSubData(
+                    mVariantsVbo,
+                    mFirstDirtyInstance * sizeof(InstanceVariantIndexType),
+                    (sizeof(InstanceVariantIndexType) * mInstanceVariantIndices.size()) - mFirstDirtyInstance * sizeof(InstanceVariantIndexType),
+                    mInstanceVariantIndices.data() + mFirstDirtyInstance
+                );
 
+                glNamedBufferSubData(
+                    mDamageModelIndexVbo,
+                    mFirstDirtyInstance * sizeof(ui32),
+                    (sizeof(ui32) * mInstanceDamageModelIndices.size()) - mFirstDirtyInstance * sizeof(ui32),
+                    mInstanceDamageModelIndices.data() + mFirstDirtyInstance
+                );
+
+                // Refresh all damage zones except the first one every time
+                // TODO: We likely only need to do this if a damage zone was added or removed
+                glNamedBufferSubData(
+                    mDamageZonesSSBO,
+                    sizeof(ModelDamageZoneGpuData), // Skip first
+                    sizeof(ModelDamageZoneGpuData) * (mModelDamageZonesGpuData.size() - 1),
+                    mModelDamageZonesGpuData.data() + 1
+                );
+            }
+        }
+
+        mFirstDirtyInstance = UINT32_MAX;
     }
+
+    for (int r = 0; r < RENDER_PASS_COUNT; ++r) {
+        if (mDrawCommandsCount[r]) {
+            assert(mDrawCommands[r]);
+            mDrawCommands[r]->frameBegin();
+            if (mDrawCommandsShadowsCount[r]) {
+                assert(mDrawCommandsShadows[r]);
+                mDrawCommandsShadows[r]->frameBegin();
+            }
+        }
+    }
+    if (sDebugOptions.mDisableGPUCulling == false) {
+        PROFILE_SCOPE("GPU Culling");
+        // GPU Culling
+        panic("GPU Culling is defunct");
+    }
+    else {
+        PROFILE_SCOPE("CPU Culling");
+        // CPU Culling
+        // TODO: Should the renderer handle this??
+        int activeCount[e_count(MaterialRenderPassType)] = {};
+        int shadowCount[e_count(MaterialRenderPassType)] = {};
+
+        constexpr auto setCommand = [](
+            DrawElementsIndirectCommand& cmd, GLuint transformIndex, ui32 baseVertex, const MeshLODDrawInfo& drawInfo) {
+            cmd.count_ = drawInfo.indexCount;
+            cmd.instanceCount_ = 1;
+            cmd.firstIndex_ = drawInfo.startIndex;
+            cmd.baseVertex_ = baseVertex;
+            cmd.baseInstance_ = transformIndex;
+        };
+
+        const ModelRepository& modelRepo = ModelRepository::get();
+        for (ui32 instanceIndex = 0; instanceIndex < (ui32)mInstanceTransforms.size(); ++instanceIndex) {
+            const f32m4& transform = mInstanceTransforms[instanceIndex];
+            // Columns are first
+            const f32v3& pos = reinterpret_cast<const f32v3&>(transform[3]);
+
+            const InstanceDrawData& instanceDrawData = mInstanceDrawData[instanceIndex];
+            const ModelLodParams& lodParams = modelRepo.getLodParams(instanceDrawData.modelId);
+
+            // TODO: Real bounding sphere
+            if (camera.sphereIsVisible(pos, lodParams.boundingSphereRadius)) {
+                const f32 distance2 = glm::length2(pos - camera.getPosition());
+                const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataStart(instanceDrawData.key.index);
+
+                // TODO: Remove
+                if (sDebugOptions.mDisableLOD) [[unlikely]] {
+
+                    for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                        const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                        const int renderPassIndex = e_cast(drawData.renderPass);
+                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[0]);
+
+                        if (drawData.castsShadow) {
+                            setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[0]);
+                        }
+                    }
+                    continue;
+                }
+
+                if (distance2 >= lodParams.lodDistancesSQ[3]) {
+                    // TODO: Billboard
+                    continue;
+                }
+                else if (distance2 >= lodParams.lodDistancesSQ[2]) {
+                    for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                        const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                        const int renderPassIndex = e_cast(drawData.renderPass);
+                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[3]);
+                    }
+                    if (lodParams.shadowLodDetail > ShadowModelDetail::High) {
+                        for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                            const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                            const int renderPassIndex = e_cast(drawData.renderPass);
+                            if (drawData.castsShadow) {
+                                setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[3]);
+                            }
+                        }
+                    }
+                }
+                else if (distance2 >= lodParams.lodDistancesSQ[1]) {
+                    for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                        const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                        const int renderPassIndex = e_cast(drawData.renderPass);
+                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[2]);
+                    }
+                    if (lodParams.shadowLodDetail > ShadowModelDetail::Medium) {
+                        for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                            const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                            const int renderPassIndex = e_cast(drawData.renderPass);
+                            if (drawData.castsShadow) {
+                                setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[3]);
+                            }
+                        }
+                    }
+                }
+                else if (distance2 >= lodParams.lodDistancesSQ[0]) {
+                    for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                        const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                        const int renderPassIndex = e_cast(drawData.renderPass);
+                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[1]);
+                    }
+                    if (lodParams.shadowLodDetail > ShadowModelDetail::Low) {
+                        for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                            const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                            const int renderPassIndex = e_cast(drawData.renderPass);
+                            if (drawData.castsShadow) {
+                                setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[2]);
+                            }
+                        }
+                    }
+                }
+                else {
+                    for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                        const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                        const int renderPassIndex = e_cast(drawData.renderPass);
+                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[0]);
+                    }
+                    if (lodParams.shadowLodDetail > ShadowModelDetail::None) {
+                        for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                            const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                            const int renderPassIndex = e_cast(drawData.renderPass);
+                            if (drawData.castsShadow) {
+                                setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[1]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
+        // TODO: We lose a lot of these due to culling, so we probably don't need
+        // the draw command capacity to be so high
+        for (int r = 0; r < RENDER_PASS_COUNT; ++r) {
+            if (mDrawCommands[r]) {
+                assert(activeCount[r] <= mDrawCommandsCount[r]);
+                mDrawCommands[r]->setNumActiveCommands(activeCount[r]);
+                mDrawCommands[r]->uploadDrawCommands();
+                if (mDrawCommandsShadows[r]) {
+                    assert(shadowCount[r] <= mDrawCommandsShadowsCount[r]);
+                    mDrawCommandsShadows[r]->setNumActiveCommands(shadowCount[r]);
+                    mDrawCommandsShadows[r]->uploadDrawCommands();
+                }
+            }
+        }
+    }
+
+    // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
+    // Sync start of draw
+    /* if (inDrawCommands.mDrawCommands.size()) {
+        glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
+        instanceData.mFenceSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    }*/
 
     updateAnimatedModels(elapsedSec);
 }
@@ -480,44 +473,53 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
     // Remove all instances before we add new ones
     removeTileInstancesFromContainer(gatherer.mContainerID);
 
+    ModelRepository& modelRepo = ModelRepository::get();
     for (auto&& it : gatherer.mInstances) {
 
         ModelID modelId = it.first;
         const std::vector<StaticModelInstance>& sourceInstances = it.second;
 
+        ModelBatchSubmeshDrawDataSpanKey drawDataKey = ModelRepository::get().getDrawDataSpanKeyForModel(modelId);
+
         increfModelDef(modelId, sourceInstances.size());
 
         SpatialInstanceDataMap& tileContainerModels = mTileContainerTrackedModels[gatherer.mContainerID];
-        StaticModelRendererBatchData& batchData = mModelBatches[modelId];
 
-        const size_t startIndex = batchData.mInstanceTransforms.size();
+        const VariantIndexData variantData = modelRepo.getVariantArrayIndexDataForModel(modelId);
+
+        const size_t startIndex = mInstanceTransforms.size();
         // Track where our buffer is dirty
-        if (startIndex < batchData.mFirstDirtyInstance) {
-            batchData.mFirstDirtyInstance = startIndex;
+        if (startIndex < mFirstDirtyInstance) {
+            mFirstDirtyInstance = startIndex;
         }
-        batchData.mInstanceTransforms.resize(startIndex + sourceInstances.size());
-        batchData.mInstanceVariantIndices.resize(startIndex + sourceInstances.size());
-        batchData.mInstanceDamageModelIndices.resize(startIndex + sourceInstances.size());
-        batchData.mInstanceSources.resize(batchData.mInstanceTransforms.size());
+        mInstanceTransforms.resize(startIndex + sourceInstances.size());
+        mInstanceVariantIndices.resize(mInstanceTransforms.size());
+        mInstanceDamageModelIndices.resize(mInstanceTransforms.size());
+        mInstanceSources.resize(mInstanceTransforms.size());
+        mInstanceDrawData.resize(mInstanceTransforms.size());
         // Store per tile references
         for (size_t i = 0; i < sourceInstances.size(); ++i) {
-            size_t instanceIndex = startIndex + i;
+            const size_t instanceIndex = startIndex + i;
             const StaticModelInstance& modelInstance = sourceInstances[i];
-            batchData.mInstanceTransforms[instanceIndex] = modelInstance.matrix;
-            batchData.mInstanceVariantIndices[instanceIndex] = modelInstance.variantIndex;
-            batchData.mInstanceSources[instanceIndex] = ModelInstanceContainerOwner{ gatherer.mContainerID, modelInstance.tileIndex };
+            mInstanceTransforms[instanceIndex] = modelInstance.matrix;
+            mInstanceVariantIndices[instanceIndex] = variantData.offset + (InstanceVariantIndexType)modelInstance.variantIndex * variantData.stride;
+            mInstanceSources[instanceIndex] = ModelInstanceContainerOwner{ gatherer.mContainerID, modelInstance.tileIndex };
             if (modelInstance.damageData) {
-                batchData.mInstanceDamageModelIndices[instanceIndex] = batchData.mModelDamageZonesGpuData.size();
-                ModelDamageZoneGpuData& gpuDamageData = batchData.mModelDamageZonesGpuData.emplace_back();
+                mInstanceDamageModelIndices[instanceIndex] = mModelDamageZonesGpuData.size();
+                ModelDamageZoneGpuData& gpuDamageData = mModelDamageZonesGpuData.emplace_back();
                 gpuDamageData.damageZones = modelInstance.damageData->getShellDamageZones();
             }
             else {
-                batchData.mInstanceDamageModelIndices[instanceIndex] = 0;
+                mInstanceDamageModelIndices[instanceIndex] = 0;
             }
+            mInstanceDrawData[instanceIndex] = InstanceDrawData(drawDataKey, modelId);
+            incrementDrawCommandsCount(drawDataKey);
+
             assert(tileContainerModels.find(modelInstance.tileIndex) == tileContainerModels.end());
             tileContainerModels[modelInstance.tileIndex] = { it.first, (ui32)instanceIndex };
         }
     }
+
 }
 
 void InstancedStaticModelManager::removeTileInstancesFromContainer(TileContainerID containerId)
@@ -538,11 +540,7 @@ void InstancedStaticModelManager::removeTileInstancesFromContainer(TileContainer
 
 ui32 InstancedStaticModelManager::getNumModels() const {
     ASSERT_RENDER_THREAD();
-    ui32 numModels = 0;
-    for (auto& it : mModelBatches) {
-        numModels += it.second.mInstanceTransforms.size();
-    }
-    return numModels;
+    return mInstanceTransforms.size();
 }
 
 bool InstancedStaticModelManager::playAnimationOnInstanceAtPosition(LiteTileHandle targetTile, StaticModelAnimationTypes animType, f32v2 direction, ModelID modelId) {
@@ -686,13 +684,8 @@ void InstancedStaticModelManager::onTileDamagedEvent(const TileContainerEvent& e
     }, taskData);
 }
 
-StaticModelInstanceID InstancedStaticModelManager::addLooseModelInstance(ModelID modelId, const glm::quat& orient, f32v3 position, ui8 variantIndex, f32 scale)
-{
-    StaticModelInstanceID id;
-    {
-        std::lock_guard lock(mLooseInstanceIDMutex);
-        id = mNextLooseInstanceIDs[modelId]++;
-    }
+StaticModelInstanceID InstancedStaticModelManager::addLooseModelInstance(ModelID modelId, const glm::quat& orient, f32v3 position, ui8 variantIndex, f32 scale) {
+    const StaticModelInstanceID id = ++mNextLooseInstanceID;
 
     PendingLooseModelInstance pendingInstance{
         .orient = orient,
@@ -707,6 +700,7 @@ StaticModelInstanceID InstancedStaticModelManager::addLooseModelInstance(ModelID
     mPendingLooseModelInstances.enqueue(pendingInstance);
 
     return id;
+
 }
 
 void InstancedStaticModelManager::removeLooseModelInstance(ModelID modelId, StaticModelInstanceID instanceId) {
@@ -761,13 +755,13 @@ void InstancedStaticModelManager::updatePendingLooseModelInstances() {
     }
 }
 
-void InstancedStaticModelManager::removeModelInstanceInternal(StaticModelRendererBatchData& batchData, ui32 instanceIndex, ModelID modelId) {
+void InstancedStaticModelManager::removeModelInstanceInternal(ui32 instanceIndex) {
 
-    if (instanceIndex < batchData.mFirstDirtyInstance) {
-        batchData.mFirstDirtyInstance = instanceIndex;
+    if (instanceIndex < mFirstDirtyInstance) {
+        mFirstDirtyInstance = instanceIndex;
     }
 
-    ModelInstanceOwnerVariant backSource = batchData.mInstanceSources.back();
+    ModelInstanceOwnerVariant backSource = mInstanceSources.back();
     // Tell back source about new position by grabbing transform position to look up
     // as we will be swapping and popping
     if (std::holds_alternative<ModelInstanceContainerOwner>(backSource)) {
@@ -779,93 +773,88 @@ void InstancedStaticModelManager::removeModelInstanceInternal(StaticModelRendere
         auto&& backRef = backTileContainerModels.find(owner.tileIndex);
         assert(backRef != backTileContainerModels.end());
         backRef->second.mInstanceIndex = instanceIndex;
+
     }
     else {
         // Loose model
-        auto&& it2 = mLooseStaticModelInstances.find(modelId);
-        assert(it2 != mLooseStaticModelInstances.end());
         const StaticModelInstanceID backInstanceID = std::get<StaticModelInstanceID>(backSource);
-        auto&& backRef = it2->second.find(backInstanceID);
-        assert(backRef != it2->second.end());
+        auto&& backRef = mLooseStaticModelInstances.find(backInstanceID);
+        assert(backRef != mLooseStaticModelInstances.end());
         backRef->second = instanceIndex;
     }
-    batchData.mInstanceSources[instanceIndex] = backSource;
-    batchData.mInstanceSources.pop_back();
+    mInstanceSources[instanceIndex] = backSource;
+    mInstanceSources.pop_back();
 
     // Replace this instance with back instance
-    batchData.mInstanceTransforms[instanceIndex] = std::move(batchData.mInstanceTransforms.back());
-    batchData.mInstanceTransforms.pop_back();
-    batchData.mInstanceVariantIndices[instanceIndex] = std::move(batchData.mInstanceVariantIndices.back());
-    batchData.mInstanceVariantIndices.pop_back();
-    const ui32 damageModelIndex = batchData.mInstanceDamageModelIndices[instanceIndex];
+    mInstanceTransforms[instanceIndex] = std::move(mInstanceTransforms.back());
+    mInstanceTransforms.pop_back();
+    mInstanceVariantIndices[instanceIndex] = std::move(mInstanceVariantIndices.back());
+    mInstanceVariantIndices.pop_back();
+    const ui32 damageModelIndex = mInstanceDamageModelIndices[instanceIndex];
     // If we had a damage model, need to remove it and fixup ref
     if (damageModelIndex != 0) {
-        removeDamageModelInternal(batchData, damageModelIndex);
+        removeDamageModelInternal(damageModelIndex);
     }
-    batchData.mInstanceDamageModelIndices[instanceIndex] = batchData.mInstanceDamageModelIndices.back();
-    batchData.mInstanceDamageModelIndices.pop_back();
+    mInstanceDamageModelIndices[instanceIndex] = mInstanceDamageModelIndices.back();
+    mInstanceDamageModelIndices.pop_back();
+
+    decrementDrawCommandsCount(mInstanceDrawData[instanceIndex].key);
+    mInstanceDrawData[instanceIndex] = mInstanceDrawData.back();
+    mInstanceDrawData.pop_back();
 }
 
 void InstancedStaticModelManager::addTileInstanceInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex, TileDamageDataPtr damageData) {
 
-    StaticModelRendererBatchData& batchData = mModelBatches[modelDef.getID()];
-
-    const size_t instanceIndex = batchData.mInstanceTransforms.size();
-    if (instanceIndex < batchData.mFirstDirtyInstance) {
-        batchData.mFirstDirtyInstance = instanceIndex;
+    const size_t instanceIndex = mInstanceTransforms.size();
+    if (instanceIndex < mFirstDirtyInstance) {
+        mFirstDirtyInstance = instanceIndex;
     }
     // Store per tile references
-    batchData.mInstanceTransforms.emplace_back(transform);
-    batchData.mInstanceVariantIndices.emplace_back(variantIndex);
+    mInstanceTransforms.emplace_back(transform);
+    mInstanceVariantIndices.emplace_back(variantIndex);
     if (damageData) {
-        batchData.mInstanceDamageModelIndices.emplace_back(batchData.mModelDamageZonesGpuData.size());
-        ModelDamageZoneGpuData& gpuDamageData = batchData.mModelDamageZonesGpuData.emplace_back();
+        mInstanceDamageModelIndices.emplace_back(mModelDamageZonesGpuData.size());
+        ModelDamageZoneGpuData& gpuDamageData = mModelDamageZonesGpuData.emplace_back();
         gpuDamageData.damageZones = damageData->getShellDamageZones();
     }
     else {
-        batchData.mInstanceDamageModelIndices.emplace_back(0);
+        mInstanceDamageModelIndices.emplace_back(0);
     }
-    batchData.mInstanceSources.emplace_back(ModelInstanceContainerOwner{ containerId, tileIndex });
+    mInstanceSources.emplace_back(ModelInstanceContainerOwner{ containerId, tileIndex });
     SpatialInstanceDataMap& tileContainerModels = mTileContainerTrackedModels[containerId];
 
     assert(tileContainerModels.find(tileIndex) == tileContainerModels.end());
     tileContainerModels[tileIndex] = { modelDef.getID(), (ui32)instanceIndex };
+
+    mInstanceDrawData.emplace_back(ModelRepository::get().getDrawDataSpanKeyForModel(modelDef.getID()), modelDef.getID());
+    incrementDrawCommandsCount(mInstanceDrawData.back().key);
+
 }
 
 void InstancedStaticModelManager::removeTileInstanceInternal(TileModelInstance& instance) {
-    auto&& it = mModelBatches.find(instance.mModelID);
-    assert(it != mModelBatches.end());
-    StaticModelRendererBatchData& batchData = it->second;
-    const ui32 instanceIndex = instance.mInstanceIndex;
-
-    removeModelInstanceInternal(batchData, instanceIndex, instance.mModelID);
-
-    // If we are empty now, remove from the model map
-    if (batchData.mInstanceTransforms.empty()) {
-        mModelBatches.erase(it);
-    }
+    removeModelInstanceInternal(instance.mInstanceIndex);
 }
 
 void InstancedStaticModelManager::onTileInstanceDamageChanged(TileContainerID containerId, TileIndex tileIndex, const TileDamageData& damageData) {
+
     TileModelInstance* instance = getTileInstanceAtPosition(LiteTileHandle{ containerId, tileIndex });
     assert(instance);
 
     const bool isUndamaged = damageData.getShellDamageZones() == TileDamageData().getShellDamageZones();
 
-    auto& [modelID, batchData] = *mModelBatches.find(instance->mModelID);
-    ui32& damageModelIndex = batchData.mInstanceDamageModelIndices[instance->mInstanceIndex];
+    ui32& damageModelIndex = mInstanceDamageModelIndices[instance->mInstanceIndex];
     if (damageModelIndex != 0) {
         if (isUndamaged) {
-           
-            batchData.mInstanceDamageModelIndices[instance->mInstanceIndex] = 0;
-            removeDamageModelInternal(batchData, damageModelIndex);
+
+            mInstanceDamageModelIndices[instance->mInstanceIndex] = 0;
+            removeDamageModelInternal(damageModelIndex);
         }
         else {
-            ModelDamageZoneGpuData& gpuDamageData = batchData.mModelDamageZonesGpuData[damageModelIndex];
+            ModelDamageZoneGpuData& gpuDamageData = mModelDamageZonesGpuData[damageModelIndex];
             gpuDamageData.damageZones = damageData.getShellDamageZones();
             // Immediately update buffer
             glNamedBufferSubData(
-                batchData.mDamageZonesSSBO,
+                mDamageZonesSSBO,
                 damageModelIndex * sizeof(ModelDamageZoneGpuData),
                 sizeof(ModelDamageZoneGpuData),
                 &gpuDamageData
@@ -877,34 +866,34 @@ void InstancedStaticModelManager::onTileInstanceDamageChanged(TileContainerID co
             // We are already tracking the damage model 0, do nothing
             return;
         }
-        damageModelIndex = batchData.mModelDamageZonesGpuData.size();
-        ModelDamageZoneGpuData& gpuDamageData = batchData.mModelDamageZonesGpuData.emplace_back();
+        damageModelIndex = mModelDamageZonesGpuData.size();
+        ModelDamageZoneGpuData& gpuDamageData = mModelDamageZonesGpuData.emplace_back();
         gpuDamageData.damageZones = damageData.getShellDamageZones();
         // Immediately rebuild SSBO
-        GL.glDeleteBuffers(1, &batchData.mDamageZonesSSBO);
-        GL.glCreateBuffers(1, &batchData.mDamageZonesSSBO);
-        GL.glNamedBufferStorage(batchData.mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * batchData.mModelDamageZonesGpuData.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
-        GL.glNamedBufferSubData(batchData.mDamageZonesSSBO, 0, sizeof(ModelDamageZoneGpuData) * batchData.mModelDamageZonesGpuData.size(), batchData.mModelDamageZonesGpuData.data());
+        GL.glDeleteBuffers(1, &mDamageZonesSSBO);
+        GL.glCreateBuffers(1, &mDamageZonesSSBO);
+        GL.glNamedBufferStorage(mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
+        GL.glNamedBufferSubData(mDamageZonesSSBO, 0, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), mModelDamageZonesGpuData.data());
     }
     // Update damage index buffer
     glNamedBufferSubData(
-        batchData.mDamageModelIndexVbo,
+        mDamageModelIndexVbo,
         instance->mInstanceIndex * sizeof(ui32),
         sizeof(ui32),
         &damageModelIndex
     );
 }
 
-void InstancedStaticModelManager::removeDamageModelInternal(StaticModelRendererBatchData& batchData, ui32 damageModelIndex) {
-    batchData.mModelDamageZonesGpuData[damageModelIndex] = std::move(batchData.mModelDamageZonesGpuData.back());
-    batchData.mModelDamageZonesGpuData.pop_back();
+void InstancedStaticModelManager::removeDamageModelInternal(ui32 damageModelIndex) {
+    mModelDamageZonesGpuData[damageModelIndex] = std::move(mModelDamageZonesGpuData.back());
+    mModelDamageZonesGpuData.pop_back();
     // Fixup relocated
     // TODO: This is inefficient
-    for (ui32& index : batchData.mInstanceDamageModelIndices) {
+    for (ui32& index : mInstanceDamageModelIndices) {
         if (index > damageModelIndex) {
             --index;
             glNamedBufferSubData(
-                batchData.mDamageModelIndexVbo,
+                mDamageModelIndexVbo,
                 index * sizeof(ui32),
                 sizeof(ui32),
                 &index
@@ -913,70 +902,56 @@ void InstancedStaticModelManager::removeDamageModelInternal(StaticModelRendererB
     }
 }
 
+
 void InstancedStaticModelManager::addLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex) {
 
     increfModelDef(modelId, 1);
-
-    StaticModelRendererBatchData& batchData = mModelBatches[modelId];
-
-    const size_t instanceIndex = batchData.mInstanceTransforms.size();
-    if (instanceIndex < batchData.mFirstDirtyInstance) {
-        batchData.mFirstDirtyInstance = instanceIndex;
+    const size_t instanceIndex = mInstanceTransforms.size();
+    if (instanceIndex < mFirstDirtyInstance) {
+        mFirstDirtyInstance = instanceIndex;
     }
-    batchData.mInstanceTransforms.emplace_back(transform);
-    batchData.mInstanceVariantIndices.emplace_back(variantIndex);
-    batchData.mInstanceSources.emplace_back(instanceId);
+    mInstanceTransforms.emplace_back(transform);
+    mInstanceVariantIndices.emplace_back(variantIndex);
+    mInstanceSources.emplace_back(instanceId);
     // Currently loose models do not support damage
-    batchData.mInstanceDamageModelIndices.emplace_back(0);
+    mInstanceDamageModelIndices.emplace_back(0);
 
     // Store instance lookup
-    auto&& mp = mLooseStaticModelInstances[modelId];
-    mp.emplace(std::make_pair(instanceId, (ui32)instanceIndex));
+    mLooseStaticModelInstances.emplace(std::make_pair(instanceId, (ui32)instanceIndex));
+
+    mInstanceDrawData.emplace_back(ModelRepository::get().getDrawDataSpanKeyForModel(modelId), modelId);
+    incrementDrawCommandsCount(mInstanceDrawData.back().key);
+
 }
 
 void InstancedStaticModelManager::removeLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId) {
-    auto&& it = mModelBatches.find(modelId);
-    assert(it != mModelBatches.end());
-    StaticModelRendererBatchData& batchData = it->second;
 
-    auto&& lit = mLooseStaticModelInstances.find(modelId);
+    auto&& lit = mLooseStaticModelInstances.find(instanceId);
     assert(lit != mLooseStaticModelInstances.end());
-    auto&& instanceIt = lit->second.find(instanceId);
-    assert(instanceIt != lit->second.end());
-    const ui32 instanceIndex = instanceIt->second;
+    const ui32 instanceIndex = lit->second;
 
-    ModelInstanceOwnerVariant backOwner = batchData.mInstanceSources.back();
-    removeModelInstanceInternal(batchData, instanceIndex, modelId);
+    removeModelInstanceInternal(instanceIndex);
 
-    // Remove our tracked instance
-    lit->second.erase(instanceIt);
+    mLooseStaticModelInstances.erase(lit);
 
-    // If we are empty now, remove from the model map
-    if (batchData.mInstanceTransforms.empty()) {
-        mModelBatches.erase(it);
-    }
+
 }
 
 void InstancedStaticModelManager::updateLooseInstanceTransformInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4 transform) {
-    auto&& it = mModelBatches.find(modelId);
-    assert(it != mModelBatches.end());
-    StaticModelRendererBatchData& batchData = it->second;
 
     auto&& lit = mLooseStaticModelInstances.find(modelId);
     assert(lit != mLooseStaticModelInstances.end());
-    auto&& instanceIt = lit->second.find(instanceId);
-    assert(instanceIt != lit->second.end());
-    const ui32 instanceIndex = instanceIt->second;
+    const ui32 instanceIndex = lit->second;
 
-    if (instanceIndex < batchData.mFirstDirtyInstance) {
-        batchData.mFirstDirtyInstance = instanceIndex;
+    if (instanceIndex < mFirstDirtyInstance) {
+        mFirstDirtyInstance = instanceIndex;
     }
 
-    batchData.mInstanceTransforms[instanceIndex] = transform;
+    mInstanceTransforms[instanceIndex] = transform;
+
 }
 
-void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec)
-{
+void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec) {
     std::vector<LiteTileHandle> animsToErase;
 
     for (auto&& it = mAnimatedTileInstances.begin(); it != mAnimatedTileInstances.end(); ++it) {
@@ -994,8 +969,7 @@ void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec)
             if (!instance) {
                 return;
             }
-            StaticModelRendererBatchData& instanceData = mModelBatches[instance->mModelID];
-            const f32m4& baseTransform = instanceData.mInstanceTransforms[instance->mInstanceIndex];
+            const f32m4& baseTransform = mInstanceTransforms[instance->mInstanceIndex];
 
             f32m4 newTransform;
             switch (animation.animType) {
@@ -1021,7 +995,7 @@ void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec)
             // Override transform on gpu
             // TODO: MapUnmap will be faster maybe?
             glNamedBufferSubData(
-                instanceData.mTransformsVbo,
+                mTransformsVbo,
                 instance->mInstanceIndex * sizeof(f32m4),
                 sizeof(f32m4),
                 &newTransform[0][0]
@@ -1056,5 +1030,29 @@ void InstancedStaticModelManager::decrefModelDef(ModelID modelId, int decCount) 
     mdrit->second.refCount -= decCount;
     if (mdrit->second.refCount == 0) {
         mModelDefRefs.erase(mdrit);
+    }
+}
+
+void InstancedStaticModelManager::incrementDrawCommandsCount(ModelBatchSubmeshDrawDataSpanKey drawDataKey) {
+    const ModelBatchSubmeshDrawData* drawData = ModelRepository::get().getSubmeshDrawDataStart(drawDataKey.index);
+    for (ui32 i = 0; i < drawDataKey.count; ++i) {
+        const ModelBatchSubmeshDrawData& submeshDrawData = drawData[i];
+        ++mDrawCommandsCount[e_cast(submeshDrawData.renderPass)];
+        if (submeshDrawData.castsShadow) {
+            ++mDrawCommandsShadowsCount[e_cast(submeshDrawData.renderPass)];
+        }
+    }
+}
+
+void InstancedStaticModelManager::decrementDrawCommandsCount(ModelBatchSubmeshDrawDataSpanKey drawDataKey) {
+    const ModelBatchSubmeshDrawData* drawData = ModelRepository::get().getSubmeshDrawDataStart(drawDataKey.index);
+    for (ui32 i = 0; i < drawDataKey.count; ++i) {
+        const ModelBatchSubmeshDrawData& submeshDrawData = drawData[i];
+        assert(mDrawCommandsCount[e_cast(submeshDrawData.renderPass)]);
+        --mDrawCommandsCount[e_cast(submeshDrawData.renderPass)];
+        if (submeshDrawData.castsShadow) {
+            assert(mDrawCommandsShadowsCount[e_cast(submeshDrawData.renderPass)]);
+            --mDrawCommandsShadowsCount[e_cast(submeshDrawData.renderPass)];
+        }
     }
 }

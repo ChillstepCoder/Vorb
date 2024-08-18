@@ -73,7 +73,6 @@ void MeshDrawer::drawIndirect(const MeshGpuData& meshData, const GLDrawCommandBu
     assert(meshData.mVao);
     assert(meshData.mLODData.mTotalIndexCount);
 
-    const MeshGpuData* currentSubmesh = &meshData;
     // Draw any submeshes
     GL.glBindVertexArray(meshData.mVao);
     if (meshData.mUbo) {
@@ -84,6 +83,7 @@ void MeshDrawer::drawIndirect(const MeshGpuData& meshData, const GLDrawCommandBu
     }
     buffer->multiDrawElementsIndirect(GL_TRIANGLES, e_cast(meshData.mIndexType));
 }
+
 
 void MeshDrawer::drawMinimum(const MeshMinimumRenderData& meshData) {
     assert(meshData.mVao);
