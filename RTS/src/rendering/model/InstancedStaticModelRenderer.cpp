@@ -30,10 +30,8 @@
 InstancedStaticModelRenderer::InstancedStaticModelRenderer() {
 
     mStandardShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("standard_model"));
-    mStandardShaderNew = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("standard_model_new"));
     mShadowMapperShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("shadow_mapper_instd"));
     mSmudgeShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("smudge_model"));
-    mSmudgeShaderNew = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("smudge_model_new"));
     mWaterShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("water_model"));
 
     static_assert(e_count(MaterialRenderPassType) == 3);
@@ -71,10 +69,10 @@ void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelMan
 
     switch (passType) {
         case MaterialRenderPassType::Default:
-            def = mStandardShaderNew;
+            def = mStandardShader;
             break;
         case MaterialRenderPassType::Smudge:
-            def = mSmudgeShaderNew;
+            def = mSmudgeShader;
             break;
         case MaterialRenderPassType::Water:
             def = mWaterShader;
@@ -153,16 +151,15 @@ void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelMan
     const ModelBatch& batch = modelRepo.getModelBatch(ModelBatchKey{ MeshIndexType::USHORT, VertexType::STANDARD_MODEL, passType });
 
     // Variant data
-    //assert(mesh.mVariantDataUbo);
-    // TODO: VARIANTS
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_SSBO, modelRepo.getModelVariantDataSSBO());
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MODEL_DAMAGE_DATA_SSBO, modelManager.mDamageZonesSSBO);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_SUBMESH_WIND_TYPES_BINDING_POINT, modelRepo.getModelSubmeshWindSSBO());
 
     // Bind our transforms every frame as we could be using different instanced static model managers
     VGBuffer vao = batch.getVao();
     GL.glVertexArrayVertexBuffer(vao, MODEL_TRANSFORMS_BINDING_POINT, modelManager.mTransformsVbo, 0, sizeof(f32m4));
-    GL.glVertexArrayVertexBuffer(vao, MODEL_VARIANT_INDICES_BINDING_POINT, modelManager.mVariantsVbo, 0, sizeof(ui32));
-    GL.glVertexArrayVertexBuffer(vao, MODEL_DAMAGE_INDICES_BINDING_POINT, modelManager.mDamageModelIndexVbo, 0, sizeof(ui32));
+    GL.glVertexArrayVertexBuffer(vao, MODEL_INSTANCE_DATA_BINDING_POINT, modelManager.mInstanceDataVbo, 0, sizeof(InstancedStaticModelManager::InstanceGpuData));
+    static_assert(sizeof(InstancedStaticModelManager::InstanceGpuData) == sizeof(ui32v3));
 
     batch.bindStaticModelAttribs();
 
@@ -196,6 +193,7 @@ void InstancedStaticModelRenderer::renderModelShadows(const InstancedStaticModel
     glUniformMatrix4fv(mShadowMapperShader->getUniform("unShadowFrustumMatrices[0]"), MAX_SHADOW_CASCADE_LEVELS, false, &(*shaderData.shadowFrustumMatrices)[0][0]);
 
     ModelRepository& modelRepo = ModelRepository::get();
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_SUBMESH_WIND_TYPES_BINDING_POINT, modelRepo.getModelSubmeshWindSSBO());
     // Talia said we never need more than 65536 verts
     for (MaterialRenderPassType passType : { MaterialRenderPassType::Default, MaterialRenderPassType::Smudge }) {
         if (!modelManager.mDrawCommandsShadows[e_cast(passType)]) {
@@ -213,8 +211,9 @@ void InstancedStaticModelRenderer::renderModelShadows(const InstancedStaticModel
         // TODO: Have a better way to track this stuff
         VGBuffer vao = batch.getVao();
         GL.glVertexArrayVertexBuffer(vao, MODEL_TRANSFORMS_BINDING_POINT, modelManager.mTransformsVbo, 0, sizeof(f32m4));
-        GL.glVertexArrayVertexBuffer(vao, MODEL_VARIANT_INDICES_BINDING_POINT, modelManager.mVariantsVbo, 0, sizeof(ui32));
-        GL.glVertexArrayVertexBuffer(vao, MODEL_DAMAGE_INDICES_BINDING_POINT, modelManager.mDamageModelIndexVbo, 0, sizeof(ui32));
+        GL.glVertexArrayVertexBuffer(vao, MODEL_INSTANCE_DATA_BINDING_POINT, modelManager.mInstanceDataVbo, 0, sizeof(InstancedStaticModelManager::InstanceGpuData)); 
+        
+        static_assert(sizeof(InstancedStaticModelManager::InstanceGpuData) == sizeof(ui32v3));
 
         batch.bindStaticModelAttribs();
 

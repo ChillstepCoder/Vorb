@@ -14,6 +14,7 @@ layout(location = 7) in mat4 vModelMatrix; // TODO: USE
 // Model matrix consumes 4 locations
 layout(location = 11) in vec4 vBoneWeights;
 layout(location = 12) in ivec4 vBoneIds;
+layout(location = 13) in uint vVariantIndex;
 
 out vec4 fTint;
 out vec2 fUV;
@@ -28,8 +29,7 @@ uniform mat4 unBoneTransforms[MAX_BONES];
 void main() {
   fTint = vTint;
   fUV = unpackUV(vUV);
-  // TODO: Support other variants than just the first
-  fMaterialIndex = inVariantData[0].materials[vMaterialSlot];
+  fMaterialIndex = inVariantMaterials[vVariantIndex + vMaterialSlot];
   
   mat4 boneTransform = unBoneTransforms[vBoneIds[0]] * vBoneWeights[0];
   boneTransform += unBoneTransforms[vBoneIds[1]] * vBoneWeights[1];

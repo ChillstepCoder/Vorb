@@ -79,5 +79,7 @@ private:
 
     CharacterModelListeners mCharacterModelListeners;
 
+    VGBuffer mVariantIndexVbo = 0;
+
     entt::registry* mRegistry = nullptr;
 };

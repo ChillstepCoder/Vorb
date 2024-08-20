@@ -46,6 +46,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
         mVariantIndex = 0;
         mDirtyModelData = false;
         mLod = 0;
+        mAssetWasChanged = false;
     }
 
     bool changed = false;
@@ -101,7 +102,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
                 ImGui::Text("Submesh Edit");
                 ImGui::Spacing(); ImGui::SameLine();
                 ImGui::SliderInt("Index", &mSingleIndex, 0, mAssetData->getNumMeshes() - 1);
-                ModelSubmeshData& subMeshData = mAssetData->mMeshesModelData[mSingleIndex];
+                ModelSubmeshData& subMeshData = mAssetData->mSubmeshData[mSingleIndex];
                 ImGui::Text(subMeshData.name.toString().c_str());
                 changed |= updateAndRenderImguiControls(subMeshData);
 
@@ -118,7 +119,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
                         changed |= ImguiUtil::ObjectVector<std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>>("Submesh Materials", o.submeshMaterials,
                             [&](std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>& o, ui32 m) {
                                 bool changed = false;
-                                ImGui::Text(mAssetData->mMeshesModelData[m].name.toString().c_str());
+                                ImGui::Text(mAssetData->mSubmeshData[m].name.toString().c_str());
                                 for (auto&& r : o) {
                                     changed |= r.updateAndRenderImgui(nullptr);
                                 }

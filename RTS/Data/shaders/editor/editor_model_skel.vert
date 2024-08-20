@@ -40,7 +40,7 @@ void main() {
     fUV = unpackUV(vUV);
     
     // TODO: Do in fragment shader?
-    fMaterialIndex = inVariantData[unVariantIndex].materials[vMaterialSlot];
+    fMaterialIndex = inVariantMaterials[unVariantIndex + vMaterialSlot];
     
     mat4 boneTransform = unBoneTransforms[vBoneIds[0]] * vBoneWeights[0];
     boneTransform += unBoneTransforms[vBoneIds[1]] * vBoneWeights[1];

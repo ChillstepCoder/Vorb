@@ -1,6 +1,9 @@
 model: tree_birch.fbx
 rig: ''
 machine: ''
+submesh_data:
+  - wind: tree_trunk
+  - wind: tree_leaves
 scale: 0.8
 lod_dst_0: 45
 lod_dst_1: 90
@@ -23,3 +26,4 @@ collider:
       offset: [0.198,-0.23,2.246]
       shape: capsule
       dims: [0.604,3.014,0.5]
+opt_thresh: 0.0003

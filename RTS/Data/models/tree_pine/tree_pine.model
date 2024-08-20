@@ -1,6 +1,9 @@
 model: tree_pine.fbx
 rig: ''
 machine: ''
+submesh_data:
+  - wind: tree_trunk
+  - wind: tree_leaves
 scale: 1.48
 lod_dst_0: 45
 lod_dst_1: 90
@@ -51,3 +54,4 @@ collider:
       offset: [0,-0.319,0.186]
       shape: capsule
       dims: [2.631,0.564,0.5]
+opt_thresh: 0.0003

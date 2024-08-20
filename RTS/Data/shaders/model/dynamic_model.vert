@@ -11,7 +11,7 @@ layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec3 vTangent;
 //layout(location = 6) in float vWindInfluence;
 layout(location = 7) in mat4 vModelMatrix;
-layout(location = 11) in uint vVariantIndex;
+layout(location = 13) in uvec3 vSubmeshIndexVariantIndexDamageModelIndex;
 
 out vec2 fUV;
 flat out uint fMaterialIndex;
@@ -23,7 +23,7 @@ out vec3 fFragPosTangent;
 void main() {
     fTint = vTint;
     fUV = unpackUV(vUV);
-    fMaterialIndex = inVariantData[vVariantIndex].materials[vMaterialSlot];
+    fMaterialIndex = inVariantMaterials[vSubmeshIndexVariantIndexDamageModelIndex.y + vMaterialSlot];
 	
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vTangent);

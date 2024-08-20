@@ -71,8 +71,8 @@ public:
     }
 
     // Used by model renderer
-    const ModelBatchSubmeshDrawData* getSubmeshDrawDataStart(int index) const {
-        return mAllSubmeshDrawData.data() + index;
+    const ModelBatchSubmeshDrawData* getSubmeshDrawDataArray(ModelBatchSubmeshDrawDataSpanKey key) const {
+        return mAllSubmeshDrawData.data() + key.index;
     }
     ModelBatchSubmeshDrawDataSpanKey getDrawDataSpanKeyForModel(ModelID modelId) const {
         return mModelSubmeshSpanKeys[modelId];
@@ -87,6 +87,9 @@ public:
     }
     VGBuffer getModelVariantDataSSBO() const {
         return mModelVariantDataSSBO;
+    }
+    VGBuffer getModelSubmeshWindSSBO() const {
+        return mModelSubmeshWindSSBO;
     }
 private:
     AssetLoadFunc getAssetLoadFunc() override;
@@ -110,8 +113,10 @@ private:
     // Stored separately for cache friendliness on render
     std::vector<ModelLodParams> mLODParameters; // One per ModelID
     std::vector<VariantIndexData> mVariantArrayIndexData; // One per ModelID, stores start of the variant length
+
     // Stores variant data for every model
     VGBuffer mModelVariantDataSSBO = 0;
+    VGBuffer mModelSubmeshWindSSBO = 0;
 
     // Model batching
     FlatMap<ModelBatchKey, ModelBatch*> mModelBatchLookup;

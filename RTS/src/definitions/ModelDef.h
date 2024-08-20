@@ -43,7 +43,7 @@ public:
     VORB_NON_COPYABLE_BUT_MOVABLE(ModelDef);
 
     bool isSkeletalModel() const { return mRig != nullptr; }
-    ui32 getNumMeshes() const { return mMeshes.size(); }
+    ui32 getNumMeshes() const { return mSubmeshData.size(); }
     SkeletalMesh& getSkeletalMesh(ui32 meshIndex) { assert(isSkeletalModel()); return dynamic_cast<SkeletalMesh&>(*mMeshes[meshIndex]); }
     const SkeletalMesh& getSkeletalMesh(ui32 meshIndex) const { assert(isSkeletalModel()); return dynamic_cast<const SkeletalMesh&>(*mMeshes[meshIndex]); }
     Mesh& getMesh(ui32 meshIndex) { return *mMeshes[meshIndex]; }
@@ -54,7 +54,7 @@ public:
     const RigDef* mRig = nullptr;
     const AnimMachineDef* mAnimMachine = nullptr;
     std::vector<std::unique_ptr<Mesh>> mMeshes;
-    std::vector<ModelSubmeshData> mMeshesModelData;
+    std::vector<ModelSubmeshData> mSubmeshData;
     ui32 mTotalSubmeshJointTransformsNeeded = 0;
     StrToken mModelFileName;
     RigAssetRef mRigRef;
@@ -84,6 +84,7 @@ SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
     make_field(o.mModelFileName, "model"sv),
     make_field(o.mRigRef, "rig"sv),
     make_field(o.mMachineRef, "machine"sv),
+    make_field(o.mSubmeshData, "submesh_data"sv),
     make_field(o.mScale, "scale"sv),
     make_field(o.mLodDistance0, "lod_dst_0"sv),
     make_field(o.mLodDistance1, "lod_dst_1"sv),

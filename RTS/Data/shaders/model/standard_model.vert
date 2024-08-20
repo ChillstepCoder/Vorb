@@ -3,7 +3,6 @@
 #include "util/uv.glsl"
 #include "model/model_variant.glsl"
 
-uniform int unWindType = 0;
 uniform float unSnowLevel;
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
@@ -13,9 +12,8 @@ layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec3 vTangent;
 //layout(location = 6) in float vWindInfluence;
 layout(location = 7) in mat4 vModelMatrix;
-layout(location = 11) in uint vVariantIndex;
 layout(location = 12) in uint vDamageZoneIndex;
-layout(location = 13) in uint vDamageModelIndex;
+layout(location = 13) in uvec3 vSubmeshIndexVariantIndexDamageModelIndex;
 
 struct ModelDamageZoneGPUData {
     uint damageZones[8]; // Each uint holds four uint8_t values
@@ -65,8 +63,10 @@ float damageTest(inout vec4 position, float damageValue) {
 void main() {
     fTint = vTint;
     fUV = unpackUV(vUV);
-    fMaterialIndex = inVariantData[vVariantIndex].materials[vMaterialSlot];
-	
+    uint submeshOffset = vMaterialSlot / 4;
+    int windType = inSubmeshWindData[vSubmeshIndexVariantIndexDamageModelIndex.x + submeshOffset];
+    fMaterialIndex = inVariantMaterials[vSubmeshIndexVariantIndexDamageModelIndex.y + vMaterialSlot];
+
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vTangent);
     
@@ -81,10 +81,10 @@ void main() {
     
     vec4 adjustedPosition = vPosition;
   
-    uint damageValue = extractDamageZoneByte(modelDamageZoneBuffer[vDamageModelIndex], vDamageZoneIndex);
+    uint damageValue = extractDamageZoneByte(modelDamageZoneBuffer[vSubmeshIndexVariantIndexDamageModelIndex.z], vDamageZoneIndex);
     fDamage = float(damageValue) / 255.0;
     // TODO: Remove fDamage = 
-    damageTest(adjustedPosition, fDamage);
+    //damageTest(adjustedPosition, fDamage);
     
     fLocalPosition = adjustedPosition.xyz;
     
@@ -97,7 +97,7 @@ void main() {
     float height = adjustedPosition.z;
     
     float windPower = pow(1.0 - unSnowLevel, 4.0);
-    addModelWind(trueWorldPos, modelRoot, unWindType, height * windPower);
+    addModelWind(trueWorldPos, modelRoot, windType, height * windPower);
     
     vec4 relativeWorldPos = trueWorldPos - vec4(CameraPos, 0.0);
     gl_Position = VP * relativeWorldPos;

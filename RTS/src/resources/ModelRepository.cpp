@@ -122,6 +122,10 @@ void ModelRepository::buildModelBatches() {
     mModelSubmeshSpanKeys.resize(mAssetRegistry.size());
     mAllSubmeshDrawData.resize(mTotalSubmeshCount);
 
+
+    std::vector<i32> allSubmeshWindTypes;
+    allSubmeshWindTypes.resize(mTotalSubmeshCount);
+
     struct ModelBatchSubmeshSource {
         MaterialRenderPassType renderPass;
         ModelBatchID batchId;
@@ -150,13 +154,13 @@ void ModelRepository::buildModelBatches() {
 
         // Point model to this draw command list
         mModelSubmeshSpanKeys[modelId].index = submeshSources.size();
-        mModelSubmeshSpanKeys[modelId].count = def.mMeshesModelData.size();
+        mModelSubmeshSpanKeys[modelId].count = def.mSubmeshData.size();
 
         mVariantArrayIndexData[modelId].offset = numVariantData * MATERIAL_SLOT_COUNT;
-        mVariantArrayIndexData[modelId].stride = def.mMeshesModelData.size() * MATERIAL_SLOT_COUNT;
-        numVariantData += def.mMeshesModelData.size() * def.mVariants.size();
+        mVariantArrayIndexData[modelId].stride = def.mSubmeshData.size() * MATERIAL_SLOT_COUNT;
+        numVariantData += def.mSubmeshData.size() * def.mVariants.size();
 
-        for (size_t submeshIndex = 0; submeshIndex < def.mMeshesModelData.size(); ++submeshIndex) {
+        for (size_t submeshIndex = 0; submeshIndex < def.mSubmeshData.size(); ++submeshIndex) {
             Mesh& mesh = *def.mMeshes[submeshIndex];
 
             ModelBatchKey key;
@@ -189,8 +193,9 @@ void ModelRepository::buildModelBatches() {
             drawData.batchID = creationData->batchId;
             drawData.renderPass = mesh.getRenderPass();
             drawData.castsShadow = mesh.castsShadow();
-            drawData.windType = mesh.getSubmeshData()->windType;
             drawData.baseVertex = creationData->verticesSize;
+
+            allSubmeshWindTypes[submeshArrayIndex] = (i32)mesh.getSubmeshData()->windType;
 
             for (int l = 0; l < (int)MeshLODLevel::COUNT; ++l) {
                 drawData.lodDrawInfo[l] = mesh.mCpuData.mLodData.getDrawInfoForLOD((MeshLODLevel)l);
@@ -236,6 +241,9 @@ void ModelRepository::buildModelBatches() {
     ui32 zero = 0;
     // Zero the buffer (Default material), we will end up uploading materials as they are loaded
     glClearNamedBufferData(mModelVariantDataSSBO, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &zero);
+
+    glCreateBuffers(1, &mModelSubmeshWindSSBO);
+    glNamedBufferStorage(mModelSubmeshWindSSBO, allSubmeshWindTypes.size() * sizeof(ui32), allSubmeshWindTypes.data(), 0);
     
     assert(numVariantData < UINT16_MAX && "If this fails we need to increase variant bits in Vertex.h");
 
@@ -507,7 +515,7 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
                     newMesh.mCpuData = std::move(newMeshCpuData);
                     newMesh.setRenderPass((MaterialRenderPassType)renderPassIndex);
 
-                    ModelSubmeshData& newSubmeshData = def.mMeshesModelData.emplace_back();
+                    ModelSubmeshData& newSubmeshData = def.mSubmeshData.emplace_back();
                     newSubmeshData.name = subMesh.mName;
                 }
             }
@@ -524,10 +532,10 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
             def.mMeshes.shrink_to_fit();
 
             // Set submesh data pointers after so we dont have stale pointers
-            def.mMeshesModelData.resize(def.mMeshes.size());
+            def.mSubmeshData.resize(def.mMeshes.size());
             for (size_t i = 0; i < def.mMeshes.size(); ++i) {
                 Mesh& newMesh = *def.mMeshes[i];
-                newMesh.setSubmeshData(&def.mMeshesModelData[i]);
+                newMesh.setSubmeshData(&def.mSubmeshData[i]);
                 assert(newMesh.mCpuData.mElementsCount && newMesh.mCpuData.mVertsCount);
             }
 
@@ -727,8 +735,8 @@ void ModelRepository::updateModelVariantData(AssetID id) {
     ASSERT_RENDER_THREAD();
 
     ModelDef& def = *mAssets[id];
-    def.mVariantsGpuData.resize(def.mMeshesModelData.size());
-    def.mVariantsGpuBuffers.resize(def.mMeshesModelData.size());
+    def.mVariantsGpuData.resize(def.mSubmeshData.size());
+    def.mVariantsGpuBuffers.resize(def.mSubmeshData.size());
 
     if (def.mVariants.empty()) {
         def.mVariants.resize(1); // Must have a single variant at least
@@ -740,7 +748,7 @@ void ModelRepository::updateModelVariantData(AssetID id) {
     // Ensure no size mismatch
     for (size_t i = 0; i < def.mVariants.size(); ++i) {
         ModelVariantData& varData = def.mVariants[i];
-        varData.submeshMaterials.resize(def.mMeshesModelData.size());
+        varData.submeshMaterials.resize(def.mSubmeshData.size());
     }
 
     // Copy all variant materials to GPU data and then upload
@@ -769,9 +777,9 @@ void ModelRepository::updateModelVariantData(AssetID id) {
     }
 
     ModelVariantGpuDataContainer variantsGpuData;
-    variantsGpuData.resize(def.mMeshesModelData.size() * def.mVariants.size());
+    variantsGpuData.resize(def.mSubmeshData.size() * def.mVariants.size());
     VariantIndexData indexData = mVariantArrayIndexData[id];
-    assert(def.mMeshesModelData.size() == indexData.stride / MATERIAL_SLOT_COUNT);
+    assert(def.mSubmeshData.size() == indexData.stride / MATERIAL_SLOT_COUNT);
 
     for (size_t variantIndex = 0; variantIndex < def.mVariants.size(); ++variantIndex) {
         ModelVariantData& variantData = def.mVariants[variantIndex];
@@ -779,7 +787,7 @@ void ModelRepository::updateModelVariantData(AssetID id) {
         for (size_t submeshIndex = 0; submeshIndex < def.mVariantsGpuData.size(); ++submeshIndex) {
             auto& mats = variantData.submeshMaterials[submeshIndex];
             for (size_t j = 0; j < mats.size(); ++j) {
-                variantsGpuData[variantIndex * def.mMeshesModelData.size() + submeshIndex].materials[j] = mats[j].getAssetID();
+                variantsGpuData[variantIndex * def.mSubmeshData.size() + submeshIndex].materials[j] = mats[j].getAssetID();
             }
         }
     }

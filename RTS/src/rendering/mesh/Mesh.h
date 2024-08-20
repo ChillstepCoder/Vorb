@@ -99,9 +99,7 @@ public:
     const ModelSubmeshData* getSubmeshData() const { return mSubmeshData; }
     void setSubmeshData(const ModelSubmeshData* data) { mSubmeshData = data; }
     void bindStaticModelAttribs() const;
-    void bindDynamicModelAttribs() const;
     void unbindStaticModelAttribs() const;
-    void unbindDynamicModelAttribs() const;
     void bindSkeletalModelAttribs() const;
     void unbindSkeletalModelAttribs() const;
     void unbindCurrentAttribs() const;

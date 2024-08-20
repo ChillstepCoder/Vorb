@@ -27,10 +27,8 @@ public:
 private:
 
     const MaterialShaderDef* mStandardShader = nullptr;
-    const MaterialShaderDef* mStandardShaderNew = nullptr;
     const MaterialShaderDef* mShadowMapperShader = nullptr;
     const MaterialShaderDef* mSmudgeShader = nullptr;
-    const MaterialShaderDef* mSmudgeShaderNew = nullptr;
     const MaterialShaderDef* mWaterShader = nullptr;
     AssetHandleBundle mShaderAssets;
     WeatherManager* mWeatherManager = nullptr;

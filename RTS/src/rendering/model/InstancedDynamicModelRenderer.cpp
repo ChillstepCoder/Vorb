@@ -199,18 +199,19 @@ void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType rende
 
     for (auto& drawCommandPair : mDrawCommandsThisFrame[e_cast(renderPass)]) {
         GLDrawCommandBuffer* drawCommands = drawCommandPair.first;
-        const Mesh& mesh = *drawCommandPair.second;
-        mesh.bindDynamicModelAttribs();
+      /*  const Mesh& mesh = *drawCommandPair.second;
+        mesh.bindDynamicModelAttribs();*/
 
         // Variant data
-        assert(mesh.mVariantDataUbo);
-        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+        
+        //glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
 
         // TODO: I think this might be cheaper as an SSBO so we aren't binding to every mesh
-        mTransformsBuffer->bindAsVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, 0, sizeof(f32m4));
-        mVariantsBuffer->bindAsVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_VARIANT_INDICES_BINDING_POINT, 0, sizeof(ui8));
+        //mTransformsBuffer->bindAsVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, 0, sizeof(f32m4));
+        //GL.glVertexArrayVertexBuffer(vao, MODEL_INSTANCE_DATA_BINDING_POINT, modelManager.mInstanceDataVbo, 0, sizeof(InstancedStaticModelManager::InstanceGpuData));
+        //static_assert(sizeof(InstancedStaticModelManager::InstanceGpuData) == sizeof(ui32v3));
 
-        MeshDrawer::drawIndirect(mesh.mGpuData, drawCommands);
+        //MeshDrawer::drawIndirect(mesh.mGpuData, drawCommands);
     }
 
     checkGlError("InstancedDynamicModelRenderer::renderModelPass");

@@ -104,8 +104,14 @@ private:
     };
 
     std::vector<f32m4> mInstanceTransforms;
-    std::vector<InstanceVariantIndexType> mInstanceVariantIndices;
-    std::vector<ui32> mInstanceDamageModelIndices;
+
+    struct InstanceGpuData {
+        ui32 submeshDataIndex;
+        ui32 variantIndex;
+        ui32 damageModelIndex;
+    };
+
+    std::vector<InstanceGpuData> mInstanceGpuData;
     std::vector<ModelInstanceOwnerVariant> mInstanceSources;
     std::vector<InstanceDrawData> mInstanceDrawData;
     std::vector<ModelDamageZoneGpuData> mModelDamageZonesGpuData; // 0 index is default no damage
@@ -116,9 +122,8 @@ private:
     ui32 mDrawCommandsShadowsCount[e_count(MaterialRenderPassType)] = {};
 
     VGBuffer mTransformsVbo = 0;
-    VGBuffer mVariantsVbo = 0;
-    VGBuffer mDamageModelIndexVbo = 0;
-    VGBuffer mDamageZonesSSBO = 0; // TODO: Not every model needs one of these!
+    VGBuffer mInstanceDataVbo = 0;
+    VGBuffer mDamageZonesSSBO = 0;
     ui32 mTransformsVboSizeBytes = 0;
     ui32 mFirstDirtyInstance = UINT32_MAX;
 

@@ -16,9 +16,7 @@ public:
     VORB_NON_COPYABLE(ModelBatch);
 
     void bindStaticModelAttribs() const;
-    void bindDynamicModelAttribs() const;
     void unbindStaticModelAttribs() const;
-    void unbindDynamicModelAttribs() const;
     void bindSkeletalModelAttribs() const;
     void unbindSkeletalModelAttribs() const;
     void unbindCurrentAttribs() const;
@@ -45,7 +43,6 @@ struct ModelBatchSubmeshDrawData {
     MaterialRenderPassType renderPass;
     ModelBatchID batchID;
     bool castsShadow; // TODO: Bitflags?
-    MeshWindType windType;
     ui32 baseVertex;
     MeshLODDrawInfo lodDrawInfo[e_count(MeshLODLevel)];
 };

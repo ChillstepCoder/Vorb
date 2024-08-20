@@ -80,8 +80,7 @@ InstancedStaticModelManager::InstancedStaticModelManager() :
 
     constexpr size_t RESERVE_COUNT = 1024;
     mInstanceTransforms.reserve(RESERVE_COUNT);
-    mInstanceVariantIndices.reserve(RESERVE_COUNT);
-    mInstanceDamageModelIndices.reserve(RESERVE_COUNT);
+    mInstanceGpuData.reserve(RESERVE_COUNT);
     mInstanceSources.reserve(RESERVE_COUNT);
     mInstanceDrawData.reserve(RESERVE_COUNT);
     mModelDamageZonesGpuData.emplace_back();
@@ -91,8 +90,7 @@ InstancedStaticModelManager::InstancedStaticModelManager() :
 InstancedStaticModelManager::~InstancedStaticModelManager() {
 
     GL.glDeleteBuffers(1, &mTransformsVbo);
-    GL.glDeleteBuffers(1, &mVariantsVbo);
-    GL.glDeleteBuffers(1, &mDamageModelIndexVbo);
+    GL.glDeleteBuffers(1, &mInstanceDataVbo);
     GL.glDeleteBuffers(1, &mDamageZonesSSBO);
 
 }
@@ -118,12 +116,10 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
         }
         if (mTransformsVbo) {
             GL.glDeleteBuffers(1, &mTransformsVbo);
-            GL.glDeleteBuffers(1, &mVariantsVbo);
-            GL.glDeleteBuffers(1, &mDamageModelIndexVbo);
+            GL.glDeleteBuffers(1, &mInstanceDataVbo);
             GL.glDeleteBuffers(1, &mDamageZonesSSBO);
             mTransformsVbo = 0;
-            mVariantsVbo = 0;
-            mDamageModelIndexVbo = 0;
+            mInstanceDataVbo = 0;
             mDamageZonesSSBO = 0;
         }
         return;
@@ -166,51 +162,36 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
         }
 
         // TODO: Is this needed? Research
-        const size_t workGroupRoundedSize = roundToWorkGroupSize(mInstanceTransforms.size());
+        //const size_t workGroupRoundedSize = roundToWorkGroupSize(mInstanceTransforms.size());
+        const size_t numInstances = mInstanceTransforms.size();
         // Allocate VBO
         {
             PROFILE_SCOPE("VBO");
             // GPU buffer is larger to accommodate the work group size, or we get corruption
-            const GLsizei gpuBufferSizeBytes = sizeof(f32m4) * workGroupRoundedSize;
-            const GLsizei cpuBufferSizeBytes = sizeof(f32m4) * mInstanceTransforms.size();
-            assert(mInstanceVariantIndices.size() == mInstanceTransforms.size());
+            const GLsizei transformsBufferSizeBytes = sizeof(f32m4) * numInstances;
+            assert(mInstanceGpuData.size() == mInstanceTransforms.size());
             if (mTransformsVbo == 0) {
                 GL.glCreateBuffers(1, &mTransformsVbo);
-                GL.glCreateBuffers(1, &mVariantsVbo);
-                GL.glCreateBuffers(1, &mDamageModelIndexVbo);
+                GL.glCreateBuffers(1, &mInstanceDataVbo);
                 GL.glCreateBuffers(1, &mDamageZonesSSBO);
-                GL.glNamedBufferStorage(mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                GL.glNamedBufferSubData(mTransformsVbo, 0, cpuBufferSizeBytes, mInstanceTransforms.data());
-                GL.glNamedBufferStorage(mVariantsVbo, sizeof(InstanceVariantIndexType) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                GL.glNamedBufferSubData(mVariantsVbo, 0, sizeof(InstanceVariantIndexType) * mInstanceVariantIndices.size(), mInstanceVariantIndices.data());
-                GL.glNamedBufferStorage(mDamageModelIndexVbo, sizeof(ui32) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                GL.glNamedBufferSubData(mDamageModelIndexVbo, 0, sizeof(ui32) * mInstanceDamageModelIndices.size(),
-                    mInstanceDamageModelIndices.data());
-                // TODO: Only create this if mModelDamageZonesGpuData.size() > 0, otherwise use a global one
-                GL.glNamedBufferStorage(mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
-                GL.glNamedBufferSubData(mDamageZonesSSBO, 0, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), mModelDamageZonesGpuData.data());
-                mTransformsVboSizeBytes = gpuBufferSizeBytes;
+                GL.glNamedBufferStorage(mTransformsVbo, transformsBufferSizeBytes, mInstanceTransforms.data(), GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferStorage(mInstanceDataVbo, sizeof(InstanceGpuData) * numInstances, mInstanceGpuData.data(), GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferStorage(mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), mModelDamageZonesGpuData.data(), GL_DYNAMIC_STORAGE_BIT);
+                mTransformsVboSizeBytes = transformsBufferSizeBytes;
             }
-            else if (gpuBufferSizeBytes > mTransformsVboSizeBytes) {
+            else if (transformsBufferSizeBytes > mTransformsVboSizeBytes) {
                 //LOG_INFO("GROW {} {}", cpuBufferSizeBytes, gpuBufferSizeBytes);
                 // Grow to new size
                 GL.glDeleteBuffers(1, &mTransformsVbo);
-                GL.glDeleteBuffers(1, &mVariantsVbo);
-                GL.glDeleteBuffers(1, &mDamageModelIndexVbo);
+                GL.glDeleteBuffers(1, &mInstanceDataVbo);
                 GL.glDeleteBuffers(1, &mDamageZonesSSBO);
                 GL.glCreateBuffers(1, &mTransformsVbo);
-                GL.glCreateBuffers(1, &mVariantsVbo);
-                GL.glCreateBuffers(1, &mDamageModelIndexVbo);
+                GL.glCreateBuffers(1, &mInstanceDataVbo);
                 GL.glCreateBuffers(1, &mDamageZonesSSBO);
-                GL.glNamedBufferStorage(mTransformsVbo, gpuBufferSizeBytes, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                GL.glNamedBufferSubData(mTransformsVbo, 0, cpuBufferSizeBytes, mInstanceTransforms.data());
-                GL.glNamedBufferStorage(mVariantsVbo, sizeof(InstanceVariantIndexType) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                GL.glNamedBufferSubData(mVariantsVbo, 0, sizeof(InstanceVariantIndexType) * mInstanceVariantIndices.size(), mInstanceVariantIndices.data());
-                GL.glNamedBufferStorage(mDamageModelIndexVbo, sizeof(ui32) * workGroupRoundedSize, nullptr, GL_DYNAMIC_STORAGE_BIT);
-                GL.glNamedBufferSubData(mDamageModelIndexVbo, 0, sizeof(ui32) * mInstanceDamageModelIndices.size(), mInstanceDamageModelIndices.data());
-                GL.glNamedBufferStorage(mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), nullptr, GL_DYNAMIC_STORAGE_BIT);
-                GL.glNamedBufferSubData(mDamageZonesSSBO, 0, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), mModelDamageZonesGpuData.data());
-                mTransformsVboSizeBytes = gpuBufferSizeBytes;
+                GL.glNamedBufferStorage(mTransformsVbo, transformsBufferSizeBytes, mInstanceTransforms.data(), GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferStorage(mInstanceDataVbo, sizeof(InstanceGpuData) * numInstances, mInstanceGpuData.data(), GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferStorage(mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), mModelDamageZonesGpuData.data(), GL_DYNAMIC_STORAGE_BIT);
+                mTransformsVboSizeBytes = transformsBufferSizeBytes;
             }
             else {
                 //LOG_INFO("SHRINK {} {}  {} {}", instanceData.mFirstDirtyInstance, instanceData.mInstanceTransforms.size(), cpuBufferSizeBytes, gpuBufferSizeBytes);
@@ -218,22 +199,16 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                 glNamedBufferSubData(
                     mTransformsVbo,
                     mFirstDirtyInstance * sizeof(f32m4),
-                    cpuBufferSizeBytes - mFirstDirtyInstance * sizeof(f32m4),
+                    transformsBufferSizeBytes - mFirstDirtyInstance * sizeof(f32m4),
                     mInstanceTransforms.data() + mFirstDirtyInstance
                 );
                 glNamedBufferSubData(
-                    mVariantsVbo,
-                    mFirstDirtyInstance * sizeof(InstanceVariantIndexType),
-                    (sizeof(InstanceVariantIndexType) * mInstanceVariantIndices.size()) - mFirstDirtyInstance * sizeof(InstanceVariantIndexType),
-                    mInstanceVariantIndices.data() + mFirstDirtyInstance
+                    mInstanceDataVbo,
+                    mFirstDirtyInstance * sizeof(InstanceGpuData),
+                    (sizeof(InstanceGpuData) * mInstanceGpuData.size()) - mFirstDirtyInstance * sizeof(InstanceGpuData),
+                    mInstanceGpuData.data() + mFirstDirtyInstance
                 );
 
-                glNamedBufferSubData(
-                    mDamageModelIndexVbo,
-                    mFirstDirtyInstance * sizeof(ui32),
-                    (sizeof(ui32) * mInstanceDamageModelIndices.size()) - mFirstDirtyInstance * sizeof(ui32),
-                    mInstanceDamageModelIndices.data() + mFirstDirtyInstance
-                );
 
                 // Refresh all damage zones except the first one every time
                 // TODO: We likely only need to do this if a damage zone was added or removed
@@ -292,7 +267,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             // TODO: Real bounding sphere
             if (camera.sphereIsVisible(pos, lodParams.boundingSphereRadius)) {
                 const f32 distance2 = glm::length2(pos - camera.getPosition());
-                const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataStart(instanceDrawData.key.index);
+                const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataArray(instanceDrawData.key);
 
                 // TODO: Remove
                 if (sDebugOptions.mDisableLOD) [[unlikely]] {
@@ -493,8 +468,7 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
             mFirstDirtyInstance = startIndex;
         }
         mInstanceTransforms.resize(startIndex + sourceInstances.size());
-        mInstanceVariantIndices.resize(mInstanceTransforms.size());
-        mInstanceDamageModelIndices.resize(mInstanceTransforms.size());
+        mInstanceGpuData.resize(mInstanceTransforms.size());
         mInstanceSources.resize(mInstanceTransforms.size());
         mInstanceDrawData.resize(mInstanceTransforms.size());
         // Store per tile references
@@ -502,15 +476,16 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
             const size_t instanceIndex = startIndex + i;
             const StaticModelInstance& modelInstance = sourceInstances[i];
             mInstanceTransforms[instanceIndex] = modelInstance.matrix;
-            mInstanceVariantIndices[instanceIndex] = variantData.offset + (InstanceVariantIndexType)modelInstance.variantIndex * variantData.stride;
+            mInstanceGpuData[instanceIndex].submeshDataIndex = drawDataKey.index;
+            mInstanceGpuData[instanceIndex].variantIndex = variantData.offset + (InstanceVariantIndexType)modelInstance.variantIndex * variantData.stride;
             mInstanceSources[instanceIndex] = ModelInstanceContainerOwner{ gatherer.mContainerID, modelInstance.tileIndex };
             if (modelInstance.damageData) {
-                mInstanceDamageModelIndices[instanceIndex] = mModelDamageZonesGpuData.size();
+                mInstanceGpuData[instanceIndex].damageModelIndex = mModelDamageZonesGpuData.size();
                 ModelDamageZoneGpuData& gpuDamageData = mModelDamageZonesGpuData.emplace_back();
                 gpuDamageData.damageZones = modelInstance.damageData->getShellDamageZones();
             }
             else {
-                mInstanceDamageModelIndices[instanceIndex] = 0;
+                mInstanceGpuData[instanceIndex].damageModelIndex = 0;
             }
             mInstanceDrawData[instanceIndex] = InstanceDrawData(drawDataKey, modelId);
             incrementDrawCommandsCount(drawDataKey);
@@ -788,15 +763,13 @@ void InstancedStaticModelManager::removeModelInstanceInternal(ui32 instanceIndex
     // Replace this instance with back instance
     mInstanceTransforms[instanceIndex] = std::move(mInstanceTransforms.back());
     mInstanceTransforms.pop_back();
-    mInstanceVariantIndices[instanceIndex] = std::move(mInstanceVariantIndices.back());
-    mInstanceVariantIndices.pop_back();
-    const ui32 damageModelIndex = mInstanceDamageModelIndices[instanceIndex];
+    const ui32 damageModelIndex = mInstanceGpuData.back().damageModelIndex;
     // If we had a damage model, need to remove it and fixup ref
     if (damageModelIndex != 0) {
         removeDamageModelInternal(damageModelIndex);
     }
-    mInstanceDamageModelIndices[instanceIndex] = mInstanceDamageModelIndices.back();
-    mInstanceDamageModelIndices.pop_back();
+    mInstanceGpuData[instanceIndex] = std::move(mInstanceGpuData.back());
+    mInstanceGpuData.pop_back();
 
     decrementDrawCommandsCount(mInstanceDrawData[instanceIndex].key);
     mInstanceDrawData[instanceIndex] = mInstanceDrawData.back();
@@ -811,14 +784,16 @@ void InstancedStaticModelManager::addTileInstanceInternal(const ModelDef& modelD
     }
     // Store per tile references
     mInstanceTransforms.emplace_back(transform);
-    mInstanceVariantIndices.emplace_back(variantIndex);
+    InstanceGpuData& newGpuData = mInstanceGpuData.emplace_back();
+
+    newGpuData.variantIndex = variantIndex;
     if (damageData) {
-        mInstanceDamageModelIndices.emplace_back(mModelDamageZonesGpuData.size());
+        newGpuData.damageModelIndex = mModelDamageZonesGpuData.size();
         ModelDamageZoneGpuData& gpuDamageData = mModelDamageZonesGpuData.emplace_back();
         gpuDamageData.damageZones = damageData->getShellDamageZones();
     }
     else {
-        mInstanceDamageModelIndices.emplace_back(0);
+        newGpuData.damageModelIndex = 0;
     }
     mInstanceSources.emplace_back(ModelInstanceContainerOwner{ containerId, tileIndex });
     SpatialInstanceDataMap& tileContainerModels = mTileContainerTrackedModels[containerId];
@@ -827,6 +802,7 @@ void InstancedStaticModelManager::addTileInstanceInternal(const ModelDef& modelD
     tileContainerModels[tileIndex] = { modelDef.getID(), (ui32)instanceIndex };
 
     mInstanceDrawData.emplace_back(ModelRepository::get().getDrawDataSpanKeyForModel(modelDef.getID()), modelDef.getID());
+    newGpuData.submeshDataIndex = mInstanceDrawData.back().key.index;
     incrementDrawCommandsCount(mInstanceDrawData.back().key);
 
 }
@@ -842,12 +818,11 @@ void InstancedStaticModelManager::onTileInstanceDamageChanged(TileContainerID co
 
     const bool isUndamaged = damageData.getShellDamageZones() == TileDamageData().getShellDamageZones();
 
-    ui32& damageModelIndex = mInstanceDamageModelIndices[instance->mInstanceIndex];
+    ui32& damageModelIndex = mInstanceGpuData[instance->mInstanceIndex].damageModelIndex;
     if (damageModelIndex != 0) {
         if (isUndamaged) {
-
-            mInstanceDamageModelIndices[instance->mInstanceIndex] = 0;
             removeDamageModelInternal(damageModelIndex);
+            damageModelIndex = 0;
         }
         else {
             ModelDamageZoneGpuData& gpuDamageData = mModelDamageZonesGpuData[damageModelIndex];
@@ -877,8 +852,8 @@ void InstancedStaticModelManager::onTileInstanceDamageChanged(TileContainerID co
     }
     // Update damage index buffer
     glNamedBufferSubData(
-        mDamageModelIndexVbo,
-        instance->mInstanceIndex * sizeof(ui32),
+        mInstanceDataVbo,
+        instance->mInstanceIndex * sizeof(InstanceGpuData) + offsetof(InstanceGpuData, damageModelIndex),
         sizeof(ui32),
         &damageModelIndex
     );
@@ -889,14 +864,15 @@ void InstancedStaticModelManager::removeDamageModelInternal(ui32 damageModelInde
     mModelDamageZonesGpuData.pop_back();
     // Fixup relocated
     // TODO: This is inefficient
-    for (ui32& index : mInstanceDamageModelIndices) {
-        if (index > damageModelIndex) {
-            --index;
+    for (size_t i = 0; i < mInstanceGpuData.size(); ++i) {
+        InstanceGpuData& data  = mInstanceGpuData[i];
+        if (data.damageModelIndex > damageModelIndex) {
+            --data.damageModelIndex;
             glNamedBufferSubData(
-                mDamageModelIndexVbo,
-                index * sizeof(ui32),
+                mInstanceDataVbo,
+                i * sizeof(InstanceGpuData) + offsetof(InstanceGpuData, damageModelIndex),
                 sizeof(ui32),
-                &index
+                &data.damageModelIndex
             );
         }
     }
@@ -911,17 +887,17 @@ void InstancedStaticModelManager::addLooseInstanceInternal(ModelID modelId, Stat
         mFirstDirtyInstance = instanceIndex;
     }
     mInstanceTransforms.emplace_back(transform);
-    mInstanceVariantIndices.emplace_back(variantIndex);
+    InstanceGpuData& newGpuData = mInstanceGpuData.emplace_back();
+    newGpuData.variantIndex = variantIndex;
+    newGpuData.damageModelIndex = 0; // Currently loose models do not support damage
     mInstanceSources.emplace_back(instanceId);
-    // Currently loose models do not support damage
-    mInstanceDamageModelIndices.emplace_back(0);
 
     // Store instance lookup
     mLooseStaticModelInstances.emplace(std::make_pair(instanceId, (ui32)instanceIndex));
 
     mInstanceDrawData.emplace_back(ModelRepository::get().getDrawDataSpanKeyForModel(modelId), modelId);
+    newGpuData.submeshDataIndex = mInstanceDrawData.back().key.index;
     incrementDrawCommandsCount(mInstanceDrawData.back().key);
-
 }
 
 void InstancedStaticModelManager::removeLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId) {
@@ -1034,7 +1010,7 @@ void InstancedStaticModelManager::decrefModelDef(ModelID modelId, int decCount) 
 }
 
 void InstancedStaticModelManager::incrementDrawCommandsCount(ModelBatchSubmeshDrawDataSpanKey drawDataKey) {
-    const ModelBatchSubmeshDrawData* drawData = ModelRepository::get().getSubmeshDrawDataStart(drawDataKey.index);
+    const ModelBatchSubmeshDrawData* drawData = ModelRepository::get().getSubmeshDrawDataArray(drawDataKey);
     for (ui32 i = 0; i < drawDataKey.count; ++i) {
         const ModelBatchSubmeshDrawData& submeshDrawData = drawData[i];
         ++mDrawCommandsCount[e_cast(submeshDrawData.renderPass)];
@@ -1045,7 +1021,7 @@ void InstancedStaticModelManager::incrementDrawCommandsCount(ModelBatchSubmeshDr
 }
 
 void InstancedStaticModelManager::decrementDrawCommandsCount(ModelBatchSubmeshDrawDataSpanKey drawDataKey) {
-    const ModelBatchSubmeshDrawData* drawData = ModelRepository::get().getSubmeshDrawDataStart(drawDataKey.index);
+    const ModelBatchSubmeshDrawData* drawData = ModelRepository::get().getSubmeshDrawDataArray(drawDataKey);
     for (ui32 i = 0; i < drawDataKey.count; ++i) {
         const ModelBatchSubmeshDrawData& submeshDrawData = drawData[i];
         assert(mDrawCommandsCount[e_cast(submeshDrawData.renderPass)]);

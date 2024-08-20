@@ -49,17 +49,11 @@ void ItemEditorViewportPanel::renderMesh() {
             if (mPreviewItemModel >= mAssetData->mModelRefs.size()) {
                 mPreviewItemModel = 0;
             }
-            // TODO: Handle variants
+
             AssetHandlePtr<ModelDef> modelHandle = static_unique_pointer_cast<AssetHandle<ModelDef>>(mAssetData->mModelRefs[mPreviewItemModel].getAssetHandleBase());
-            const MaterialShaderDef* shader = getShader();
-            glUniform1i(shader->getUniform("unVariantIndex"), 0);
-            glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
-            if (const ModelDef* modelDef = modelHandle->tryGetLoadedAsset()) {
-                for (int i = 0; i < modelDef->getNumMeshes(); ++i) {
-                    modelDef->getMesh(i).unbindCurrentAttribs(); // Editor doesnt use these
-                    glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, modelDef->getMesh(i).mVariantDataUbo);
-                    MeshDrawer::draw(modelDef->getMesh(i).mGpuData, MeshLODLevel(0));
-                }
+            if (const ModelDef* def = modelHandle->tryGetLoadedAsset()) {
+                // TODO: Variants?
+                renderMeshStatic(def, 0, 0, false, 0);
             }
         }
     }

@@ -39,46 +39,11 @@ void Mesh::bindStaticModelAttribs() const {
         glVertexArrayAttribBinding(mGpuData.mVao, 10, MODEL_TRANSFORMS_BINDING_POINT);
         glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, 1);
 
-        // Variants
+        // InstanceData
         glEnableVertexArrayAttrib(mGpuData.mVao, 11);
-        glVertexArrayAttribIFormat(mGpuData.mVao, 11, 1, GL_UNSIGNED_BYTE, 0);
-        glVertexArrayAttribBinding(mGpuData.mVao, 11, MODEL_VARIANT_INDICES_BINDING_POINT);
-        glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_VARIANT_INDICES_BINDING_POINT, 1);
-
-        // Damage Model
-        glEnableVertexArrayAttrib(mGpuData.mVao, 13);
-        glVertexArrayAttribIFormat(mGpuData.mVao, 13, 1, GL_UNSIGNED_INT, 0);
-        glVertexArrayAttribBinding(mGpuData.mVao, 13, MODEL_DAMAGE_INDICES_BINDING_POINT);
-        glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_DAMAGE_INDICES_BINDING_POINT, 1);
-    }
-}
-
-void Mesh::bindDynamicModelAttribs() const {
-    assert(mGpuData.mVao);
-    if (mCurrentAttribBinding != AttribBinding::Dynamic) [[unlikely]] {
-        // TODO: This can result in unbinding and rebinding shared static attribs
-        unbindCurrentAttribs();
-        mCurrentAttribBinding = AttribBinding::Dynamic;
-        // Transforms
-        glEnableVertexArrayAttrib(mGpuData.mVao, 7);
-        glEnableVertexArrayAttrib(mGpuData.mVao, 8);
-        glEnableVertexArrayAttrib(mGpuData.mVao, 9);
-        glEnableVertexArrayAttrib(mGpuData.mVao, 10);
-        glVertexArrayAttribFormat(mGpuData.mVao, 7, 4, GL_FLOAT, GL_FALSE, 0);
-        glVertexArrayAttribFormat(mGpuData.mVao, 8, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4));
-        glVertexArrayAttribFormat(mGpuData.mVao, 9, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 2.0f);
-        glVertexArrayAttribFormat(mGpuData.mVao, 10, 4, GL_FLOAT, GL_FALSE, sizeof(f32v4) * 3.0f);
-        glVertexArrayAttribBinding(mGpuData.mVao, 7, MODEL_TRANSFORMS_BINDING_POINT);
-        glVertexArrayAttribBinding(mGpuData.mVao, 8, MODEL_TRANSFORMS_BINDING_POINT);
-        glVertexArrayAttribBinding(mGpuData.mVao, 9, MODEL_TRANSFORMS_BINDING_POINT);
-        glVertexArrayAttribBinding(mGpuData.mVao, 10, MODEL_TRANSFORMS_BINDING_POINT);
-        glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, 1);
-
-        // Variants
-        glEnableVertexArrayAttrib(mGpuData.mVao, 11);
-        glVertexArrayAttribIFormat(mGpuData.mVao, 11, 1, GL_UNSIGNED_BYTE, 0);
-        glVertexArrayAttribBinding(mGpuData.mVao, 11, MODEL_VARIANT_INDICES_BINDING_POINT);
-        glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_VARIANT_INDICES_BINDING_POINT, 1);
+        glVertexArrayAttribIFormat(mGpuData.mVao, 11, 3, GL_UNSIGNED_INT, 0);
+        glVertexArrayAttribBinding(mGpuData.mVao, 11, MODEL_INSTANCE_DATA_BINDING_POINT);
+        glVertexArrayBindingDivisor(mGpuData.mVao, MODEL_INSTANCE_DATA_BINDING_POINT, 1);
     }
 }
 
@@ -92,17 +57,6 @@ void Mesh::unbindStaticModelAttribs() const {
     glDisableVertexArrayAttrib(mGpuData.mVao, 11);
     glDisableVertexArrayAttrib(mGpuData.mVao, 12);
     glDisableVertexArrayAttrib(mGpuData.mVao, 13);
-}
-
-void Mesh::unbindDynamicModelAttribs() const {
-    assert(mCurrentAttribBinding == AttribBinding::Dynamic);
-    mCurrentAttribBinding = AttribBinding::None;
-    glDisableVertexArrayAttrib(mGpuData.mVao, 7);
-    glDisableVertexArrayAttrib(mGpuData.mVao, 8);
-    glDisableVertexArrayAttrib(mGpuData.mVao, 9);
-    glDisableVertexArrayAttrib(mGpuData.mVao, 10);
-    glDisableVertexArrayAttrib(mGpuData.mVao, 11);
-    glDisableVertexArrayAttrib(mGpuData.mVao, 12);
 }
 
 void Mesh::bindSkeletalModelAttribs() const {
@@ -127,16 +81,13 @@ void Mesh::unbindCurrentAttribs() const {
         case AttribBinding::Static:
             unbindStaticModelAttribs();
             break;
-        case AttribBinding::Dynamic:
-            unbindDynamicModelAttribs();
-            break;
         case AttribBinding::Skeletal:
             unbindSkeletalModelAttribs();
             break;
         default:
             break;
     }
-    static_assert(e_count(AttribBinding) == 4, "Update unbindCurrentAttribs");
+    static_assert(e_count(AttribBinding) == 3, "Update unbindCurrentAttribs");
 }
 
 void MeshGpuData::destroy() {

@@ -1,8 +1,8 @@
-// Note that std140 pads this to a vec4
-struct VariantData {
-    uvec4 materials;
+
+layout (std430, binding = 4) restrict readonly buffer ModelVariantData {
+	uint inVariantMaterials[];
 };
-// Match MAX_MODEL_VARIANTS in C++ (16)
-layout (std140, binding = 4) uniform ModelVariantData {
-	VariantData inVariantData[16];
+
+layout (std430, binding = 5) restrict readonly buffer SubmeshWindData {
+	int inSubmeshWindData[];
 };

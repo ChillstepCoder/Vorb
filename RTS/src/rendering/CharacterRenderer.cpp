@@ -52,6 +52,7 @@ struct CharacterRendererCharacterState {
 
 CharacterRenderer::CharacterRenderer() :
     mShaderHandle(MaterialShaderRepository::get().getAssetHandle(CStrToken("character"))) {
+
 }
 
 CharacterRenderer::~CharacterRenderer() {
@@ -81,6 +82,10 @@ void CharacterRenderer::onWorldBegin(World& world) {
 
 void CharacterRenderer::frameBegin() {
     ASSERT_RENDER_THREAD();
+    // TODO: REMOVE
+    if (!mVariantIndexVbo) {
+        glCreateBuffers(1, &mVariantIndexVbo);
+    }
 
     constexpr ui32 BULK_DEQUEUE_SIZE = 16;
     CharacterModelUpdateData modelsToUpdate[BULK_DEQUEUE_SIZE];
@@ -146,6 +151,9 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
     UNUSED(frameAlpha);
     PROFILE_FUNCTION();
 
+    ModelRepository& modelRepo = ModelRepository::get();
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_SSBO, modelRepo.getModelVariantDataSSBO());
+
     const MaterialShaderDef* shaderDef = mShaderHandle->tryGetLoadedAsset();
     if (!shaderDef) return;
 
@@ -197,6 +205,10 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
         const ModelDef& modelDef = renderData.handle->getLoadedAsset();
         const ModelLodParams& lodParams = ModelRepository::get().getLodParams(modelID);
         const RigDef& rig = *modelDef.mRig;
+
+
+        ModelBatchSubmeshDrawDataSpanKey submeshSpanKey = modelRepo.getDrawDataSpanKeyForModel(modelID);
+        VariantIndexData variantIndexData = modelRepo.getVariantArrayIndexDataForModel(modelID);
 
         const i32 numEntities = (i32)renderData.entityCharacterModels.size();
         const i32 transformsNeeded = modelDef.mTotalSubmeshJointTransformsNeeded;
@@ -290,13 +302,23 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
                     }
 
                     // TODO: We shouldn't do this for each submesh
-                    glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, skeletalMesh.mVariantDataUbo);
                     glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)skinningBuffer);
 
-                    skeletalMesh.bindSkeletalModelAttribs();
-
-                    // TODO: Indirect?
-                    MeshDrawer::draw(skeletalMesh.mGpuData, lod);
+                    const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawDataArray(submeshSpanKey)[i];
+                    const ModelBatch& modelBatch = modelRepo.getModelBatch(drawData.batchID);
+                    modelBatch.bindSkeletalModelAttribs(); // Editor doesn't use these
+                    glBindVertexArray(modelBatch.getVao());
+                    //glVertexArrayVertexBuffer(modelBatch.getVao(), MODEL_INSTANCE_DATA_BINDING_POINT, mVariantIndexVbo, 0, sizeof(ui32));
+                    //const MeshLODDrawInfo& drawInfo = drawData.lodDrawInfo[e_cast(lod)];
+                    //// TODO: Indirect?
+                    //glDrawElementsBaseVertex(
+                    //    GL_TRIANGLES,
+                    //    drawInfo.indexCount,
+                    //    e_cast(modelBatch.getIndexType()),
+                    //    (const GLvoid*)(drawInfo.startIndex * (modelBatch.getIndexType() == MeshIndexType::UINT ?
+                    //        sizeof(ui32) : sizeof(ui16))) /* offset */,
+                    //    drawData.baseVertex
+                    //);
                 }
 
 

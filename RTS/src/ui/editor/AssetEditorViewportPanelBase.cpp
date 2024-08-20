@@ -47,37 +47,51 @@ const MaterialShaderDef* AssetEditorViewportPanelBase::getModelRenderShader() co
 
 void AssetEditorViewportPanelBase::renderMeshStatic(const ModelDef* modelAsset, int variantIndex, int lod, bool showSingleSubmesh, int singleSubmeshIndex) {
     if (!modelAsset) return;
+
+    ModelRepository& modelRepo = ModelRepository::get();
+    ModelBatchSubmeshDrawDataSpanKey submeshSpanKey = modelRepo.getDrawDataSpanKeyForModel(modelAsset->getID());
+    VariantIndexData variantIndexData = modelRepo.getVariantArrayIndexDataForModel(modelAsset->getID());
     const MaterialShaderDef* shader = getShader();
-    if (const VGUniform* varUniform = shader->tryGetUniform("unVariantIndex")) {
-        glUniform1i(*varUniform, variantIndex);
-    }
+
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_SSBO, modelRepo.getModelVariantDataSSBO());
+
+    auto renderSubmesh = [&modelRepo, variantIndexData, &shader, variantIndex, submeshSpanKey](int submeshIndex, int inLod) {
+        assert(submeshIndex < variantIndexData.stride);
+        const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawDataArray(submeshSpanKey)[submeshIndex];
+        const ModelBatch& modelBatch = modelRepo.getModelBatch(drawData.batchID);
+        modelBatch.unbindCurrentAttribs(); // Editor doesn't use these
+        glBindVertexArray(modelBatch.getVao());
+
+        if (const VGUniform* varUniform = shader->tryGetUniform("unVariantIndex")) {
+            glUniform1i(*varUniform, variantIndexData.offset + variantIndex * variantIndexData.stride);
+        }
+
+        const MeshLODDrawInfo& drawInfo = drawData.lodDrawInfo[inLod];
+        glDrawElementsBaseVertex(
+            GL_TRIANGLES,
+            drawInfo.indexCount,
+            e_cast(modelBatch.getIndexType()),
+            (const GLvoid*)(drawInfo.startIndex * (modelBatch.getIndexType() == MeshIndexType::UINT ? 
+                sizeof(ui32) : sizeof(ui16))) /* offset */,
+            drawData.baseVertex
+        );
+    };
+
     glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
     if (showSingleSubmesh) {
         singleSubmeshIndex = glm::min((int)modelAsset->getNumMeshes() - 1, singleSubmeshIndex);
-        const Mesh& mesh = modelAsset->getMesh(singleSubmeshIndex);
-        mesh.unbindCurrentAttribs(); // Editor doesnt use these
-        assert(mesh.mVariantDataUbo);
-        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
-        MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(lod));
+        renderSubmesh(singleSubmeshIndex, lod);
     }
     else {
         for (int i = 0; i < modelAsset->getNumMeshes(); ++i) {
-            const Mesh& mesh = modelAsset->getMesh(i);
-            mesh.unbindCurrentAttribs(); // Editor doesnt use these
-            assert(mesh.mVariantDataUbo);
-            glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
-            MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(lod));
+            renderSubmesh(i, lod);
         }
         int x = 1;
         const ModelLodParams& params = ModelRepository::get().getLodParams(modelAsset->getID());
         for (int l = e_cast(MeshLODLevel::Highest) + 1; l < e_count(MeshLODLevel); ++l) {
             glUniform4f(shader->getUniform("unPosOffset"), x * 5, sqrt(params.lodDistancesSQ[l - 1]), 0.0f, 0.0f);
             for (int i = 0; i < modelAsset->getNumMeshes(); ++i) {
-                const Mesh& mesh = modelAsset->getMesh(i);
-                mesh.unbindCurrentAttribs(); // Editor doesnt use these
-                assert(mesh.mVariantDataUbo);
-                glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
-                MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(l));
+                renderSubmesh(i, l);
             }
             ++x;
         }
@@ -156,7 +170,8 @@ void AssetEditorViewportPanelBase::renderMeshSkeletalBlended(const ModelDef* mod
         mesh.unbindCurrentAttribs(); // Editor doesnt use these
         SkinnedModelVertex::bindVertexAttribs(mesh.mGpuData.mVao); // Have to do this or crash
         assert(mesh.mVariantDataUbo);
-        glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+        assert(false); // FIX
+        //glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
 
         OzzMatrixVector skinningMatrices;
         if (modelMatrices.size()) {

@@ -17,7 +17,7 @@ public:
         s.value2b(numMeshes);
         for (size_t i = 0; i < numMeshes; ++i) {
             const MeshCpuData& meshData = mModelDef.mMeshes[i]->mCpuData;
-            const ModelSubmeshData& submeshData = mModelDef.mMeshesModelData[i];
+            const ModelSubmeshData& submeshData = mModelDef.mSubmeshData[i];
             // Name
             s.object(submeshData.name);
             // Render Pass
@@ -93,7 +93,7 @@ public:
         assert(numMeshes && numMeshes <= MAX_SUBMODELS);
 
         mModelDef.mMeshes.resize(numMeshes);
-        mModelDef.mMeshesModelData.resize(numMeshes);
+        mModelDef.mSubmeshData.resize(numMeshes);
         mModelDef.mTotalSubmeshJointTransformsNeeded = 0;
         for (size_t i = 0; i < numMeshes; ++i) {
             if (mModelDef.isSkeletalModel()) {
@@ -103,7 +103,7 @@ public:
                 mModelDef.mMeshes[i] = std::make_unique<Mesh>();
             }
             MeshCpuData& meshData = mModelDef.mMeshes[i]->mCpuData;
-            ModelSubmeshData& submeshData = mModelDef.mMeshesModelData[i];
+            ModelSubmeshData& submeshData = mModelDef.mSubmeshData[i];
 
             mModelDef.mMeshes[i]->setSubmeshData(&submeshData);
             // Name
