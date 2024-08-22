@@ -44,17 +44,13 @@ public:
 
     bool isSkeletalModel() const { return mRig != nullptr; }
     ui32 getNumMeshes() const { return mSubmeshData.size(); }
-    SkeletalMesh& getSkeletalMesh(ui32 meshIndex) { assert(isSkeletalModel()); return dynamic_cast<SkeletalMesh&>(*mMeshes[meshIndex]); }
-    const SkeletalMesh& getSkeletalMesh(ui32 meshIndex) const { assert(isSkeletalModel()); return dynamic_cast<const SkeletalMesh&>(*mMeshes[meshIndex]); }
-    Mesh& getMesh(ui32 meshIndex) { return *mMeshes[meshIndex]; }
-    const Mesh& getMesh(ui32 meshIndex) const { return *mMeshes[meshIndex]; }
-    void addMesh(std::unique_ptr<Mesh> mesh);
 
     // TODO: AssetHandle
     const RigDef* mRig = nullptr;
     const AnimMachineDef* mAnimMachine = nullptr;
-    std::vector<std::unique_ptr<Mesh>> mMeshes;
     std::vector<ModelSubmeshData> mSubmeshData;
+    std::vector<MeshSkeletonData> mSubmeshSkeletonData;
+    std::vector<MeshCpuData> mSubmeshCpuData;
     ui32 mTotalSubmeshJointTransformsNeeded = 0;
     StrToken mModelFileName;
     RigAssetRef mRigRef;
@@ -75,10 +71,6 @@ public:
 
     // Variants
     std::vector<ModelVariantData> mVariants;
-    // TODO: REMOVE
-    std::vector<ModelVariantGpuDataContainer> mVariantsGpuData; // One per submesh
-    std::vector<GLBuffer> mVariantsGpuBuffers; // One per submesh // TODO: REMOVE
-    //ModelDrawInfo mDrawInfo; // TODO: USE
 };
 SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
     make_field(o.mModelFileName, "model"sv),
@@ -98,3 +90,8 @@ SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
     make_field(o.mColliderData, "collider"sv),
     make_field(o.mBaseOptimizeErrorThresold, "opt_thresh"sv)
 );
+
+struct ModelDefRef {
+    AssetHandlePtr<ModelDef> handle;
+    int refCount = 0;
+};

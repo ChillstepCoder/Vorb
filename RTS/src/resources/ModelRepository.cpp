@@ -120,6 +120,7 @@ void ModelRepository::buildModelBatches() {
     }
     mVariantArrayIndexData.resize(mAssetRegistry.size());
     mModelSubmeshSpanKeys.resize(mAssetRegistry.size());
+    mModelSubmeshCountsPerPass.resize(mAssetRegistry.size());
     mAllSubmeshDrawData.resize(mTotalSubmeshCount);
 
 
@@ -160,17 +161,22 @@ void ModelRepository::buildModelBatches() {
         mVariantArrayIndexData[modelId].stride = def.mSubmeshData.size() * MATERIAL_SLOT_COUNT;
         numVariantData += def.mSubmeshData.size() * def.mVariants.size();
 
-        for (size_t submeshIndex = 0; submeshIndex < def.mSubmeshData.size(); ++submeshIndex) {
-            Mesh& mesh = *def.mMeshes[submeshIndex];
+        auto& submeshCountArray = mModelSubmeshCountsPerPass[modelId];
+        submeshCountArray.fill(0);
 
+        for (size_t submeshIndex = 0; submeshIndex < def.mSubmeshData.size(); ++submeshIndex) {
+
+            MeshCpuData& cpuData = def.mSubmeshCpuData[submeshIndex];
+            ModelSubmeshData& submeshData = def.mSubmeshData[submeshIndex];
             ModelBatchKey key;
-            key.indexType = mesh.mCpuData.mIndexType;
+            key.indexType = cpuData.mIndexType;
             if (key.indexType != MeshIndexType::USHORT) [[unlikely]] {
                 // To support UINT, we need ModelRepository to support splitting batches by index type
                 panic("ModelRepository::buildModelBatches: Only ushort indices are supported but mesh loaded with more than 65536 vertices");
             }
-            key.vertexType = mesh.mCpuData.mVertexType;
-            key.renderPass = mesh.getRenderPass();
+            key.vertexType = cpuData.mVertexType;
+            key.renderPass = submeshData.renderPass;
+            ++submeshCountArray[e_cast(key.renderPass)];
             auto&& it = modelBatchCreationDataMap.find(key);
             ModelBatchCreationData* creationData;
             if (it == modelBatchCreationDataMap.end()) {
@@ -183,28 +189,28 @@ void ModelRepository::buildModelBatches() {
 
             const size_t submeshArrayIndex = submeshSources.size();
             ModelBatchSubmeshSource& submeshSource = submeshSources.emplace_back();
-            submeshSource.renderPass = mesh.getRenderPass();
+            submeshSource.renderPass = key.renderPass;
             submeshSource.batchId = creationData->batchId;
             submeshSource.startVertex = creationData->verticesSize;
             submeshSource.startIndex = creationData->indicesSize;
-            submeshSource.cpuData = &mesh.mCpuData;
+            submeshSource.cpuData = &cpuData;
 
             ModelBatchSubmeshDrawData& drawData = mAllSubmeshDrawData[submeshArrayIndex];
             drawData.batchID = creationData->batchId;
-            drawData.renderPass = mesh.getRenderPass();
-            drawData.castsShadow = mesh.castsShadow();
+            drawData.renderPass = key.renderPass;
+            drawData.castsShadow = submeshData.castsShadow();
             drawData.baseVertex = creationData->verticesSize;
 
-            allSubmeshWindTypes[submeshArrayIndex] = (i32)mesh.getSubmeshData()->windType;
+            allSubmeshWindTypes[submeshArrayIndex] = (i32)submeshData.windType;
 
             for (int l = 0; l < (int)MeshLODLevel::COUNT; ++l) {
-                drawData.lodDrawInfo[l] = mesh.mCpuData.mLodData.getDrawInfoForLOD((MeshLODLevel)l);
+                drawData.lodDrawInfo[l] = cpuData.mLodData.getDrawInfoForLOD((MeshLODLevel)l);
                 drawData.lodDrawInfo[l].startIndex += submeshSource.startIndex;
             }
             drawData.modelId = modelId;
 
-            creationData->verticesSize += mesh.mCpuData.mVertsCount;
-            creationData->indicesSize += mesh.mCpuData.mElementsCount;
+            creationData->verticesSize += cpuData.mVertsCount;
+            creationData->indicesSize += cpuData.mElementsCount;
         }
     }
 
@@ -301,13 +307,9 @@ AssetLoadFunc ModelRepository::getAssetLoadFunc() {
         // Load material dependencies
         assetLoader.requestAssetLoadWithDependencies(nullptr /* loadFunc*/,
             [this]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
-            ModelDef& def = *static_cast<ModelDef*>(assetDataPtr);
-            for (auto& mesh : def.mMeshes) {
-                ModelMeshBuilder::uploadCpuMeshToGpu(mesh->mCpuData, mesh->mGpuData);
-            }
 
-            updateModelVariantData(def.getID());
-
+            updateModelVariantData(assetId);
+            // TODO: IMPLEMENT THIS
             RenderContext::getInstance().getModelBillboardLodBuilder().initTextureForModel(assetId);
 
             return true;
@@ -432,6 +434,7 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
 
             for (auto& [renderPassIndex, subMeshList] : rawFbxModel.mSubMeshes) {
                 for (RawSubMesh& subMesh : subMeshList) {
+
                     assert(subMesh.mVertices.size());
 
                     // Assign material slots and construct AABB
@@ -481,8 +484,10 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
                         }
                     }
 
-                    MeshCpuData newMeshCpuData = ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(
-                        subMesh, rawFbxModel.mMaterials, def.mBaseOptimizeErrorThresold, variantMaterialSlotOffset, &rawMaterialIdSlotMapping
+                    MeshCpuData& newMeshCpuData = def.mSubmeshCpuData.emplace_back(
+                        ModelMeshBuilder::buildRuntimeOptimizedMeshFromRawMesh(
+                            subMesh, rawFbxModel.mMaterials, def.mBaseOptimizeErrorThresold, variantMaterialSlotOffset, &rawMaterialIdSlotMapping
+                        )
                     );
 
                     // All material slots are stored sequentially submesh by submesh in our variant data array
@@ -496,24 +501,15 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
 
                     // Allocate and fill skeleton data
                     if (rawSkeletonData.mNumJoints) {
-                        std::unique_ptr<SkeletalMesh> newMesh = std::make_unique<SkeletalMesh>();
                         assert(def.mRig && "Missing rig for skeletal model");
-                        MeshSkeletonData& skeletonData = newMesh->mSkeletonData;
+                        MeshSkeletonData& skeletonData = def.mSubmeshSkeletonData.emplace_back();
                         skeletonData.mNumJoints = rawSkeletonData.mNumJoints;
                         skeletonData.mJointRemaps = std::unique_ptr<ui8[]>(new ui8[skeletonData.mNumJoints]);
                         memcpy(skeletonData.mJointRemaps.get(), rawSkeletonData.mJointRemaps.data(), sizeof(ui8) * skeletonData.mNumJoints);
                         skeletonData.mInverseBindPoses = std::unique_ptr<ozz::math::Float4x4[]>(new ozz::math::Float4x4[skeletonData.mNumJoints]);
                         memcpy(skeletonData.mInverseBindPoses.get(), rawSkeletonData.mInverseBindPoses.data(), sizeof(ozz::math::Float4x4) * skeletonData.mNumJoints);
-                        def.addMesh(std::move(newMesh));
                         def.mTotalSubmeshJointTransformsNeeded += skeletonData.mNumJoints;
                     }
-                    else {
-                        def.addMesh(std::make_unique<Mesh>());
-                    }
-
-                    Mesh& newMesh = *def.mMeshes.back();
-                    newMesh.mCpuData = std::move(newMeshCpuData);
-                    newMesh.setRenderPass((MaterialRenderPassType)renderPassIndex);
 
                     ModelSubmeshData& newSubmeshData = def.mSubmeshData.emplace_back();
                     newSubmeshData.name = subMesh.mName;
@@ -528,21 +524,14 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
             maxZ *= def.mScale;
             def.mAABB = f32AABB3(f32v3(minX, minY, minZ), f32v3(maxX - minX, maxY - minY, maxZ - minZ));
 
-
-            def.mMeshes.shrink_to_fit();
-
-            // Set submesh data pointers after so we dont have stale pointers
-            def.mSubmeshData.resize(def.mMeshes.size());
-            for (size_t i = 0; i < def.mMeshes.size(); ++i) {
-                Mesh& newMesh = *def.mMeshes[i];
-                newMesh.setSubmeshData(&def.mSubmeshData[i]);
-                assert(newMesh.mCpuData.mElementsCount && newMesh.mCpuData.mVertsCount);
-            }
+            def.mSubmeshSkeletonData.shrink_to_fit();
+            def.mSubmeshCpuData.shrink_to_fit();
+            def.mSubmeshData.shrink_to_fit();
 
             saveCachedRuntimeModel(def, rnmdlPath);
         }
 
-        mTotalSubmeshCount += def.mMeshes.size();
+        mTotalSubmeshCount += def.mSubmeshData.size();
         --mUnloadedModelDataCount;
         return false;
     }, nullptr,
@@ -735,8 +724,6 @@ void ModelRepository::updateModelVariantData(AssetID id) {
     ASSERT_RENDER_THREAD();
 
     ModelDef& def = *mAssets[id];
-    def.mVariantsGpuData.resize(def.mSubmeshData.size());
-    def.mVariantsGpuBuffers.resize(def.mSubmeshData.size());
 
     if (def.mVariants.empty()) {
         def.mVariants.resize(1); // Must have a single variant at least
@@ -751,31 +738,6 @@ void ModelRepository::updateModelVariantData(AssetID id) {
         varData.submeshMaterials.resize(def.mSubmeshData.size());
     }
 
-    // Copy all variant materials to GPU data and then upload
-    // TODO: REMOVE
-    LOG_CRITICAL("TODO: REMOVE OLD VARIANT METHOD");
-    MaterialRepository& materialRepo = MaterialRepository::get();
-    for (size_t submeshIndex = 0; submeshIndex < def.mVariantsGpuData.size(); ++submeshIndex) {
-        ModelVariantGpuDataContainer& gpuData = def.mVariantsGpuData[submeshIndex];
-        gpuData.resize(def.mVariants.size());
-
-        for (size_t variantIndex = 0; variantIndex < def.mVariants.size(); ++variantIndex) {
-            ModelVariantData& variantData = def.mVariants[variantIndex];
-
-            auto& mats = variantData.submeshMaterials[submeshIndex];
-            for (size_t j = 0; j < mats.size(); ++j) {
-                gpuData[variantIndex].materials[j] = mats[j].getAssetID();
-            }
-        }
-
-        assert(submeshIndex < def.getNumMeshes());
-
-        // Upload
-        GLBuffer& buffer = def.mVariantsGpuBuffers[submeshIndex];
-        buffer.allocate(gpuData.size() * sizeof(ModelVariantGpuData), gpuData.data(), 0);
-        def.mMeshes[submeshIndex]->mVariantDataUbo = buffer.getHandle();
-    }
-
     ModelVariantGpuDataContainer variantsGpuData;
     variantsGpuData.resize(def.mSubmeshData.size() * def.mVariants.size());
     VariantIndexData indexData = mVariantArrayIndexData[id];
@@ -784,7 +746,7 @@ void ModelRepository::updateModelVariantData(AssetID id) {
     for (size_t variantIndex = 0; variantIndex < def.mVariants.size(); ++variantIndex) {
         ModelVariantData& variantData = def.mVariants[variantIndex];
 
-        for (size_t submeshIndex = 0; submeshIndex < def.mVariantsGpuData.size(); ++submeshIndex) {
+        for (size_t submeshIndex = 0; submeshIndex < def.getNumMeshes(); ++submeshIndex) {
             auto& mats = variantData.submeshMaterials[submeshIndex];
             for (size_t j = 0; j < mats.size(); ++j) {
                 variantsGpuData[variantIndex * def.mSubmeshData.size() + submeshIndex].materials[j] = mats[j].getAssetID();

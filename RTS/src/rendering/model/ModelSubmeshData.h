@@ -8,6 +8,11 @@ constexpr ui32 MAX_MODEL_VARIANTS = 16;
 struct ModelSubmeshData {
     StrToken name; // Run time only
     MeshWindType windType;
+    MaterialRenderPassType renderPass;
+
+    bool castsShadow() const {
+        return renderPass != MaterialRenderPassType::Water;
+    }
 };
 SERIALIZABLE_IMGUI_CONTROLLED(ModelSubmeshData,
     make_field(o.windType, "wind"sv)

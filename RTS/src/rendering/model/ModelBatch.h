@@ -20,11 +20,13 @@ public:
     void bindSkeletalModelAttribs() const;
     void unbindSkeletalModelAttribs() const;
     void unbindCurrentAttribs() const;
+    void setInstanceDataAttribFormat(int size) const;
 
     ui32 getTotalSizeBytes() const { return mVerticesSizeBytes + mIndicesSizeBytes; }
 
     VGBuffer getVao() const { return mVao; }
     MeshIndexType getIndexType() const { return mIndexType; }
+    size_t getIndexSize() const { return mIndexType == MeshIndexType::UINT ? sizeof(ui32) : sizeof(ui16); }
 private:
     VGBuffer  mVao = 0;
     VGBuffer  mVbo = 0;
@@ -36,6 +38,7 @@ private:
     ui32 mVerticesSizeBytes = 0; // Stores up to 4gb. If we have more than this we have a HUGE problem
     ui32 mIndicesSizeBytes = 0; // Stores up to 4gb. If we have more than this we have a HUGE problem
     mutable AttribBinding mCurrentAttribBinding = AttribBinding::None;
+    mutable int mInstanceDataSize = 0;
 };
 
 struct ModelBatchSubmeshDrawData {

@@ -54,7 +54,7 @@ public:
     const std::vector<DebugChunkRenderState>& getDebugChunks() const { return mDebugChunks; }
     const std::vector<DebugWireQuadState>& getDebugQuads() const { return mDebugQuads; }
     const std::vector<CharacterRenderState>& getCharacterRenderState() const { return mCharacters; }
-    std::vector<DynamicModelInstanceState>& getDynamicModels() { return mDynamicModels; }
+    DynamicModelInstanceStateContainer& getDynamicModels() { return mDynamicModels; }
     const std::vector<WorldTextRenderState>& getWorldText() const { return mWorldText; }
     WorldID getWorldId() const { return mWorldId; }
     const SelectedObjectData& getPlayerSelectedObject() const { return mPlayerSelectedObject; }
@@ -66,7 +66,7 @@ private:
     f32v3 mCameraOwningEntityPos;
     bool mIsCameraOwned;
     std::vector<CharacterRenderState> mCharacters;
-    std::vector<DynamicModelInstanceState> mDynamicModels;
+    DynamicModelInstanceStateContainer mDynamicModels;
     std::vector<WorldTextRenderState> mWorldText;
     mutable std::vector<RenderThreadSharedComponentDataPtr> mThreadSharedComponents;
     SelectedObjectData mPlayerSelectedObject;

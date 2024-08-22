@@ -56,7 +56,7 @@ public:
     void removeCharacterModel(entt::entity entityId, AssetID modelId);
 
     void playOneShotAnimation(entt::entity entityId, AssetID animationId);
-    void renderCharactersAndGatherSubmodels(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha, std::vector<DynamicModelInstanceState>& outLinkedSubmodels);
+    void renderCharactersAndGatherSubmodels(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha, DynamicModelInstanceStateContainer& outLinkedSubmodels);
 
     CharacterRendererCharacterState* tryGetCharacterRenderStateForDebug(entt::entity entityId);
 private:

@@ -4,6 +4,12 @@
 #include "item/ItemDef.h"
 #include "definitions/ModelDef.h"
 
+void FishRepository::onAllAssetTypesRegistered() {
+    for (auto& fishDefPtr : mAssets) {
+        fishDefPtr->mModelId = fishDefPtr->mModelRef.getAssetID();
+    }
+}
+
 void FishRepository::onRegisteredAsset(AssetID id) {
     FishDef& def = *mAssets[id];
     const vio::Path& filePath = mAssetRegistry[id].mFilePath;
@@ -25,7 +31,6 @@ AssetLoadFunc FishRepository::getAssetLoadFunc() {
         LOAD_DEPENDENCIES_HELPER(def, &,
             FishDef& def = *static_cast<FishDef*>(assetDataPtr);
             def.mItemId = def.mItemRef.getAssetID();
-            def.mModelId = def.mModelRef.getAssetID();
         );
     };
 }

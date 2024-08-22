@@ -209,7 +209,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     mTileContainerRenderer->renderStaticMeshes(tileContainerMeshManager.getStaticMeshes(), *mCamera);
 
     // Fill with linked submodels
-    std::vector<DynamicModelInstanceState>& dynamicModels = mRenderState->getDynamicModels();
+    DynamicModelInstanceStateContainer& dynamicModels = mRenderState->getDynamicModels();
 
     if (!sDebugOptions.mHideCharacters) {
         mCharacterRenderer->renderCharactersAndGatherSubmodels(*mCamera, mRenderState->getCharacterRenderState(), elapsedSec, frameAlpha, dynamicModels);

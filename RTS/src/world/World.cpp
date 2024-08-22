@@ -527,7 +527,7 @@ void World::updateEntitiesRenderState(WorldRenderState& renderState) {
             DynamicModelComponent& modelCmp = view.get<DynamicModelComponent>(entity);
             OrientationComponent& orientCmp = view.get<OrientationComponent>(entity);
 
-            renderState.mDynamicModels.emplace_back(orientCmp.mOrientation, posCmp.mPosition, modelCmp.modelId);
+            renderState.mDynamicModels.add(orientCmp.mOrientation, posCmp.mPosition, modelCmp.modelId);
         };
     }
 

@@ -804,9 +804,6 @@
     <ClCompile Include="src\rendering\model\InstancedDynamicModelRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\model\DynamicModelBatchData.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\visibility\VisibilityGraph.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1354,6 +1351,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\model\ModelBatch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rendering\renderstate\DynamicModelInstanceState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2547,9 +2547,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\model\InstancedDynamicModelRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\rendering\model\DynamicModelBatchData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\renderstate\DynamicModelInstanceState.h">

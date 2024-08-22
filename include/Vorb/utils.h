@@ -303,7 +303,7 @@ struct std::hash<i32v3> {
     size_t operator()(const i32v3& k) const {
         std::size_t seed = 0x9e3779b9; // Initial seed value
 
-        std::size_t hash[3] = { k.x, k.y, k.z };
+        std::size_t hash[3] = { (std::size_t)k.x, (std::size_t)k.y, (std::size_t)k.z };
         for (int i = 0; i < 3; ++i) {
             hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
             hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
@@ -319,7 +319,7 @@ struct std::hash<i32v2> {
     size_t operator()(const i32v2& k) const {
         std::size_t seed = 0x9e3779b9;
 
-        std::size_t hash[2] = { k.x, k.y };
+        std::size_t hash[2] = { (std::size_t)k.x, (std::size_t)k.y };
         for (int i = 0; i < 2; ++i) {
             hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
             hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
@@ -335,7 +335,7 @@ struct std::hash<i16v2> {
     size_t operator()(const i16v2& k) const {
         std::size_t seed = 0x9e3779b9;
 
-        std::size_t hash[2] = { k.x, k.y };
+        std::size_t hash[2] = { (std::size_t)k.x, (std::size_t)k.y };
         for (int i = 0; i < 2; ++i) {
             hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
             hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
@@ -351,7 +351,7 @@ struct std::hash<ui32v3> {
     size_t operator()(const ui32v3& k) const {
         std::size_t seed = 0x9e3779b9;
 
-        std::size_t hash[3] = { k.x, k.y, k.z };
+        std::size_t hash[3] = { (std::size_t)k.x, (std::size_t)k.y, (std::size_t)k.z };
         for (int i = 0; i < 2; ++i) {
             hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
             hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
@@ -367,7 +367,7 @@ struct std::hash<ui32v2> {
     size_t operator()(const ui32v2& k) const {
         std::size_t seed = 0x9e3779b9;
 
-        std::size_t hash[2] = { k.x, k.y };
+        std::size_t hash[2] = { (std::size_t)k.x, (std::size_t)k.y };
         for (int i = 0; i < 2; ++i) {
             hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
             hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;

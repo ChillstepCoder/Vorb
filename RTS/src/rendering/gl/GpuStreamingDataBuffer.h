@@ -15,10 +15,12 @@ public:
 
     // Call to upload data and increment frame. Only once per frame
     // @elementCount is the number of elements we updated this frame
-    // Returns the element index of the start of the SSBO to be uploaded as uniform
+    // Returns the element offset of the start of the SSBO to be uploaded as uniform
     int flushDataAndIncrementFrame(ui32 elementCount);
 
+    // To bind as SSBO you MUST pass in the element offset returned from flushDataAndIncrementFrame
     void bindBufferAsSSBO(GLuint bindingPoint);
+    // To bind as vertex array vertex buffer you do not need an offset, as the mByteOffsetLastFlush will be added to offset param
     void bindAsVertexArrayVertexBuffer(VGBuffer targetVao, GLuint bindingIndex, GLintptr offset, GLsizei stride);
     ui32 getMaxElements() const { return mMaxElements; }
     ui32 getByteOffsetLastFlush() const { return mByteOffsetLastFlush; }

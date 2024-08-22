@@ -426,7 +426,6 @@
     <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\TileContainerMeshManager.cpp" />
     <ClCompile Include="src\rendering\mesh\Vertex.cpp" />
-    <ClCompile Include="src\rendering\model\DynamicModelBatchData.cpp" />
     <ClCompile Include="src\rendering\model\InstancedDynamicModelRenderer.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelGatherer.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp" />
@@ -449,6 +448,7 @@
     <ClCompile Include="src\rendering\GrassBillboardMesh.cpp" />
     <ClCompile Include="src\rendering\post_process\SmudgeRenderer.cpp" />
     <ClCompile Include="src\rendering\post_process\TonemapRenderer.cpp" />
+    <ClCompile Include="src\rendering\renderstate\DynamicModelInstanceState.cpp" />
     <ClCompile Include="src\rendering\renderdata\WorldRenderDataManager.cpp" />
     <ClCompile Include="src\rendering\renderer\GrassRenderer.cpp" />
     <ClCompile Include="src\rendering\renderer\OverlayRenderer.cpp" />
@@ -980,7 +980,6 @@
     <ClInclude Include="src\rendering\mesh\Vertex.h" />
     <ClInclude Include="src\rendering\mesh\VertexType.h" />
     <ClInclude Include="src\rendering\model\AnimationConst.h" />
-    <ClInclude Include="src\rendering\model\DynamicModelBatchData.h" />
     <ClInclude Include="src\rendering\model\InstancedDynamicModelRenderer.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelGatherer.h" />
     <ClInclude Include="src\rendering\model\InstancedStaticModelManager.h" />

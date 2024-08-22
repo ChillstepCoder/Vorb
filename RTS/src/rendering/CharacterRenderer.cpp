@@ -147,7 +147,7 @@ void CharacterRenderer::playOneShotAnimation(entt::entity entityId, AssetID anim
     }
 }
 
-void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha, std::vector<DynamicModelInstanceState>& outLinkedSubmodels) {
+void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camera, const std::vector<CharacterRenderState>& characters, f32 elapsedSec, f32 frameAlpha, DynamicModelInstanceStateContainer& outLinkedSubmodels) {
     UNUSED(frameAlpha);
     PROFILE_FUNCTION();
 
@@ -287,27 +287,27 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
 
                 // TODO: We should batch render these
                 for (ui32 i = 0; i < modelDef.getNumMeshes(); ++i) {
-                    const SkeletalMesh& skeletalMesh = modelDef.getSkeletalMesh(i);
-                    const MeshSkeletonData& skelData = skeletalMesh.getSkeletonData();
+                    //const SkeletalMesh& skeletalMesh = modelDef.getSkeletalMesh(i);
+                    //const MeshSkeletonData& skelData = skeletalMesh.getSkeletonData();
 
-                    // Skin animation to mesh
-                    ozz::math::Float4x4 skinningBuffer[MAX_JOINTS_IN_RIG];
-                    OzzMatrixSpan skinningMatrices(skinningBuffer, skelData.mNumJoints);
-                    if (!SkeletalAnimator::skinModelMatricesToMesh(ozz::make_span(modelMatrices), skelData, skinningMatrices)) {
-                        panic("Anim skinning fail!");
-                    }
+                    //// Skin animation to mesh
+                    //ozz::math::Float4x4 skinningBuffer[MAX_JOINTS_IN_RIG];
+                    //OzzMatrixSpan skinningMatrices(skinningBuffer, skelData.mNumJoints);
+                    //if (!SkeletalAnimator::skinModelMatricesToMesh(ozz::make_span(modelMatrices), skelData, skinningMatrices)) {
+                    //    panic("Anim skinning fail!");
+                    //}
 
-                    for (size_t j = 0; j < skelData.mNumJoints; ++j) {
-                        skinningBuffer[j] = ozz::math::Float4x4::identity();
-                    }
+                    //for (size_t j = 0; j < skelData.mNumJoints; ++j) {
+                    //    skinningBuffer[j] = ozz::math::Float4x4::identity();
+                    //}
 
-                    // TODO: We shouldn't do this for each submesh
-                    glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)skinningBuffer);
+                    //// TODO: We shouldn't do this for each submesh
+                    //glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)skinningBuffer);
 
-                    const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawDataArray(submeshSpanKey)[i];
-                    const ModelBatch& modelBatch = modelRepo.getModelBatch(drawData.batchID);
-                    modelBatch.bindSkeletalModelAttribs(); // Editor doesn't use these
-                    glBindVertexArray(modelBatch.getVao());
+                    //const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawDataArray(submeshSpanKey)[i];
+                    //const ModelBatch& modelBatch = modelRepo.getModelBatch(drawData.batchID);
+                    //modelBatch.bindSkeletalModelAttribs(); // Editor doesn't use these
+                    //glBindVertexArray(modelBatch.getVao());
                     //glVertexArrayVertexBuffer(modelBatch.getVao(), MODEL_INSTANCE_DATA_BINDING_POINT, mVariantIndexVbo, 0, sizeof(ui32));
                     //const MeshLODDrawInfo& drawInfo = drawData.lodDrawInfo[e_cast(lod)];
                     //// TODO: Indirect?
@@ -328,10 +328,6 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
                     if (const ModelDef* def = submodelHandle->tryGetLoadedAsset()) {
 
                         const f32m4 boneTransform = std::bit_cast<f32m4>(modelMatrices[submodel.cachedAttachBoneIndex]);
-
-                        DynamicModelInstanceState& submodelState = outLinkedSubmodels.emplace_back();
-                        submodelState.modelId = submodel.submodelId;
-
                         const f64m4 worldTransform(
                             cameraRelTransform[0][0], cameraRelTransform[0][1], 0.0f, 0.0f,
                             cameraRelTransform[1][0], cameraRelTransform[1][1], cameraRelTransform[1][2], 0.0f,
@@ -341,9 +337,7 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
                         f64q rotation;
                         f64v3 worldPosition;
                         decomposeMatrix(worldTransform * f64m4(boneTransform), worldPosition, rotation);
-                        submodelState.positionXY = worldPosition;
-                        submodelState.positionZ = worldPosition.z;
-                        submodelState.orientation = rotation;
+                        outLinkedSubmodels.add(rotation, worldPosition, submodel.submodelId);
                     }
                 }
             }

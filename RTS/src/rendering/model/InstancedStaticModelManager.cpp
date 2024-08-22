@@ -910,7 +910,6 @@ void InstancedStaticModelManager::removeLooseInstanceInternal(ModelID modelId, S
 
     mLooseStaticModelInstances.erase(lit);
 
-
 }
 
 void InstancedStaticModelManager::updateLooseInstanceTransformInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4 transform) {

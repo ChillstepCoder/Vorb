@@ -74,8 +74,15 @@ public:
     const ModelBatchSubmeshDrawData* getSubmeshDrawDataArray(ModelBatchSubmeshDrawDataSpanKey key) const {
         return mAllSubmeshDrawData.data() + key.index;
     }
+    const ModelBatchSubmeshDrawData* getSubmeshDrawDataArray(ModelID modelId) const {
+        return getSubmeshDrawDataArray(mModelSubmeshSpanKeys[modelId]);
+    }
+
     ModelBatchSubmeshDrawDataSpanKey getDrawDataSpanKeyForModel(ModelID modelId) const {
         return mModelSubmeshSpanKeys[modelId];
+    }
+    std::array<ui8, e_count(MaterialRenderPassType)>& getModelSubmeshCountsPerPass(ModelID modelId) {
+        return mModelSubmeshCountsPerPass[modelId];
     }
     const ModelBatch& getModelBatch(ModelBatchKey key) const {
         auto it = mModelBatchLookup.find(key);
@@ -113,6 +120,7 @@ private:
     // Stored separately for cache friendliness on render
     std::vector<ModelLodParams> mLODParameters; // One per ModelID
     std::vector<VariantIndexData> mVariantArrayIndexData; // One per ModelID, stores start of the variant length
+    std::vector<std::array<ui8, e_count(MaterialRenderPassType)>> mModelSubmeshCountsPerPass; // One per ModelID
 
     // Stores variant data for every model
     VGBuffer mModelVariantDataSSBO = 0;

@@ -1,15 +1,17 @@
 #include "GlobalUbo.glsl"
 #include "util/wind.glsl"
 #include "util/uv.glsl"
+#include "model/model_variant.glsl"
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
-layout(location = 2) in uint vMaterialIndex;
+layout(location = 2) in uint vMaterialSlot;
 layout(location = 3) in vec4 vTint;
 layout(location = 4) in vec3 vNormal;
 layout(location = 5) in vec3 vTangent;
 //layout(location = 6) in float vWindInfluence;
 
+uniform uint unVariantIndex;
 uniform int unBufferOffset;
 uniform float DebugFloat1;
 uniform float DebugFloat4;
@@ -87,7 +89,7 @@ vec2 rotateVector(vec2 xy, float angle) {
 void main() {
     fTint = vTint;
     fUV = unpackUV(vUV);
-    fMaterialIndex = vMaterialIndex;
+    fMaterialIndex = inVariantMaterials[unVariantIndex + vMaterialSlot];
     
     vec3 vertexPosition = vPosition.xyz;
     

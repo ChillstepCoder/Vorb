@@ -12,68 +12,115 @@
 #include "camera/Camera3D.h"
 
 InstancedDynamicModelRenderer::InstancedDynamicModelRenderer() {
-    mStandardMaterial = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("dynamic_model"));
+    mStandardShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("dynamic_model"));
     mSmudgeShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("smudge"));
 }
 
 InstancedDynamicModelRenderer::~InstancedDynamicModelRenderer() = default;
 
-void InstancedDynamicModelRenderer::prepareFrame(std::span<const DynamicModelInstanceState> dynamicModels, const Camera3D& camera) {
-    
-    if (sDebugOptions.mHideDynamicModels) {
+void InstancedDynamicModelRenderer::prepareFrame(const DynamicModelInstanceStateContainer& dynamicModels, const Camera3D& camera) {
+    ASSERT_RENDER_THREAD();
+    PROFILE_FUNCTION();
+
+    if (sDebugOptions.mHideDynamicModels) [[unlikely]] {
         return;
     }
     
-    if (!mShaderAssets.areAllAssetsLoaded()) {
+    if (!mShaderAssets.areAllAssetsLoaded()) [[unlikely]] {
         return;
     }
 
-    // Clean up last frame
-    for (auto& [modelId, batch] : mModelBatchesThisFrame) {
-        batch.mVisibleIndices.clear();
-        for (auto& meshData : batch.mMeshData) {
-            meshData.visibleCount = 0;
+    // Zero old refs
+    for (auto& [modelId, modelDefRef] : mModelDefRefs) {
+        modelDefRef.refCount = 0;
+    }
+
+    const std::vector<DynamicModelInstanceState>& dynamicModelsVec = dynamicModels.getVec();
+
+    constexpr ui32 DRAW_COMMANDS_FUZZ = 128; // Helps account for fluctuating instance counts
+    for (MaterialRenderPassType r : {MaterialRenderPassType::Default, MaterialRenderPassType::Smudge}) {
+        const ui32 maxCount = dynamicModels.getSubmeshCount(r);
+        std::unique_ptr<GLDrawCommandBuffer>& bufferPtr = mDrawCommands[e_cast(r)];
+        if (!bufferPtr || bufferPtr->getCapacity() < maxCount) {
+            bufferPtr = std::make_unique<GLDrawCommandBuffer>(maxCount + DRAW_COMMANDS_FUZZ / 2);
+        }
+        else if (bufferPtr->getCapacity() > maxCount + DRAW_COMMANDS_FUZZ) {
+            bufferPtr = std::make_unique<GLDrawCommandBuffer>(maxCount + DRAW_COMMANDS_FUZZ / 2);
         }
     }
+    static_assert(e_count(MaterialRenderPassType) == 3, "Update this code if you add more passes");
 
-    for (int i = 0; i < e_count(MaterialRenderPassType); ++i) {
-        mDrawCommandsThisFrame[i].clear();
+
+    // Allocate transforms buffer
+    const ui32 maxTransforms = dynamicModelsVec.size();
+    constexpr ui32 TRANSFORMS_FUZZ = 64; // Helps account for fluctuating instance counts
+    if (!mTransformsBuffer) {
+        mTransformsBuffer = std::make_unique<GpuStreamingDataBuffer>(maxTransforms + TRANSFORMS_FUZZ / 2, sizeof(f32m4));
+        mVariantIndexBuffer = std::make_unique<GpuStreamingDataBuffer>(maxTransforms + TRANSFORMS_FUZZ / 2, sizeof(ui32));
+    }
+    else if (mTransformsBuffer->getMaxElements() < maxTransforms  ||
+        mTransformsBuffer->getMaxElements() > maxTransforms + TRANSFORMS_FUZZ) {
+        // Grow or shrink if needed
+        mTransformsBuffer = std::make_unique<GpuStreamingDataBuffer>(maxTransforms + TRANSFORMS_FUZZ / 2, sizeof(f32m4));
+        mVariantIndexBuffer = std::make_unique<GpuStreamingDataBuffer>(maxTransforms + TRANSFORMS_FUZZ / 2, sizeof(ui32));
+    }
+    f32m4* transformsArray = static_cast<f32m4*>(mTransformsBuffer->frameBeginAndGetDataForUpdate());
+    ui32* variantIndexArray = static_cast<ui32*>(mVariantIndexBuffer->frameBeginAndGetDataForUpdate());
+
+    ModelRepository& modelRepo = ModelRepository::get();
+
+    for (auto& commandBuffer : mDrawCommands) {
+        if (commandBuffer) {
+            commandBuffer->frameBegin();
+        }
     }
 
     // Cull instances and initialize batches
     size_t totalTransforms = 0;
-    for (size_t i = 0; i < dynamicModels.size(); ++i) {
-        const DynamicModelInstanceState& dynamicModel = dynamicModels[i];
-        DynamicModelBatchData& batch = mModelBatchesThisFrame[dynamicModel.modelId];
-        // Initialize if needed
-        if (batch.mIsInitialized == false) [[unlikely]] {
-            if (!batch.mModelHandle) {
-                batch.mModelHandle = ModelRepository::get().getAssetHandle(dynamicModel.modelId);
-            }
-            if (const ModelDef* modelDef = batch.mModelHandle->tryGetLoadedAsset()) {
-                batch.mIsInitialized = true;
-                batch.mBoundingSphereRadius = modelDef->mBoundingSphereRadius;
-                for (ui32 meshIndex = 0; meshIndex < modelDef->getNumMeshes(); ++meshIndex) {
-                    DynamicModelBatchData::MeshData& newMeshData = batch.mMeshData.emplace_back();
-                    newMeshData.mesh = &modelDef->getMesh(meshIndex);
-                    // TODO Use render pass index
-                    for (int i = 0; i < 4; ++i) {
-                        newMeshData.drawInfos[i] = newMeshData.mesh->mGpuData.mLODData.getDrawInfoForLOD(MeshLODLevel(i));
-                    }
-                }
-            }
-            else {
-                continue;
-            }
-        }
+    for (size_t i = 0; i < dynamicModelsVec.size(); ++i) {
+        const DynamicModelInstanceState& dynamicModel = dynamicModelsVec[i];
 
+        // TODO: Could this maybe be handled at a higher level?
+        ++mModelDefRefs[dynamicModel.modelId].refCount;
+        const ModelLodParams& lodParams = modelRepo.getLodParams(dynamicModel.modelId);
         // CPU Culling
-        if (camera.sphereIsVisible(dynamicModel.getPositionLowPrecision(), batch.mBoundingSphereRadius)) {
-            for (auto& meshData : batch.mMeshData) {
-                ++meshData.visibleCount;
+        if (camera.sphereIsVisible(dynamicModel.getPositionLowPrecision(), lodParams.boundingSphereRadius)) {
+
+            const f32v3 cameraRelativePos = f32v3(f64v3(dynamicModel.positionXY.x, dynamicModel.positionXY.y, dynamicModel.positionZ) - f64v3(camera.getPosition()));
+            const f32 distance2 = glm::length2(cameraRelativePos);
+            if (distance2 < lodParams.lodDistancesSQ[3]) {
+                transformsArray[totalTransforms] = MathUtil::createTransformMatrix(cameraRelativePos, dynamicModel.orientation, 1.0f);
+                variantIndexArray[totalTransforms] = modelRepo.getVariantArrayIndexDataForModel(dynamicModel.modelId).offset;
+
+                ModelBatchSubmeshDrawDataSpanKey key = modelRepo.getDrawDataSpanKeyForModel(dynamicModel.modelId);
+                const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataArray(key);
+
+                //variantsArray[totalTransforms] = 0; //dynamicModel.variantIndex; // TODO: Variants
+                for (int submeshIndex = 0; submeshIndex < key.count; ++submeshIndex) {
+                    const ModelBatchSubmeshDrawData& drawData = drawDataArray[submeshIndex];
+                    DrawElementsIndirectCommand& cmd = mDrawCommands[e_cast(drawData.renderPass)]->appendCommand();
+                    // build draw command
+                    cmd.instanceCount_ = 1;
+                    cmd.baseInstance_ = totalTransforms;
+                    cmd.baseVertex_ = drawData.baseVertex;
+                    MeshLODDrawInfo drawInfo;
+                    if (distance2 < lodParams.lodDistancesSQ[0] || sDebugOptions.mDisableLOD) {
+                        drawInfo = drawData.lodDrawInfo[0];
+                    }
+                    else if (distance2 < lodParams.lodDistancesSQ[1]) {
+                        drawInfo = drawData.lodDrawInfo[1];
+                    }
+                    else if (distance2 < lodParams.lodDistancesSQ[2]) {
+                        drawInfo = drawData.lodDrawInfo[2];
+                    }
+                    else {
+                        drawInfo = drawData.lodDrawInfo[3];
+                    }
+                    cmd.count_ = drawInfo.indexCount;
+                    cmd.firstIndex_ = drawInfo.startIndex;
+                } // meshData
+                ++totalTransforms;
             }
-            batch.mVisibleIndices.emplace_back(i);
-            ++totalTransforms;
         }
     }
 
@@ -81,107 +128,24 @@ void InstancedDynamicModelRenderer::prepareFrame(std::span<const DynamicModelIns
         return;
     }
 
-    // Allocate transforms buffer
-    constexpr ui32 FUZZ = 20; // Helps account for fluctuating instance counts
-    if (!mTransformsBuffer) {
-        mTransformsBuffer = std::make_unique<GpuStreamingDataBuffer>(totalTransforms, sizeof(f32m4));
-        mVariantsBuffer = std::make_unique<GpuStreamingDataBuffer>(totalTransforms, sizeof(ui8));
+    for (auto& commandBuffer : mDrawCommands) {
+        if (commandBuffer && commandBuffer->getNumActiveCommands()) {
+            commandBuffer->uploadDrawCommands();
+        }
     }
-    else if (totalTransforms > mTransformsBuffer->getMaxElements() ||
-        totalTransforms < mTransformsBuffer->getMaxElements() * 0.5f - FUZZ) {
-        // Grow or shrink if needed
-        mTransformsBuffer = std::make_unique<GpuStreamingDataBuffer>(totalTransforms + FUZZ, sizeof(f32m4));
-        mVariantsBuffer = std::make_unique<GpuStreamingDataBuffer>(totalTransforms + FUZZ, sizeof(ui8));
-    }
-    
-    f32m4* transformsArray = static_cast<f32m4*>(mTransformsBuffer->frameBeginAndGetDataForUpdate());
-    ui8* variantsArray = static_cast<ui8*>(mVariantsBuffer->frameBeginAndGetDataForUpdate());
-    assert(transformsArray && variantsArray);
 
-    // Process all batches
-    GLuint transformOffset = mTransformsBuffer->getCurrentElementOffset();
-    GLuint transformIndex = 0;
-    for (auto&& it = mModelBatchesThisFrame.begin(); it != mModelBatchesThisFrame.end();) {
-        auto& [modelId, batch] = *it;
-        const ModelLodParams& lodParams = ModelRepository::get().getLodParams(modelId);
-        if (batch.mVisibleIndices.size() > 0) {
+    mTransformsBuffer->flushDataAndIncrementFrame(totalTransforms);
+    mVariantIndexBuffer->flushDataAndIncrementFrame(totalTransforms);
 
-            // Allocate draw commands
-            for (auto& meshData : batch.mMeshData) {
-                if (meshData.visibleCount > 0) {
-                    if (!meshData.drawCommands) {
-                        meshData.drawCommands = std::make_unique<GLDrawCommandBuffer>(meshData.visibleCount);
-                    }
-                    else if (meshData.visibleCount > meshData.drawCommands->getCapacity() ||
-                        meshData.visibleCount < meshData.drawCommands->getCapacity() * 0.5f - FUZZ) {
-                        // Grow or shrink if needed
-                        meshData.drawCommands = std::make_unique<GLDrawCommandBuffer>(meshData.visibleCount);
-                    }
-                    // TODO: Just store the render pass intead of the whole mesh?
-                    mDrawCommandsThisFrame[e_cast(meshData.mesh->getRenderPass())].emplace_back(meshData.drawCommands.get(), meshData.mesh);
-                    meshData.drawCommands->setNumActiveCommands(0);
-                    meshData.drawCommands->frameBegin();
-                }
-                else {
-                    meshData.drawCommands.reset();
-                }
-            }
-
-            // Set draw commands and transforms
-            for (ui32 index : batch.mVisibleIndices) {
-                const DynamicModelInstanceState& dynamicModel = dynamicModels[index];
-                // Set transform for this instance
-                if (camera.sphereIsVisible(dynamicModel.getPositionLowPrecision(), lodParams.boundingSphereRadius)) {
-                    const f32v3 cameraRelativePos = f32v3(f64v3(dynamicModel.positionXY.x, dynamicModel.positionXY.y, dynamicModel.positionZ) - f64v3(camera.getPosition()));
-                    const f32 distance2 = glm::length2(cameraRelativePos);
-                    if (distance2 < lodParams.lodDistancesSQ[3]) {
-                        transformsArray[transformIndex] = MathUtil::createTransformMatrix(cameraRelativePos, dynamicModel.orientation, 1.0f);
-                        variantsArray[transformIndex] = 0; //dynamicModel.variantIndex; // TODO: Variants
-                        for (auto& meshData : batch.mMeshData) {
-                            MeshLODDrawInfo* drawInfos = meshData.drawInfos;
-                            DrawElementsIndirectCommand& cmd = meshData.drawCommands->appendCommand();
-                            // build draw command
-                            cmd.instanceCount_ = 1;
-                            cmd.baseInstance_ = transformOffset + transformIndex;
-                            cmd.baseVertex_ = 0;
-                            MeshLODDrawInfo drawInfo;
-                            if (distance2 < lodParams.lodDistancesSQ[0] || sDebugOptions.mDisableLOD) {
-                                drawInfo = drawInfos[0];
-                            }
-                            else if (distance2 < lodParams.lodDistancesSQ[1]) {
-                                drawInfo = drawInfos[1];
-                            }
-                            else if (distance2 < lodParams.lodDistancesSQ[2]) {
-                                drawInfo = drawInfos[2];
-                            }
-                            else {
-                                drawInfo = drawInfos[3];
-                            }
-                            cmd.count_ = drawInfo.indexCount;
-                            cmd.firstIndex_ = drawInfo.startIndex;
-                        } // meshData
-                        ++transformIndex;
-                    }
-                }
-            } // modelIndex
-
-            // Upload draw commands
-            for (auto& meshData : batch.mMeshData) {
-                if (meshData.drawCommands) {
-                    meshData.drawCommands->uploadDrawCommands();
-                }
-            }
-
-            ++it;
+    // Clear stale refs
+    for (auto it = mModelDefRefs.begin(); it != mModelDefRefs.end();) {
+        if (it->second.refCount == 0) [[unlikely]] {
+            it = mModelDefRefs.erase(it);
         }
         else {
-            it = mModelBatchesThisFrame.erase(it);
+            ++it;
         }
     }
-    // When items are culled due to distance transformIndex will be less
-    assert(transformIndex <= totalTransforms);
-    mTransformsBuffer->flushDataAndIncrementFrame(transformIndex);
-    mVariantsBuffer->flushDataAndIncrementFrame(transformIndex);
 }
 
 void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType renderPass) {
@@ -195,24 +159,45 @@ void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType rende
     }
     PROFILE_FUNCTION();
 
-    MaterialRenderer::bindMaterialShaderForRender(*mStandardMaterial);
+    const MaterialShaderDef* shaderDef = nullptr;
+    switch (renderPass) {
+        case MaterialRenderPassType::Default:
+            shaderDef = mStandardShader;
+            break;
+        case MaterialRenderPassType::Smudge:
+            shaderDef = mSmudgeShader;
+            break;
+        default:
+            panic("Unsupported dynamic render pass {}", (int)renderPass);
+            break;
 
-    for (auto& drawCommandPair : mDrawCommandsThisFrame[e_cast(renderPass)]) {
-        GLDrawCommandBuffer* drawCommands = drawCommandPair.first;
-      /*  const Mesh& mesh = *drawCommandPair.second;
-        mesh.bindDynamicModelAttribs();*/
-
-        // Variant data
-        
-        //glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
-
-        // TODO: I think this might be cheaper as an SSBO so we aren't binding to every mesh
-        //mTransformsBuffer->bindAsVertexArrayVertexBuffer(mesh.mGpuData.mVao, MODEL_TRANSFORMS_BINDING_POINT, 0, sizeof(f32m4));
-        //GL.glVertexArrayVertexBuffer(vao, MODEL_INSTANCE_DATA_BINDING_POINT, modelManager.mInstanceDataVbo, 0, sizeof(InstancedStaticModelManager::InstanceGpuData));
-        //static_assert(sizeof(InstancedStaticModelManager::InstanceGpuData) == sizeof(ui32v3));
-
-        //MeshDrawer::drawIndirect(mesh.mGpuData, drawCommands);
     }
 
-    checkGlError("InstancedDynamicModelRenderer::renderModelPass");
+    MaterialRenderer::bindMaterialShaderForRender(*shaderDef);
+
+    GLDrawCommandBuffer* drawCommands = mDrawCommands[e_cast(renderPass)].get();
+    if (drawCommands && drawCommands->getNumActiveCommands()) {
+
+        ModelRepository& modelRepo = ModelRepository::get();
+        // Talia said we never need more than 65536 verts
+        // TODO: Handle skeletal vertex type? Or better yet skeletal attributes are separated?
+        const ModelBatch& batch = modelRepo.getModelBatch(ModelBatchKey{ MeshIndexType::USHORT, VertexType::STANDARD_MODEL, renderPass });
+
+        // Variant data
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_SSBO, modelRepo.getModelVariantDataSSBO());
+
+        // Bind our transforms every frame as we could be using different instanced static model managers
+        VGBuffer vao = batch.getVao();
+        mTransformsBuffer->bindAsVertexArrayVertexBuffer(vao, MODEL_TRANSFORMS_BINDING_POINT, 0, sizeof(f32m4));
+        mVariantIndexBuffer->bindAsVertexArrayVertexBuffer(vao, MODEL_INSTANCE_DATA_BINDING_POINT, 0, sizeof(ui32));
+
+        batch.bindStaticModelAttribs();
+        batch.setInstanceDataAttribFormat(1);
+
+        glBindVertexArray(vao);
+        assert(batch.getIndexType() == MeshIndexType::USHORT);
+        drawCommands->multiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT);
+
+        checkGlError("InstancedDynamicModelRenderer::renderModelPass");
+    }
 }

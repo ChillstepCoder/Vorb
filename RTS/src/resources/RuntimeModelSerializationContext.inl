@@ -13,15 +13,15 @@ public:
         // Version
         s.value2b(RUNTIME_MODEL_SERIALIZE_VERSION);
         // Submodels
-        const ui16 numMeshes = (ui16)mModelDef.mMeshes.size();
+        const ui16 numMeshes = (ui16)mModelDef.mSubmeshData.size();
         s.value2b(numMeshes);
         for (size_t i = 0; i < numMeshes; ++i) {
-            const MeshCpuData& meshData = mModelDef.mMeshes[i]->mCpuData;
+            const MeshCpuData& meshData = mModelDef.mSubmeshCpuData[i];
             const ModelSubmeshData& submeshData = mModelDef.mSubmeshData[i];
             // Name
             s.object(submeshData.name);
             // Render Pass
-            const ui8 renderPass = e_cast(mModelDef.mMeshes[i]->getRenderPass());
+            const ui8 renderPass = e_cast(submeshData.renderPass);
             s.value1b(renderPass);
             // LOD data
             s.object(meshData.mLodData);
@@ -70,7 +70,7 @@ public:
             // Skeleton
             if (mModelDef.isSkeletalModel()) {
                 s.boolValue(1); // HasSkeleton
-                const MeshSkeletonData& skeletonData = mModelDef.getSkeletalMesh(i).getSkeletonData();
+                const MeshSkeletonData& skeletonData = mModelDef.mSubmeshSkeletonData[i];
                 s.ext(skeletonData.mJointRemaps, bitsery::ext::PodStructUniquePointerArray(skeletonData.mNumJoints));
                 s.ext(skeletonData.mInverseBindPoses, bitsery::ext::PodStructUniquePointerArray(skeletonData.mNumJoints));
             }
@@ -92,26 +92,22 @@ public:
         s.value2b(numMeshes);
         assert(numMeshes && numMeshes <= MAX_SUBMODELS);
 
-        mModelDef.mMeshes.resize(numMeshes);
+        mModelDef.mSubmeshCpuData.resize(numMeshes);
         mModelDef.mSubmeshData.resize(numMeshes);
         mModelDef.mTotalSubmeshJointTransformsNeeded = 0;
+        if (mModelDef.isSkeletalModel()) {
+            mModelDef.mSubmeshSkeletonData.resize(numMeshes);
+        }
         for (size_t i = 0; i < numMeshes; ++i) {
-            if (mModelDef.isSkeletalModel()) {
-                mModelDef.mMeshes[i] = std::make_unique<SkeletalMesh>();
-            }
-            else {
-                mModelDef.mMeshes[i] = std::make_unique<Mesh>();
-            }
-            MeshCpuData& meshData = mModelDef.mMeshes[i]->mCpuData;
+            MeshCpuData& meshData = mModelDef.mSubmeshCpuData[i];
             ModelSubmeshData& submeshData = mModelDef.mSubmeshData[i];
 
-            mModelDef.mMeshes[i]->setSubmeshData(&submeshData);
             // Name
             s.object(submeshData.name);
             // Render Pass
             ui8 renderPass;
             s.value1b(renderPass);
-            mModelDef.mMeshes[i]->setRenderPass(static_cast<MaterialRenderPassType>(renderPass));
+            submeshData.renderPass = static_cast<MaterialRenderPassType>(renderPass);
             // LOD data
             s.object(meshData.mLodData);
             // AABB
@@ -165,7 +161,7 @@ public:
             }
 
             if (hasSkeleton) {
-                MeshSkeletonData& skeletonData = mModelDef.getSkeletalMesh(i).getSkeletonData();
+                MeshSkeletonData& skeletonData = mModelDef.mSubmeshSkeletonData[i];
                 ui32 numRemaps;
                 ui32 numBindPoses;
                 s.ext(skeletonData.mJointRemaps, bitsery::ext::PodStructUniquePointerArray(numRemaps));

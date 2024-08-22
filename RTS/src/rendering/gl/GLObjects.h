@@ -96,6 +96,7 @@ public:
                 (DrawElementsIndirectCommand*)mIndirectBuffer.frameBeginAndGetDataForUpdate(),
                 mIndirectBuffer.getMaxElements()
             );
+        mNumActiveCommands = 0;
     }
 
     GLuint getHandle() const { return mIndirectBuffer.getBufferObject(); }

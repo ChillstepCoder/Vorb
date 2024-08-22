@@ -18,16 +18,16 @@ struct FishGPUData {
 };
 static_assert(sizeof(FishGPUData) == 32);
 
-class FishInstanceData {
+class FishInstanceBatch {
 public:
-    FishInstanceData();
-    ~FishInstanceData();
+    FishInstanceBatch();
+    ~FishInstanceBatch();
 
-    VORB_NON_COPYABLE_BUT_MOVABLE(FishInstanceData);
+    VORB_NON_COPYABLE_BUT_MOVABLE(FishInstanceBatch);
 
     FishGPUData* mMappedInstanceDataBuffer = nullptr;
     VGBuffer mInstanceDataBuffer = 0;
-    const Mesh* mMesh = nullptr;
+    ModelID mModelID = INVALID_MODEL_ID;
     AssetHandlePtr<FishDef> mHandle;
 };
 
@@ -46,7 +46,7 @@ private:
     // TODO: We really need to batch multiple fish models into a single VBO
     // One buffer per fish ID
     FlatMap<AssetID, ui32> mFishInstanceDataIndexThisFrame;
-    std::vector<FishInstanceData> mFishInstanceData;
+    std::vector<FishInstanceBatch> mFishInstanceBatches;
     std::vector<ui32> mInstanceCountsThisFrame;
     GLsync mFence[3] = { 0 };
     int mFrameIndex = 0;

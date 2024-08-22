@@ -10,6 +10,7 @@ ModelBatch::~ModelBatch() {
 
 void ModelBatch::bindStaticModelAttribs() const {
     assert(mVao);
+    setInstanceDataAttribFormat(3);
     if (mCurrentAttribBinding != AttribBinding::Static) [[unlikely]] {
         unbindCurrentAttribs();
         mCurrentAttribBinding = AttribBinding::Static;
@@ -30,7 +31,6 @@ void ModelBatch::bindStaticModelAttribs() const {
 
         // InstanceData
         glEnableVertexArrayAttrib(mVao, 13);
-        glVertexArrayAttribIFormat(mVao, 13, 3, GL_UNSIGNED_INT, 0);
         glVertexArrayAttribBinding(mVao, 13, MODEL_INSTANCE_DATA_BINDING_POINT);
         glVertexArrayBindingDivisor(mVao, MODEL_INSTANCE_DATA_BINDING_POINT, 1);
     }
@@ -48,6 +48,7 @@ void ModelBatch::unbindStaticModelAttribs() const {
 
 void ModelBatch::bindSkeletalModelAttribs() const {
     assert(mVao);
+    setInstanceDataAttribFormat(1);
     if (mCurrentAttribBinding != AttribBinding::Skeletal) [[unlikely]] {
         unbindCurrentAttribs();
         mCurrentAttribBinding = AttribBinding::Skeletal;
@@ -56,7 +57,6 @@ void ModelBatch::bindSkeletalModelAttribs() const {
 
         // InstanceData
         glEnableVertexArrayAttrib(mVao, 13);
-        glVertexArrayAttribIFormat(mVao, 13, 1, GL_UNSIGNED_INT, 0);
         glVertexArrayAttribBinding(mVao, 13, MODEL_INSTANCE_DATA_BINDING_POINT);
         glVertexArrayBindingDivisor(mVao, MODEL_INSTANCE_DATA_BINDING_POINT, 1);
     }
@@ -82,4 +82,11 @@ void ModelBatch::unbindCurrentAttribs() const {
             break;
     }
     static_assert(e_count(AttribBinding) == 3, "Update unbindCurrentAttribs");
+}
+
+void ModelBatch::setInstanceDataAttribFormat(int size) const {
+    if (mInstanceDataSize != size) {
+        mInstanceDataSize = size;
+        glVertexArrayAttribIFormat(mVao, 13, size, GL_UNSIGNED_INT, 0);
+    }
 }

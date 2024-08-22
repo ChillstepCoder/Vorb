@@ -21,6 +21,8 @@ public:
     StrToken getAssetExtension() const override { return CStrToken("fish"); }
     const char* const getAssetTypeDisplayName() const override { return "Fish"; }
 
+    void onAllAssetTypesRegistered() override;
+
 protected:
     void onRegisteredAsset(AssetID id) override;
     AssetLoadFunc getAssetLoadFunc() override;

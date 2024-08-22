@@ -22,10 +22,6 @@ DECL_VG(class GLProgram);
 // Allows us to look up the specific model at a position for a tile container
 typedef std::map<TileIndex, TileModelInstance> SpatialInstanceDataMap;
 
-struct ModelDefRef {
-    AssetHandlePtr<ModelDef> handle;
-    int refCount = 1;
-};
 
 struct PendingModelInstance {
     TileContainerID containerId;

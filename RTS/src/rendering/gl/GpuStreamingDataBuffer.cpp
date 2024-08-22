@@ -30,6 +30,7 @@ void* GpuStreamingDataBuffer::frameBeginAndGetDataForUpdate() {
             // Keep waiting
         }
         glDeleteSync(mFence[mFrameIndex]);
+        mFence[mFrameIndex] = 0;
     }
 
     const int bufferOffsetBytes = mFrameIndex * mElementSize * mMaxElements;
@@ -45,7 +46,7 @@ int GpuStreamingDataBuffer::flushDataAndIncrementFrame(ui32 elementCount) {
 
     mFence[mFrameIndex] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
-    const int bufferStartIndex = mFrameIndex * mMaxElements;
+    const int bufferStartIndex = getCurrentElementOffset();
 
     incrementMod3(mFrameIndex);
 
@@ -57,7 +58,7 @@ void GpuStreamingDataBuffer::bindBufferAsSSBO(GLuint bindingPoint) {
 }
 
 void GpuStreamingDataBuffer::bindAsVertexArrayVertexBuffer(VGBuffer targetVao, GLuint bindingIndex, GLintptr offset, GLsizei stride) {
-    glVertexArrayVertexBuffer(targetVao, bindingIndex, mBufferObject, offset, stride);
+    glVertexArrayVertexBuffer(targetVao, bindingIndex, mBufferObject, mByteOffsetLastFlush + offset, stride);
 }
 
 void GpuStreamingDataBuffer::initBuffer()

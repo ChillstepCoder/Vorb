@@ -71,8 +71,7 @@ void AssetEditorViewportPanelBase::renderMeshStatic(const ModelDef* modelAsset, 
             GL_TRIANGLES,
             drawInfo.indexCount,
             e_cast(modelBatch.getIndexType()),
-            (const GLvoid*)(drawInfo.startIndex * (modelBatch.getIndexType() == MeshIndexType::UINT ? 
-                sizeof(ui32) : sizeof(ui16))) /* offset */,
+            (const GLvoid*)(drawInfo.startIndex * modelBatch.getIndexSize()) /* offset */,
             drawData.baseVertex
         );
     };
@@ -164,30 +163,30 @@ void AssetEditorViewportPanelBase::renderMeshSkeletalBlended(const ModelDef* mod
     }
 
     for (int i = 0; i < modelAsset->getNumMeshes(); ++i) {
-        const SkeletalMesh& mesh = modelAsset->getSkeletalMesh(i);
-        const MeshSkeletonData& skelData = mesh.getSkeletonData();
+        const MeshSkeletonData& skelData = modelAsset->mSubmeshSkeletonData[i];
         // TODO: ANIM SHARE FOR LINKED SUBMESHES
-        mesh.unbindCurrentAttribs(); // Editor doesnt use these
-        SkinnedModelVertex::bindVertexAttribs(mesh.mGpuData.mVao); // Have to do this or crash
-        assert(mesh.mVariantDataUbo);
-        assert(false); // FIX
-        //glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
+        assert(false);
+        //mesh.unbindCurrentAttribs(); // Editor doesnt use these
+        //SkinnedModelVertex::bindVertexAttribs(mesh.mGpuData.mVao); // Have to do this or crash
+        //assert(mesh.mVariantDataUbo);
+        //assert(false); // FIX
+        ////glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
 
-        OzzMatrixVector skinningMatrices;
-        if (modelMatrices.size()) {
-            skinningMatrices.resize(skelData.mNumJoints);
-            if (!SkeletalAnimator::skinModelMatricesToMesh(ozz::make_span(modelMatrices), skelData, ozz::make_span(skinningMatrices))) {
-                panic("Anim skinning fail!");
-            }
-        }
-        else {
-            // Init to identity for T pose
-            skinningMatrices.resize(skelData.mNumJoints, ozz::math::Float4x4::identity());
-        }
-        // Draw animated
-        glUniformMatrix4fv(shader->getUniform("unBoneTransforms[0]"), skelData.mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
-        // TODO: Indirect?
-        MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(lod));
+        //OzzMatrixVector skinningMatrices;
+        //if (modelMatrices.size()) {
+        //    skinningMatrices.resize(skelData.mNumJoints);
+        //    if (!SkeletalAnimator::skinModelMatricesToMesh(ozz::make_span(modelMatrices), skelData, ozz::make_span(skinningMatrices))) {
+        //        panic("Anim skinning fail!");
+        //    }
+        //}
+        //else {
+        //    // Init to identity for T pose
+        //    skinningMatrices.resize(skelData.mNumJoints, ozz::math::Float4x4::identity());
+        //}
+        //// Draw animated
+        //glUniformMatrix4fv(shader->getUniform("unBoneTransforms[0]"), skelData.mNumJoints, false, (const GLfloat*)&skinningMatrices[0].cols);
+        //// TODO: Indirect?
+        //MeshDrawer::draw(mesh.mGpuData, MeshLODLevel(lod));
     }
     checkGlError("AssetEditorViewportPanelBase::renderMeshSkeletal");
 }

@@ -77,16 +77,10 @@ void ModelHighlightRenderer::renderModelHighlight(const SelectedObjectData& sele
         }
 
         for (i32 m = 0; m < def->getNumMeshes(); ++m) {
-            //const Mesh& mesh = def->getMesh(m);
-            //mesh.bindDynamicModelAttribs();
-            //glBindBufferBase(GL_UNIFORM_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_UBO, mesh.mVariantDataUbo);
-            const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawDataArray(submeshSpanKey)[i];
+            const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawDataArray(submeshSpanKey)[m];
             const ModelBatch& modelBatch = modelRepo.getModelBatch(drawData.batchID);
-            modelBatch.bindSkeletalModelAttribs(); // Editor doesn't use these
+            modelBatch.bindStaticModelAttribs();
             glBindVertexArray(modelBatch.getVao());
-            // TODO: REPLACE
-            assert(false);
-            //glVertexArrayVertexBuffer(modelBatch.getVao(), MODEL_INSTANCE_DATA_BINDING_POINT, mVariantIndexVbo, 0, sizeof(ui32));
             const MeshLODDrawInfo& drawInfo = drawData.lodDrawInfo[0];
             // TODO: Indirect?
             glDrawElementsBaseVertex(
