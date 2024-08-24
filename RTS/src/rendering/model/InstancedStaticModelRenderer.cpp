@@ -86,10 +86,6 @@ void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelMan
 
     ui32 nextTextureIndex = 0;
     MaterialRenderer::bindMaterialShaderForRender(*def, &nextTextureIndex);
-    VGUniform windUniform = 0;
-    if (const VGUniform* uniform = def->tryGetUniform("unWindType")) {
-        windUniform = *uniform;
-    }
 
     if (passType == MaterialRenderPassType::Water) {
         // TODO: UBO?
@@ -139,11 +135,6 @@ void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelMan
     MaterialRepository::get().getAssetHandle(CStrToken("wood_chopping_texture_01"));
     if (def->tryGetUniform("unDamageTexture")) {
         glUniform1ui(def->getUniform("unDamageTexture"), MaterialRepository::get().getMaterialId(CStrToken("wood_chopping_texture_01")));
-    }
-
-    // TODO: Not uniform, instead per model when we have improved batching
-    if (windUniform) {
-        glUniform1i(windUniform, 0/*(GLint)mesh.getSubmeshData()->windType*/);
     }
 
     ModelRepository& modelRepo = ModelRepository::get();

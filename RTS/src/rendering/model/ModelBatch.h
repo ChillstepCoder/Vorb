@@ -27,6 +27,7 @@ public:
     VGBuffer getVao() const { return mVao; }
     MeshIndexType getIndexType() const { return mIndexType; }
     size_t getIndexSize() const { return mIndexType == MeshIndexType::UINT ? sizeof(ui32) : sizeof(ui16); }
+    ModelBatchID getId() const { return mBatchID; }
 private:
     VGBuffer  mVao = 0;
     VGBuffer  mVbo = 0;

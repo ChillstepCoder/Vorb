@@ -80,6 +80,11 @@ constexpr LocTextID INVALID_LOC_TEXT_ID = std::numeric_limits<LocTextID>::max();
 using EntityUid = ui64;
 constexpr EntityUid INVALID_ENTITY_UID = 0;
 
+// This could be ui16 if we have less that 65536 submeshes
+// Which would shrink character model components
+using SubmeshID = i32;
+constexpr SubmeshID INVALID_SUBMESH_ID = std::numeric_limits<SubmeshID>::max();
+
 // UIDs
 typedef ui32 CityUID; // We dont make many cities so ui32 is fine. We can always change it later
 typedef ui32 SettlementUID;

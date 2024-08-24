@@ -73,7 +73,7 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
         ImGui::Text("MeshCount %d", mAssetData->getNumMeshes());
         int polyCount = 0;
         for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
-            const ModelBatchSubmeshDrawData& drawData = ModelRepository::get().getSubmeshDrawDataArray(mAssetData->getID())[i];
+            const ModelBatchSubmeshDrawData& drawData = ModelRepository::get().getSubmeshDrawDataArrayForModel(mAssetData->getID())[i];
             polyCount += drawData.lodDrawInfo[mLod].indexCount / 3;
         }
         ImGui::Text("Polygons %d", polyCount);

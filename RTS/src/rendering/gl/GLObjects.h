@@ -115,6 +115,9 @@ public:
 
     void multiDrawElementsIndirect(GLenum mode, GLenum type) const;
 
+    // For example if fuzz is 64 it will not deallocate until the size is 64 less than the current capacity
+    static bool reallocateFuzzedIfNeeded(std::unique_ptr<GLDrawCommandBuffer>& bufferPtr, size_t requiredCapacity, size_t fuzz);
+
 private:
     std::span<DrawElementsIndirectCommand> mDrawCommands;
     GpuStreamingDataBuffer mIndirectBuffer;

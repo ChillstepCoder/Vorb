@@ -42,6 +42,7 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
     entt::registry& registry = ecs.mRegistry;
     const entt::entity newEntity = registry.create();
     // Copy components over to new entity
+    ModelRepository& modelRepo = ModelRepository::get();
     ResourceManager& resourceManager = Services::ResourceManager::ref();
     //todo_use_ryml; // TODO: USE RYML
     const EntityDef& edef = EntityRepository::get().getLoadedAsset(typeToken);
@@ -66,7 +67,15 @@ entt::entity EntityFactory::createEntity(World& world, f32v3 position, StrToken 
                 CharacterModelComponentDef& cdef = static_cast<CharacterModelComponentDef&>(*defInst.componentDef);
                 // TODO: Select correct model
                 assert(cdef.model.isValid());
-                registry.emplace<CharacterModelComponent>(newEntity, cdef.model.getAssetID());
+                ModularHumanoidCharacterModel model;
+                model.baseModel = cdef.model.getAssetID();
+                const ModelDef& baseDef = modelRepo.getLoadedOrUnloadedAsset(model.baseModel);
+                // Default submodels for now
+                //assert(baseDef.mSubmeshData.size() == e_count(HumanoidSubmeshPart));
+                for (size_t i = 0; i < baseDef.mSubmeshData.size(); ++i) {
+                    model.partIds[i] = baseDef.mSubmeshData[i].submeshId;
+                }
+                registry.emplace<CharacterModelComponent>(newEntity, model, nullptr);
                 break;
             }
             case ComponentType::CharacterControl: {

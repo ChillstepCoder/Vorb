@@ -97,7 +97,7 @@ void FishRenderer::renderFishEcosystem(const Camera3D& camera, const World& worl
             // Only one mesh is currently supported for fish
 
             ModelBatchSubmeshDrawDataSpanKey submeshSpanKey = modelRepo.getDrawDataSpanKeyForModel(instanceData.mModelID);
-            const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawDataArray(submeshSpanKey)[0];
+            const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawDataArrayForModel(submeshSpanKey)[0];
             const ModelBatch& modelBatch = modelRepo.getModelBatch(drawData.batchID);
             modelBatch.unbindCurrentAttribs(); // Fish renderer doesn't use these
             glBindVertexArray(modelBatch.getVao());

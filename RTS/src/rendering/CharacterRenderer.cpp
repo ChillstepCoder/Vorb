@@ -44,15 +44,16 @@ void decomposeMatrix(const f64m4& m, f64v3& pos, f64q& rot) {
 constexpr i32 TRANSFORMS_PADDING_SIZE = 4;
 
 struct CharacterRendererCharacterState {
-    //CharacterAnimState animState;
-    AnimMachineInstance mAnimInstance;
-    const CharacterRenderState* renderStateThisFrame = nullptr;
-    std::vector<LinkedSubmodel> mLinkedSubmodels;
+    AnimMachineInstance animInstance;
+    std::vector<LinkedSubmodelData> linkedSubmodels;
+    ModularHumanoidCharacterModel modularModel;
+    i32 boneTransformCount = 0; // Based on submesh transform count, varies based on skinning
+    i16 submeshPartCount = 0;
 };
 
 CharacterRenderer::CharacterRenderer() :
     mShaderHandle(MaterialShaderRepository::get().getAssetHandle(CStrToken("character"))) {
-
+    mConsumerToken = std::make_unique<moodycamel::ConsumerToken>(mModelsToUpdate);
 }
 
 CharacterRenderer::~CharacterRenderer() {
@@ -82,29 +83,27 @@ void CharacterRenderer::onWorldBegin(World& world) {
 
 void CharacterRenderer::frameBegin() {
     ASSERT_RENDER_THREAD();
-    // TODO: REMOVE
-    if (!mVariantIndexVbo) {
-        glCreateBuffers(1, &mVariantIndexVbo);
-    }
 
     constexpr ui32 BULK_DEQUEUE_SIZE = 16;
     CharacterModelUpdateData modelsToUpdate[BULK_DEQUEUE_SIZE];
 
-    if (const size_t count = mModelsToUpdate.try_dequeue_bulk(modelsToUpdate, BULK_DEQUEUE_SIZE)) {
+    if (const size_t count = mModelsToUpdate.try_dequeue_bulk(*mConsumerToken, modelsToUpdate, BULK_DEQUEUE_SIZE)) {
         for (size_t i = 0; i < count; ++i) {
             CharacterModelUpdateData& updateData = modelsToUpdate[i];
             switch (updateData.type) {
                 case CharacterModelUpdateType::Add:
-                    addCharacterModelInternal(updateData.entityId, updateData.modelId);
+                    addCharacterModelInternal(updateData.entityId, updateData.model, std::move(updateData.submodels));
                     break;
                 case CharacterModelUpdateType::Remove:
-                    removeCharacterModelInternal(updateData.entityId, updateData.modelId);
+                    removeCharacterModelInternal(updateData.entityId);
                     break;
                 case CharacterModelUpdateType::AddSubmodel:
-                    addSubmodelInternal(updateData.entityId, updateData.submodel);
+                    assert(updateData.submodels.size() == 1);
+                    addSubmodelInternal(updateData.entityId, updateData.submodels[0]);
                     break;
                 case CharacterModelUpdateType::RemoveSubmodel:
-                    removeSubmodelInternal(updateData.entityId, updateData.submodel);
+                    assert(updateData.submodels.size() == 1);
+                    removeSubmodelInternal(updateData.entityId, updateData.submodels[0]);
                     break;
                 default:
                     assert(false);
@@ -116,34 +115,33 @@ void CharacterRenderer::frameBegin() {
     }
 }
 
-void CharacterRenderer::addCharacterModel(entt::entity entityId, AssetID modelId) {
+void CharacterRenderer::addCharacterModel(entt::entity entityId, ModularHumanoidCharacterModel modularCharacter, std::vector<LinkedSubmodelData> submodels) {
     if (IS_RENDER_THREAD()) {
-        addCharacterModelInternal(entityId, modelId);
+        addCharacterModelInternal(entityId, modularCharacter, std::move(submodels));
     }
     else {
-        mModelsToUpdate.enqueue({ entityId, modelId, CharacterModelUpdateType::Add });
+        mModelsToUpdate.enqueue({ entityId, modularCharacter, std::move(submodels) });
     }
 }
 
-void CharacterRenderer::removeCharacterModel(entt::entity entityId, AssetID modelId) {
+void CharacterRenderer::removeCharacterModel(entt::entity entityId) {
     if (IS_RENDER_THREAD()) {
-        removeCharacterModelInternal(entityId, modelId);
+        removeCharacterModelInternal(entityId);
     }
     else {
-        mModelsToUpdate.enqueue({ entityId, modelId, CharacterModelUpdateType::Remove });
+        mModelsToUpdate.enqueue({ entityId, CharacterModelUpdateType::Remove });
     }
 }
 
 void CharacterRenderer::playOneShotAnimation(entt::entity entityId, AssetID animationId) {
-    auto&& it = mEntityCharacterRenderData.find(entityId);
-    // TODO: Ensure?
-    assert(it != mEntityCharacterRenderData.end());
-    if (it != mEntityCharacterRenderData.end()) {
 
-        // TODO: Allow lazy load anim? hmmm prob not?
+    ModelRepository& modelRepo = ModelRepository::get();
+    auto it = mCharacterModels.find(entityId);
+    if (it != mCharacterModels.end()) {
+        // TODO: Allow lazy load anim + catchup?
         const AnimationDef* animDef = AnimationRepository::get().tryGetLoadedAsset(animationId);
         if (!animDef) panic("Tried to play one shot anim {} that was not loaded", animationId);
-        it->second->mAnimInstance.tryPlayOneShot(*animDef);
+        it->second.animInstance.tryPlayOneShot(*animDef);
     }
 }
 
@@ -152,256 +150,256 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
     PROFILE_FUNCTION();
 
     ModelRepository& modelRepo = ModelRepository::get();
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_SSBO, modelRepo.getModelVariantDataSSBO());
 
     const MaterialShaderDef* shaderDef = mShaderHandle->tryGetLoadedAsset();
     if (!shaderDef) return;
 
-    // We will render sorted by model ID, so pair up all render states this frame
-    // TODO: Also sort anim machine?
-    for (const auto& character : characters) {
-        auto&& it = mEntityCharacterRenderData.find(character.mEntityID);
-        if (it != mEntityCharacterRenderData.end()) {
-            it->second->renderStateThisFrame = const_cast<CharacterRenderState*>(&character);
+    if (!mTotalSubmeshParts) [[unlikely]] return;
+
+    static_assert(sizeof(f32m4) == sizeof(ozz::math::Float4x4));
+    GpuStreamingDataBuffer::reallocateFuzzedIfNeeded(mBoneTransformsBuffer, mTotalJointTransforms, sizeof(f32m4), 256);
+    GpuStreamingDataBuffer::reallocateFuzzedIfNeeded(mModelTransformsBuffer, characters.size(), sizeof(f32m4), 64);
+    GpuStreamingDataBuffer::reallocateFuzzedIfNeeded(mSubmeshDataBuffer, mTotalSubmeshParts, sizeof(SubmeshInstanceData), 128);
+    // TODO: Other shader passes
+    GLDrawCommandBuffer::reallocateFuzzedIfNeeded(mDrawCommands, mTotalSubmeshParts, 128);
+
+    ozz::math::Float4x4* boneTransformsArray = static_cast<ozz::math::Float4x4*>(mBoneTransformsBuffer->frameBeginAndGetDataForUpdate());
+    f32m4* modelTransformsArray = static_cast<f32m4*>(mModelTransformsBuffer->frameBeginAndGetDataForUpdate());
+    SubmeshInstanceData* submeshDataArray = static_cast<SubmeshInstanceData*>(mSubmeshDataBuffer->frameBeginAndGetDataForUpdate());
+    mDrawCommands->frameBegin();
+
+    const ui32 boneTransformOffset = mBoneTransformsBuffer->getCurrentElementOffset();
+    const ui32 modelTransformOffset = mModelTransformsBuffer->getCurrentElementOffset();
+
+    ui32 numDrawCommands = 0;
+    ui32 boneTransformsIndex = 0;
+    ui32 modelTransformsIndex = 0;
+    ui32 submeshDataIndex = 0;
+    for (const CharacterRenderState& frameState : characters) {
+        auto it = mCharacterModels.find(frameState.mEntityID);
+        if (it == mCharacterModels.end()) {
+            continue;
         }
-    }
 
-    // TODO: Camera culling
+        CharacterRendererCharacterState& characterState = it->second;
+        const ModularHumanoidCharacterModel& modularCharacter = characterState.modularModel;
+        const ModelLodParams& lodParams = ModelRepository::get().getLodParams(modularCharacter.baseModel);
+        const RigDef& rig = characterState.animInstance.getRig();
 
-    // TODO: UBO
-    MaterialRenderer::bindMaterialShaderForRender(*shaderDef);
-    VGUniform modelTransformUniform = shaderDef->mProgram.getUniform("unModelTransform");
-    VGUniform boneUniform = shaderDef->mProgram.getUniform("unBoneTransforms[0]");
-    for (auto& [modelID, renderData] : mModelRenderData) {
+        const f32v3& position = frameState.mPos;
+        const bool isVisible = camera.sphereIsVisible(position, lodParams.boundingSphereRadius);
 
-        // Lazy initialize
-        if (renderData.needsInitialize) [[unlikely]] {
-            if (!renderData.handle) {
-                renderData.handle = ModelRepository::get().getAssetHandle(modelID);
-            }
-            if (const ModelDef* modelDefPtr = renderData.handle->tryGetLoadedAsset()) {
-                // Create all anim instances
-                AssetID machineId = modelDefPtr->mAnimMachine->getID();
-                for (auto& [entityId, characterState] : renderData.entityCharacterModels) {
-                    characterState.mAnimInstance = AnimMachineInstance(machineId);
+        // TODO: combine with CharacterRenderState?
+        AnimVariables variables;
+        variables.locomotionMode = frameState.mLocomotionMode;
+        variables.velocity2d = frameState.mVelocity2D;
+        variables.speed = glm::length(frameState.mVelocity2D);
+        ozz::math::Float4x4 modelsBuffer[MAX_JOINTS_IN_RIG];
+        OzzMatrixSpan modelMatrices(modelsBuffer, rig.mSkeleton.num_joints());
 
-                    // Update any linked submodel cached bones
-                    const RigDef& rig = characterState.mAnimInstance.getRig();
-                    for (LinkedSubmodel& submodel : characterState.mLinkedSubmodels) {
-                        auto&& jit = rig.mJointNameToIndex.find(submodel.attachBone);
-                        assert(jit != rig.mJointNameToIndex.end());
-                        submodel.cachedAttachBoneIndex = jit->second;
-                    }
+        // Update animation TODO: Multithreaded?
+        // When not visible we pass null output buffer, signaling that we dont want to update bones, only tick the anim states
+        characterState.animInstance.update(elapsedSec, variables, isVisible ? modelMatrices : OzzMatrixSpan(nullptr, (size_t)0));
+
+        if (isVisible) {
+
+            // Manually set world translation (TODO: Can set this on transform initialize for less instructions)
+            const f32v3 offset = position - camera.getPosition();
+
+            const f32 angle = frameState.mRotation;
+
+            const f32 angleZ = DEG_TO_RAD(90.0f) + angle;
+            const f32 angleX = DEG_TO_RAD(90.0f);
+
+            const f32 cosZ = cosf(angleZ);
+            const f32 sinZ = sinf(angleZ);
+            const f32 cosX = cosf(angleX);
+            const f32 sinX = sinf(angleX);
+            const f32 oneMinusCosX = 1.f - cosX;
+
+            // Construct the combined transformation matrix
+            // Hand optimized form of this:
+            //transform = glm::rotate(transform, angleZ, f32v3(0.0f, 0.0f, 1.0f));
+            //transform = glm::rotate(transform, angleX, f32v3(1.0f, 0.0f, 0.0f));
+            const f32 tmp = cosX + oneMinusCosX;
+            modelTransformsArray[modelTransformsIndex] = f32m4(
+                cosZ * tmp, sinZ * tmp, 0.0f, 0.0f,
+                -sinZ * cosX, cosZ * cosX, sinX, 0.0f,
+                sinZ * sinX, -cosZ * sinX, cosX, 0.0f,
+                offset.x, offset.y, offset.z, 1.0f
+            );
+            const f32m4& cameraRelTransform = modelTransformsArray[modelTransformsIndex];
+
+            const f32 distSQ = glm::length2(offset);
+            MeshLODLevel lod = lodParams.selectLOD(distSQ);
+
+            // TODO: We should batch render these
+            for (SubmeshID partId : modularCharacter.partIds) {
+                if (partId == INVALID_SUBMESH_ID) [[unlikely]] {
+                    continue;
                 }
-                renderData.needsInitialize = false;
-            }
-            else {
-                // Still loading assets
-                continue;
-            }
-        }
 
+                SubmeshInstanceData& instanceData = submeshDataArray[submeshDataIndex];
+                instanceData.boneTransformStartIndex = boneTransformsIndex + boneTransformOffset;
+                instanceData.modelTransformIndex = modelTransformsIndex + modelTransformOffset;
+                instanceData.variantIndex = modelRepo.getSubmeshIndexDataOffset(partId);
 
-        const ModelDef& modelDef = renderData.handle->getLoadedAsset();
-        const ModelLodParams& lodParams = ModelRepository::get().getLodParams(modelID);
-        const RigDef& rig = *modelDef.mRig;
+                const MeshSkeletonData& skeletonData = *modelRepo.getSubmeshSkeletonData(partId);
+                const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawData(partId);
+                // Skin animation to mesh
+                OzzMatrixSpan skinningMatrices(&boneTransformsArray[boneTransformsIndex], skeletonData.mNumJoints);
+                if (!SkeletalAnimator::skinModelMatricesToMesh(ozz::make_span(modelMatrices), skeletonData, skinningMatrices)) {
+                    panic("Anim skinning fail!");
+                }
+                boneTransformsIndex += skeletonData.mNumJoints;
 
+                // TODO PROPER SKINNING
+                /*for (size_t j = 0; j < skeletonData.mNumJoints; ++j) {
+                    skinningMatrices[j] = ozz::math::Float4x4::identity();
+                }*/
 
-        ModelBatchSubmeshDrawDataSpanKey submeshSpanKey = modelRepo.getDrawDataSpanKeyForModel(modelID);
-        VariantIndexData variantIndexData = modelRepo.getVariantArrayIndexDataForModel(modelID);
-
-        const i32 numEntities = (i32)renderData.entityCharacterModels.size();
-        const i32 transformsNeeded = modelDef.mTotalSubmeshJointTransformsNeeded;
-        assert(transformsNeeded);
-        // Update transforms capacity if needed
-        if (!renderData.boneTransformsBuffer) {
-            renderData.boneTransformsBuffer = std::make_unique<GpuStreamingDataBuffer>(transformsNeeded * (numEntities + TRANSFORMS_PADDING_SIZE), sizeof(f32m4));
-        } else if (renderData.boneTransformsBuffer->getMaxElements() < transformsNeeded * numEntities) {
-            // Grow
-            renderData.boneTransformsBuffer->setMaxElements((transformsNeeded + 1) * (numEntities + TRANSFORMS_PADDING_SIZE));
-        } else if (renderData.boneTransformsBuffer->getMaxElements() > transformsNeeded * (numEntities + TRANSFORMS_PADDING_SIZE * 4)) {
-            // Shrink
-            renderData.boneTransformsBuffer->setMaxElements(transformsNeeded * (numEntities + TRANSFORMS_PADDING_SIZE));
-        }
-        //LOG_INFO("  TRANSFORMS DATA SIZE {} mb", 3.0f * (f32)renderData.boneTransformsBuffer->getMaxElements() * sizeof(f32m4) / 1024.0f / 1024.0f);
-
-        //f32m4* transformsPtr = (f32m4*)renderData.boneTransformsBuffer->frameBeginAndGetDataForUpdate();
-
-        // Render all characters with this model
-        for (auto& [entityId, characterState] : renderData.entityCharacterModels) {
-            // We require a render state to render, new entities may not have one
-            if (!characterState.renderStateThisFrame) [[unlikely]] {
-                continue;
-            }
-
-            const CharacterRenderState& character = *characterState.renderStateThisFrame;
-
-            const f32v3& position = character.mPos;
-            const bool isVisible = camera.sphereIsVisible(position, lodParams.boundingSphereRadius);
-
-            // TODO: combine with CharacterRenderState?
-            AnimVariables variables;
-            variables.locomotionMode = character.mLocomotionMode;
-            variables.velocity2d = character.mVelocity2D;
-            variables.speed = glm::length(character.mVelocity2D);
-            ozz::math::Float4x4 modelsBuffer[MAX_JOINTS_IN_RIG];
-            OzzMatrixSpan modelMatrices(modelsBuffer, rig.mSkeleton.num_joints());
-
-            // Update animation TODO: Multithreaded?
-            // When not visible we pass null output buffer, signaling that we dont want to update bones, only tick the anim states
-            characterState.mAnimInstance.update(elapsedSec, variables, isVisible ? modelMatrices : OzzMatrixSpan(nullptr, (size_t)0));
-
-            if (isVisible) {
-               
-
-                // Manually set world translation (TODO: Can set this on transform initialize for less instructions)
-                const f32v3 offset = position - camera.getPosition();
-
-                const f32 angle = character.mRotation;
-
-                const f32 angleZ = DEG_TO_RAD(90.0f) + angle;
-                const f32 angleX = DEG_TO_RAD(90.0f);
-
-                const f32 cosZ = cosf(angleZ);
-                const f32 sinZ = sinf(angleZ);
-                const f32 cosX = cosf(angleX);
-                const f32 sinX = sinf(angleX);
-                const f32 oneMinusCosX = 1.f - cosX;
-
-                // Construct the combined transformation matrix
-                // Hand optimized form of this:
-                //transform = glm::rotate(transform, angleZ, f32v3(0.0f, 0.0f, 1.0f));
-                //transform = glm::rotate(transform, angleX, f32v3(1.0f, 0.0f, 0.0f));
-                const f32 tmp = cosX + oneMinusCosX;
-                const glm::mat4 cameraRelTransform(
-                    cosZ * tmp, sinZ * tmp, 0.0f, 0.0f,
-                    -sinZ * cosX, cosZ * cosX, sinX, 0.0f,
-                    sinZ * sinX, -cosZ * sinX, cosX, 0.0f,
-                    offset.x, offset.y, offset.z, 1.0f
+                // TODO: Support others
+                assert(drawData.batchID == modelRepo.getModelBatch(
+                    ModelBatchKey{ MeshIndexType::USHORT, VertexType::SKINNED_MODEL,MaterialRenderPassType::Default }).getId()
                 );
 
-                glUniformMatrix4fv(modelTransformUniform, 1, false, &cameraRelTransform[0][0]);
+                // Build draw command
+                const MeshLODDrawInfo& drawInfo = drawData.lodDrawInfo[e_cast(lod)];
+                DrawElementsIndirectCommand& cmd = mDrawCommands->getDrawCommands()[numDrawCommands++];
+                cmd.baseInstance_ = submeshDataIndex;
+                cmd.instanceCount_ = 1;
+                cmd.baseVertex_ = drawData.baseVertex;
+                cmd.firstIndex_ = drawInfo.startIndex;
+                cmd.count_ = drawInfo.indexCount;
 
-                const f32 distSQ = glm::length2(offset);
-                MeshLODLevel lod = lodParams.selectLOD(distSQ);
+                ++submeshDataIndex;
+            }
 
-                // TODO: We should batch render these
-                for (ui32 i = 0; i < modelDef.getNumMeshes(); ++i) {
-                    //const SkeletalMesh& skeletalMesh = modelDef.getSkeletalMesh(i);
-                    //const MeshSkeletonData& skelData = skeletalMesh.getSkeletonData();
+            ++modelTransformsIndex;
 
-                    //// Skin animation to mesh
-                    //ozz::math::Float4x4 skinningBuffer[MAX_JOINTS_IN_RIG];
-                    //OzzMatrixSpan skinningMatrices(skinningBuffer, skelData.mNumJoints);
-                    //if (!SkeletalAnimator::skinModelMatricesToMesh(ozz::make_span(modelMatrices), skelData, skinningMatrices)) {
-                    //    panic("Anim skinning fail!");
-                    //}
+            // Submodels
+            for (LinkedSubmodelData& submodel : characterState.linkedSubmodels) {
+                AssetHandlePtr<ModelDef> submodelHandle = ModelRepository::get().getAssetHandle(submodel.modelId);
+                if (const ModelDef* def = submodelHandle->tryGetLoadedAsset()) {
 
-                    //for (size_t j = 0; j < skelData.mNumJoints; ++j) {
-                    //    skinningBuffer[j] = ozz::math::Float4x4::identity();
-                    //}
-
-                    //// TODO: We shouldn't do this for each submesh
-                    //glUniformMatrix4fv(boneUniform, skelData.mNumJoints, false, (const GLfloat*)skinningBuffer);
-
-                    //const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawDataArray(submeshSpanKey)[i];
-                    //const ModelBatch& modelBatch = modelRepo.getModelBatch(drawData.batchID);
-                    //modelBatch.bindSkeletalModelAttribs(); // Editor doesn't use these
-                    //glBindVertexArray(modelBatch.getVao());
-                    //glVertexArrayVertexBuffer(modelBatch.getVao(), MODEL_INSTANCE_DATA_BINDING_POINT, mVariantIndexVbo, 0, sizeof(ui32));
-                    //const MeshLODDrawInfo& drawInfo = drawData.lodDrawInfo[e_cast(lod)];
-                    //// TODO: Indirect?
-                    //glDrawElementsBaseVertex(
-                    //    GL_TRIANGLES,
-                    //    drawInfo.indexCount,
-                    //    e_cast(modelBatch.getIndexType()),
-                    //    (const GLvoid*)(drawInfo.startIndex * (modelBatch.getIndexType() == MeshIndexType::UINT ?
-                    //        sizeof(ui32) : sizeof(ui16))) /* offset */,
-                    //    drawData.baseVertex
-                    //);
-                }
-
-
-                // Submodels
-                for (LinkedSubmodel& submodel : characterState.mLinkedSubmodels) {
-                    AssetHandlePtr<ModelDef> submodelHandle = ModelRepository::get().getAssetHandle(submodel.submodelId);
-                    if (const ModelDef* def = submodelHandle->tryGetLoadedAsset()) {
-
-                        const f32m4 boneTransform = std::bit_cast<f32m4>(modelMatrices[submodel.cachedAttachBoneIndex]);
-                        const f64m4 worldTransform(
-                            cameraRelTransform[0][0], cameraRelTransform[0][1], 0.0f, 0.0f,
-                            cameraRelTransform[1][0], cameraRelTransform[1][1], cameraRelTransform[1][2], 0.0f,
-                            cameraRelTransform[2][0], cameraRelTransform[2][1], cameraRelTransform[2][2], 0.0f,
-                            position.x, position.y, position.z, 1.0f
-                        );
-                        f64q rotation;
-                        f64v3 worldPosition;
-                        decomposeMatrix(worldTransform * f64m4(boneTransform), worldPosition, rotation);
-                        outLinkedSubmodels.add(rotation, worldPosition, submodel.submodelId);
-                    }
+                    const f32m4 boneTransform = std::bit_cast<f32m4>(modelMatrices[submodel.attachBoneIndex]);
+                    const f64m4 worldTransform(
+                        cameraRelTransform[0][0], cameraRelTransform[0][1], 0.0f, 0.0f,
+                        cameraRelTransform[1][0], cameraRelTransform[1][1], cameraRelTransform[1][2], 0.0f,
+                        cameraRelTransform[2][0], cameraRelTransform[2][1], cameraRelTransform[2][2], 0.0f,
+                        position.x, position.y, position.z, 1.0f
+                    );
+                    f64q rotation;
+                    f64v3 worldPosition;
+                    decomposeMatrix(worldTransform * f64m4(boneTransform), worldPosition, rotation);
+                    outLinkedSubmodels.add(rotation, worldPosition, submodel.modelId);
                 }
             }
         }
-        //renderData.boneTransformsBuffer->flushDataAndIncrementFrame(1 /*TODO real count*/);
     }
+
+    if (!numDrawCommands) {
+        return;
+    }
+
+    mBoneTransformsBuffer->flushDataAndIncrementFrame(boneTransformsIndex);
+    mModelTransformsBuffer->flushDataAndIncrementFrame(modelTransformsIndex);
+    mSubmeshDataBuffer->flushDataAndIncrementFrame(submeshDataIndex);
+
+    mDrawCommands->setNumActiveCommands(numDrawCommands);
+    mDrawCommands->uploadDrawCommands();
+
+    MaterialRenderer::bindMaterialShaderForRender(*shaderDef);
+
+    const ModelBatch& modelBatch = modelRepo.getModelBatch(ModelBatchKey{ MeshIndexType::USHORT, VertexType::SKINNED_MODEL,MaterialRenderPassType::Default });
+    // Variant data
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MODEL_VARIANT_DATA_SSBO, modelRepo.getModelVariantDataSSBO());
+    mBoneTransformsBuffer->bindBufferAsSSBO(BUFFER_BASE_SKINNING_MATRICES);
+    mModelTransformsBuffer->bindBufferAsSSBO(BUFFER_BASE_MODEL_TRANSFORMS_SSBO);
+
+    VGBuffer vao = modelBatch.getVao();
+    mSubmeshDataBuffer->bindAsVertexArrayVertexBuffer(vao, MODEL_INSTANCE_DATA_BINDING_POINT, 0, sizeof(SubmeshInstanceData));
+    static_assert(sizeof(SubmeshInstanceData) == sizeof(ui32v3));
+    
+    modelBatch.bindSkeletalModelAttribs();
+
+    glBindVertexArray(vao);
+    assert(modelBatch.getIndexType() == MeshIndexType::USHORT);
+    mDrawCommands->multiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT);
+
+    // TODO: Material specific
+    glEnable(GL_CULL_FACE);
+    checkGlError("InstancedStaticModelRenderer::renderModelPass");
+
 }
 
 CharacterRendererCharacterState* CharacterRenderer::tryGetCharacterRenderStateForDebug(entt::entity entityId) {
     ASSERT_RENDER_THREAD();
-    for (auto& it : mModelRenderData) {
-        auto it2 = it.second.entityCharacterModels.find(entityId);
-        if (it2 != it.second.entityCharacterModels.end()) {
-            return &it2->second;
-        }
+    auto it = mCharacterModels.find(entityId);
+    if (it != mCharacterModels.end()) {
+        return &it->second;
     }
     return nullptr;
 }
 
-void CharacterRenderer::addCharacterModelInternal(entt::entity entityId, AssetID modelId) {
+void CharacterRenderer::addCharacterModelInternal(
+    entt::entity entityId,
+    const ModularHumanoidCharacterModel& modularCharacter,
+    std::vector<LinkedSubmodelData>&& submodels
+) {
     ASSERT_RENDER_THREAD();
-    CharacterModelRendererData& renderData = mModelRenderData[modelId];
-    CharacterRendererCharacterState& newState = renderData.entityCharacterModels.emplace(entityId, CharacterRendererCharacterState()).first->second;
-    // Only init if we aren't already pending a full init
-    if (!renderData.needsInitialize) {
-        AssetID machineId = renderData.handle->getLoadedAsset().mAnimMachine->getID();
-        newState.mAnimInstance = AnimMachineInstance(machineId);
+    ModelRepository& modelRepo = ModelRepository::get();
+    auto it = mCharacterModels.find(entityId);
+    // Rare case where we reuse the entity ID
+    if (it != mCharacterModels.end()) [[unlikely]] {
+        mCharacterModels.erase(it);
     }
-    assert(!mEntityCharacterRenderData.contains(entityId));
-    mEntityCharacterRenderData[entityId] = &newState;
-}
-
-void CharacterRenderer::removeCharacterModelInternal(entt::entity entityId, AssetID modelId) {
-    ASSERT_RENDER_THREAD();
-    CharacterModelRendererData& renderData = mModelRenderData[modelId];
-    renderData.entityCharacterModels.erase(entityId);
-    mEntityCharacterRenderData.erase(entityId);
-    // TODO: Deallocate handle if needed
-}
-
-void CharacterRenderer::addSubmodelInternal(entt::entity entityId, LinkedSubmodel submodel) {
-    auto&& it = mEntityCharacterRenderData.find(entityId);
-    if (it != mEntityCharacterRenderData.end()) {
-        if (it->second->mAnimInstance.isValid()) {
-            const RigDef& rig = it->second->mAnimInstance.getRig();
-            auto&& jit = rig.mJointNameToIndex.find(submodel.attachBone);
-            assert(jit != rig.mJointNameToIndex.end());
-            submodel.cachedAttachBoneIndex = jit->second;
+    CharacterRendererCharacterState& renderState = mCharacterModels.emplace(entityId, CharacterRendererCharacterState()).first->second;
+    renderState.modularModel = modularCharacter;
+    renderState.linkedSubmodels = std::move(submodels);
+    renderState.animInstance = AnimMachineInstance(modelRepo.getLoadedOrUnloadedAsset(modularCharacter.baseModel).mAnimMachine->getID());
+    for (SubmeshID partId : modularCharacter.partIds) {
+        if (partId != INVALID_SUBMESH_ID) {
+            const MeshSkeletonData* skeletonData = modelRepo.getSubmeshSkeletonData(partId);
+            assert(skeletonData);
+            renderState.boneTransformCount += skeletonData->mNumJoints;
+            ++renderState.submeshPartCount;
         }
-        it->second->mLinkedSubmodels.push_back(submodel);
     }
-    else {
-        // TODO: Is this a failure?
-        __debugbreak();
+    mTotalJointTransforms += renderState.boneTransformCount;
+    mTotalSubmeshParts += renderState.submeshPartCount;
+}
+
+void CharacterRenderer::removeCharacterModelInternal(entt::entity entityId) {
+    ASSERT_RENDER_THREAD();
+    ModelRepository& modelRepo = ModelRepository::get();
+    auto it = mCharacterModels.find(entityId);
+    assert(it != mCharacterModels.end());
+
+    mTotalJointTransforms -= it->second.boneTransformCount;
+    mTotalSubmeshParts -= it->second.submeshPartCount;
+
+    mCharacterModels.erase(it);
+}
+
+void CharacterRenderer::addSubmodelInternal(entt::entity entityId, LinkedSubmodelData submodel) {
+    ModelRepository& modelRepo = ModelRepository::get();
+    auto it = mCharacterModels.find(entityId);
+    // Rare case where we reuse the entity ID
+    if (it != mCharacterModels.end()) {
+        it->second.linkedSubmodels.emplace_back(submodel);
     }
 }
 
-void CharacterRenderer::removeSubmodelInternal(entt::entity entityId, LinkedSubmodel submodel) {
-    auto&& it = mEntityCharacterRenderData.find(entityId);
-    if (it != mEntityCharacterRenderData.end()) {
-        for (size_t i = 0; i < it->second->mLinkedSubmodels.size(); ++i) {
-            if (it->second->mLinkedSubmodels[i] == submodel) {
-                it->second->mLinkedSubmodels[i] = std::move(it->second->mLinkedSubmodels[it->second->mLinkedSubmodels.size() - 1]);
-                it->second->mLinkedSubmodels.pop_back();
+void CharacterRenderer::removeSubmodelInternal(entt::entity entityId, LinkedSubmodelData submodel) {
+    ModelRepository& modelRepo = ModelRepository::get();
+    auto it = mCharacterModels.find(entityId);
+    // Rare case where we reuse the entity ID
+    if (it != mCharacterModels.end()) {
+        for (size_t i = 0; i < it->second.linkedSubmodels.size(); ++i) {
+            if (it->second.linkedSubmodels[i] == submodel) {
+                it->second.linkedSubmodels[i] = std::move(it->second.linkedSubmodels[it->second.linkedSubmodels.size() - 1]);
+                it->second.linkedSubmodels.pop_back();
                 return;
             }
         }
@@ -413,17 +411,15 @@ void CharacterRenderer::removeSubmodelInternal(entt::entity entityId, LinkedSubm
 }
 
 void CharacterRenderer::onCharacterModelConstruct(entt::registry& registry, entt::entity entity) {
-    ModelID modelId = registry.get<CharacterModelComponent>(entity).modelId;
-    LOG_DEBUG("Added model ID {} for entity {}", modelId, e_cast(entity));
-    addCharacterModel(entity, registry.get<CharacterModelComponent>(entity).modelId);
+    CharacterModelComponent& cmp = registry.get<CharacterModelComponent>(entity);
+    addCharacterModel(entity, cmp.getModel(), cmp.getLinkedSubmodels());
 }
 
 void CharacterRenderer::onCharacterModelDestroy(entt::registry& registry, entt::entity entity) {
-    LOG_DEBUG("Destroying model for entity {}", e_cast(entity));
-    removeCharacterModel(entity, registry.get<CharacterModelComponent>(entity).modelId);
+    removeCharacterModel(entity);
 }
 
-void CharacterRenderer::onCharacterModelSubmodelAdded(entt::entity entityId, LinkedSubmodel submodel) {
+void CharacterRenderer::onCharacterModelSubmodelAdded(entt::entity entityId, LinkedSubmodelData submodel) {
      if (IS_RENDER_THREAD()) {
          addSubmodelInternal(entityId, submodel);
      }
@@ -432,7 +428,7 @@ void CharacterRenderer::onCharacterModelSubmodelAdded(entt::entity entityId, Lin
      }
 }
 
-void CharacterRenderer::onCharacterModelSubmodelRemoved(entt::entity entityId, LinkedSubmodel submodel) {
+void CharacterRenderer::onCharacterModelSubmodelRemoved(entt::entity entityId, LinkedSubmodelData submodel) {
     if (IS_RENDER_THREAD()) {
         addSubmodelInternal(entityId, submodel);
     }

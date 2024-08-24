@@ -41,29 +41,16 @@ void InstancedDynamicModelRenderer::prepareFrame(const DynamicModelInstanceState
     for (MaterialRenderPassType r : {MaterialRenderPassType::Default, MaterialRenderPassType::Smudge}) {
         const ui32 maxCount = dynamicModels.getSubmeshCount(r);
         std::unique_ptr<GLDrawCommandBuffer>& bufferPtr = mDrawCommands[e_cast(r)];
-        if (!bufferPtr || bufferPtr->getCapacity() < maxCount) {
-            bufferPtr = std::make_unique<GLDrawCommandBuffer>(maxCount + DRAW_COMMANDS_FUZZ / 2);
-        }
-        else if (bufferPtr->getCapacity() > maxCount + DRAW_COMMANDS_FUZZ) {
-            bufferPtr = std::make_unique<GLDrawCommandBuffer>(maxCount + DRAW_COMMANDS_FUZZ / 2);
-        }
+        GLDrawCommandBuffer::reallocateFuzzedIfNeeded(bufferPtr, maxCount, DRAW_COMMANDS_FUZZ);
     }
     static_assert(e_count(MaterialRenderPassType) == 3, "Update this code if you add more passes");
-
 
     // Allocate transforms buffer
     const ui32 maxTransforms = dynamicModelsVec.size();
     constexpr ui32 TRANSFORMS_FUZZ = 64; // Helps account for fluctuating instance counts
-    if (!mTransformsBuffer) {
-        mTransformsBuffer = std::make_unique<GpuStreamingDataBuffer>(maxTransforms + TRANSFORMS_FUZZ / 2, sizeof(f32m4));
-        mVariantIndexBuffer = std::make_unique<GpuStreamingDataBuffer>(maxTransforms + TRANSFORMS_FUZZ / 2, sizeof(ui32));
-    }
-    else if (mTransformsBuffer->getMaxElements() < maxTransforms  ||
-        mTransformsBuffer->getMaxElements() > maxTransforms + TRANSFORMS_FUZZ) {
-        // Grow or shrink if needed
-        mTransformsBuffer = std::make_unique<GpuStreamingDataBuffer>(maxTransforms + TRANSFORMS_FUZZ / 2, sizeof(f32m4));
-        mVariantIndexBuffer = std::make_unique<GpuStreamingDataBuffer>(maxTransforms + TRANSFORMS_FUZZ / 2, sizeof(ui32));
-    }
+    GpuStreamingDataBuffer::reallocateFuzzedIfNeeded(mTransformsBuffer, maxTransforms, sizeof(f32m4), TRANSFORMS_FUZZ);
+    GpuStreamingDataBuffer::reallocateFuzzedIfNeeded(mVariantIndexBuffer, maxTransforms, sizeof(ui32), TRANSFORMS_FUZZ);
+   
     f32m4* transformsArray = static_cast<f32m4*>(mTransformsBuffer->frameBeginAndGetDataForUpdate());
     ui32* variantIndexArray = static_cast<ui32*>(mVariantIndexBuffer->frameBeginAndGetDataForUpdate());
 
@@ -93,7 +80,7 @@ void InstancedDynamicModelRenderer::prepareFrame(const DynamicModelInstanceState
                 variantIndexArray[totalTransforms] = modelRepo.getVariantArrayIndexDataForModel(dynamicModel.modelId).offset;
 
                 ModelBatchSubmeshDrawDataSpanKey key = modelRepo.getDrawDataSpanKeyForModel(dynamicModel.modelId);
-                const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataArray(key);
+                const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataArrayForModel(key);
 
                 //variantsArray[totalTransforms] = 0; //dynamicModel.variantIndex; // TODO: Variants
                 for (int submeshIndex = 0; submeshIndex < key.count; ++submeshIndex) {

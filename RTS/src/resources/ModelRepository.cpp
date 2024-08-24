@@ -118,11 +118,12 @@ void ModelRepository::buildModelBatches() {
     if (mTotalSubmeshCount >= MAX_TOTAL_SUBMESHES) {
         panic("Too many model meshes allocated! Programmer needs to increase maximum submesh count!");
     }
-    mVariantArrayIndexData.resize(mAssetRegistry.size());
+    mModelVariantArrayIndexDataSpans.resize(mAssetRegistry.size());
     mModelSubmeshSpanKeys.resize(mAssetRegistry.size());
     mModelSubmeshCountsPerPass.resize(mAssetRegistry.size());
     mAllSubmeshDrawData.resize(mTotalSubmeshCount);
-
+    mAllSubmeshModelVariantIndexDataOffsets.resize(mTotalSubmeshCount);
+    mAllSubmeshSkeletonData.resize(mTotalSubmeshCount, nullptr);
 
     std::vector<i32> allSubmeshWindTypes;
     allSubmeshWindTypes.resize(mTotalSubmeshCount);
@@ -154,11 +155,11 @@ void ModelRepository::buildModelBatches() {
         ModelDef& def = *mAssets[modelId];
 
         // Point model to this draw command list
-        mModelSubmeshSpanKeys[modelId].index = submeshSources.size();
+        mModelSubmeshSpanKeys[modelId].startIndex = submeshSources.size();
         mModelSubmeshSpanKeys[modelId].count = def.mSubmeshData.size();
 
-        mVariantArrayIndexData[modelId].offset = numVariantData * MATERIAL_SLOT_COUNT;
-        mVariantArrayIndexData[modelId].stride = def.mSubmeshData.size() * MATERIAL_SLOT_COUNT;
+        mModelVariantArrayIndexDataSpans[modelId].offset = numVariantData * MATERIAL_SLOT_COUNT;
+        mModelVariantArrayIndexDataSpans[modelId].stride = def.mSubmeshData.size() * MATERIAL_SLOT_COUNT;
         numVariantData += def.mSubmeshData.size() * def.mVariants.size();
 
         auto& submeshCountArray = mModelSubmeshCountsPerPass[modelId];
@@ -187,7 +188,10 @@ void ModelRepository::buildModelBatches() {
                 creationData = &it->second;
             }
 
-            const size_t submeshArrayIndex = submeshSources.size();
+            const size_t globalSubmeshIndex = submeshSources.size();
+
+            submeshData.submeshId = globalSubmeshIndex;
+
             ModelBatchSubmeshSource& submeshSource = submeshSources.emplace_back();
             submeshSource.renderPass = key.renderPass;
             submeshSource.batchId = creationData->batchId;
@@ -195,13 +199,15 @@ void ModelRepository::buildModelBatches() {
             submeshSource.startIndex = creationData->indicesSize;
             submeshSource.cpuData = &cpuData;
 
-            ModelBatchSubmeshDrawData& drawData = mAllSubmeshDrawData[submeshArrayIndex];
+            ModelBatchSubmeshDrawData& drawData = mAllSubmeshDrawData[globalSubmeshIndex];
             drawData.batchID = creationData->batchId;
             drawData.renderPass = key.renderPass;
             drawData.castsShadow = submeshData.castsShadow();
             drawData.baseVertex = creationData->verticesSize;
 
-            allSubmeshWindTypes[submeshArrayIndex] = (i32)submeshData.windType;
+            mAllSubmeshModelVariantIndexDataOffsets[globalSubmeshIndex] = mModelVariantArrayIndexDataSpans[modelId].offset + submeshIndex * MATERIAL_SLOT_COUNT;
+
+            allSubmeshWindTypes[globalSubmeshIndex] = (i32)submeshData.windType;
 
             for (int l = 0; l < (int)MeshLODLevel::COUNT; ++l) {
                 drawData.lodDrawInfo[l] = cpuData.mLodData.getDrawInfoForLOD((MeshLODLevel)l);
@@ -211,7 +217,12 @@ void ModelRepository::buildModelBatches() {
 
             creationData->verticesSize += cpuData.mVertsCount;
             creationData->indicesSize += cpuData.mElementsCount;
+
+            if (def.isSkeletalModel()) {
+                mAllSubmeshSkeletonData[globalSubmeshIndex] = &def.mSubmeshSkeletonData[submeshIndex];
+            }
         }
+       
     }
 
     // Create all buffer objects and allocate space
@@ -740,7 +751,7 @@ void ModelRepository::updateModelVariantData(AssetID id) {
 
     ModelVariantGpuDataContainer variantsGpuData;
     variantsGpuData.resize(def.mSubmeshData.size() * def.mVariants.size());
-    VariantIndexData indexData = mVariantArrayIndexData[id];
+    VariantIndexData indexData = mModelVariantArrayIndexDataSpans[id];
     assert(def.mSubmeshData.size() == indexData.stride / MATERIAL_SLOT_COUNT);
 
     for (size_t variantIndex = 0; variantIndex < def.mVariants.size(); ++variantIndex) {

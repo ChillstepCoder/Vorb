@@ -1,6 +1,6 @@
 person_ai:
 character_model:
-  model: erra
+  model: paladin
 character:
   speed: 4.0
 physics:

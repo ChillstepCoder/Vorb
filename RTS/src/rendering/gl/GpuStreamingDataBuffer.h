@@ -27,6 +27,11 @@ public:
     ui32 getCurrentElementOffset() const { return mFrameIndex * mMaxElements;}
     VGBuffer getBufferObject() const { return mBufferObject; }
 
+
+    // For example if fuzz is 64 it will not deallocate until the size is 64 less than the current capacity
+    // Will use the first draw command buffer in the span and allocate all buffers to the same capacity
+    static bool reallocateFuzzedIfNeeded(std::unique_ptr<GpuStreamingDataBuffer>& bufferPtr, size_t requiredCapacity, ui32 elementSize, size_t fuzz);
+
 private:
     void initBuffer();
 

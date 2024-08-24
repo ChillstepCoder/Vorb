@@ -77,7 +77,7 @@ void ModelHighlightRenderer::renderModelHighlight(const SelectedObjectData& sele
         }
 
         for (i32 m = 0; m < def->getNumMeshes(); ++m) {
-            const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawDataArray(submeshSpanKey)[m];
+            const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawDataArrayForModel(submeshSpanKey)[m];
             const ModelBatch& modelBatch = modelRepo.getModelBatch(drawData.batchID);
             modelBatch.bindStaticModelAttribs();
             glBindVertexArray(modelBatch.getVao());

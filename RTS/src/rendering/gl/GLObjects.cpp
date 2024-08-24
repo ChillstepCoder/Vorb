@@ -136,3 +136,15 @@ void GLDrawCommandBuffer::multiDrawElementsIndirect(GLenum mode, GLenum type) co
     glMultiDrawElementsIndirect(mode, type, byteOffset, (GLsizei)mNumActiveCommands, 0);
     checkGlError("InstancedStaticModelRenderer::renderModelPass::C");
 }
+
+bool GLDrawCommandBuffer::reallocateFuzzedIfNeeded(std::unique_ptr<GLDrawCommandBuffer>& bufferPtr, size_t requiredCapacity, size_t fuzz) {
+    if (!bufferPtr || bufferPtr->getCapacity() < requiredCapacity) {
+        bufferPtr = std::make_unique<GLDrawCommandBuffer>(requiredCapacity + fuzz / 2);
+        return true;
+    }
+    else if (bufferPtr->getCapacity() > requiredCapacity + fuzz) {
+        bufferPtr = std::make_unique<GLDrawCommandBuffer>(requiredCapacity + fuzz / 2);
+        return true;
+    }
+    return false;
+}

@@ -48,7 +48,7 @@ void ModelBatch::unbindStaticModelAttribs() const {
 
 void ModelBatch::bindSkeletalModelAttribs() const {
     assert(mVao);
-    setInstanceDataAttribFormat(1);
+    setInstanceDataAttribFormat(3);
     if (mCurrentAttribBinding != AttribBinding::Skeletal) [[unlikely]] {
         unbindCurrentAttribs();
         mCurrentAttribBinding = AttribBinding::Skeletal;

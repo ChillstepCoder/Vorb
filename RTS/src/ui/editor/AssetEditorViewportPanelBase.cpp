@@ -57,7 +57,7 @@ void AssetEditorViewportPanelBase::renderMeshStatic(const ModelDef* modelAsset, 
 
     auto renderSubmesh = [&modelRepo, variantIndexData, &shader, variantIndex, submeshSpanKey](int submeshIndex, int inLod) {
         assert(submeshIndex < variantIndexData.stride);
-        const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawDataArray(submeshSpanKey)[submeshIndex];
+        const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawDataArrayForModel(submeshSpanKey)[submeshIndex];
         const ModelBatch& modelBatch = modelRepo.getModelBatch(drawData.batchID);
         modelBatch.unbindCurrentAttribs(); // Editor doesn't use these
         glBindVertexArray(modelBatch.getVao());

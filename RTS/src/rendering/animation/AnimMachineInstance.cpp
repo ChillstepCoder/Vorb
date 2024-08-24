@@ -18,9 +18,8 @@ struct AnimMachineUpdateContext {
 };
 
 AnimMachineInstance::AnimMachineInstance(AssetID animMachineID) {
-    machineDefHandle = AnimMachineRepository::get().getAssetHandle(animMachineID);
-    // Should already be loaded by the model
-    initInternal(machineDefHandle->getLoadedAsset());
+    machineDef = &AnimMachineRepository::get().getLoadedAsset(animMachineID);
+    initInternal();
 }
 
 void AnimMachineInstance::update(f32 elapsedSec, const AnimVariables& animVariables, OzzMatrixSpan outModelMatrices) {
@@ -137,12 +136,11 @@ bool AnimMachineInstance::tryPlayOneShot(const AnimationDef& animDef) {
     return true;
 }
 
-void AnimMachineInstance::initInternal(const AnimMachineDef& def) {
-    assert(def.instanceTemplate);
-    const AnimMachineInstance& defaultInstance = *def.instanceTemplate;
+void AnimMachineInstance::initInternal() {
+    assert(machineDef->instanceTemplate);
+    const AnimMachineInstance& defaultInstance = *machineDef->instanceTemplate;
 
     // Fast initialization using the template
-    machineDefHandle = AnimMachineRepository::get().getAssetHandle(def.getID());
     rigDef = defaultInstance.rigDef;
     if (defaultInstance.numStates) {
         numStates = defaultInstance.numStates;

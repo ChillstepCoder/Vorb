@@ -42,7 +42,7 @@ public:
     // outModelMatrices must be large enough for all skeletons or we assert
     void update(f32 elapsedSec, const AnimVariables& animVariables, OzzMatrixSpan outModelMatrices);
 
-    bool isValid() const { return machineDefHandle != nullptr; }
+    bool isValid() const { return machineDef != nullptr; }
     const RigDef& getRig() const { assert(rigDef); return *rigDef; }
     
     // Return false if there is already a one shot playing
@@ -50,7 +50,7 @@ public:
 
 private:
     // Initialize using the instanceTemplate on the AnimMachineDef
-    void initInternal(const AnimMachineDef& def);
+    void initInternal();
 
     void updateState(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight);
     void updateLoopingAnimSequence(AnimMachineInstanceState& state, f32 elapsedSec, AnimMachineUpdateContext& updateContext, f32 weight);
@@ -62,7 +62,7 @@ private:
 
     void onBeginState(AnimMachineInstanceState& state);
 
-    AssetHandlePtr<AnimMachineDef> machineDefHandle;
+    const AnimMachineDef* machineDef = nullptr;
     const RigDef* rigDef = nullptr;
     std::unique_ptr<AnimMachineInstanceState[]> states;
     std::unique_ptr<Blendspace1DPlayer[]> blendspace1DPlayers;

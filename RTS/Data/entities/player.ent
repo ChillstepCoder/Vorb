@@ -1,5 +1,5 @@
 character_model:
-  model: erra
+  model: paladin
 character:
   speed: 6.2
 physics:

@@ -12,7 +12,7 @@
 
 // Smaller than a 16 byte span
 struct ModelBatchSubmeshDrawDataSpanKey {
-    int index;
+    SubmeshID startIndex;
     int count;
 };
 

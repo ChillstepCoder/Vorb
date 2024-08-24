@@ -71,13 +71,21 @@ public:
     }
 
     // Used by model renderer
-    const ModelBatchSubmeshDrawData* getSubmeshDrawDataArray(ModelBatchSubmeshDrawDataSpanKey key) const {
-        return mAllSubmeshDrawData.data() + key.index;
+    const MeshSkeletonData* getSubmeshSkeletonData(SubmeshID submeshId) const {
+        return mAllSubmeshSkeletonData[submeshId];
     }
-    const ModelBatchSubmeshDrawData* getSubmeshDrawDataArray(ModelID modelId) const {
-        return getSubmeshDrawDataArray(mModelSubmeshSpanKeys[modelId]);
+    const ModelBatchSubmeshDrawData& getSubmeshDrawData(SubmeshID submeshId) const {
+        return mAllSubmeshDrawData[submeshId];
     }
-
+    ui32 getSubmeshIndexDataOffset(SubmeshID submeshId) const {
+        return mAllSubmeshModelVariantIndexDataOffsets[submeshId];
+    }
+    const ModelBatchSubmeshDrawData* getSubmeshDrawDataArrayForModel(ModelBatchSubmeshDrawDataSpanKey key) const {
+        return mAllSubmeshDrawData.data() + key.startIndex;
+    }
+    const ModelBatchSubmeshDrawData* getSubmeshDrawDataArrayForModel(ModelID modelId) const {
+        return getSubmeshDrawDataArrayForModel(mModelSubmeshSpanKeys[modelId]);
+    }
     ModelBatchSubmeshDrawDataSpanKey getDrawDataSpanKeyForModel(ModelID modelId) const {
         return mModelSubmeshSpanKeys[modelId];
     }
@@ -90,7 +98,7 @@ public:
         return *(it->second);
     }
     VariantIndexData getVariantArrayIndexDataForModel(ModelID modelId) const {
-        return mVariantArrayIndexData[modelId];
+        return mModelVariantArrayIndexDataSpans[modelId];
     }
     VGBuffer getModelVariantDataSSBO() const {
         return mModelVariantDataSSBO;
@@ -119,7 +127,7 @@ private:
 
     // Stored separately for cache friendliness on render
     std::vector<ModelLodParams> mLODParameters; // One per ModelID
-    std::vector<VariantIndexData> mVariantArrayIndexData; // One per ModelID, stores start of the variant length
+    std::vector<VariantIndexData> mModelVariantArrayIndexDataSpans; // One per ModelID, stores start of the variant length
     std::vector<std::array<ui8, e_count(MaterialRenderPassType)>> mModelSubmeshCountsPerPass; // One per ModelID
 
     // Stores variant data for every model
@@ -130,5 +138,7 @@ private:
     FlatMap<ModelBatchKey, ModelBatch*> mModelBatchLookup;
     std::unique_ptr<ModelBatch[]> mModelBatches;
     std::vector<ModelBatchSubmeshDrawData> mAllSubmeshDrawData;
+    std::vector<MeshSkeletonData*> mAllSubmeshSkeletonData;
+    std::vector<ui32> mAllSubmeshModelVariantIndexDataOffsets;
     std::vector<ModelBatchSubmeshDrawDataSpanKey> mModelSubmeshSpanKeys; // Maps AssetID to a span of mAllSubmeshDrawData
 };

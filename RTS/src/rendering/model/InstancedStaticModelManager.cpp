@@ -267,7 +267,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             // TODO: Real bounding sphere
             if (camera.sphereIsVisible(pos, lodParams.boundingSphereRadius)) {
                 const f32 distance2 = glm::length2(pos - camera.getPosition());
-                const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataArray(instanceDrawData.key);
+                const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataArrayForModel(instanceDrawData.key);
 
                 // TODO: Remove
                 if (sDebugOptions.mDisableLOD) [[unlikely]] {
@@ -275,10 +275,10 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     for (int m = 0; m < instanceDrawData.key.count; ++m) {
                         const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
                         const int renderPassIndex = e_cast(drawData.renderPass);
-                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[0]);
+                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands()[activeCount[renderPassIndex]++], instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[0]);
 
                         if (drawData.castsShadow) {
-                            setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[0]);
+                            setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands()[shadowCount[renderPassIndex]++], instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[0]);
                         }
                     }
                     continue;
@@ -476,7 +476,7 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
             const size_t instanceIndex = startIndex + i;
             const StaticModelInstance& modelInstance = sourceInstances[i];
             mInstanceTransforms[instanceIndex] = modelInstance.matrix;
-            mInstanceGpuData[instanceIndex].submeshDataIndex = drawDataKey.index;
+            mInstanceGpuData[instanceIndex].submeshDataIndex = drawDataKey.startIndex;
             mInstanceGpuData[instanceIndex].variantIndex = variantData.offset + (InstanceVariantIndexType)modelInstance.variantIndex * variantData.stride;
             mInstanceSources[instanceIndex] = ModelInstanceContainerOwner{ gatherer.mContainerID, modelInstance.tileIndex };
             if (modelInstance.damageData) {
@@ -802,7 +802,7 @@ void InstancedStaticModelManager::addTileInstanceInternal(const ModelDef& modelD
     tileContainerModels[tileIndex] = { modelDef.getID(), (ui32)instanceIndex };
 
     mInstanceDrawData.emplace_back(ModelRepository::get().getDrawDataSpanKeyForModel(modelDef.getID()), modelDef.getID());
-    newGpuData.submeshDataIndex = mInstanceDrawData.back().key.index;
+    newGpuData.submeshDataIndex = mInstanceDrawData.back().key.startIndex;
     incrementDrawCommandsCount(mInstanceDrawData.back().key);
 
 }
@@ -896,7 +896,7 @@ void InstancedStaticModelManager::addLooseInstanceInternal(ModelID modelId, Stat
     mLooseStaticModelInstances.emplace(std::make_pair(instanceId, (ui32)instanceIndex));
 
     mInstanceDrawData.emplace_back(ModelRepository::get().getDrawDataSpanKeyForModel(modelId), modelId);
-    newGpuData.submeshDataIndex = mInstanceDrawData.back().key.index;
+    newGpuData.submeshDataIndex = mInstanceDrawData.back().key.startIndex;
     incrementDrawCommandsCount(mInstanceDrawData.back().key);
 }
 
@@ -1009,7 +1009,7 @@ void InstancedStaticModelManager::decrefModelDef(ModelID modelId, int decCount) 
 }
 
 void InstancedStaticModelManager::incrementDrawCommandsCount(ModelBatchSubmeshDrawDataSpanKey drawDataKey) {
-    const ModelBatchSubmeshDrawData* drawData = ModelRepository::get().getSubmeshDrawDataArray(drawDataKey);
+    const ModelBatchSubmeshDrawData* drawData = ModelRepository::get().getSubmeshDrawDataArrayForModel(drawDataKey);
     for (ui32 i = 0; i < drawDataKey.count; ++i) {
         const ModelBatchSubmeshDrawData& submeshDrawData = drawData[i];
         ++mDrawCommandsCount[e_cast(submeshDrawData.renderPass)];
@@ -1020,7 +1020,7 @@ void InstancedStaticModelManager::incrementDrawCommandsCount(ModelBatchSubmeshDr
 }
 
 void InstancedStaticModelManager::decrementDrawCommandsCount(ModelBatchSubmeshDrawDataSpanKey drawDataKey) {
-    const ModelBatchSubmeshDrawData* drawData = ModelRepository::get().getSubmeshDrawDataArray(drawDataKey);
+    const ModelBatchSubmeshDrawData* drawData = ModelRepository::get().getSubmeshDrawDataArrayForModel(drawDataKey);
     for (ui32 i = 0; i < drawDataKey.count; ++i) {
         const ModelBatchSubmeshDrawData& submeshDrawData = drawData[i];
         assert(mDrawCommandsCount[e_cast(submeshDrawData.renderPass)]);

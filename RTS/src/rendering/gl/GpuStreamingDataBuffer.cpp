@@ -61,6 +61,21 @@ void GpuStreamingDataBuffer::bindAsVertexArrayVertexBuffer(VGBuffer targetVao, G
     glVertexArrayVertexBuffer(targetVao, bindingIndex, mBufferObject, mByteOffsetLastFlush + offset, stride);
 }
 
+bool GpuStreamingDataBuffer::reallocateFuzzedIfNeeded(
+    std::unique_ptr<GpuStreamingDataBuffer>& bufferPtr, size_t requiredCapacity, ui32 elementSize, size_t fuzz
+) {
+    if (!bufferPtr) {
+        bufferPtr = std::make_unique<GpuStreamingDataBuffer>(requiredCapacity + fuzz / 2, elementSize);
+        return true;
+    }
+    else if (bufferPtr->getMaxElements() < requiredCapacity || bufferPtr->getMaxElements() > requiredCapacity + fuzz) {
+        // Grow or shrink if needed
+        bufferPtr = std::make_unique<GpuStreamingDataBuffer>(requiredCapacity + fuzz / 2, elementSize);
+        return true;
+    }
+    return false;
+}
+
 void GpuStreamingDataBuffer::initBuffer()
 {
     const size_t bufferSize = mMaxElements * mElementSize * 3;

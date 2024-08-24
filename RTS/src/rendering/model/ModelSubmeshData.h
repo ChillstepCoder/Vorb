@@ -7,6 +7,7 @@ constexpr ui32 MAX_MODEL_VARIANTS = 16;
 
 struct ModelSubmeshData {
     StrToken name; // Run time only
+    SubmeshID submeshId;
     MeshWindType windType;
     MaterialRenderPassType renderPass;
 
