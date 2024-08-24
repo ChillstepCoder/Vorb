@@ -122,3 +122,18 @@ void vorb::core::ThreadPool::setSize(ui32 size) {
         }
     }
 }
+
+bool vorb::core::ThreadPool::tryProcessHighPriorityTask() {
+    if (mTaskSemaphore.try_acquire()) {
+        std::function<void()> task;
+        if (mTasks[(int)TaskPriority::High].try_dequeue(task)) {
+            task();
+            return true;
+        }
+        else {
+            // We didn't process a task, release for someone else to try
+            mTaskSemaphore.release();
+        }
+    }
+    return false;
+}

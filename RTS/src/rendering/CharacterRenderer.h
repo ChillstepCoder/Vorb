@@ -94,5 +94,6 @@ private:
     ui32 mTotalSubmeshParts = 0;
 
     std::unique_ptr<moodycamel::ConsumerToken> mConsumerToken;
+    std::mutex mOutLinkedSubmodelsMutex;
 
 };

@@ -149,12 +149,14 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
     UNUSED(frameAlpha);
     PROFILE_FUNCTION();
 
-    ModelRepository& modelRepo = ModelRepository::get();
 
     const MaterialShaderDef* shaderDef = mShaderHandle->tryGetLoadedAsset();
     if (!shaderDef) return;
 
     if (!mTotalSubmeshParts) [[unlikely]] return;
+
+    ModelRepository& modelRepo = ModelRepository::get();
+    vcore::ThreadPool& threadPool = Services::Threadpool::ref();
 
     static_assert(sizeof(f32m4) == sizeof(ozz::math::Float4x4));
     GpuStreamingDataBuffer::reallocateFuzzedIfNeeded(mBoneTransformsBuffer, mTotalJointTransforms, sizeof(f32m4), 256);
@@ -168,9 +170,13 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
     SubmeshInstanceData* submeshDataArray = static_cast<SubmeshInstanceData*>(mSubmeshDataBuffer->frameBeginAndGetDataForUpdate());
     mDrawCommands->frameBegin();
 
+    DrawElementsIndirectCommand* drawCommandsBuffer = mDrawCommands->getDrawCommands().data();
+
     const ui32 boneTransformOffset = mBoneTransformsBuffer->getCurrentElementOffset();
     const ui32 modelTransformOffset = mModelTransformsBuffer->getCurrentElementOffset();
 
+    ui32 TMP_TOTAL_JOB_COUNT = 0;
+    std::atomic_int jobCount = 0;
     ui32 numDrawCommands = 0;
     ui32 boneTransformsIndex = 0;
     ui32 modelTransformsIndex = 0;
@@ -182,121 +188,156 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
         }
 
         CharacterRendererCharacterState& characterState = it->second;
-        const ModularHumanoidCharacterModel& modularCharacter = characterState.modularModel;
-        const ModelLodParams& lodParams = ModelRepository::get().getLodParams(modularCharacter.baseModel);
-        const RigDef& rig = characterState.animInstance.getRig();
+        const ModelLodParams& lodParams = modelRepo.getLodParams(characterState.modularModel.baseModel);
+        const bool isVisible = camera.sphereIsVisible(frameState.mPos, lodParams.boundingSphereRadius);
 
-        const f32v3& position = frameState.mPos;
-        const bool isVisible = camera.sphereIsVisible(position, lodParams.boundingSphereRadius);
+        ++jobCount;
+        ++TMP_TOTAL_JOB_COUNT;
+        threadPool.addTask(
+            [&camera, &frameState, &characterState, &lodParams, elapsedSec, boneTransformsArray, modelTransformsArray,
+            submeshDataArray, drawCommandsBuffer, isVisible, &jobCount, numDrawCommands, boneTransformsIndex, modelTransformsIndex,
+            submeshDataIndex, boneTransformOffset, modelTransformOffset, &outLinkedSubmodels, this]() mutable
+        {
 
-        // TODO: combine with CharacterRenderState?
-        AnimVariables variables;
-        variables.locomotionMode = frameState.mLocomotionMode;
-        variables.velocity2d = frameState.mVelocity2D;
-        variables.speed = glm::length(frameState.mVelocity2D);
-        ozz::math::Float4x4 modelsBuffer[MAX_JOINTS_IN_RIG];
-        OzzMatrixSpan modelMatrices(modelsBuffer, rig.mSkeleton.num_joints());
+            ModelRepository& modelRepo = ModelRepository::get();
+            const ModularHumanoidCharacterModel& modularCharacter = characterState.modularModel;
+            const RigDef& rig = characterState.animInstance.getRig();
 
-        // Update animation TODO: Multithreaded?
-        // When not visible we pass null output buffer, signaling that we dont want to update bones, only tick the anim states
-        characterState.animInstance.update(elapsedSec, variables, isVisible ? modelMatrices : OzzMatrixSpan(nullptr, (size_t)0));
+            const f32v3& position = frameState.mPos;
+
+            // TODO: combine with CharacterRenderState?
+            AnimVariables variables;
+            variables.locomotionMode = frameState.mLocomotionMode;
+            variables.velocity2d = frameState.mVelocity2D;
+            variables.speed = glm::length(frameState.mVelocity2D);
+            ozz::math::Float4x4 modelsBuffer[MAX_JOINTS_IN_RIG];
+            OzzMatrixSpan modelMatrices(modelsBuffer, rig.mSkeleton.num_joints());
+
+            // Update animation TODO: Multithreaded?
+            // When not visible we pass null output buffer, signaling that we dont want to update bones, only tick the anim states
+            characterState.animInstance.update(elapsedSec, variables, isVisible ? modelMatrices : OzzMatrixSpan(nullptr, (size_t)0));
+
+            if (isVisible) {
+
+                // Manually set world translation (TODO: Can set this on transform initialize for less instructions)
+                const f32v3 offset = position - camera.getPosition();
+
+                const f32 angle = frameState.mRotation;
+
+                const f32 angleZ = DEG_TO_RAD(90.0f) + angle;
+                const f32 angleX = DEG_TO_RAD(90.0f);
+
+                const f32 cosZ = cosf(angleZ);
+                const f32 sinZ = sinf(angleZ);
+                const f32 cosX = cosf(angleX);
+                const f32 sinX = sinf(angleX);
+                const f32 oneMinusCosX = 1.f - cosX;
+
+                // Construct the combined transformation matrix
+                // Hand optimized form of this:
+                //transform = glm::rotate(transform, angleZ, f32v3(0.0f, 0.0f, 1.0f));
+                //transform = glm::rotate(transform, angleX, f32v3(1.0f, 0.0f, 0.0f));
+                const f32 tmp = cosX + oneMinusCosX;
+                modelTransformsArray[modelTransformsIndex] = f32m4(
+                    cosZ * tmp, sinZ * tmp, 0.0f, 0.0f,
+                    -sinZ * cosX, cosZ * cosX, sinX, 0.0f,
+                    sinZ * sinX, -cosZ * sinX, cosX, 0.0f,
+                    offset.x, offset.y, offset.z, 1.0f
+                );
+                const f32m4& cameraRelTransform = modelTransformsArray[modelTransformsIndex];
+
+                const f32 distSQ = glm::length2(offset);
+                MeshLODLevel lod = lodParams.selectLOD(distSQ);
+
+                // TODO: We should batch render these
+                for (SubmeshID partId : modularCharacter.partIds) {
+                    if (partId == INVALID_SUBMESH_ID) [[unlikely]] {
+                        continue;
+                    }
+
+                    SubmeshInstanceData& instanceData = submeshDataArray[submeshDataIndex];
+                    instanceData.boneTransformStartIndex = boneTransformsIndex + boneTransformOffset;
+                    instanceData.modelTransformIndex = modelTransformsIndex + modelTransformOffset;
+                    instanceData.variantIndex = modelRepo.getSubmeshIndexDataOffset(partId);
+
+                    const MeshSkeletonData& skeletonData = *modelRepo.getSubmeshSkeletonData(partId);
+                    const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawData(partId);
+                    // Skin animation to mesh
+                    OzzMatrixSpan skinningMatrices(&boneTransformsArray[boneTransformsIndex], skeletonData.mNumJoints);
+                    if (!SkeletalAnimator::skinModelMatricesToMesh(ozz::make_span(modelMatrices), skeletonData, skinningMatrices)) {
+                        panic("Anim skinning fail!");
+                    }
+                    boneTransformsIndex += skeletonData.mNumJoints;
+
+                    // TODO PROPER SKINNING
+                    /*for (size_t j = 0; j < skeletonData.mNumJoints; ++j) {
+                        skinningMatrices[j] = ozz::math::Float4x4::identity();
+                    }*/
+
+                    // TODO: Support others
+                    assert(drawData.batchID == modelRepo.getModelBatch(
+                        ModelBatchKey{ MeshIndexType::USHORT, VertexType::SKINNED_MODEL,MaterialRenderPassType::Default }).getId()
+                    );
+
+                    // Build draw command
+                    const MeshLODDrawInfo& drawInfo = drawData.lodDrawInfo[e_cast(lod)];
+                    DrawElementsIndirectCommand& cmd = drawCommandsBuffer[numDrawCommands++];
+                    cmd.baseInstance_ = submeshDataIndex;
+                    cmd.instanceCount_ = 1;
+                    cmd.baseVertex_ = drawData.baseVertex;
+                    cmd.firstIndex_ = drawInfo.startIndex;
+                    cmd.count_ = drawInfo.indexCount;
+
+                    ++submeshDataIndex;
+                }
+
+                // Submodels
+
+                for (LinkedSubmodelData& submodel : characterState.linkedSubmodels) {
+                    AssetHandlePtr<ModelDef> submodelHandle = ModelRepository::get().getAssetHandle(submodel.modelId);
+                    if (const ModelDef* def = submodelHandle->tryGetLoadedAsset()) {
+
+                        const f32m4 boneTransform = std::bit_cast<f32m4>(modelMatrices[submodel.attachBoneIndex]);
+                        const f64m4 worldTransform(
+                            cameraRelTransform[0][0], cameraRelTransform[0][1], 0.0f, 0.0f,
+                            cameraRelTransform[1][0], cameraRelTransform[1][1], cameraRelTransform[1][2], 0.0f,
+                            cameraRelTransform[2][0], cameraRelTransform[2][1], cameraRelTransform[2][2], 0.0f,
+                            position.x, position.y, position.z, 1.0f
+                        );
+                        f64q rotation;
+                        f64v3 worldPosition;
+                        decomposeMatrix(worldTransform * f64m4(boneTransform), worldPosition, rotation);
+                        {
+                            std::lock_guard lock(mOutLinkedSubmodelsMutex);
+                            outLinkedSubmodels.add(rotation, worldPosition, submodel.modelId);
+                        }
+                    }
+                }
+            }
+            --jobCount;
+        }, TaskPriority::High);
 
         if (isVisible) {
-
-            // Manually set world translation (TODO: Can set this on transform initialize for less instructions)
-            const f32v3 offset = position - camera.getPosition();
-
-            const f32 angle = frameState.mRotation;
-
-            const f32 angleZ = DEG_TO_RAD(90.0f) + angle;
-            const f32 angleX = DEG_TO_RAD(90.0f);
-
-            const f32 cosZ = cosf(angleZ);
-            const f32 sinZ = sinf(angleZ);
-            const f32 cosX = cosf(angleX);
-            const f32 sinX = sinf(angleX);
-            const f32 oneMinusCosX = 1.f - cosX;
-
-            // Construct the combined transformation matrix
-            // Hand optimized form of this:
-            //transform = glm::rotate(transform, angleZ, f32v3(0.0f, 0.0f, 1.0f));
-            //transform = glm::rotate(transform, angleX, f32v3(1.0f, 0.0f, 0.0f));
-            const f32 tmp = cosX + oneMinusCosX;
-            modelTransformsArray[modelTransformsIndex] = f32m4(
-                cosZ * tmp, sinZ * tmp, 0.0f, 0.0f,
-                -sinZ * cosX, cosZ * cosX, sinX, 0.0f,
-                sinZ * sinX, -cosZ * sinX, cosX, 0.0f,
-                offset.x, offset.y, offset.z, 1.0f
-            );
-            const f32m4& cameraRelTransform = modelTransformsArray[modelTransformsIndex];
-
-            const f32 distSQ = glm::length2(offset);
-            MeshLODLevel lod = lodParams.selectLOD(distSQ);
-
-            // TODO: We should batch render these
-            for (SubmeshID partId : modularCharacter.partIds) {
-                if (partId == INVALID_SUBMESH_ID) [[unlikely]] {
-                    continue;
-                }
-
-                SubmeshInstanceData& instanceData = submeshDataArray[submeshDataIndex];
-                instanceData.boneTransformStartIndex = boneTransformsIndex + boneTransformOffset;
-                instanceData.modelTransformIndex = modelTransformsIndex + modelTransformOffset;
-                instanceData.variantIndex = modelRepo.getSubmeshIndexDataOffset(partId);
-
-                const MeshSkeletonData& skeletonData = *modelRepo.getSubmeshSkeletonData(partId);
-                const ModelBatchSubmeshDrawData& drawData = modelRepo.getSubmeshDrawData(partId);
-                // Skin animation to mesh
-                OzzMatrixSpan skinningMatrices(&boneTransformsArray[boneTransformsIndex], skeletonData.mNumJoints);
-                if (!SkeletalAnimator::skinModelMatricesToMesh(ozz::make_span(modelMatrices), skeletonData, skinningMatrices)) {
-                    panic("Anim skinning fail!");
-                }
-                boneTransformsIndex += skeletonData.mNumJoints;
-
-                // TODO PROPER SKINNING
-                /*for (size_t j = 0; j < skeletonData.mNumJoints; ++j) {
-                    skinningMatrices[j] = ozz::math::Float4x4::identity();
-                }*/
-
-                // TODO: Support others
-                assert(drawData.batchID == modelRepo.getModelBatch(
-                    ModelBatchKey{ MeshIndexType::USHORT, VertexType::SKINNED_MODEL,MaterialRenderPassType::Default }).getId()
-                );
-
-                // Build draw command
-                const MeshLODDrawInfo& drawInfo = drawData.lodDrawInfo[e_cast(lod)];
-                DrawElementsIndirectCommand& cmd = mDrawCommands->getDrawCommands()[numDrawCommands++];
-                cmd.baseInstance_ = submeshDataIndex;
-                cmd.instanceCount_ = 1;
-                cmd.baseVertex_ = drawData.baseVertex;
-                cmd.firstIndex_ = drawInfo.startIndex;
-                cmd.count_ = drawInfo.indexCount;
-
-                ++submeshDataIndex;
-            }
-
             ++modelTransformsIndex;
-
-            // Submodels
-            for (LinkedSubmodelData& submodel : characterState.linkedSubmodels) {
-                AssetHandlePtr<ModelDef> submodelHandle = ModelRepository::get().getAssetHandle(submodel.modelId);
-                if (const ModelDef* def = submodelHandle->tryGetLoadedAsset()) {
-
-                    const f32m4 boneTransform = std::bit_cast<f32m4>(modelMatrices[submodel.attachBoneIndex]);
-                    const f64m4 worldTransform(
-                        cameraRelTransform[0][0], cameraRelTransform[0][1], 0.0f, 0.0f,
-                        cameraRelTransform[1][0], cameraRelTransform[1][1], cameraRelTransform[1][2], 0.0f,
-                        cameraRelTransform[2][0], cameraRelTransform[2][1], cameraRelTransform[2][2], 0.0f,
-                        position.x, position.y, position.z, 1.0f
-                    );
-                    f64q rotation;
-                    f64v3 worldPosition;
-                    decomposeMatrix(worldTransform * f64m4(boneTransform), worldPosition, rotation);
-                    outLinkedSubmodels.add(rotation, worldPosition, submodel.modelId);
-                }
-            }
+            submeshDataIndex += characterState.submeshPartCount;
+            numDrawCommands += characterState.submeshPartCount;
+            boneTransformsIndex += characterState.boneTransformCount;
         }
     }
+
+    // Help finish tasks
+    ui32 TMP_MAIN_TASK_COUNT = 0;
+    while (jobCount > 0) {
+        if (!threadPool.tryProcessHighPriorityTask()) {
+            // Probably waiting on another thread to finish
+            std::this_thread::yield();
+        }
+        else {
+            ++TMP_MAIN_TASK_COUNT;
+        }
+    }
+
+    LOG_INFO("CharacterRenderer: {} main tasks, {} total tasks", TMP_MAIN_TASK_COUNT, TMP_TOTAL_JOB_COUNT);
 
     if (!numDrawCommands) {
         return;

@@ -71,6 +71,8 @@ namespace vorb {
             int getNumRunningThreads() const { return mRunningThreads; }
 
             bool isRunning() const { return mRunningThreads || getTasksSizeApprox(); }
+
+            bool tryProcessHighPriorityTask();
         private:
             VORB_NON_COPYABLE(ThreadPool);
 
