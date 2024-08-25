@@ -82,8 +82,8 @@ private:
     void removeDamageModelInternal(ui32 damageModelIndex);
 
     void addLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex);
-    void removeLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId);
-    void updateLooseInstanceTransformInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4 transform);
+    void removeLooseInstanceInternal(StaticModelInstanceID instanceId);
+    void updateLooseInstanceTransformInternal(StaticModelInstanceID instanceId, const f32m4 transform);
 
     void updateAnimatedModels(f32 elapsedSec);
     void increfModelDef(ModelID modelId, int incCount);

@@ -130,11 +130,26 @@ float getTerrainDistanceFactor(float distance) {
     return min(distance * 0.001, 1.0);
 }
 
+
+//	A blurring kernel
+const vec3 BLUR_KERNEL[3] = {
+   vec3(0.0625, 0.125, 0.0625),
+   vec3(0.125, 0.25, 0.125),
+   vec3(0.0625, 0.125, 0.0625)
+};
+
+
+
 vec3 getTerrainColor(vec2 terrainUvs, int biome) {
+    // We use the same screen space dither for transparency in order to offset the
+    // uvs diagonally, creating a sort of smudgy sparkly blend
+    const float DITHER_INTENSITY = 0.0005;
+    float blendOffset = (getAlphaTestTransparencyModifier() * 2.0 - 1.0) * DITHER_INTENSITY;
     float detailValue = texture(GrassTexture, terrainUvs * 10.0).r * unDetailTextureStrength;
-    float u = getBiomeColorGradientUCoord(terrainUvs);
+    float u = getBiomeColorGradientUCoord(terrainUvs + vec2(blendOffset));
     float v = detailValue;
     vec2 uv = vec2(u, v);
+    
     return texture(unBiomeColorMapsTexture, vec3(uv, float(biomeColorMapLookup[biome]))).rgb;
 }
 

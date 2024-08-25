@@ -269,10 +269,10 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
                     }
                     boneTransformsIndex += skeletonData.mNumJoints;
 
-                    // TODO PROPER SKINNING
-                    /*for (size_t j = 0; j < skeletonData.mNumJoints; ++j) {
+                    // TODO: REMOVE WHEN ERRA HAS ANIMS
+                    for (size_t j = 0; j < skeletonData.mNumJoints; ++j) {
                         skinningMatrices[j] = ozz::math::Float4x4::identity();
-                    }*/
+                    }
 
                     // TODO: Support others
                     assert(drawData.batchID == modelRepo.getModelBatch(

@@ -717,10 +717,10 @@ void InstancedStaticModelManager::updatePendingLooseModelInstances() {
                     break;
                 }
                 case PendingLooseModelInstance::Type::Remove:
-                    removeLooseInstanceInternal(instance.modelId, instance.instanceId);
+                    removeLooseInstanceInternal(instance.instanceId);
                     break;
                 case PendingLooseModelInstance::Type::ChangeTransform:
-                    updateLooseInstanceTransformInternal(instance.modelId, instance.instanceId, MathUtil::createTransformMatrix(instance.position, instance.orient, instance.scale));
+                    updateLooseInstanceTransformInternal(instance.instanceId, MathUtil::createTransformMatrix(instance.position, instance.orient, instance.scale));
                     break;
                 default:
                     assert(false);
@@ -878,9 +878,10 @@ void InstancedStaticModelManager::removeDamageModelInternal(ui32 damageModelInde
     }
 }
 
-
-void InstancedStaticModelManager::addLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex) {
-
+void InstancedStaticModelManager::addLooseInstanceInternal(
+    ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex
+) {
+    const VariantIndexData variantData = ModelRepository::get().getVariantArrayIndexDataForModel(modelId);
     increfModelDef(modelId, 1);
     const size_t instanceIndex = mInstanceTransforms.size();
     if (instanceIndex < mFirstDirtyInstance) {
@@ -888,7 +889,7 @@ void InstancedStaticModelManager::addLooseInstanceInternal(ModelID modelId, Stat
     }
     mInstanceTransforms.emplace_back(transform);
     InstanceGpuData& newGpuData = mInstanceGpuData.emplace_back();
-    newGpuData.variantIndex = variantIndex;
+    newGpuData.variantIndex = variantData.offset + (InstanceVariantIndexType)variantIndex * variantData.stride;
     newGpuData.damageModelIndex = 0; // Currently loose models do not support damage
     mInstanceSources.emplace_back(instanceId);
 
@@ -900,7 +901,7 @@ void InstancedStaticModelManager::addLooseInstanceInternal(ModelID modelId, Stat
     incrementDrawCommandsCount(mInstanceDrawData.back().key);
 }
 
-void InstancedStaticModelManager::removeLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId) {
+void InstancedStaticModelManager::removeLooseInstanceInternal(StaticModelInstanceID instanceId) {
 
     auto&& lit = mLooseStaticModelInstances.find(instanceId);
     assert(lit != mLooseStaticModelInstances.end());
@@ -912,9 +913,9 @@ void InstancedStaticModelManager::removeLooseInstanceInternal(ModelID modelId, S
 
 }
 
-void InstancedStaticModelManager::updateLooseInstanceTransformInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4 transform) {
+void InstancedStaticModelManager::updateLooseInstanceTransformInternal(StaticModelInstanceID instanceId, const f32m4 transform) {
 
-    auto&& lit = mLooseStaticModelInstances.find(modelId);
+    auto&& lit = mLooseStaticModelInstances.find(instanceId);
     assert(lit != mLooseStaticModelInstances.end());
     const ui32 instanceIndex = lit->second;
 
