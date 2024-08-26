@@ -154,6 +154,11 @@ void ModelRepository::buildModelBatches() {
     for (AssetID modelId = 0; modelId < mAssetRegistry.size(); ++modelId) {
         ModelDef& def = *mAssets[modelId];
 
+        // Begin billboard loading
+        if (def.mBillboardMaterialID == INVALID_MATERIAL_ID && !def.isSkeletalModel()) {
+            RenderContext::getInstance().getModelBillboardLodBuilder().addBillboardTextureToBuild(modelId);
+        }
+
         // Point model to this draw command list
         mModelSubmeshSpanKeys[modelId].startIndex = submeshSources.size();
         mModelSubmeshSpanKeys[modelId].count = def.mSubmeshData.size();
@@ -293,6 +298,8 @@ void ModelRepository::buildModelBatches() {
 
     checkGlError("ModelRepository::buildModelBatches");
     LOG_INFO("Built all model batches in {} ms", timer.stop());
+
+    RenderContext::getInstance().getModelBillboardLodBuilder().buildAllBillboards();
 }
 
 AssetLoadFunc ModelRepository::getAssetLoadFunc() {
@@ -320,9 +327,6 @@ AssetLoadFunc ModelRepository::getAssetLoadFunc() {
             [this]ASSET_LOAD_LAMBDA(assetId, filePath, assetDataPtr, userData) {
 
             updateModelVariantData(assetId);
-            // TODO: IMPLEMENT THIS
-            RenderContext::getInstance().getModelBillboardLodBuilder().initTextureForModel(assetId);
-
             return true;
         },
             def.getID(),

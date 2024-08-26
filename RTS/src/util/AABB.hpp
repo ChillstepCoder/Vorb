@@ -70,6 +70,7 @@ struct AABB<T, 3> {
     T getMaxY() const { return y + depth; }
     T getMaxZ() const { return z + height; }
     T getMax(T d) const { return pos[d] + dims[d]; }
+    VVec3<T> getHalfDims() const { return dims / T(2); }
 
     union {
         T data[6];

@@ -45,7 +45,11 @@ public:
     InstancedStaticModelManager();
     ~InstancedStaticModelManager();
 
+
     void frameUpdate(const Camera3D& camera, f32 elapsedSec);
+
+    const ModelBillboardLodManager& getBillboardLodManager() const { return *mBillboardLodManager; }
+
 
     // Tile models
     void addTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData);
@@ -99,14 +103,13 @@ private:
         ModelID modelId;
     };
 
-    std::vector<f32m4> mInstanceTransforms;
-
     struct InstanceGpuData {
         ui32 submeshDataIndex;
         ui32 variantIndex;
         ui32 damageModelIndex;
     };
 
+    std::vector<f32m4> mInstanceTransforms;
     std::vector<InstanceGpuData> mInstanceGpuData;
     std::vector<ModelInstanceOwnerVariant> mInstanceSources;
     std::vector<InstanceDrawData> mInstanceDrawData;

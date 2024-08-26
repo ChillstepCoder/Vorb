@@ -337,8 +337,6 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
         }
     }
 
-    LOG_INFO("CharacterRenderer: {} main tasks, {} total tasks", TMP_MAIN_TASK_COUNT, TMP_TOTAL_JOB_COUNT);
-
     if (!numDrawCommands) {
         return;
     }

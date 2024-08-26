@@ -28,6 +28,7 @@
 #include "rendering/model/InstancedDynamicModelRenderer.h"
 #include "rendering/model/InstancedStaticModelManager.h"
 #include "rendering/model/InstancedStaticModelRenderer.h"
+#include "rendering/model/ModelBillboardRenderer.h"
 #include "rendering/model/ModelHighlightRenderer.h"
 #include "rendering/text/WorldTextRenderer.h"
 #include "rendering/post_process/AmbientOcclusionPostProcess.h"
@@ -88,6 +89,7 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
     mCharacterRenderer = std::make_unique<CharacterRenderer>();
     mStaticModelRenderer = std::make_unique<InstancedStaticModelRenderer>();
     mDynamicModelRenderer = std::make_unique<InstancedDynamicModelRenderer>();
+    mModelBillboardRenderer = std::make_unique<ModelBillboardRenderer>();
     mModelHighlightRenderer = std::make_unique<ModelHighlightRenderer>();
     mWorldTextRenderer = std::make_unique<WorldTextRenderer>();
     mTileContainerRenderer = std::make_unique<TileContainerRenderer>();
@@ -220,6 +222,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
 
     mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager(), *mCamera, MaterialRenderPassType::Default, nullptr);
 
+    mModelBillboardRenderer->renderBillboards(mCurrentWorldRenderDataManager->getInstancedStaticModelManager().getBillboardLodManager());
 
     mDynamicModelRenderer->prepareFrame(dynamicModels, *camera);
     mDynamicModelRenderer->renderModelPass(MaterialRenderPassType::Default);

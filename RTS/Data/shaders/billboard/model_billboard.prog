@@ -1,0 +1,2 @@
+vert: model_billboard.vert
+frag: model_billboard.frag

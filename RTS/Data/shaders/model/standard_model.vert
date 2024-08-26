@@ -1,6 +1,7 @@
 #include "GlobalUbo.glsl"
 #include "util/wind.glsl"
 #include "util/uv.glsl"
+#include "util/tbn.glsl"
 #include "model/model_variant.glsl"
 
 uniform float unSnowLevel;
@@ -70,12 +71,7 @@ void main() {
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vTangent);
     
-    mat3 modelMatrix3 = mat3(vModelMatrix);
-    normal = modelMatrix3 * normal;
-    tangent = modelMatrix3 * tangent;
-    
-	vec3 bitangent = cross(normal, tangent);
-	fTBN = mat3(tangent, bitangent, normal);
+	fTBN = computeTbn(mat3(vModelMatrix), normal, tangent);
     
     fSnow = max(normal.z, 0.0) * unSnowLevel;
     

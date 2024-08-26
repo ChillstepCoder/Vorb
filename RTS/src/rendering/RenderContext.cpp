@@ -365,7 +365,6 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
         return;
     }
 
-
     beginFrame(&renderState, renderState.getCameraOwningEntityPos(), frameAlpha);
     checkGlError("RenderContext::Begin Frame");
     
@@ -475,7 +474,7 @@ void RenderContext::updateCamera(f32 frameAlpha) {
         if (newCameraPos.z > CAMERA_DEPTH_CLAMP) {
             if (newCameraPos.z <= CAMERA_SURFACE_CLAMP) {
                 mCamera.setPosition(f32v3(newCameraPos.x, newCameraPos.y, CAMERA_DEPTH_CLAMP));
-                sDebugOptions.mIsCameraUnderwater = true;
+                sDebugOptions.mIsCameraUnderwater = !sDebugOptions.mDisableWater;
             }
             else {
                 sDebugOptions.mIsCameraUnderwater = false;
@@ -598,6 +597,8 @@ color4 sprintfThreadStats(const ThreadUtilizationTimer& timer, const char* name,
 }
 
 void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState& renderState) {
+    PROFILE_FUNCTION();
+
     if (sDebugOptions.mShowDevHud) {
         mSb->begin(100);
         char buffer[STR_BUFFER_SIZE];

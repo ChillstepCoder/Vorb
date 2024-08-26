@@ -432,6 +432,7 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelRenderer.cpp" />
     <ClCompile Include="src\rendering\model\ModelBatch.cpp" />
     <ClCompile Include="src\rendering\model\ModelBillboardLodManager.cpp" />
+    <ClCompile Include="src\rendering\model\ModelBillboardRenderer.cpp" />
     <ClCompile Include="src\rendering\model\ModelHighlightRenderer.cpp" />
     <ClCompile Include="src\rendering\model\skeletal\AnimTransitionConditionDef.cpp" />
     <ClCompile Include="src\rendering\model\skeletal\SkeletalAnimator.cpp" />
@@ -986,6 +987,7 @@
     <ClInclude Include="src\rendering\model\InstancedStaticModelRenderer.h" />
     <ClInclude Include="src\rendering\model\ModelBatch.h" />
     <ClInclude Include="src\rendering\model\ModelBillboardLodManager.h" />
+    <ClInclude Include="src\rendering\model\ModelBillboardRenderer.h" />
     <ClInclude Include="src\rendering\model\ModelConst.h" />
     <ClInclude Include="src\rendering\model\MaterialRenderPassType.h" />
     <ClInclude Include="src\rendering\model\ModelHighlightRenderer.h" />

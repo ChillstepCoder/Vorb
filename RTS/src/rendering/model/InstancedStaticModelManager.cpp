@@ -22,6 +22,8 @@
 
 #include "rendering/gl/GL.h"
 
+//#include <glm/gtx/matrix_decompose.hpp>
+
 // Types of events we handle
 constexpr ui8 MODEL_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeLayer) | e_cast(TileContainerEditEventType::ChangeOrientation) | e_cast(TileContainerEditEventType::ChangeZPos);
 static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
@@ -101,6 +103,8 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
         return;
 
     PROFILE_FUNCTION();
+
+    mBillboardLodManager->frameBegin();
 
     updatePendingLooseModelInstances();
 
@@ -255,12 +259,11 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             cmd.baseInstance_ = transformIndex;
         };
 
-        const ModelRepository& modelRepo = ModelRepository::get();
+        ModelRepository& modelRepo = ModelRepository::get();
         for (ui32 instanceIndex = 0; instanceIndex < (ui32)mInstanceTransforms.size(); ++instanceIndex) {
             const f32m4& transform = mInstanceTransforms[instanceIndex];
             // Columns are first
             const f32v3& pos = reinterpret_cast<const f32v3&>(transform[3]);
-
             const InstanceDrawData& instanceDrawData = mInstanceDrawData[instanceIndex];
             const ModelLodParams& lodParams = modelRepo.getLodParams(instanceDrawData.modelId);
 
@@ -284,8 +287,11 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     continue;
                 }
 
-                if (distance2 >= lodParams.lodDistancesSQ[3]) {
-                    // TODO: Billboard
+                if (1 || distance2 >= lodParams.lodDistancesSQ[3]) {
+                    // TODO: Get scale somehow, decompose is expensive
+                    //f32 scale = glm::decompose(transform)
+                    const f32AABB3& aabb = modelRepo.getLoadedOrUnloadedAsset(instanceDrawData.modelId).mAABB;
+                    mBillboardLodManager->addBillboard(instanceDrawData.modelId, pos, f32v2(aabb.width, aabb.height));
                     continue;
                 }
                 else if (distance2 >= lodParams.lodDistancesSQ[2]) {
@@ -371,6 +377,8 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             }
         }
     }
+
+    mBillboardLodManager->flushDataAndIncrementFrame();
 
     // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
     // Sync start of draw
