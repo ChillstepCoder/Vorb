@@ -855,7 +855,7 @@
     <ClCompile Include="src\weather\WeatherManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\model\ModelBillboardLodManager.cpp">
+    <ClCompile Include="src\rendering\model\ModelImpostorManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\world\WorldDestroyer.cpp">
@@ -1356,7 +1356,7 @@
     <ClCompile Include="src\rendering\renderstate\DynamicModelInstanceState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\model\ModelBillboardRenderer.cpp">
+    <ClCompile Include="src\rendering\model\ModelImpostorRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -2621,7 +2621,7 @@
     <ClInclude Include="src\weather\WeatherManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\model\ModelBillboardLodManager.h">
+    <ClInclude Include="src\rendering\model\ModelImpostorManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\WorldDestroyer.h">
@@ -3176,7 +3176,7 @@
     <ClInclude Include="src\rendering\mesh\MeshIndexType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\model\ModelBillboardRenderer.h">
+    <ClInclude Include="src\rendering\model\ModelImpostorRenderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

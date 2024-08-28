@@ -68,7 +68,6 @@ public:
     ModelCollider mColliderData;
     CollisionShapeID mCollisionShapeID = INVALID_COLLISION_SHAPE_ID;
     f32 mBaseOptimizeErrorThresold = 0.0003f;
-    MaterialID mBillboardMaterialID = INVALID_MATERIAL_ID;
 
     // Variants
     std::vector<ModelVariantData> mVariants;

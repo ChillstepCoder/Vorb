@@ -49,7 +49,9 @@ namespace vorb {
         enum class GBufferAttachmentIndex {
             ALBEDO  = 0,
             NORMALS  = 1,
-            TERTIARY = 2,
+            TERTIARY1 = 2,
+            TERTIARY2 = 3,
+            TERTIARY3 = 4,
             COUNT
         };
 
@@ -106,7 +108,9 @@ namespace vorb {
 
             VGTexture getAlbedoTexture() const { return mAttachments[(int)GBufferAttachmentIndex::ALBEDO].mTexture;  }
             VGTexture getNormalTexture() const { return mAttachments[(int)GBufferAttachmentIndex::NORMALS].mTexture; }
-            VGTexture getTertiaryTexture() const { return mAttachments[(int)GBufferAttachmentIndex::TERTIARY].mTexture; }
+            VGTexture getTertiaryTexture1() const { return mAttachments[(int)GBufferAttachmentIndex::TERTIARY1].mTexture; }
+            VGTexture getTertiaryTexture2() const { return mAttachments[(int)GBufferAttachmentIndex::TERTIARY2].mTexture; }
+            VGTexture getTertiaryTexture3() const { return mAttachments[(int)GBufferAttachmentIndex::TERTIARY3].mTexture; }
             VGTexture getDepthTexture() const { return mTexDepth.mTexture; }
             VGTexture getDepthStencilTexture() const { assert(mHasStencil); return mTexDepth.mTexture; }
 
@@ -121,7 +125,9 @@ namespace vorb {
             // TODO: This is WRONG its a hack for my shitty auto shader uniforms
             // ~GBuffer() will delete shared textures!!!!
             void setNormalTexture(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::NORMALS].mTexture = tex; }
-            void setTertiaryTexture(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::TERTIARY].mTexture = tex; }
+            void setTertiaryTexture1(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::TERTIARY1].mTexture = tex; }
+            void setTertiaryTexture2(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::TERTIARY2].mTexture = tex; }
+            void setTertiaryTexture3(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::TERTIARY3].mTexture = tex; }
 
         private:
             void initTexture(GBufferAttachmentTexture& texture, VGEnum format, const vg::SamplerState& samplerState, int mipLevels);
@@ -131,8 +137,8 @@ namespace vorb {
 
             VGFramebuffer mFbo = 0; ///< The rendering target for geometry
             GBufferAttachmentTexture mAttachments[(int)GBufferAttachmentIndex::COUNT] = {};
-            VGEnum mDrawBuffers[(int)GBufferAttachmentIndex::COUNT] = { GL_NONE, GL_NONE, GL_NONE };
-            static_assert((int)GBufferAttachmentIndex::COUNT == 3, "Update brace init");
+            VGEnum mDrawBuffers[(int)GBufferAttachmentIndex::COUNT] = { GL_NONE, GL_NONE, GL_NONE, GL_NONE, GL_NONE };
+            static_assert((int)GBufferAttachmentIndex::COUNT == 5, "Update brace init");
             GBufferAttachmentTexture mTexDepth = {}; // Depth texture 
             int mLayerCount = 1;
             // TODO: Flags

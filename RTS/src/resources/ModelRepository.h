@@ -10,6 +10,7 @@ DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 DECL_VG(class Texture);
 
+class ModelImpostorRepository;
 class FbxLoadContext;
 
 namespace ozz::animation {
@@ -47,9 +48,24 @@ struct VariantIndexData {
 class ModelRepository : public IAssetRepository<ModelDef> {
     friend class AssetSelectPanel; // TODO: Remove?
 public:
-    ASSET_REPOSITORY_COMMON_CODE(ModelRepository, ModelDef, AssetType::Model)
+    ModelRepository(vio::IOManager& ioManager);
+    ~ModelRepository();
+
+    static void initInstance(vio::IOManager& ioManager) {
+        sInstance = std::make_unique<ModelRepository>(ioManager);
+    }
+    inline static ModelRepository& get() {
+        assert(sInstance); return (ModelRepository&)*sInstance;
+    }
+    AssetType getAssetType() const override {
+        return AssetType::Model;
+    }
 
     DEFAULT_ASSET_SAVE_FUNC();
+
+    ModelImpostorRepository& getImpostorRepository() const {
+        return *mImpostorRepository;
+    }
 
     bool loadFbxFile(const vio::Path& filePath);
 
@@ -141,4 +157,6 @@ private:
     std::vector<MeshSkeletonData*> mAllSubmeshSkeletonData;
     std::vector<ui32> mAllSubmeshModelVariantIndexDataOffsets;
     std::vector<ModelBatchSubmeshDrawDataSpanKey> mModelSubmeshSpanKeys; // Maps AssetID to a span of mAllSubmeshDrawData
+
+    std::unique_ptr<ModelImpostorRepository> mImpostorRepository;
 };

@@ -246,7 +246,7 @@ AssetLoadFunc MaterialRepository::getAssetLoadFunc() {
 
                 if (hasTexture) {
                     LOG_WARN("Generating AoRoughnessMetallicTexture");
-                    gli::texture2d combinedTexture = mMaterialTextureGenerator->combineAoRoughnessMetallicTextureData(aoData, roughnessData, metalData);
+                    gli::texture2d combinedTexture = mMaterialTextureGenerator->combineAoMetallicRoughnessTextureData(aoData, roughnessData, metalData);
                     // DDS convert
                     loadData.aoMetalRoughData = TextureConvert::convertToDDS(combinedTexture, true /*generateMipmaps*/);
                     gli::save(loadData.aoMetalRoughData, ddsPath.string());

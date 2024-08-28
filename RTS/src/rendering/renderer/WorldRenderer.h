@@ -13,7 +13,7 @@ class ECSRenderer;
 class GrassRenderer;
 class InstancedDynamicModelRenderer;
 class InstancedStaticModelRenderer;
-class ModelBillboardRenderer;
+class ModelImpostorRenderer;
 class ItemRenderer;
 class InstancedStaticModelGatherer;
 class WorldTextRenderer;
@@ -95,7 +95,7 @@ private:
     mutable std::unique_ptr<TerrainRenderer> mTerrainRenderer;
     mutable std::unique_ptr<GrassRenderer> mGrassRenderer;
     mutable std::unique_ptr<InstancedStaticModelRenderer> mStaticModelRenderer;
-    mutable std::unique_ptr<ModelBillboardRenderer> mModelBillboardRenderer;
+    mutable std::unique_ptr<ModelImpostorRenderer> mModelBillboardRenderer;
     mutable std::unique_ptr<InstancedDynamicModelRenderer> mDynamicModelRenderer;
     mutable std::unique_ptr<ModelHighlightRenderer> mModelHighlightRenderer;
     mutable std::unique_ptr<WorldTextRenderer> mWorldTextRenderer;

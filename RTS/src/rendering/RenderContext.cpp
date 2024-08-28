@@ -45,7 +45,7 @@
 #include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/UboHelpers.h"
 #include "rendering/particle/CPUParticleSystem.h"
-#include "rendering/model/ModelBillboardLodManager.h"
+#include "rendering/model/ModelImpostorManager.h"
 #include "weather/CloudMeshManager.h"
 
 #include "world/simulation/host/HostSimContext.h"
@@ -204,9 +204,6 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
     // State init
     GameRenderStateManager::initInstance();
 
-    // Billboard LOD
-    mModelBillboardLodBuilder = std::make_unique<ModelBillboardLodBuilder>();
-
     // Make sure we can filter cubemaps properly
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
@@ -257,7 +254,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
         mGBuffers[i] = std::make_unique<vg::GBuffer>(mScreenResolution);
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGBA8); // Albedo + AO
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10_A2); // Normal
-        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::TERTIARY, vg::TextureInternalFormat::RG8); // Roughness + Metallic
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::TERTIARY1, vg::TextureInternalFormat::RG8); // Roughness + Metallic
 #if USE_STENCIL == 1
         mGBuffers[i]->initDepthStencil();
 #else

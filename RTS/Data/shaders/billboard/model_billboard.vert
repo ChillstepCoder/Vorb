@@ -32,24 +32,40 @@ uniform uint unBaseInstanceOffset = 0;
 
 out vec2 fUV;
 flat out uint fMaterialIndex;
-out vec4 fTint;
 out mat3 fTBN;
-out float fRoughness;
 
-vec2 getUvs(int idx, float xFlip) {
-    vec2 uvMult = (VertexData[idx] + 1.0) * 0.5;
-	vec4 uvAdjusted = vec4(0.0, 0.0, 1.0, 1.0);
-    // Flip if needed
-    uvAdjusted.x -= step(0.0, xFlip) * uvAdjusted.z;
-    uvAdjusted.z *= -xFlip;
-    return uvAdjusted.xy + uvAdjusted.zw * uvMult;
+vec2 flipUV(vec2 uv, float uFlip) {
+    float flippedU = uFlip * (1.0 - uv.x) + (1.0 - uFlip) * uv.x;
+    return vec2(flippedU, 1.0 - uv.y);
+}
+
+vec2 getUvs(int idx, float uFlip) {
+    return flipUV((VertexData[idx] + 1.0) * 0.5, uFlip);
 }
 
 vec2 getVertexOffsets(int idx) {
     vec2 vertexOffsets = VertexData[idx];
 	vertexOffsets.y += UnYOffset;
-	vertexOffsets *= 0.5;
 	return vertexOffsets;
+}
+
+mat3 computeBillboardTBN(vec3 CameraRelativePos) {
+    // Compute the view direction (from billboard to camera)
+    vec3 N = normalize(-CameraRelativePos);
+    
+    // Ensure the normal is not parallel to the up vector
+    if (abs(N.z) > 0.999999) {
+        N = vec3(0.000001, 0, N.z);
+    }
+    
+    // Compute the right vector
+    vec3 T = normalize(cross(vec3(0, 0, 1), N));
+    
+    // Compute the up vector
+    vec3 B = cross(N, T);
+    
+    // Construct the TBN matrix
+    return mat3(T, B, N);
 }
 
 void main() {
@@ -86,13 +102,9 @@ void main() {
 	
 	worldPos.xyz += CameraFront * angle;
 	glPos = VP * worldPos;
-
-    fTint = vec4(1.0);
 	
 	// Hardcoded for facing up
-	fTBN = mat3(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0));
+	fTBN = computeBillboardTBN(worldPos.xyz);
     
-    fRoughness = 0.9;
-	
     gl_Position = glPos;
 }

@@ -15,7 +15,7 @@ class Camera3D;
 class InstancedStaticModelGatherer;
 class ModelRepository;
 class MaterialShaderDef;
-class ModelBillboardLodManager;
+class ModelImpostorManager;
 
 DECL_VG(class GLProgram);
 
@@ -48,7 +48,7 @@ public:
 
     void frameUpdate(const Camera3D& camera, f32 elapsedSec);
 
-    const ModelBillboardLodManager& getBillboardLodManager() const { return *mBillboardLodManager; }
+    const ModelImpostorManager& getBillboardLodManager() const { return *mBillboardLodManager; }
 
 
     // Tile models
@@ -139,7 +139,7 @@ private:
 
     AssetHandlePtr<MaterialShaderDef> mCullingComputeShader;
 
-    std::unique_ptr<ModelBillboardLodManager> mBillboardLodManager;
+    std::unique_ptr<ModelImpostorManager> mBillboardLodManager;
 
     struct PendingLooseModelInstance {
         glm::quat orient;

@@ -28,7 +28,7 @@
 #include "rendering/model/InstancedDynamicModelRenderer.h"
 #include "rendering/model/InstancedStaticModelManager.h"
 #include "rendering/model/InstancedStaticModelRenderer.h"
-#include "rendering/model/ModelBillboardRenderer.h"
+#include "rendering/model/ModelImpostorRenderer.h"
 #include "rendering/model/ModelHighlightRenderer.h"
 #include "rendering/text/WorldTextRenderer.h"
 #include "rendering/post_process/AmbientOcclusionPostProcess.h"
@@ -89,7 +89,7 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
     mCharacterRenderer = std::make_unique<CharacterRenderer>();
     mStaticModelRenderer = std::make_unique<InstancedStaticModelRenderer>();
     mDynamicModelRenderer = std::make_unique<InstancedDynamicModelRenderer>();
-    mModelBillboardRenderer = std::make_unique<ModelBillboardRenderer>();
+    mModelBillboardRenderer = std::make_unique<ModelImpostorRenderer>();
     mModelHighlightRenderer = std::make_unique<ModelHighlightRenderer>();
     mWorldTextRenderer = std::make_unique<WorldTextRenderer>();
     mTileContainerRenderer = std::make_unique<TileContainerRenderer>();
@@ -331,7 +331,7 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     // Final render for pre-transparency
     mHDRLightGBuffer->use();
     // Share values
-    mHDRLightGBuffer->setTertiaryTexture(activeGBuffer->getTertiaryTexture());
+    mHDRLightGBuffer->setTertiaryTexture1(activeGBuffer->getTertiaryTexture1());
     mHDRLightGBuffer->setNormalTexture(activeGBuffer->getNormalTexture());
     mHDRLightGBuffer->setSharedDepthStencilTexture(activeGBuffer->getDepthStencilTexture());
 

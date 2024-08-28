@@ -10,7 +10,7 @@
 #include "rendering/mesh/mesher/builder/ModelMeshBuilder.h"
 #include "rendering/mesh/MeshOperations.h"
 #include "rendering/mesh/Mesh.h"
-#include "rendering/model/ModelBillboardLodManager.h"
+#include "rendering/model/ModelImpostorManager.h"
 #include "physics/CollisionShapeRepository.h"
 
 #include "tile/TileDamageData.h"
@@ -67,6 +67,14 @@ public:
     std::unique_ptr<FbxLoadContextData> data;
 };
 
+ModelRepository::ModelRepository(vio::IOManager& ioManager) : IAssetRepository<ModelDef>(ioManager) {
+    mImpostorRepository = std::make_unique<ModelImpostorRepository>();
+}
+
+ModelRepository::~ModelRepository() {
+
+}
+
 bool ModelRepository::loadFbxFile(const vio::Path& filePath) {
     PROFILE_FUNCTION();
 
@@ -113,6 +121,8 @@ void ModelRepository::loadAllModelData() {
 void ModelRepository::buildModelBatches() {
     PreciseTimer timer;
 
+    mImpostorRepository->allocateImpostorIndicesForModels(mAssetRegistry.size());
+
     // This function combines all submeshes that are compatible into big batches
 
     if (mTotalSubmeshCount >= MAX_TOTAL_SUBMESHES) {
@@ -155,8 +165,8 @@ void ModelRepository::buildModelBatches() {
         ModelDef& def = *mAssets[modelId];
 
         // Begin billboard loading
-        if (def.mBillboardMaterialID == INVALID_MATERIAL_ID && !def.isSkeletalModel()) {
-            RenderContext::getInstance().getModelBillboardLodBuilder().addBillboardTextureToBuild(modelId);
+        if (!def.isSkeletalModel()) {
+            mImpostorRepository->registerModelForImpostor(def);
         }
 
         // Point model to this draw command list
@@ -299,7 +309,7 @@ void ModelRepository::buildModelBatches() {
     checkGlError("ModelRepository::buildModelBatches");
     LOG_INFO("Built all model batches in {} ms", timer.stop());
 
-    RenderContext::getInstance().getModelBillboardLodBuilder().buildAllBillboards();
+    mImpostorRepository->buildAllImpostors();
 }
 
 AssetLoadFunc ModelRepository::getAssetLoadFunc() {

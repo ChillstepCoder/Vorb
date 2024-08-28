@@ -123,9 +123,11 @@ struct DebugOptions {
     bool mShowCombatQueries;
     bool mEnableVisualLogs;
     bool mShowDevHud;
+    // Models
     bool mHideModels;
     bool mHideDynamicModels;
     bool mDisableLOD;
+    bool mDisableImpostors;
     bool mDisableGPUCulling;
     bool mDebugToggle0;
     // Fish

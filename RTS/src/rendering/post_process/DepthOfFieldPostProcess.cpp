@@ -80,7 +80,7 @@ vg::GBuffer* DepthOfFieldPostProcess::render(vg::GBuffer* prevGBuffer) {
     // Share textures with previous gbuffer since this will become new active gbuffer
     mGBuffers[0]->setSharedDepthTexture(prevGBuffer->getDepthTexture());
     mGBuffers[0]->setNormalTexture(prevGBuffer->getNormalTexture());
-    mGBuffers[0]->setTertiaryTexture(prevGBuffer->getTertiaryTexture());
+    mGBuffers[0]->setTertiaryTexture1(prevGBuffer->getTertiaryTexture1());
 
     vg::BlendState::restorePrevious();
 

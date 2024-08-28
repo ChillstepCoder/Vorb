@@ -22,7 +22,6 @@ class ItemRenderer;
 class LightRenderer;
 class MaterialShaderDef;
 class Mesh;
-class ModelBillboardLodBuilder;
 class ParticleSystemRenderer;
 class WorldRenderState;
 class ShadowRenderer;
@@ -80,7 +79,6 @@ public:
     Camera3DGameThreadData getGameThreadCameraData() const;
     CameraController* getCameraController() const { return mCameraController; }
 
-    ModelBillboardLodBuilder& getModelBillboardLodBuilder() const { return *mModelBillboardLodBuilder; }
     void removeLooseModelInstance(World& world, ModelID modelId, StaticModelInstanceID instanceId);
 
     // Renderers
@@ -123,7 +121,6 @@ private:
     World* mActiveWorld = nullptr;
     //WorldListeners mWorldEventListeners;
     std::unique_ptr<WorldRenderer> mWorldRenderer;
-    std::unique_ptr<ModelBillboardLodBuilder> mModelBillboardLodBuilder;
 
     // UI
     std::unique_ptr<vg::SpriteBatch> mSb;

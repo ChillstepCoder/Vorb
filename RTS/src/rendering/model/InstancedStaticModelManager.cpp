@@ -12,7 +12,7 @@
 #include "rendering/model/ModelUtil.h"
 #include "rendering/mesh/mesher/builder/ModelMeshBuilder.h"
 #include "rendering/RenderThreadTasks.h"
-#include "rendering/model/ModelBillboardLodManager.h"
+#include "rendering/model/ModelImpostorManager.h"
 
 #include "camera/Camera3D.h"
 
@@ -78,7 +78,7 @@ InstancedStaticModelManager::InstancedStaticModelManager() :
     mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT)
 {
     mCullingComputeShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("culling_and_lod"));
-    mBillboardLodManager = std::make_unique<ModelBillboardLodManager>(RenderContext::getInstance().getModelBillboardLodBuilder().getBillboardTextures());
+    mBillboardLodManager = std::make_unique<ModelImpostorManager>(ModelRepository::get().getImpostorRepository());
 
     constexpr size_t RESERVE_COUNT = 1024;
     mInstanceTransforms.reserve(RESERVE_COUNT);
@@ -287,7 +287,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     continue;
                 }
 
-                if (1 || distance2 >= lodParams.lodDistancesSQ[3]) {
+                if (distance2 >= lodParams.lodDistancesSQ[3]) {
                     // TODO: Get scale somehow, decompose is expensive
                     //f32 scale = glm::decompose(transform)
                     const f32AABB3& aabb = modelRepo.getLoadedOrUnloadedAsset(instanceDrawData.modelId).mAABB;

@@ -1,7 +1,5 @@
 #pragma once
 
-constexpr const TextureHandle INVALID_TEXTURE_HANDLE = 0;
-
 #include "Vorb/graphics/SamplerStateType.h"
 
 #include "rendering/model/MaterialRenderPassType.h"
@@ -32,7 +30,7 @@ struct PACKED_STRUCT MaterialGpuData final {
     /// AO (R), Roughness (G), Metallic (B) https://github.com/KhronosGroup/glTF/issues/857
     TextureHandle aoMetallicRoughnessMap = INVALID_TEXTURE_HANDLE;
 };
-static_assert(sizeof(MaterialGpuData) % 16 == 0, "MaterialData should be padded to 16 bytes");
+static_assert(sizeof(MaterialGpuData) % 16 == 0, "MaterialData should be padded to 16 bytes for std430");
 
 struct MaterialDesc {
     MaterialID id = INVALID_MATERIAL_ID;

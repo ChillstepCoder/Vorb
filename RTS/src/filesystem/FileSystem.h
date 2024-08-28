@@ -29,6 +29,7 @@ public:
     static std::string fileTimeToString(time_t time);
 
     static bool createDirectory(const fs::path& directory);
+    static bool createDirectories(const fs::path& directory);
     static bool createDirectory(const std::string& directory);
     static bool exists(const fs::path& filepath);
     static bool exists(const std::string& filepath);

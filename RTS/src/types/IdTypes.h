@@ -7,6 +7,8 @@ typedef ui32 RegionID;
 constexpr RegionID INVALID_REGION_ID = std::numeric_limits<RegionID>::max();
 
 typedef GLuint64 TextureHandle;
+constexpr const TextureHandle INVALID_TEXTURE_HANDLE = 0;
+
 typedef ui16 MaterialID;
 constexpr ui16 INVALID_MATERIAL_ID = std::numeric_limits<MaterialID>::max();
 

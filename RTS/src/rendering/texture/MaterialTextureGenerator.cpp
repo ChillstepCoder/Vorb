@@ -199,7 +199,7 @@ VGTexture MaterialTextureGenerator::generateNormalTexture(VGTexture input, const
    return normalTexture;
 }
 
-gli::texture2d MaterialTextureGenerator::combineAoRoughnessMetallicTextureData(const gli::texture2d& ao, const gli::texture2d& roughness, const gli::texture2d& metallic) {
+gli::texture2d MaterialTextureGenerator::combineAoMetallicRoughnessTextureData(const gli::texture2d& ao, const gli::texture2d& roughness, const gli::texture2d& metallic) {
 
     assert(ao.empty() || ao.format() == gli::format::FORMAT_R8_UNORM_PACK8);
     assert(roughness.empty() || roughness.format() == gli::format::FORMAT_R8_UNORM_PACK8);

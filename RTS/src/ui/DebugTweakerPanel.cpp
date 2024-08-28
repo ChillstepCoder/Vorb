@@ -439,6 +439,7 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::Checkbox("Hide Static Models", &sDebugOptions.mHideModels);
         ImGui::Checkbox("Hide Dynamic Models", &sDebugOptions.mHideDynamicModels);
         ImGui::Checkbox("Disable LOD", &sDebugOptions.mDisableLOD);
+        ImGui::Checkbox("Disable Impostors", &sDebugOptions.mDisableImpostors);
         ImGui::Checkbox("CPU Culling", &sDebugOptions.mDisableGPUCulling);
         ImGui::Separator();
     }
@@ -458,7 +459,7 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
             ImGui::Text("Normals");
             ImGui::Image((ImTextureID)activeGBuffer->getNormalTexture(), dims, uv0, uv1);
             ImGui::Text("Roughness");
-            ImGui::Image((ImTextureID)activeGBuffer->getTertiaryTexture(), dims, uv0, uv1);
+            ImGui::Image((ImTextureID)activeGBuffer->getTertiaryTexture1(), dims, uv0, uv1);
             ImGui::Text("Depth");
             ImGui::Image((ImTextureID)activeGBuffer->getDepthTexture(), dims, uv0, uv1);
             ImGui::Separator();

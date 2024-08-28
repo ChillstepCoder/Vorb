@@ -32,14 +32,22 @@ std::string FileSystem::fileTimeToString(time_t time) {
     return ss.str();
 }
 
-bool FileSystem::createDirectory(const std::filesystem::path& directory)
-{
+bool FileSystem::createDirectory(const std::filesystem::path& directory) {
+    if (fs::exists(directory) && fs::is_directory(directory))
+        return true;
     return std::filesystem::create_directories(directory);
 }
 
-bool FileSystem::createDirectory(const std::string& directory)
-{
+bool FileSystem::createDirectory(const std::string& directory) {
+    if (fs::exists(directory) && fs::is_directory(directory))
+        return true;
     return createDirectory(std::filesystem::path(directory));
+}
+
+bool FileSystem::createDirectories(const fs::path& directory) {
+    if (fs::exists(directory) && fs::is_directory(directory))
+        return true;
+    return std::filesystem::create_directories(directory);
 }
 
 bool FileSystem::move(const std::filesystem::path& oldFilepath, const std::filesystem::path& newFilepath)

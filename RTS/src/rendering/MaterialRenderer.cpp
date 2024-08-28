@@ -87,7 +87,7 @@ void MaterialRenderer::uploadUniforms(const MaterialShaderDef& material, OUT ui3
                 glUniform1i(it.second, nextAvailableTextureIndex++);
                 break;
             case MaterialShaderUniform::FboRoughness:
-                glBindTextureUnit(nextAvailableTextureIndex, renderContext.getActiveGBuffer().getTertiaryTexture());
+                glBindTextureUnit(nextAvailableTextureIndex, renderContext.getActiveGBuffer().getTertiaryTexture1());
                 glUniform1i(it.second, nextAvailableTextureIndex++);
                 break;
             case MaterialShaderUniform::PrevFbo0:
