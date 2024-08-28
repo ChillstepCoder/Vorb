@@ -21,6 +21,7 @@
 constexpr ui32 MIN_BILLBOARD_RES = 64;
 constexpr ui32 MAX_BILLBOARD_RES = 512;
 constexpr f32 BILLBOARD_METERS_TO_PIXELS = 32.f;
+constexpr int MAX_IMPOSTOR_IMAGES = 9;
 
 // Finds closest power of two
 inline ui32 roundToBillboardResolution(f32 value) {
@@ -61,9 +62,13 @@ void ModelImpostorManager::frameBegin() {
 
 void ModelImpostorManager::addBillboard(AssetID modelID, f32v3 position, f32v2 dims) {
     if (mNumBillboards < mMaxCapacity) {
-        const f32 xFlip = (f32)(Random::getThreadSafe((ui32)position.x, (ui32)position.y) & 1);
+        const ui32 rnd = Random::getThreadSafe((ui32)position.x, (ui32)position.y);
+        const f32 xFlip = (f32)(rnd & 1);
+        const ImpostorSpan span = mImpostorRepository.getImpostorSpanForModel(modelID);
+        assert(span.numBillboards != 0);
+        const ImpostorIndex index = span.index + (ImpostorIndex)(rnd % span.numBillboards);
         // We only append billboards while less than max capacity. If we blow capacity, new space will be allocated next frame
-        mBillboardDataThisFrame[mNumBillboards] = ModelBillboardData{ position, xFlip, dims * 0.5f, mImpostorRepository.getImpostorIndexForModelID(modelID), };
+        mBillboardDataThisFrame[mNumBillboards] = ModelBillboardData{ position, xFlip, dims * 0.5f, index };
     }
     // Always increment
     ++mNumBillboards;
@@ -94,7 +99,7 @@ void ModelImpostorRepository::allocateImpostorIndicesForModels(ui32 numModels) {
     if (numModels >= std::numeric_limits<ImpostorIndex>::max()) {
         panic("Too many models for impostor indices, need to extend to ui32 in ModelImpostorRepository");
     }
-    mModelDefImpostorIndices.resize(numModels, 0);
+    mModelDefImpostorSpans.resize(numModels, {0, 0});
 }
 
 void ModelImpostorRepository::registerModelForImpostor(const ModelDef& modelDef) {
@@ -109,18 +114,37 @@ void ModelImpostorRepository::registerModelForImpostor(const ModelDef& modelDef)
     folderPath.trimEnd();
     folderPath /= nString("bb");
     const nString baseName = folderPath.getString() + "/" + fileName;
-    nString albedoName = baseName + "_bb.png";
+    const nString albedoName = baseName + "_bb.png";
+    const char* ddsExt = ".dds";
     if (fs::exists(albedoName)) {
         ResourceManager& resourceManager = ResourceManager::get();
         const fs::path& resourceRoot(resourceManager.getResourceRoot().getString());
         const fs::path& cacheRoot(resourceManager.getCacheRoot().getString());
         // Save DDS
-        nString ddsName = Utils::removeExtension(albedoName);
-        fs::path ddsAlbedoPath(ddsName + ".dds");
+        const nString ddsName = Utils::removeExtension(albedoName);
+        fs::path ddsAlbedoPath(ddsName + ddsExt);
         ddsAlbedoPath = cacheRoot / ddsAlbedoPath.lexically_relative(resourceRoot);
 
         if (!fs::exists(ddsAlbedoPath) || fs::last_write_time(ddsAlbedoPath) < fs::last_write_time(albedoName)) {
-            updateCachedDDS(baseName);
+            updateCachedDDS(baseName, 0);
+        }
+
+        // Update other DDS if needed
+        const char* pngExt = ".png";
+        for (int imposterIndex = 1; imposterIndex < MAX_IMPOSTOR_IMAGES; ++imposterIndex) {
+            char numberChar[2] = { '\0', '\0' };
+            // Note that this purposefully skips to 2 after 0 because artists are used to 1-based indexing
+            numberChar[0] = (char)imposterIndex + '1';
+            const char* numberStr = numberChar;
+            const nString albedoName2 = baseName + "_bb" + numberStr + pngExt;
+            if (!fs::exists(albedoName2)) {
+                break;
+            }
+            fs::path ddsAlbedoPath2(ddsName + ddsExt);
+            ddsAlbedoPath2 = cacheRoot / ddsAlbedoPath2.lexically_relative(resourceRoot);
+            if (!fs::exists(ddsAlbedoPath2) || fs::last_write_time(ddsAlbedoPath2) < fs::last_write_time(albedoName2)) {
+                updateCachedDDS(baseName, imposterIndex);
+            }
         }
 
         // Load DDS
@@ -369,7 +393,7 @@ void ModelImpostorRepository::buildAllImpostors() {
             }
         }
 
-        saveDDSTextures(baseName, albedoTexture, normalTexture, amrTexture);
+        saveDDSTextures(baseName, albedoTexture, normalTexture, amrTexture, 0);
 
         // Inefficient but who cares, this is the cold path
         loadDDSTexturesAndSetImpostor(model, baseName);
@@ -394,17 +418,21 @@ void ModelImpostorRepository::bindMaterialBuffer() const {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BUFFER_BASE_MODEL_IMPOSTOR_MATERIALS_SSBO, mImpostorDataBuffer.getHandle());
 }
 
-ImpostorIndex ModelImpostorRepository::getImpostorIndexForModelID(AssetID modelID) const {
-    return mModelDefImpostorIndices[modelID];
-}
+void ModelImpostorRepository::updateCachedDDS(const nString& baseName, int impostorIndex) {
 
-void ModelImpostorRepository::updateCachedDDS(const nString& baseName) {
+    const char* pngExt = ".png";
+    char numberChar[2] = { '\0', '\0' };
+    if (impostorIndex != 0) {
+        // Note that this purposefully skips to 2 after 0 because artists are used to 1-based indexing
+        numberChar[0] = (char)impostorIndex + '1';
+    }
+    const char* numberStr = numberChar;
 
-    const nString albedoPathString = baseName + "_bb.png";
-    const nString normalPathString = baseName + "_bb_n.png";
-    const nString roughPathString = baseName + "_bb_r.png";
-    const nString metalPathString = baseName + "_bb_m.png";
-    const nString aoPathString = baseName + "_bb_ao.png";
+    const nString albedoPathString = baseName + "_bb" + numberStr + pngExt;
+    const nString normalPathString = baseName + "_bb_n" + numberStr + pngExt;
+    const nString roughPathString = baseName + "_bb_r" + numberStr + pngExt;
+    const nString metalPathString = baseName + "_bb_m" + numberStr + pngExt;
+    const nString aoPathString = baseName + "_bb_ao" + numberStr + pngExt;
 
     gli::texture2d albedoSource = PngLoader::loadPng(albedoPathString, false);
     gli::texture2d normalSource = PngLoader::loadPng(normalPathString, false);
@@ -427,11 +455,11 @@ void ModelImpostorRepository::updateCachedDDS(const nString& baseName) {
         }
     }
 
-    saveDDSTextures(baseName, albedoSource, normalSource, amrTexture);
+    saveDDSTextures(baseName, albedoSource, normalSource, amrTexture, impostorIndex);
 }
 
 void ModelImpostorRepository::saveDDSTextures(
-    const nString& baseName, gli::texture2d& albedoTexture, gli::texture2d& normalTexture, gli::texture2d& amrTexture
+    const nString& baseName, gli::texture2d& albedoTexture, gli::texture2d& normalTexture, gli::texture2d& amrTexture, int impostorIndex
 ) {
     ResourceManager& resourceManager = ResourceManager::get();
 
@@ -443,11 +471,20 @@ void ModelImpostorRepository::saveDDSTextures(
     const gli::texture2d normalDDS = TextureConvert::convertToDDS(normalTexture, true /*generateMipmaps*/);
     const gli::texture2d amrDDS = TextureConvert::convertToDDS(amrTexture, true /*generateMipmaps*/);
 
+    // Efficiently insert a number char if needed with no string allocate
+    const char* ddsExt = ".dds";
+    char numberChar[2] = { '\0', '\0' };
+    if (impostorIndex != 0) {
+        // Note that this purposefully skips to 2 after 0 because artists are used to 1-based indexing
+        numberChar[0] = (char)impostorIndex + '1';
+    }
+    const char* numberStr = numberChar;
+
     // Save DDS
     fs::path ddsBasePath = cacheRoot / fs::path(baseName).lexically_relative(resourceRoot);
-    fs::path ddsAlbedoPath(ddsBasePath.string() + "_bb.dds");
-    fs::path ddsNormPath(ddsBasePath.string() + "_bb_n.dds");
-    fs::path ddsAMRPath(ddsBasePath.string() + "_bb_AMR.dds");
+    fs::path ddsAlbedoPath(ddsBasePath.string() + "_bb" + numberStr + ddsExt);
+    fs::path ddsNormPath(ddsBasePath.string() + "_bb_n" + numberStr + ddsExt);
+    fs::path ddsAMRPath(ddsBasePath.string() + "_bb_AMR" + numberStr + ddsExt);
 
     if (!FileSystem::createDirectories(ddsAlbedoPath.parent_path())) {
         panic("Failed to create {} directory. Insufficient permissions?", ddsAlbedoPath.parent_path().string());
@@ -465,33 +502,52 @@ void ModelImpostorRepository::loadDDSTexturesAndSetImpostor(const ModelDef& mode
 
     const fs::path& cacheRoot(resourceManager.getCacheRoot().getString());
     fs::path ddsBasePath = cacheRoot / fs::path(baseName).lexically_relative(resourceRoot);
-    fs::path ddsAlbedoPath(ddsBasePath.string() + "_bb.dds");
-    fs::path ddsNormPath(ddsBasePath.string() + "_bb_n.dds");
-    fs::path ddsAMRPath(ddsBasePath.string() + "_bb_AMR.dds");
 
-    assert(fs::exists(ddsAlbedoPath));
-    assert(fs::exists(ddsNormPath));
-    assert(fs::exists(ddsAMRPath));
+    ImpostorSpan& span = mModelDefImpostorSpans[modelDef.getID()];
+    span.index = mImpostorGpuData.size();
+    span.numBillboards = 0;
 
-    gli::texture2d albedoTexture = static_cast<gli::texture2d>(gli::load(ddsAlbedoPath.string()));
-    gli::texture2d normalTexture = static_cast<gli::texture2d>(gli::load(ddsNormPath.string()));
-    gli::texture2d amrTexture = static_cast<gli::texture2d>(gli::load(ddsAMRPath.string()));
+    const char* ddsExt = ".dds";
+    for (int impostorIndex = 0; impostorIndex < MAX_IMPOSTOR_IMAGES; ++impostorIndex) {
+        char numberChar[2] = { '\0', '\0' };
+        if (impostorIndex != 0) {
+            // Note that this purposefully skips to 2 after 0 because artists are used to 1-based indexing
+            numberChar[0] = (char)impostorIndex + '1';
+        }
+        const char* numberStr = numberChar;
 
-    std::unique_ptr<ModelImpostorCpuData>& impostorData = mImpostorCpuData[modelDef.getID()];
-    assert(!impostorData);
+        // TODO: fmt is probably more efficient than string concat
+        fs::path ddsAlbedoPath(ddsBasePath.string() + "_bb" + numberStr + ddsExt);
+        if (!fs::exists(ddsAlbedoPath)) {
+            break;
+        }
+        fs::path ddsNormPath(ddsBasePath.string() + "_bb_n" + numberStr + ddsExt);
+        fs::path ddsAMRPath(ddsBasePath.string() + "_bb_AMR" + numberStr + ddsExt);
 
-    impostorData = std::make_unique<ModelImpostorCpuData>();
-    impostorData->albedoTexture = textureRepo.uploadDDSTexture(albedoTexture, vg::TextureTarget::TEXTURE_2D, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, INT_MAX);
-    impostorData->normalTexture = textureRepo.uploadDDSTexture(normalTexture, vg::TextureTarget::TEXTURE_2D, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, INT_MAX);
-    impostorData->amrTexture = textureRepo.uploadDDSTexture(amrTexture, vg::TextureTarget::TEXTURE_2D, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, INT_MAX);
+        assert(fs::exists(ddsNormPath));
+        assert(fs::exists(ddsAMRPath));
 
-    mModelDefImpostorIndices[modelDef.getID()] = mImpostorGpuData.size();
+        gli::texture2d albedoTexture = static_cast<gli::texture2d>(gli::load(ddsAlbedoPath.string()));
+        gli::texture2d normalTexture = static_cast<gli::texture2d>(gli::load(ddsNormPath.string()));
+        gli::texture2d amrTexture = static_cast<gli::texture2d>(gli::load(ddsAMRPath.string()));
 
-    // TODO: Only use bindless handles when we need to make textures resident
-    ModelImpostorGpuData& gpuData = mImpostorGpuData.emplace_back();
-    gpuData.albedoMap = impostorData->albedoTexture.getHandleBindless();
-    gpuData.normalMap = impostorData->normalTexture.getHandleBindless();
-    gpuData.aoMetallicRoughnessMap = impostorData->amrTexture.getHandleBindless();
+        std::unique_ptr<ModelImpostorTextureHandles>& impostorData = mImpostorTextureHandles[modelDef.getID()].emplace_back();
+        assert(!impostorData);
+
+        impostorData = std::make_unique<ModelImpostorTextureHandles>();
+        impostorData->albedoTexture = textureRepo.uploadDDSTexture(albedoTexture, vg::TextureTarget::TEXTURE_2D, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, INT_MAX);
+        impostorData->normalTexture = textureRepo.uploadDDSTexture(normalTexture, vg::TextureTarget::TEXTURE_2D, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, INT_MAX);
+        impostorData->amrTexture = textureRepo.uploadDDSTexture(amrTexture, vg::TextureTarget::TEXTURE_2D, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, INT_MAX);
+
+        // TODO: Only use bindless handles when we need to make textures resident
+        ModelImpostorGpuData& gpuData = mImpostorGpuData.emplace_back();
+        gpuData.albedoMap = impostorData->albedoTexture.getHandleBindless();
+        gpuData.normalMap = impostorData->normalTexture.getHandleBindless();
+        gpuData.aoMetallicRoughnessMap = impostorData->amrTexture.getHandleBindless();
+
+        ++span.numBillboards;
+    }
+    assert(span.numBillboards);
 }
 
 void ModelImpostorRepository::uploadImposterGpuData() {

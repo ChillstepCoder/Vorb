@@ -12,6 +12,11 @@ class ModelImpostorRepository;
 
 using ImpostorIndex = ui16;
 
+struct ImpostorSpan {
+    ImpostorIndex index;
+    ui16 numBillboards;
+};
+
 // This should work
 struct alignas(16) ModelBillboardData {
     f32v3 position;
@@ -57,12 +62,12 @@ public:
     void buildAllImpostors();
 
     void bindMaterialBuffer() const;
-    ImpostorIndex getImpostorIndexForModelID(AssetID modelID) const;
+    ImpostorSpan getImpostorSpanForModel(AssetID modelID) const { return mModelDefImpostorSpans[modelID]; }
 
 private:
-    void updateCachedDDS(const nString& baseName);
+    void updateCachedDDS(const nString& baseName, int impostorIndex);
     void saveDDSTextures(
-        const nString& baseName, gli::texture2d& albedoTexture, gli::texture2d& normalTexture, gli::texture2d& amrTexture
+        const nString& baseName, gli::texture2d& albedoTexture, gli::texture2d& normalTexture, gli::texture2d& amrTexture, int impostorIndex
     );
     void loadDDSTexturesAndSetImpostor(const ModelDef& modelDef, const nString& baseName);
     void uploadImposterGpuData();
@@ -76,7 +81,7 @@ private:
         TextureHandle aoMetallicRoughnessMap = INVALID_TEXTURE_HANDLE;
     };
 
-    struct ModelImpostorCpuData {
+    struct ModelImpostorTextureHandles {
         GLTexture albedoTexture;
         GLTexture normalTexture;
         GLTexture amrTexture;
@@ -86,8 +91,8 @@ private:
 
     // Maps models to billboards
     std::vector<ModelImpostorGpuData> mImpostorGpuData;
-    std::vector<ImpostorIndex> mModelDefImpostorIndices; // One per modelID
-    UnorderedFlatMap<AssetID, std::unique_ptr<ModelImpostorCpuData>> mImpostorCpuData;
+    std::vector<ImpostorSpan> mModelDefImpostorSpans; // One per modelID
+    UnorderedFlatMap<AssetID, std::vector<std::unique_ptr<ModelImpostorTextureHandles>>> mImpostorTextureHandles;
     std::vector<const ModelDef*> mModelsToBuild;
     AssetHandleBundle mModelAssets;
 };
