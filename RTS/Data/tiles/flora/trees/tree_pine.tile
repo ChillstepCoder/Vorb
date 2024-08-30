@@ -21,3 +21,4 @@ item_drops:
     - val: wood_log
       count: [30,35]
 recipe: []
+type: Flora

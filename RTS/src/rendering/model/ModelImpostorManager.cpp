@@ -140,7 +140,7 @@ void ModelImpostorRepository::registerModelForImpostor(const ModelDef& modelDef)
             if (!fs::exists(albedoName2)) {
                 break;
             }
-            fs::path ddsAlbedoPath2(ddsName + ddsExt);
+            fs::path ddsAlbedoPath2(ddsName + numberStr + ddsExt);
             ddsAlbedoPath2 = cacheRoot / ddsAlbedoPath2.lexically_relative(resourceRoot);
             if (!fs::exists(ddsAlbedoPath2) || fs::last_write_time(ddsAlbedoPath2) < fs::last_write_time(albedoName2)) {
                 updateCachedDDS(baseName, imposterIndex);
@@ -434,23 +434,54 @@ void ModelImpostorRepository::updateCachedDDS(const nString& baseName, int impos
     const nString metalPathString = baseName + "_bb_m" + numberStr + pngExt;
     const nString aoPathString = baseName + "_bb_ao" + numberStr + pngExt;
 
-    gli::texture2d albedoSource = PngLoader::loadPng(albedoPathString, false);
-    gli::texture2d normalSource = PngLoader::loadPng(normalPathString, false);
-    gli::texture2d roughSource = PngLoader::loadPng(roughPathString, false);
-    gli::texture2d metalSource = PngLoader::loadPng(metalPathString, false);
-    gli::texture2d aoSource = PngLoader::loadPng(aoPathString, false);
+    gli::texture2d albedoSource = PngLoader::loadPng(albedoPathString, true);
+    gli::texture2d normalSource;
+    gli::texture2d roughSource;
+    gli::texture2d metalSource;
+    gli::texture2d aoSource;
 
-    assert(albedoSource.extent() == normalSource.extent());
-    assert(albedoSource.extent() == roughSource.extent());
-    assert(albedoSource.extent() == metalSource.extent());
-    assert(albedoSource.extent() == aoSource.extent());
+    // Optional
+    bool hasAMR = false;
+    if (fs::exists(normalPathString)) {
+        normalSource = PngLoader::loadPng(normalPathString, true);
+        assert(albedoSource.extent() == normalSource.extent());
+    } else {
+        assert(impostorIndex != 0 && "First impostor must have full material");
+    }
+    if (fs::exists(roughPathString)) {
+        hasAMR = true;
+        roughSource = PngLoader::loadPng(roughPathString, true);
+        assert(albedoSource.extent() == roughSource.extent());
+    }
+    else {
+        assert(impostorIndex != 0 && "First impostor must have full material");
+    }
+    if (fs::exists(metalPathString)) {
+        hasAMR = true;
+        metalSource = PngLoader::loadPng(metalPathString, true);
+        assert(albedoSource.extent() == metalSource.extent());
+    }
+    else {
+        assert(impostorIndex != 0 && "First impostor must have full material");
+    }
+    if (fs::exists(aoPathString)) {
+        hasAMR = true;
+        aoSource = PngLoader::loadPng(aoPathString, true);
+        assert(albedoSource.extent() == aoSource.extent());
+    }
+    else {
+        assert(impostorIndex != 0 && "First impostor must have full material");
+    }
 
     // Build AMR texture
     gli::texture2d amrTexture(gli::format::FORMAT_RGB8_UNORM_PACK8, albedoSource.extent());
     int p = 0;
     for (size_t y = 0; y < albedoSource.extent().y; y++) {
         for (size_t x = 0; x < albedoSource.extent().x; x++) {
-            amrTexture.data<ui8v3>()[p] = ui8v3(aoSource.data<ui8>()[p], metalSource.data<ui8>()[p], roughSource.data<ui8>()[p]);
+            ui8v3& pixel = amrTexture.data<ui8v3>()[p];
+            pixel.x = aoSource.empty() ? 255 : aoSource.data<ui8>()[p];
+            pixel.y = metalSource.empty() ? 0 : metalSource.data<ui8>()[p];
+            pixel.z = roughSource.empty() ? 255 : roughSource.data<ui8>()[p];
             ++p;
         }
     }
@@ -468,8 +499,15 @@ void ModelImpostorRepository::saveDDSTextures(
 
     // Convert
     const gli::texture2d albedoDDS = TextureConvert::convertToDDS(albedoTexture, true /*generateMipmaps*/);
-    const gli::texture2d normalDDS = TextureConvert::convertToDDS(normalTexture, true /*generateMipmaps*/);
-    const gli::texture2d amrDDS = TextureConvert::convertToDDS(amrTexture, true /*generateMipmaps*/);
+
+    gli::texture2d normalDDS;
+    gli::texture2d amrDDS;
+    if (!normalTexture.empty()) {
+        normalDDS = TextureConvert::convertToDDS(normalTexture, true /*generateMipmaps*/);
+    }
+    if (!amrTexture.empty()) {
+        amrDDS = TextureConvert::convertToDDS(amrTexture, true /*generateMipmaps*/);
+    }
 
     // Efficiently insert a number char if needed with no string allocate
     const char* ddsExt = ".dds";
@@ -491,8 +529,12 @@ void ModelImpostorRepository::saveDDSTextures(
     }
 
     gli::save(albedoDDS, ddsAlbedoPath.string());
-    gli::save(normalDDS, ddsNormPath.string());
-    gli::save(amrDDS, ddsAMRPath.string());
+    if (!normalDDS.empty()) {
+        gli::save(normalDDS, ddsNormPath.string());
+    }
+    if (!amrDDS.empty()) {
+        gli::save(amrDDS, ddsAMRPath.string());
+    }
 }
 
 void ModelImpostorRepository::loadDDSTexturesAndSetImpostor(const ModelDef& modelDef, const nString& baseName) {
@@ -507,6 +549,8 @@ void ModelImpostorRepository::loadDDSTexturesAndSetImpostor(const ModelDef& mode
     span.index = mImpostorGpuData.size();
     span.numBillboards = 0;
 
+    std::vector<std::unique_ptr<ModelImpostorTextureHandles>>& handles = mImpostorTextureHandles[modelDef.getID()];
+
     const char* ddsExt = ".dds";
     for (int impostorIndex = 0; impostorIndex < MAX_IMPOSTOR_IMAGES; ++impostorIndex) {
         char numberChar[2] = { '\0', '\0' };
@@ -516,34 +560,49 @@ void ModelImpostorRepository::loadDDSTexturesAndSetImpostor(const ModelDef& mode
         }
         const char* numberStr = numberChar;
 
+
+        std::unique_ptr<ModelImpostorTextureHandles>& impostorData = handles.emplace_back();
+        assert(!impostorData);
+        impostorData = std::make_unique<ModelImpostorTextureHandles>();
+
         // TODO: fmt is probably more efficient than string concat
         fs::path ddsAlbedoPath(ddsBasePath.string() + "_bb" + numberStr + ddsExt);
         if (!fs::exists(ddsAlbedoPath)) {
+            // Failure case
             break;
         }
-        fs::path ddsNormPath(ddsBasePath.string() + "_bb_n" + numberStr + ddsExt);
-        fs::path ddsAMRPath(ddsBasePath.string() + "_bb_AMR" + numberStr + ddsExt);
-
-        assert(fs::exists(ddsNormPath));
-        assert(fs::exists(ddsAMRPath));
-
         gli::texture2d albedoTexture = static_cast<gli::texture2d>(gli::load(ddsAlbedoPath.string()));
-        gli::texture2d normalTexture = static_cast<gli::texture2d>(gli::load(ddsNormPath.string()));
-        gli::texture2d amrTexture = static_cast<gli::texture2d>(gli::load(ddsAMRPath.string()));
-
-        std::unique_ptr<ModelImpostorTextureHandles>& impostorData = mImpostorTextureHandles[modelDef.getID()].emplace_back();
-        assert(!impostorData);
-
-        impostorData = std::make_unique<ModelImpostorTextureHandles>();
         impostorData->albedoTexture = textureRepo.uploadDDSTexture(albedoTexture, vg::TextureTarget::TEXTURE_2D, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, INT_MAX);
-        impostorData->normalTexture = textureRepo.uploadDDSTexture(normalTexture, vg::TextureTarget::TEXTURE_2D, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, INT_MAX);
-        impostorData->amrTexture = textureRepo.uploadDDSTexture(amrTexture, vg::TextureTarget::TEXTURE_2D, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, INT_MAX);
+
+        fs::path ddsNormPath(ddsBasePath.string() + "_bb_n" + numberStr + ddsExt);
+        if (fs::exists(ddsNormPath)) {
+            gli::texture2d normalTexture = static_cast<gli::texture2d>(gli::load(ddsNormPath.string()));
+            impostorData->normalTexture = std::make_shared<GLTexture>(
+                textureRepo.uploadDDSTexture(normalTexture, vg::TextureTarget::TEXTURE_2D, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, INT_MAX)
+            );
+        }
+        else {
+            assert(impostorIndex != 0);
+            impostorData->normalTexture = handles[0]->normalTexture;
+        }
+        fs::path ddsAMRPath(ddsBasePath.string() + "_bb_AMR" + numberStr + ddsExt);
+        if (fs::exists(ddsAMRPath)) {
+            gli::texture2d amrTexture = static_cast<gli::texture2d>(gli::load(ddsAMRPath.string()));
+            impostorData->amrTexture = std::make_shared<GLTexture>(
+                textureRepo.uploadDDSTexture(amrTexture, vg::TextureTarget::TEXTURE_2D, vg::sSamplerStates.LINEAR_CLAMP_MIPMAP, INT_MAX)
+            );
+        }
+        else {
+            assert(impostorIndex != 0);
+            impostorData->amrTexture = handles[0]->amrTexture;
+        }
 
         // TODO: Only use bindless handles when we need to make textures resident
         ModelImpostorGpuData& gpuData = mImpostorGpuData.emplace_back();
         gpuData.albedoMap = impostorData->albedoTexture.getHandleBindless();
-        gpuData.normalMap = impostorData->normalTexture.getHandleBindless();
-        gpuData.aoMetallicRoughnessMap = impostorData->amrTexture.getHandleBindless();
+        // NOTE: These are potentially shared!
+        gpuData.normalMap = impostorData->normalTexture->getHandleBindless();
+        gpuData.aoMetallicRoughnessMap = impostorData->amrTexture->getHandleBindless();
 
         ++span.numBillboards;
     }

@@ -284,18 +284,26 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                             }
                         }
                         f32 rotation = getTileModelRotationAtPosition(worldPos);
+
+                        const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
+                        f32 scale;
+                        if (const FloraTileData* data = std::get_if<FloraTileData>(&tile.getTypeData())) {
+                            scale = modelDef.getScaleFromFloraAge(data->age);
+                        }
+                        else {
+                            scale = modelDef.getRandomScaleAtPosition(worldPos);
+                        }
                         if (heightData) {
                             //sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
                             builders.modelGatherer.addInstance(
-                                tileData.modelId, index, worldPos, f32v3(0.0f, 0.0f, 1.0f), rotation, variantIndex, std::move(damageData)
+                                tileData.modelId, index, worldPos, f32v3(0.0f, 0.0f, 1.0f), rotation, variantIndex, std::move(damageData), scale
                             );
                         }
                         else {
-                            builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, rotation, variantIndex, std::move(damageData));
+                            builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, rotation, variantIndex, std::move(damageData), scale);
                         }
-                        const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
                         if (modelDef.mCollisionShapeID != INVALID_COLLISION_SHAPE_ID) {
-                            physics.addTrackedTileModelCollider(index, layerTile, layerIndex, worldPos, f32q(f32v3(0.0f, 0.0f, rotation)), tileData.modelId);
+                            physics.addTrackedTileModelCollider(index, layerTile, layerIndex, worldPos, f32q(f32v3(0.0f, 0.0f, rotation)), scale, tileData.modelId);
                         }
                     }
                 }

@@ -9,8 +9,9 @@ struct TrackedStaticModelCollider {
     TileIndex ownerTilePosition;
     TileID tileId;
     ui8 layer;
+    f32 scale;
 };
-static_assert(sizeof(TrackedStaticModelCollider) == 40, "Keep small");
+static_assert(sizeof(TrackedStaticModelCollider) == 44, "Keep small");
 
 // Gathers static rigid bodies to track for a particular tile container
 class TrackedStaticModelColliderGatherer {
@@ -20,9 +21,9 @@ public:
     VORB_NON_COPYABLE_BUT_MOVABLE(TrackedStaticModelColliderGatherer);
 
     TrackedStaticModelColliderGatherer(TileContainerID containerId) : mContainerId(containerId) {};
-    void addTileModelCollider(TileIndex ownerTilePosition, TileID id, ui8 layer, f32v3 pos, f32q orientation, ModelID modelId) {
+    void addTileModelCollider(TileIndex ownerTilePosition, TileID id, ui8 layer, f32v3 pos, f32q orientation, f32 scale, ModelID modelId) {
         assert(modelId != INVALID_MODEL_ID);
-        mRigidBodiesToAdd.emplace_back(TrackedStaticModelCollider{ pos, orientation, modelId, ownerTilePosition, id, layer});
+        mRigidBodiesToAdd.emplace_back(TrackedStaticModelCollider{ pos, orientation, modelId, ownerTilePosition, id, layer, scale });
     }
     TileContainerID getOwnerTileContainerID() const { return mContainerId; }
     size_t getNumStaticObjectsToAdd() const { return mRigidBodiesToAdd.size(); }

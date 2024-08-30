@@ -5,6 +5,7 @@ submesh_data:
   - wind: tree_trunk
   - wind: tree_leaves
 scale: 1.48
+scale_range: [0.15, 1.2]
 lod_dst_0: 45
 lod_dst_1: 90
 lod_dst_2: 180

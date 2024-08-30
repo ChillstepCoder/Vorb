@@ -143,6 +143,7 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& bui
         else {
             tiles[index].mainLayer = data.tileId;
             tiles[index].mainLayerVariant = data.variant;
+            tiles[index].typeDataCopy = data.typeData;
             chunk.mGrass[index] = TileGrass();
             ++it;
         }
@@ -215,6 +216,19 @@ void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
             if (def.harvestable != TileHarvestable::None) {
                 chunkData.harvestables[def.harvestable].emplace_back(i);
             }
+            switch (def.tileType) {
+                case TileType::Default:
+                    break;
+                case TileType::Flora: {
+                    const ui8 age = (ui8)Random::getThreadSafe(tilePosWorld.y, tilePosWorld.x) & 0xFF;
+                    tileData.typeData = FloraTileData{ .age = age, .fruitAge = 0 };
+                    break;
+                }
+                default:
+                    assert(false);
+                    break;
+            }
+            static_assert(e_count(TileType) == 2);
             ++totalTiles;
         }
     }

@@ -52,7 +52,9 @@ public:
 
 
     // Tile models
-    void addTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData);
+    void addTileInstanceAtPosition(
+        TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData, f32 scale
+    );
     void removeTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
     TileModelInstance* getTileInstanceAtPosition(LiteTileHandle tileHandle);
     bool hasTileInstanceAtPosition(LiteTileHandle tileHandle, ModelID modelId);
@@ -78,16 +80,18 @@ private:
 
     void removeModelInstanceInternal(ui32 instanceIndex);
 
-    void addTileInstanceInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex, TileDamageDataPtr damageData);
+    void addTileInstanceInternal(
+        const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex, TileDamageDataPtr damageData, f32 scale
+    );
     void removeTileInstanceInternal(TileModelInstance& instance);
 
     void onTileInstanceDamageChanged(TileContainerID containerId, TileIndex tileIndex, const TileDamageData& damageData);
 
     void removeDamageModelInternal(ui32 damageModelIndex);
 
-    void addLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex);
+    void addLooseInstanceInternal(ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex, f32 scale);
     void removeLooseInstanceInternal(StaticModelInstanceID instanceId);
-    void updateLooseInstanceTransformInternal(StaticModelInstanceID instanceId, const f32m4 transform);
+    void updateLooseInstanceTransformInternal(StaticModelInstanceID instanceId, const f32m4 transformm, f32 scale);
 
     void updateAnimatedModels(f32 elapsedSec);
     void increfModelDef(ModelID modelId, int incCount);
@@ -113,6 +117,7 @@ private:
     std::vector<InstanceGpuData> mInstanceGpuData;
     std::vector<ModelInstanceOwnerVariant> mInstanceSources;
     std::vector<InstanceDrawData> mInstanceDrawData;
+    std::vector<f32> mInstanceScales; // Only used for billboards
     std::vector<ModelDamageZoneGpuData> mModelDamageZonesGpuData; // 0 index is default no damage
 
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommands[e_count(MaterialRenderPassType)];

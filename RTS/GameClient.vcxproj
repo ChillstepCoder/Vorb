@@ -156,7 +156,7 @@
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;NS_LICENSE_NAME="taliaspencer1@gmail.com - Project Kiwi";NS_LICENSE_KEY="3IyLy6OMicvEbQduZKfQ8E/8nJNBmlGD4wvfOe1jRUkEyc6X";NS_XAML_RELOAD_ENABLED=1;NS_APP_INTERACTIVITY_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalOptions>/bigobj /Bt %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/bigobj /Bt /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlibd.lib;SDL_ttfd.lib;SDL2maind.lib;SDL2d.lib;libyaml-cppmdd.lib;lua_libd.lib;pngd.lib;freetyped.lib;bz2d.lib;glewd.lib;enetd.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\base\Debug\*_d.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Debug\yojimbo.lib;$(SolutionDir)..\RTS\dependencies\meshoptimizer\Debug\meshoptimizer.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\build\Debug\ryml.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\build\Debug\c4core.lib;Noesis.lib;NoesisApp.lib</AdditionalDependencies>
@@ -218,7 +218,7 @@
       <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;NS_LICENSE_NAME="taliaspencer1@gmail.com - Project Kiwi";NS_LICENSE_KEY="3IyLy6OMicvEbQduZKfQ8E/8nJNBmlGD4wvfOe1jRUkEyc6X";NS_APP_INTERACTIVITY_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/bigobj /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -1093,6 +1093,8 @@
     <ClInclude Include="src\tile\SimTileReservation.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
     <ClInclude Include="src\tile\TileDamageData.h" />
+    <ClInclude Include="src\tile\TileType.h" />
+    <ClInclude Include="src\tile\TileTypeDataVariant.h" />
     <ClInclude Include="src\ui\debugging\GameplayDebugger.h" />
     <ClInclude Include="src\ui\debugging\MovementDebugger.h" />
     <ClInclude Include="src\ui\debugging\PhysicsDebugger.h" />

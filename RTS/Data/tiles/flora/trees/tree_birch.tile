@@ -21,3 +21,4 @@ item_drops:
     - val: wood_log_birch
       count: [18,23]
 recipe: []
+type: Flora

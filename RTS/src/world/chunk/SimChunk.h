@@ -13,6 +13,8 @@
 #include "item/SimChunkTileItemReservation.h"
 #include "item/ItemStack.h"
 
+#include <bitsery/ext/std_variant.h>
+
 class Chunk;
 
 enum class SimChunkState : ui8 {
@@ -50,6 +52,7 @@ private:
             s.value2b(key);
             s.value2b(value.tileId);
             s.value1b(value.variant);
+            s.ext(value.typeData, bitsery::ext::StdVariant{});
         });
         s.object(tileWalls);
     }

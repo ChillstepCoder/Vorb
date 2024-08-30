@@ -154,6 +154,7 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id, ui8 va
     eventData.newVariant = variant;
     eventData.newId = id;
     eventData.layer = layer;
+    eventData.typeData = tile.typeDataCopy;
     // Edit
     {
         std::lock_guard lock(mSharedMutex);
@@ -453,7 +454,7 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
     }
 
     const TileID tileId = mTiles[index].layers[e_cast(layer)];
-    assert(tileId != INVALID_TILE_INDEX && "Tried to damage empty tile");
+    assert(tileId != TILE_ID_NONE && "Tried to damage empty tile");
 
     auto destroyTile = [&](TileContainerEvent evnt) {
 

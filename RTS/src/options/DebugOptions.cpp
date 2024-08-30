@@ -124,6 +124,7 @@ DebugOptions::DebugOptions() :
     mHideDynamicModels(false),
     mDisableLOD(false),
     mDisableImpostors(false),
+    mForceImpostors(false),
     mDisableGPUCulling(true), // GPU CULLING HAS A BUG IT CAUSES SHADOW FKERY
     // Water
     mIsCameraUnderwater(false),

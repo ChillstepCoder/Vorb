@@ -249,4 +249,7 @@ using namespace std::literals::string_view_literals;
 #include "serialization/CommonSerializable.h"
 // Runs automatically at program startup
 
+// Serializable stuff
+#include "tile/TileType.h"
+
 #endif // stdafx_h__RTS

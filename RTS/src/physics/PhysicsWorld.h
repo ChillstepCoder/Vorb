@@ -138,7 +138,7 @@ private:
     // ===========================================================================
     JPH::BodyCreationSettings makeBodyCreateSettings(f32v3 position, CollisionShapeID shapeId, JPH::EMotionType motionType, JPH::ObjectLayer layer, f32 scale);
     PhysBodyID createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId);
-    PhysBodyID createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, f32q orientation, ModelID modelId);
+    PhysBodyID createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, f32q orientation, ModelID modelId, f32 scale);
     PhysBodyID createTerrainBody(f32v3 position, JPH::Shape* terrainShape);
     JPH::MeshShapeSettings createStaticMeshShapeSettings(std::span<f32v3> verts, std::span<ui32> indices);
     void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelColliderGatherer& gatherer, NewTileContainerPhysicsData& physicsData);

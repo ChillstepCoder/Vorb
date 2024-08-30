@@ -28,6 +28,8 @@
 #include "serialization/BitseryExt.h"
 #include "RuntimeModelSerializationContext.inl"
 
+#include "math/Random.h"
+
 static std::mutex gFbxSdkMutex; // FBX SDK IS NOT THREAD SAFE >_<
 
 // TODO: Make false
@@ -312,6 +314,11 @@ void ModelRepository::buildModelBatches() {
     mImpostorRepository->buildAllImpostors();
 }
 
+f32 ModelRepository::getModelScaleAtPosition(ModelID modelId, f32v2 position) const {
+    const ModelDef& def = getLoadedOrUnloadedAsset(modelId);
+    return def.getRandomScaleAtPosition(position);
+}
+
 AssetLoadFunc ModelRepository::getAssetLoadFunc() {
     return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
 
@@ -519,8 +526,8 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
                     variantMaterialSlotOffset += MATERIAL_SLOT_COUNT;
 
                     // Apply scale if needed
-                    if (def.mScale != 1.0f) {
-                        MeshOperations::applyScale(newMeshCpuData, def.mScale);
+                    if (def.mBakedScale != 1.0f) {
+                        MeshOperations::applyScale(newMeshCpuData, def.mBakedScale);
                     }
                     RawMeshSkeletonData& rawSkeletonData = subMesh.mSkeletonData;
 
@@ -541,12 +548,12 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
                 }
             }
 
-            minX *= def.mScale;
-            maxX *= def.mScale;
-            minY *= def.mScale;
-            maxY *= def.mScale;
-            minZ *= def.mScale;
-            maxZ *= def.mScale;
+            minX *= def.mBakedScale;
+            maxX *= def.mBakedScale;
+            minY *= def.mBakedScale;
+            maxY *= def.mBakedScale;
+            minZ *= def.mBakedScale;
+            maxZ *= def.mBakedScale;
             def.mAABB = f32AABB3(f32v3(minX, minY, minZ), f32v3(maxX - minX, maxY - minY, maxZ - minZ));
 
             def.mSubmeshSkeletonData.shrink_to_fit();

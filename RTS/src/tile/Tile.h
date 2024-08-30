@@ -2,6 +2,7 @@
 
 
 #include "definitions/TileDef.h"
+#include "tile/TileTypeDataVariant.h"
 
 // TODO: Too many includes?
 #include "tile/TileFlags.h"
@@ -57,6 +58,10 @@ public:
     bool isRoofed() const { return tileFlags.isBitSet(TileFlags::ROOFED); }
     bool isBuildingExterior() const { return tileFlags.isBitSet(TileFlags::IS_BUILDING_EXTERIOR); }
 
+    // Ready only, managed by sim thread
+    // To modify, make a request of the sim thread
+    const TileTypeDataVariant& getTypeData() const { return typeDataCopy; }
+
 private:
     // Mutators are accessed only via chunk generator or chunk methods (friend classes)
     bool canAddTileData(const TileDef& tile) const;
@@ -80,10 +85,11 @@ private:
     ui8 groundLayerVariant : 4 = {};
     ui8 mainLayerVariant : 4 = {};
     f32 groundZOffset = 0.0f;
+    // TODO: Some kind of generic "view" class that lets us readonly with updates from sim thread?
+    TileTypeDataVariant typeDataCopy; // State owned by sim thread
+    // TODO: Flyweight
 };
-// TODO: Could we limit tile counts by category? Ground tile ID would be 8? mid tile ID also 8, only top layer has ui16?
-static_assert(sizeof(Tile) == 12, "Keep small");
-//SIZER(Tile);
+static_assert(sizeof(Tile) == 16, "Keep small");
 
 // TODO: We have to include tile wall container because of these
 // All meshable (and visibility) data from a container, copied to prevent race conditions or mutex locks

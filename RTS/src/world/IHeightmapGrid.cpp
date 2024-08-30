@@ -276,7 +276,9 @@ void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
 
 template <bool THREAD_SAFE>
 f32 IHeightmapGrid::getHeightAtVert(DTileCoord vertPos) const {
-    if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
+   /* if constexpr (!THREAD_SAFE) {
+        assert(IS_GAME_THREAD());
+    }*/
     HeightmapPatchID id = mSpatialGrid2D.getIDfromGridXY(vertPos.v / HEIGHTMAP_VERT_WIDTH_PER_PATCH);
     vertPos.x = vertPos.x % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
     vertPos.y = vertPos.y % HEIGHTMAP_VERT_WIDTH_PER_PATCH;

@@ -8,8 +8,8 @@ public:
     InstancedStaticModelGatherer(TileContainerID containerID, const f32v3& rootPosition) : mContainerID(containerID), mRootPosition(rootPosition) {};
     VORB_NON_COPYABLE_BUT_MOVABLE(InstancedStaticModelGatherer);
 
-    void addInstance(ModelID modelId, TileIndex tileIndex, const f32v3& position, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData);
-    void addInstance(ModelID modelId, TileIndex tileIndex, const f32v3& position, const f32v3& normal, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData);
+    void addInstance(ModelID modelId, TileIndex tileIndex, const f32v3& position, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData, f32 scale);
+    void addInstance(ModelID modelId, TileIndex tileIndex, const f32v3& position, const f32v3& normal, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData, f32 scale);
 private:
     // TODO: Store tileIndex or position
     std::map<ModelID, std::vector<StaticModelInstance>> mInstances;

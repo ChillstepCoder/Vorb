@@ -505,9 +505,9 @@ BBuffer WorldSaveContext::compressData(const BBuffer& bbuffer) {
 }
 
 size_t WorldSaveContext::decompressDataStatic(const std::span<uint8_t> compressed, uint8_t* dst, size_t dstSizeBytes) {
-    size_t resultCount = ZSTD_decompress(dst, dstSizeBytes, compressed.data(), compressed.size());
+    const size_t resultCount = ZSTD_decompress(dst, dstSizeBytes, compressed.data(), compressed.size());
     if (ZSTD_isError(resultCount)) {
-        panic("ZSTD_decompress failed");
+        panic("ZSTD_decompress failed with error {}", ZSTD_getErrorName(resultCount));
     }
     return resultCount;
 }

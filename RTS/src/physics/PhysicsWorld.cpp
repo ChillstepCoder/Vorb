@@ -969,7 +969,7 @@ PhysBodyID PhysicsWorld::createEntityBody(const JPH::BodyCreationSettings& creat
     return body.GetID().GetIndexAndSequenceNumber();
 }
 
-PhysBodyID PhysicsWorld::createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, f32q orientation, ModelID modelId) {
+PhysBodyID PhysicsWorld::createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, f32q orientation, ModelID modelId, f32 scale) {
     ASSERT_GAME_THREAD();
 
     const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(modelId);
@@ -982,7 +982,7 @@ PhysBodyID PhysicsWorld::createTileBody(TileContainerID containerId, TileIndex t
 
     JPH::BodyCreationSettings createSettings = makeBodyCreateSettings(
         position, modelDef.mCollisionShapeID, JPH::EMotionType::Static,
-        makeObjectLayerMasked(PhysicsObjectLayer::Static, PhysicsObjectLayer::DynamicSolid | PhysicsObjectLayer::DynamicItem), 1.0f /*scale*/
+        makeObjectLayerMasked(PhysicsObjectLayer::Static, PhysicsObjectLayer::DynamicSolid | PhysicsObjectLayer::DynamicItem), scale /*scale*/
     );
     createSettings.mUserData = PhysicsBodyUserData(containerId, tileIndex);
     createSettings.mRotation = JPH::Quat(orientation.x, orientation.y, orientation.z, orientation.w);
@@ -1031,7 +1031,7 @@ void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelCol
 
     for (auto& it : gatherer.mRigidBodiesToAdd) {
         const TileKey key = TileKey{ it.ownerTilePosition, it.tileId, it.layer };
-        physicsData.mTileKeyToPhysBodyID.emplace(key, createTileBody(gatherer.mContainerId, it.ownerTilePosition, it.position, it.orientation, it.modelId));
+        physicsData.mTileKeyToPhysBodyID.emplace(key, createTileBody(gatherer.mContainerId, it.ownerTilePosition, it.position, it.orientation, it.modelId, it.scale));
     }
 }
 
@@ -1047,7 +1047,7 @@ void PhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticModel
         auto&& pit = physicsData.mTileKeyToPhysBodyID.find(key);
         // Only add if it doesn't already exist
         if (pit == physicsData.mTileKeyToPhysBodyID.end()) {
-            physicsData.mTileKeyToPhysBodyID.emplace(key, createTileBody(gatherer.mContainerId, it.ownerTilePosition, it.position, it.orientation, it.modelId));
+            physicsData.mTileKeyToPhysBodyID.emplace(key, createTileBody(gatherer.mContainerId, it.ownerTilePosition, it.position, it.orientation, it.modelId, it.scale));
         }
         addedKeys.insert(key);
     }

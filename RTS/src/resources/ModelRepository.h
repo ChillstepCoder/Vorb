@@ -86,6 +86,9 @@ public:
         return mModelBatches[id];
     }
 
+    // TODO: Somewhere else?
+    f32 getModelScaleAtPosition(ModelID modelId, f32v2 position) const;
+
     // Used by model renderer
     const MeshSkeletonData* getSubmeshSkeletonData(SubmeshID submeshId) const {
         return mAllSubmeshSkeletonData[submeshId];

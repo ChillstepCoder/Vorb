@@ -83,8 +83,8 @@ private:
 
     struct ModelImpostorTextureHandles {
         GLTexture albedoTexture;
-        GLTexture normalTexture;
-        GLTexture amrTexture;
+        std::shared_ptr<GLTexture> normalTexture;
+        std::shared_ptr<GLTexture> amrTexture;
     };
 
     GLBuffer mImpostorDataBuffer;

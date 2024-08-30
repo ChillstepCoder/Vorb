@@ -128,6 +128,7 @@ struct DebugOptions {
     bool mHideDynamicModels;
     bool mDisableLOD;
     bool mDisableImpostors;
+    bool mForceImpostors;
     bool mDisableGPUCulling;
     bool mDebugToggle0;
     // Fish

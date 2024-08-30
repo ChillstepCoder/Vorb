@@ -38,6 +38,7 @@ struct TileContainerEditLayerEventData {
     TileID newId;
     ui8 newVariant;
     TileLayer layer;
+    TileTypeDataVariant typeData;
 };
 
 struct TileContainerEditZPosEventData {

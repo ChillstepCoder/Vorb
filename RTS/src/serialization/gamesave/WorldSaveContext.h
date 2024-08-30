@@ -8,9 +8,9 @@ class World;
 typedef ui32 RegionPatchIndex;
 
 struct RegionPatchDesc {
-    i32 mStartByte = 0; // Seek position
-    i32 mAllocatedPages = 0;
-    i32 mAllocatedBytes = 0;
+    ui32 mStartByte = 0; // Seek position
+    ui32 mAllocatedPages = 0;
+    ui32 mAllocatedBytes = 0;
 
     BINARY_SERIALIZE() {
         s.value4b(mStartByte);
@@ -20,7 +20,7 @@ struct RegionPatchDesc {
 };
 
 struct RegionPendingWriteData {
-    UnorderedFlatMap<RegionPatchIndex, BBuffer> pendingWrites;
+    FlatMap<RegionPatchIndex, BBuffer> pendingWrites;
     ui32 incomingWrites = 0;
 };
 

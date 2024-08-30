@@ -287,11 +287,13 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     continue;
                 }
 
-                if (distance2 >= lodParams.lodDistancesSQ[3]) {
+                if (distance2 >= lodParams.lodDistancesSQ[3] || sDebugOptions.mForceImpostors) {
                     // TODO: Get scale somehow, decompose is expensive
                     //f32 scale = glm::decompose(transform)
-                    const f32AABB3& aabb = modelRepo.getLoadedOrUnloadedAsset(instanceDrawData.modelId).mAABB;
-                    mBillboardLodManager->addBillboard(instanceDrawData.modelId, pos, f32v2(aabb.width, aabb.height));
+                    const ModelDef& modelDef = modelRepo.getLoadedOrUnloadedAsset(instanceDrawData.modelId);
+                    const f32AABB3& aabb = modelDef.mAABB;
+                    const f32 scale = mInstanceScales[instanceIndex];
+                    mBillboardLodManager->addBillboard(instanceDrawData.modelId, pos, f32v2(aabb.width * scale, aabb.height * scale));
                     continue;
                 }
                 else if (distance2 >= lodParams.lodDistancesSQ[2]) {
@@ -390,7 +392,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
     updateAnimatedModels(elapsedSec);
 }
 
-void InstancedStaticModelManager::addTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData) {
+void InstancedStaticModelManager::addTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData, f32 scale) {
     ASSERT_RENDER_THREAD();
 
     increfModelDef(modelId, 1);
@@ -398,7 +400,7 @@ void InstancedStaticModelManager::addTileInstanceAtPosition(TileContainerID cont
     const ModelDef* modelDefPtr = ModelRepository::get().tryGetLoadedAsset(modelId);
     assert(modelDefPtr);
 
-    addTileInstanceInternal(*modelDefPtr, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation), variantIndex, std::move(damageData));
+    addTileInstanceInternal(*modelDefPtr, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation), variantIndex, std::move(damageData), scale);
 }
 
 void InstancedStaticModelManager::removeTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex) {
@@ -476,6 +478,7 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
             mFirstDirtyInstance = startIndex;
         }
         mInstanceTransforms.resize(startIndex + sourceInstances.size());
+        mInstanceScales.resize(mInstanceTransforms.size());
         mInstanceGpuData.resize(mInstanceTransforms.size());
         mInstanceSources.resize(mInstanceTransforms.size());
         mInstanceDrawData.resize(mInstanceTransforms.size());
@@ -496,13 +499,13 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
                 mInstanceGpuData[instanceIndex].damageModelIndex = 0;
             }
             mInstanceDrawData[instanceIndex] = InstanceDrawData(drawDataKey, modelId);
+            mInstanceScales[instanceIndex] = modelInstance.scale;
             incrementDrawCommandsCount(drawDataKey);
 
             assert(tileContainerModels.find(modelInstance.tileIndex) == tileContainerModels.end());
             tileContainerModels[modelInstance.tileIndex] = { it.first, (ui32)instanceIndex };
         }
     }
-
 }
 
 void InstancedStaticModelManager::removeTileInstancesFromContainer(TileContainerID containerId)
@@ -553,6 +556,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
         f32v3 worldPosition;
         TileIndex tileIndex;
         ModelID modelId;
+        f32 scale;
     };
     struct ModelEditEvents {
         TileContainerID containerId;
@@ -583,7 +587,15 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
                 if (newId != TILE_ID_NONE) {
                     const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(newId);
                     if (tileData.shape == TileShape::MODEL) {
-                        editEvents.addEvents.emplace_back(ModelAddEvent{ edit.worldPosition, edit.tileIndex, tileData.modelId });
+                        f32 scale;
+                        const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
+                        if (const FloraTileData* data = std::get_if<FloraTileData>(&edit.typeData)) {
+                            scale = modelDef.getScaleFromFloraAge(data->age);
+                        }
+                        else {
+                            scale = modelDef.getRandomScaleAtPosition(edit.worldPosition);
+                        }
+                        editEvents.addEvents.emplace_back(ModelAddEvent{ edit.worldPosition, edit.tileIndex, tileData.modelId, scale });
                     }
                 }
             }
@@ -613,7 +625,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
             }
             for (auto&& addEvent : editPtr->addEvents) {
                 // Assume no damage for now!
-                manager->addTileInstanceAtPosition(containerId, addEvent.tileIndex, addEvent.modelId, addEvent.worldPosition, getTileModelRotationAtPosition(addEvent.worldPosition), 0 /*TODO: Variant*/, nullptr);
+                manager->addTileInstanceAtPosition(containerId, addEvent.tileIndex, addEvent.modelId, addEvent.worldPosition, getTileModelRotationAtPosition(addEvent.worldPosition), 0 /*TODO: Variant*/, nullptr, addEvent.scale);
             }
             delete editPtr;
         }, editPtr);
@@ -721,14 +733,14 @@ void InstancedStaticModelManager::updatePendingLooseModelInstances() {
                 case PendingLooseModelInstance::Type::Add: {
                     // TODO: Construct transform in place so no copy?
                     const f32m4 transform = MathUtil::createTransformMatrix(instance.position, instance.orient, instance.scale);
-                    addLooseInstanceInternal(instance.modelId, instance.instanceId, transform, instance.variantIndex);
+                    addLooseInstanceInternal(instance.modelId, instance.instanceId, transform, instance.variantIndex, instance.scale);
                     break;
                 }
                 case PendingLooseModelInstance::Type::Remove:
                     removeLooseInstanceInternal(instance.instanceId);
                     break;
                 case PendingLooseModelInstance::Type::ChangeTransform:
-                    updateLooseInstanceTransformInternal(instance.instanceId, MathUtil::createTransformMatrix(instance.position, instance.orient, instance.scale));
+                    updateLooseInstanceTransformInternal(instance.instanceId, MathUtil::createTransformMatrix(instance.position, instance.orient, instance.scale), instance.scale);
                     break;
                 default:
                     assert(false);
@@ -784,15 +796,19 @@ void InstancedStaticModelManager::removeModelInstanceInternal(ui32 instanceIndex
     mInstanceDrawData.pop_back();
 }
 
-void InstancedStaticModelManager::addTileInstanceInternal(const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex, TileDamageDataPtr damageData) {
+void InstancedStaticModelManager::addTileInstanceInternal(
+    const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex, TileDamageDataPtr damageData, f32 scale
+) {
 
     const size_t instanceIndex = mInstanceTransforms.size();
     if (instanceIndex < mFirstDirtyInstance) {
         mFirstDirtyInstance = instanceIndex;
     }
-    // Store per tile references
+    // Store per tile references (note scale is already applied)
     mInstanceTransforms.emplace_back(transform);
     InstanceGpuData& newGpuData = mInstanceGpuData.emplace_back();
+
+    mInstanceScales.emplace_back(scale);
 
     newGpuData.variantIndex = variantIndex;
     if (damageData) {
@@ -887,7 +903,7 @@ void InstancedStaticModelManager::removeDamageModelInternal(ui32 damageModelInde
 }
 
 void InstancedStaticModelManager::addLooseInstanceInternal(
-    ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex
+    ModelID modelId, StaticModelInstanceID instanceId, const f32m4& transform, ui8 variantIndex, f32 scale
 ) {
     const VariantIndexData variantData = ModelRepository::get().getVariantArrayIndexDataForModel(modelId);
     increfModelDef(modelId, 1);
@@ -900,6 +916,8 @@ void InstancedStaticModelManager::addLooseInstanceInternal(
     newGpuData.variantIndex = variantData.offset + (InstanceVariantIndexType)variantIndex * variantData.stride;
     newGpuData.damageModelIndex = 0; // Currently loose models do not support damage
     mInstanceSources.emplace_back(instanceId);
+
+    mInstanceScales.emplace_back(scale);
 
     // Store instance lookup
     mLooseStaticModelInstances.emplace(std::make_pair(instanceId, (ui32)instanceIndex));
@@ -921,7 +939,7 @@ void InstancedStaticModelManager::removeLooseInstanceInternal(StaticModelInstanc
 
 }
 
-void InstancedStaticModelManager::updateLooseInstanceTransformInternal(StaticModelInstanceID instanceId, const f32m4 transform) {
+void InstancedStaticModelManager::updateLooseInstanceTransformInternal(StaticModelInstanceID instanceId, const f32m4 transform, f32 scale) {
 
     auto&& lit = mLooseStaticModelInstances.find(instanceId);
     assert(lit != mLooseStaticModelInstances.end());
@@ -932,7 +950,7 @@ void InstancedStaticModelManager::updateLooseInstanceTransformInternal(StaticMod
     }
 
     mInstanceTransforms[instanceIndex] = transform;
-
+    mInstanceScales[scale] = scale;
 }
 
 void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec) {

@@ -7,6 +7,8 @@
 
 #include "item/ItemRollTable.h"
 
+
+
 enum class TileLayer : ui8 {
     Ground = 0,
     Main = 1,
@@ -117,6 +119,7 @@ public:
     ui8 navMask = 0xff; // Access bits mapped to Cartesian8 based on default (SOUTH) orientation
     NavBlockerType navBlockerType = NavBlockerType::NONE;
     VisibilityBlockerType visBlockerType = VisibilityBlockerType::NONE;
+    TileType tileType = TileType::Default;
     bool blocksVisibility = false;
     union {
         struct {
@@ -132,6 +135,7 @@ public:
     ItemRollTable itemDrops;
 };
 SERIALIZABLE_IMGUI_CONTROLLED(TileDef,
+    make_field(o.tileType, "type"),
     make_field(o.dims, "dims"),
     make_field(o.harvestable, "harvestable"),
     make_field(o.materialNames, "materials"),

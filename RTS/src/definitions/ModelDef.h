@@ -44,6 +44,8 @@ public:
 
     bool isSkeletalModel() const { return mRig != nullptr; }
     ui32 getNumMeshes() const { return mSubmeshData.size(); }
+    f32 getRandomScaleAtPosition(f32v2 position) const;
+    f32 getScaleFromFloraAge(ui8 age) const;
 
     // TODO: AssetHandle
     const RigDef* mRig = nullptr;
@@ -55,7 +57,8 @@ public:
     StrToken mModelFileName;
     RigAssetRef mRigRef;
     AnimMachineAssetRef mMachineRef;
-    f32 mScale = 1.0f;
+    f32 mBakedScale = 1.0f;
+    f32v2 mScaleRange = f32v2(1.0f);
     f32 mLodDistance0 = 45.f;
     f32 mLodDistance1 = 90.f;
     f32 mLodDistance2 = 180.f;
@@ -77,7 +80,8 @@ SERIALIZABLE_IMGUI_CONTROLLED(ModelDef,
     make_field(o.mRigRef, "rig"sv),
     make_field(o.mMachineRef, "machine"sv),
     make_field(o.mSubmeshData, "submesh_data"sv),
-    make_field(o.mScale, "scale"sv),
+    make_field(o.mBakedScale, "scale"sv),
+    make_field(o.mScaleRange, "scale_range"sv),
     make_field(o.mLodDistance0, "lod_dst_0"sv),
     make_field(o.mLodDistance1, "lod_dst_1"sv),
     make_field(o.mLodDistance2, "lod_dst_2"sv),

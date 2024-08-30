@@ -245,10 +245,10 @@ public:
         return *mAssets[id];
     }
     // Some assets are valid without being loaded as they have minimal definitions that can be loaded on register
-    const T& getLoadedOrUnloadedAsset(StrToken name) {
+    const T& getLoadedOrUnloadedAsset(StrToken name) const {
         return *mAssets[getAssetID(name)];
     }
-    const T& getLoadedOrUnloadedAsset(AssetID id) {
+    const T& getLoadedOrUnloadedAsset(AssetID id) const {
         return *mAssets[id];
     }
     IAsset& getLoadedOrUnloadedIAsset(AssetID id) override {
