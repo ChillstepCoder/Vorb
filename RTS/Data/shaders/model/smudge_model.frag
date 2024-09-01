@@ -6,6 +6,7 @@ in vec4 fTint;
 in mat3 fTBN;
 in vec3 fViewTangent;
 in vec3 fFragPosTangent;
+flat in float fCrossfade;
 
 uniform float unSnowLevel;
 
@@ -32,8 +33,7 @@ void main() {
     float metallic;
     float roughness;
     getMaterialPixelInfo(fMaterialIndex, uv, color, normal, ao, metallic, roughness, fTint);
-
-    tryDiscardTransparentPixel(color.a);
+    runAlphaTestWithCrossfade(color.a, fCrossfade);
 	
 	// Normal to tangent space
     normal = normalize(fTBN * normal);

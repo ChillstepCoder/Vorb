@@ -45,6 +45,7 @@ inline ui32 roundToBillboardResolution(f32 value) {
 }
 
 ModelImpostorManager::ModelImpostorManager(ModelImpostorRepository& impostorRepo) : mImpostorRepository(impostorRepo) {
+    ASSERT_GAME_THREAD(); // Currently runs on game thread
 }
 
 ModelImpostorManager::~ModelImpostorManager() = default;
@@ -55,12 +56,11 @@ void ModelImpostorManager::frameBegin() {
     const ui32 desiredCapacity = std::max(mNumBillboards + 128, mMaxCapacity);
     GpuStreamingDataBuffer::reallocateFuzzedIfNeeded(mBillboardDataBuffer, desiredCapacity, sizeof(ModelBillboardData), FUZZ);
     mMaxCapacity = mBillboardDataBuffer->getMaxElements();
-    LOG_INFO("BillboardLodManager: Max: {} Num {}", mMaxCapacity, mNumBillboards);
     mNumBillboards = 0;
     mBillboardDataThisFrame = static_cast<ModelBillboardData*>(mBillboardDataBuffer->frameBeginAndGetDataForUpdate());
 }
 
-void ModelImpostorManager::addBillboard(AssetID modelID, f32v3 position, f32v2 dims) {
+void ModelImpostorManager::addBillboard(AssetID modelID, f32v3 position, f32v2 dims, f32 crossfade) {
     if (mNumBillboards < mMaxCapacity) {
         const ui32 rnd = Random::getThreadSafe((ui32)position.x, (ui32)position.y);
         const f32 xFlip = (f32)(rnd & 1);
@@ -68,7 +68,7 @@ void ModelImpostorManager::addBillboard(AssetID modelID, f32v3 position, f32v2 d
         assert(span.numBillboards != 0);
         const ImpostorIndex index = span.index + (ImpostorIndex)(rnd % span.numBillboards);
         // We only append billboards while less than max capacity. If we blow capacity, new space will be allocated next frame
-        mBillboardDataThisFrame[mNumBillboards] = ModelBillboardData{ position, xFlip, dims * 0.5f, index };
+        mBillboardDataThisFrame[mNumBillboards] = ModelBillboardData{ position, xFlip, dims * 0.5f, index, crossfade };
     }
     // Always increment
     ++mNumBillboards;

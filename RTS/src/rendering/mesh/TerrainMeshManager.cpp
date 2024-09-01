@@ -6,6 +6,7 @@
 #include "world/HeightmapTerrainQuadtree.h"
 
 TerrainMeshManager::TerrainMeshManager(World& world) : mWorld(world) {
+    ASSERT_GAME_THREAD(); // This is currently created on the game thread
     // Init terrain
     mWidthTerrainTrees = mWorld.getWidthChunks() / CHUNKS_PER_TERRAIN_QUADTREE;
     IHeightmapGrid& heightmapGrid = mWorld.getHeightmapGrid();

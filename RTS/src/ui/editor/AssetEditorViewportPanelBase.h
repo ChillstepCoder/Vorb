@@ -17,9 +17,15 @@ public:
 
 protected:
     const MaterialShaderDef* getModelRenderShader() const;
-    void renderMeshStatic(const ModelDef* modelAsset, int variantIndex, int lod, bool showSingleSubmesh, int singleSubmeshIndex);
-    void renderMeshSkeletal(const ModelDef* modelAsset, int variantIndex, int lod, const AnimationDef* previewAnim, f32 previewAnimTime);
-    void renderMeshSkeletalBlended(const ModelDef* modelAsset, int variantIndex, int lod, const std::span<AnimSampleBlendData> anims);
+    void renderMeshStatic(
+        const ModelDef* modelAsset, int variantIndex, int lod, bool showSingleSubmesh, int singleSubmeshIndex, f32 crossfade = -MATH_EPSILON
+    );
+    void renderMeshSkeletal(
+        const ModelDef* modelAsset, int variantIndex, int lod, const AnimationDef* previewAnim, f32 previewAnimTime, f32 crossfade = -MATH_EPSILON
+    );
+    void renderMeshSkeletalBlended(
+        const ModelDef* modelAsset, int variantIndex, int lod, const std::span<AnimSampleBlendData> anims, f32 crossfade = -MATH_EPSILON
+    );
 
     mutable AssetHandlePtr<MaterialShaderDef> mPbrMaterial;
     mutable AssetHandlePtr<MaterialShaderDef> mEditorMaterial;

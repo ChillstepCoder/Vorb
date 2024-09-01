@@ -33,6 +33,13 @@ void GLExtensions::init() {
     if (!hasExtension("GL_ARB_gpu_shader_int64")) {
         panic("GL_ARB_gpu_shader_int64 not supported by this GPU. Try updating drivers");
     }
+
+    if (!hasExtension("GL_ARB_multi_draw_indirect")) {
+        panic("GL_ARB_multi_draw_indirect not supported by this GPU. Try updating drivers");
+    }
+
+    // ARB_shader_draw_parameters needed for gl_DrawID if not glsl 4.6
+    // TODO: Check for extension OR 4.6 support
 }
 
 bool GLExtensions::hasExtension(const char* extension) {

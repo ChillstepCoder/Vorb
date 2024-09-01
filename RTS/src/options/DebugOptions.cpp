@@ -93,7 +93,7 @@ DebugOptions::DebugOptions() :
     // Sim
     mGlobalSimTimescale(1.0f),
     mGlobalSimTimestepMult(1.0f),
-    mDebugSimCharacters(true),
+    mDebugSimCharacters(false),
     mDisableSimAI(false),
     mDisableFullAI(false),
     // Toggles
@@ -124,6 +124,7 @@ DebugOptions::DebugOptions() :
     mHideDynamicModels(false),
     mDisableLOD(false),
     mDisableImpostors(false),
+    mLodCrossfadeSpeed(1.0f),
     mForceImpostors(false),
     mDisableGPUCulling(true), // GPU CULLING HAS A BUG IT CAUSES SHADOW FKERY
     // Water

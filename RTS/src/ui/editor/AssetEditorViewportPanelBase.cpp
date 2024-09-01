@@ -45,7 +45,9 @@ const MaterialShaderDef* AssetEditorViewportPanelBase::getModelRenderShader() co
     return nullptr;
 }
 
-void AssetEditorViewportPanelBase::renderMeshStatic(const ModelDef* modelAsset, int variantIndex, int lod, bool showSingleSubmesh, int singleSubmeshIndex) {
+void AssetEditorViewportPanelBase::renderMeshStatic(
+    const ModelDef* modelAsset, int variantIndex, int lod, bool showSingleSubmesh, int singleSubmeshIndex, f32 crossfade /*= -MATH_EPSILON*/
+) {
     if (!modelAsset) return;
 
     ModelRepository& modelRepo = ModelRepository::get();
@@ -77,6 +79,9 @@ void AssetEditorViewportPanelBase::renderMeshStatic(const ModelDef* modelAsset, 
     };
 
     glUniform4f(shader->getUniform("unPosOffset"), 0.0f, 0.0f, 0.0f, 0.0f);
+    if (const VGUniform* crossfadeUniform = shader->tryGetUniform("unCrossfade")) {
+        glUniform1f(*crossfadeUniform, crossfade);
+    }
     if (showSingleSubmesh) {
         singleSubmeshIndex = glm::min((int)modelAsset->getNumMeshes() - 1, singleSubmeshIndex);
         renderSubmesh(singleSubmeshIndex, lod);
@@ -98,7 +103,9 @@ void AssetEditorViewportPanelBase::renderMeshStatic(const ModelDef* modelAsset, 
     checkGlError("AssetEditorViewportPanelBase::renderMeshStatic");
 }
 
-void AssetEditorViewportPanelBase::renderMeshSkeletal(const ModelDef* modelAsset, int variantIndex, int lod, const AnimationDef* previewAnim, f32 previewAnimTime) {
+void AssetEditorViewportPanelBase::renderMeshSkeletal(
+    const ModelDef* modelAsset, int variantIndex, int lod, const AnimationDef* previewAnim, f32 previewAnimTime, f32 crossfade /*= -MATH_EPSILON*/
+) {
     if (!modelAsset) return;
     assert(modelAsset->isSkeletalModel());
     std::vector<AnimSampleBlendData> anims;
@@ -108,7 +115,9 @@ void AssetEditorViewportPanelBase::renderMeshSkeletal(const ModelDef* modelAsset
     renderMeshSkeletalBlended(modelAsset, variantIndex, lod, anims);
 }
 
-void AssetEditorViewportPanelBase::renderMeshSkeletalBlended(const ModelDef* modelAsset, int variantIndex, int lod, const std::span<AnimSampleBlendData> anims) {
+void AssetEditorViewportPanelBase::renderMeshSkeletalBlended(
+    const ModelDef* modelAsset, int variantIndex, int lod, const std::span<AnimSampleBlendData> anims, f32 crossfade /*= -MATH_EPSILON*/
+) {
     if (!modelAsset) return;
     assert(modelAsset->isSkeletalModel());
     const MaterialShaderDef* shader = getShader();
@@ -118,7 +127,9 @@ void AssetEditorViewportPanelBase::renderMeshSkeletalBlended(const ModelDef* mod
     transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(0.0f, 0.0f, 1.0f));
     transform = glm::rotate(transform, DEG_TO_RAD(90.0f), f32v3(1.0f, 0.0f, 0.0f));
     glUniformMatrix4fv(shader->getUniform("unM"), 1, false, &transform[0][0]);
-
+    if (const VGUniform* crossfadeUniform = shader->tryGetUniform("unCrossfade")) {
+        glUniform1f(*crossfadeUniform, crossfade);
+    }
     // We are re-using context which is inefficient but its fine, this is editor stuff
     // see AnimMachineInstance for proper usage
     SkeletalAnimationSampleContext context;

@@ -46,6 +46,7 @@ struct CloudBatchTaskData {
 };
 
 CloudMeshManager::CloudMeshManager(ChunkGenerator& worldGenerator) : mWorldGenerator(worldGenerator) {
+    ASSERT_GAME_THREAD(); // This is currently created on the game thread
     MaterialRepository& materialRepo = MaterialRepository::get();
     mAssets.addAssetHandle(materialRepo.getAssetHandle(CLOUD_SIL_TOKEN));
 }

@@ -5,6 +5,8 @@
 #include "model/model_variant.glsl"
 
 uniform float unSnowLevel;
+uniform int unCrossfadeOffset = -1;
+
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
 layout(location = 2) in uint vMaterialSlot;
@@ -23,9 +25,14 @@ struct ModelDamageZoneGPUData {
     vec2 radii;
 };
 
-layout(std430, binding = 7) readonly buffer ModelDamageZoneBuffer {
+layout(std430, binding = 7) readonly restrict buffer ModelDamageZoneBuffer {
     ModelDamageZoneGPUData modelDamageZoneBuffer[];
 };
+
+layout(std430, binding = 9) readonly restrict buffer CrossfadeBuffer {
+    float crossfadeBuffer[];
+};
+
 
 uint extractDamageZoneByte(ModelDamageZoneGPUData data, uint index) {
     if (index >= 32) {
@@ -51,6 +58,7 @@ out vec3 fFragPosTangent;
 out float fSnow;
 out float fDamage;
 out vec3 fLocalPosition;
+flat out float fCrossfade;
 
 float damageTest(inout vec4 position, float damageValue) {
     vec2 offset = position.xy;
@@ -73,7 +81,17 @@ void main() {
     
 	fTBN = computeTbn(mat3(vModelMatrix), normal, tangent);
     
+    if (unCrossfadeOffset != -1) {
+        fCrossfade = crossfadeBuffer[unCrossfadeOffset + gl_DrawID];
+    } else {
+        fCrossfade = -0.0001; // Indicates fully rendered object
+    }
+    
     fSnow = max(normal.z, 0.0) * unSnowLevel;
+
+    
+// TODO: Handle defines
+//#ifndef SMUDGE
     
     vec4 adjustedPosition = vPosition;
   
@@ -86,6 +104,8 @@ void main() {
     
     // Snow
     adjustedPosition.z += fSnow * 0.25f;
+    
+//#endif
     
     vec4 trueWorldPos = (vModelMatrix * adjustedPosition);
     vec3 modelRoot = vModelMatrix[3].xyz;
@@ -102,6 +122,4 @@ void main() {
     mat3 tfTBN = transpose(fTBN); // Transpose is same as inverse for tbn because it is orthogonal, apparently
     fViewTangent  = vec3(0.0); // tfTBN * CameraPos; // TODO: Is this right?
     fFragPosTangent  = tfTBN * relativeWorldPos.xyz;
-    
-
 }

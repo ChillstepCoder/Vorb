@@ -23,7 +23,7 @@ struct alignas(16) ModelBillboardData {
     f32 uFlip; // 0 or 1
     f32v2 dims;
     ui32 material;
-    f32 PADDING;
+    f32 crossfade;
 };
 static_assert(sizeof(ModelBillboardData) == 32);
 
@@ -34,7 +34,7 @@ public:
 
     void frameBegin();
 
-    void addBillboard(AssetID modelID, f32v3 position, f32v2 dims);
+    void addBillboard(AssetID modelID, f32v3 position, f32v2 dims, f32 crossfade);
 
     void flushDataAndIncrementFrame();
 

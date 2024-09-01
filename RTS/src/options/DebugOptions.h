@@ -129,6 +129,7 @@ struct DebugOptions {
     bool mDisableLOD;
     bool mDisableImpostors;
     bool mForceImpostors;
+    f32 mLodCrossfadeSpeed;
     bool mDisableGPUCulling;
     bool mDebugToggle0;
     // Fish

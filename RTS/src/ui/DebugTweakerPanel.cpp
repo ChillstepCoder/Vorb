@@ -440,6 +440,7 @@ void DebugTweakerPanel::updateAndRender(World& world, const vg::GBuffer* activeG
         ImGui::Checkbox("Hide Dynamic Models", &sDebugOptions.mHideDynamicModels);
         ImGui::Checkbox("Disable LOD", &sDebugOptions.mDisableLOD);
         ImGui::Checkbox("Disable Impostors", &sDebugOptions.mDisableImpostors);
+        ImGui::SliderFloat("Crossfade Speed", &sDebugOptions.mLodCrossfadeSpeed, 0.3f, 10.0f);
         ImGui::Checkbox("Force Impostors", &sDebugOptions.mForceImpostors);
         ImGui::Checkbox("CPU Culling", &sDebugOptions.mDisableGPUCulling);
         ImGui::Separator();

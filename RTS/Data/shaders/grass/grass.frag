@@ -6,7 +6,6 @@
 uniform sampler2D GreyNoise;
 uniform float unFadeDistance = 1000.0;
 uniform float unCrossfadeAlpha = 0.0;
-uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
 uniform float unColorMapScale = 0.005;
 
 uniform int unDebugLines = 0;
@@ -57,10 +56,7 @@ void main() {
 	color.a *= clamp(mix(0.0, 1.0, 1.0 - ((noiseVal + 1.0) * lerpVal)), 0.0, 1.0);
 	
 	// Crossfade
-	float alphaThreshold = unCrossfadeAlpha;
-	alphaThreshold = mix(1.0 - alphaThreshold, alphaThreshold, unCrossfadeDirection);
-	color.a = color.a * alphaThreshold;
-    runAlphaTest(color.a, 0.001);
+    runAlphaTestWithCrossfade(color.a, unCrossfadeAlpha);
     
     oColor.rgb = color.rgb;
     oColor.a = 1.0; // AO

@@ -34,7 +34,6 @@ typedef FlatMap<StaticModelInstanceID, ui32 /*instanceIndex*/> InstanceIDToIndex
 //  std::unordered_map For pointer stability
 typedef std::unordered_map<ModelID, InstanceIDToIndexMap> LooseStaticModelInstanceMap;
 
-
 using InstanceVariantIndexType = ui32;
 
 // Currently only supports one model instance per tile
@@ -45,11 +44,9 @@ public:
     InstancedStaticModelManager();
     ~InstancedStaticModelManager();
 
-
     void frameUpdate(const Camera3D& camera, f32 elapsedSec);
 
     const ModelImpostorManager& getBillboardLodManager() const { return *mBillboardLodManager; }
-
 
     // Tile models
     void addTileInstanceAtPosition(
@@ -61,13 +58,12 @@ public:
     void addTileInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
     void removeTileInstancesFromContainer(TileContainerID containerId);
     ui32 getNumModels() const;
+    ui32 getNumActiveLodTransitions() const { return mNumActiveLodTransitions; }
     
-    // Entity models
-
     // Return true on success
     bool playAnimationOnInstanceAtPosition(LiteTileHandle targetTile, StaticModelAnimationTypes animType, f32v2 direction, ModelID modelId);
 
-    // UNUSED
+    // TODO: CURRENTLY UNUSED
     void onContainerEditEvent(const TileContainerEvent& evnt);
 
     void onTileDamagedEvent(const TileContainerEvent& evnt);
@@ -76,6 +72,7 @@ public:
     void removeLooseModelInstance(ModelID modelId, StaticModelInstanceID instanceId);
     void changeLooseModelInstanceScale(ModelID modelId, StaticModelInstanceID instanceId, const glm::quat& orient, f32v3 position, f32 scale);
 private:
+    void init();
     void updatePendingLooseModelInstances();
 
     void removeModelInstanceInternal(ui32 instanceIndex);
@@ -113,29 +110,50 @@ private:
         ui32 damageModelIndex;
     };
 
+    struct InstanceTransitionData {
+        bool isActive() { return mCrossfade != 0.0f; }
+
+        f32 mCrossfade = 0.0f; // 0 = not transitioning, positive = crossfade in, negative = crossfade out
+        MeshLODLevel mCurrentLOD = MeshLODLevel::INVALID;
+        MeshLODLevel mTargetLOD = MeshLODLevel::INVALID;
+    };
+    static_assert(sizeof(InstanceTransitionData) == 8, "Keep small");
+
+    // Instance SOA data
     std::vector<f32m4> mInstanceTransforms;
     std::vector<InstanceGpuData> mInstanceGpuData;
     std::vector<ModelInstanceOwnerVariant> mInstanceSources;
     std::vector<InstanceDrawData> mInstanceDrawData;
     std::vector<f32> mInstanceScales; // Only used for billboards
+    std::vector<InstanceTransitionData> mInstanceTransitionData;
+
+    // Damage
     std::vector<ModelDamageZoneGpuData> mModelDamageZonesGpuData; // 0 index is default no damage
 
+    // Draw commands
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommands[e_count(MaterialRenderPassType)];
+    std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsCrossfade[e_count(MaterialRenderPassType)];
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsShadows[e_count(MaterialRenderPassType)];
     ui32 mDrawCommandsCount[e_count(MaterialRenderPassType)] = {};
     ui32 mDrawCommandsShadowsCount[e_count(MaterialRenderPassType)] = {};
 
+    // GPU buffers
     VGBuffer mTransformsVbo = 0;
     VGBuffer mInstanceDataVbo = 0;
     VGBuffer mDamageZonesSSBO = 0;
     ui32 mTransformsVboSizeBytes = 0;
     ui32 mFirstDirtyInstance = UINT32_MAX;
+    // Crossfade Transitions
+    std::unique_ptr<GpuStreamingDataBuffer> mCrossfadeBuffers[e_count(MaterialRenderPassType)];
+    i32 mNumActiveLodTransitions = 0;
 
+    // Loose instances
     std::atomic<StaticModelInstanceID> mNextLooseInstanceID = 0;
     FlatMap<StaticModelInstanceID, ui32 /*instanceIndex*/> mLooseStaticModelInstances;
 
+    // Animated instances
     FlatMap<LiteTileHandle, StaticMeshAnimation> mAnimatedTileInstances;
-    // TODO: We are tracking modelID here and we no longer need it
+
     std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerTrackedModels;
     GLBuffer mGpuCullingUniformBuffer;
 
@@ -145,6 +163,8 @@ private:
     AssetHandlePtr<MaterialShaderDef> mCullingComputeShader;
 
     std::unique_ptr<ModelImpostorManager> mBillboardLodManager;
+
+    bool mNeedsInit = true;
 
     struct PendingLooseModelInstance {
         glm::quat orient;

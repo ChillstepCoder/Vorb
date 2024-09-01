@@ -194,13 +194,13 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter, f32 e
                 mCrossfadeTable[index] = 0.0f;
                 mCrossfadeActiveTable[mNumCrossfading++] = index;
                 patch.initiateCrossfadeIn(index);
-                resetCrossfadeRenderForPatch(index, 1, 0.0f);
+                resetCrossfadeRenderForPatch(index, 1, MATH_EPSILON);
                 ui16 childIndexFirst = getQuadtreeChildIndexFirst(index);
                 ui16 childIndexLast = getQuadtreeChildIndexLast(index);
                 // Crossfade children
                 for (ui16 j = childIndexFirst; j <= childIndexLast; ++j) {
                     mNodes[j].initiateCrossfadeOut(index);
-                    resetCrossfadeRenderForPatch(j, -1, 0.0f);
+                    resetCrossfadeRenderForPatch(j, -1, MATH_EPSILON);
                 }
                 // Don't move to next
             }
@@ -226,10 +226,10 @@ void FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::update(const f32v2& loadCenter, f32 e
                         const ui16 childIndex = childIndexFirst + i;
                         QuadtreePatch& child = mNodes[childIndex];
                         child.initiateCrossfadeIn(index);
-                        resetCrossfadeRenderForPatch(childIndex, 1, 0.0f);
+                        resetCrossfadeRenderForPatch(childIndex, 1, MATH_EPSILON);
                     }
                     patch.initiateCrossfadeOut(index);
-                    resetCrossfadeRenderForPatch(index, -1, 0.0f);
+                    resetCrossfadeRenderForPatch(index, -1, MATH_EPSILON);
                     continue;
                 }
                 ++i;

@@ -12,6 +12,7 @@ in vec3 fFragPosTangent;
 in float fSnow;
 in float fDamage;
 in vec3 fLocalPosition;
+flat in float fCrossfade;
 
 uniform sampler2D TurbulentNoise;
 
@@ -33,14 +34,13 @@ void main() {
         uv = dispMapping(uv, sampler2D(unpackUint2x32(mtl.displacementMap)), tangentViewDir, unHeightScale);
     }  
 
-
     vec3 normal;
     vec4 color;
     float ao;
     float metallic;
     float roughness;
     getMaterialPixelInfo(fMaterialIndex, uv, color, normal, ao, metallic, roughness, fTint);
-    tryDiscardTransparentPixel(color.a);
+    runAlphaTestWithCrossfade(color.a, fCrossfade);
 	
 	// Normal to tangent space
     normal = normalize(fTBN * normal);

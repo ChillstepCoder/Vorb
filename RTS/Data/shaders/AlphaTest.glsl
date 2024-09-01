@@ -30,18 +30,36 @@ void runAlphaTest(float alpha, float alphaThreshold)
     float modifier = getAlphaTestTransparencyModifier();
     // http://alex-charlton.com/posts/Dithering_on_the_GPU/
     // https://forums.khronos.org/showthread.php/5091-screen-door-transparency
-    alpha = clamp(alpha - 0.5 * modifier, 0.0, 1.0);
+    alpha = alpha - 0.5 * modifier;
 
-    if (alpha < alphaThreshold)
+    if (alpha <= alphaThreshold)
         discard;
+}
+
+// Crossfade goes from 0.00001 to 1 for fading in, and -0.00001 to -1 for the fading out
+// We use epsilon away from zero because sign matters
+void runAlphaTestWithCrossfade(float alpha, float crossfade)
+{
+    float modifier = getAlphaTestTransparencyModifier();
+    // http://alex-charlton.com/posts/Dithering_on_the_GPU/
+    // https://forums.khronos.org/showthread.php/5091-screen-door-transparency
+    
+    if (alpha - 0.5 * modifier <= 0.0)
+        discard;
+        
+    // Crossfade
+    float test = sign(crossfade) * (abs(crossfade) - modifier);
+    if (test < -0.0001)
+        discard;
+
 }
 
 void runAlphaTestManualModifier(float alpha, float alphaThreshold, float modifier)
 {
     // http://alex-charlton.com/posts/Dithering_on_the_GPU/
     // https://forums.khronos.org/showthread.php/5091-screen-door-transparency
-    alpha = clamp(alpha - 0.5 * modifier, 0.0, 1.0);
+    alpha = alpha - 0.5 * modifier;
 
-    if (alpha < alphaThreshold)
+    if (alpha <= alphaThreshold)
         discard;
 }

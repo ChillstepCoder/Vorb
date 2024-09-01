@@ -74,14 +74,14 @@ void ModelEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
         int polyCount = 0;
         for (int i = 0; i < mAssetData->getNumMeshes(); ++i) {
             const ModelBatchSubmeshDrawData& drawData = ModelRepository::get().getSubmeshDrawDataArrayForModel(mAssetData->getID())[i];
-            polyCount += drawData.lodDrawInfo[mLod].indexCount / 3;
+            polyCount += drawData.lodDrawInfo[(int)mLod].indexCount / 3;
         }
         ImGui::Text("Polygons %d", polyCount);
 
         if (ImGui::CollapsingHeader("Properties")) {
             changed |= updateAndRenderImguiControls(*mAssetData);
 
-            ImGui::SliderInt("LOD", &mLod, e_cast(MeshLODLevel::Highest), e_cast(MeshLODLevel::Lowest));
+            ImGui::SliderFloat("LOD", &mLod, (f32)e_cast(MeshLODLevel::Highest), (f32)e_cast(MeshLODLevel::Lowest));
             // TODO: Tooltip button utility
             ImGui::SameLine(); ImGui::Button("?");
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -161,16 +161,42 @@ void ModelEditorViewportPanel::uploadCustomShaderUniforms(const MaterialShaderDe
 
 void ModelEditorViewportPanel::renderMesh() {
     if (mAssetData) {
-        if (mAssetData->isSkeletalModel()) {
-            if (mSkeletalEditMode && mPreviewAnim.isValid()) {
-                renderMeshSkeletal(mAssetData, mVariantIndex, mLod, mPreviewAnim.getAssetHandle<AnimationDef>()->tryGetLoadedAsset(), mPreviewAnimTime);
+
+        int lowerLOD = (int)mLod;
+        int upperLOD = (int)std::ceil(mLod);
+
+        if (lowerLOD == upperLOD) {
+            if (mAssetData->isSkeletalModel()) {
+                if (mSkeletalEditMode && mPreviewAnim.isValid()) {
+                    renderMeshSkeletal(mAssetData, mVariantIndex, lowerLOD, mPreviewAnim.getAssetHandle<AnimationDef>()->tryGetLoadedAsset(), mPreviewAnimTime);
+                }
+                else {
+                    renderMeshStatic(mAssetData, mVariantIndex, lowerLOD, mShowSingle, mSingleIndex);
+                }
             }
             else {
-                renderMeshStatic(mAssetData, mVariantIndex, mLod, mShowSingle, mSingleIndex);
+                renderMeshStatic(mAssetData, mVariantIndex, lowerLOD, mShowSingle, mSingleIndex);
             }
         }
         else {
-            renderMeshStatic(mAssetData, mVariantIndex, mLod, mShowSingle, mSingleIndex);
+            // Crossfade LOD
+            f32 crossfadeUpper = (mLod - (f32)lowerLOD);
+            if (crossfadeUpper == 0.0f) crossfadeUpper = -MATH_EPSILON;
+            f32 crossfadeLower = -crossfadeUpper;
+            if (mAssetData->isSkeletalModel()) {
+                if (mSkeletalEditMode && mPreviewAnim.isValid()) {
+                    renderMeshSkeletal(mAssetData, mVariantIndex, lowerLOD, mPreviewAnim.getAssetHandle<AnimationDef>()->tryGetLoadedAsset(), mPreviewAnimTime, crossfadeLower);
+                    renderMeshSkeletal(mAssetData, mVariantIndex, upperLOD, mPreviewAnim.getAssetHandle<AnimationDef>()->tryGetLoadedAsset(), mPreviewAnimTime, crossfadeUpper);
+                }
+                else {
+                    renderMeshStatic(mAssetData, mVariantIndex, lowerLOD, mShowSingle, mSingleIndex, crossfadeLower);
+                    renderMeshStatic(mAssetData, mVariantIndex, upperLOD, mShowSingle, mSingleIndex, crossfadeUpper);
+                }
+            }
+            else {
+                renderMeshStatic(mAssetData, mVariantIndex, lowerLOD, mShowSingle, mSingleIndex, crossfadeLower);
+                renderMeshStatic(mAssetData, mVariantIndex, upperLOD, mShowSingle, mSingleIndex, crossfadeUpper);
+            }
         }
 
         // Render AABB

@@ -22,6 +22,7 @@ struct BillboardData {
    float xFlip;
    vec2 dims;
    uint materialIndex;
+   float crossfade;
 };
 
 layout(std430, binding = 3) restrict readonly buffer BillboardSSBO {
@@ -33,6 +34,7 @@ uniform uint unBaseInstanceOffset = 0;
 out vec2 fUV;
 flat out uint fMaterialIndex;
 out mat3 fTBN;
+flat out float fCrossfade;
 
 vec2 flipUV(vec2 uv, float uFlip) {
     float flippedU = uFlip * (1.0 - uv.x) + (1.0 - uFlip) * uv.x;
@@ -73,6 +75,8 @@ void main() {
     const uint billboardId = unBaseInstanceOffset + (gl_VertexID / 6);
 
     BillboardData data = billboardData[billboardId];
+    
+    fCrossfade = data.crossfade;
     
 	vec4 vPosition = vec4(data.position, 1.0);
 	vec2 vDims = data.dims;

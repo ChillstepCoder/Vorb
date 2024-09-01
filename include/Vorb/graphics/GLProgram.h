@@ -38,7 +38,7 @@ typedef eventpp::CallbackList<void(const nString&)> GLProgramErrorCallbackList;
 #endif//VORB_COMPILER_GCC
 
 #define GL_PROGRAM_DEFAULT_SHADER_VERSION_MAJOR 4
-#define GL_PROGRAM_DEFAULT_SHADER_VERSION_MINOR 5
+#define GL_PROGRAM_DEFAULT_SHADER_VERSION_MINOR 6
 #define GL_PROGRAM_DEFAULT_SHADER_VERSION_REVISION 0
 
 namespace vorb {

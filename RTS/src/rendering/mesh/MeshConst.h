@@ -21,12 +21,14 @@ SERIALIZABLE_ENUM_SAME_NAME(MeshWindType,
     pair{ MeshWindType::TreeLeaves, "tree_leaves"sv }
 );
 
-enum class MeshLODLevel {
+enum class MeshLODLevel : ui8 {
     Highest,
     Medium,
     Low,
     Lowest,
-    COUNT
+    COUNT,
+    IMPOSTOR = COUNT,
+    INVALID = 255
 };
 
 struct MeshLODDrawInfo {

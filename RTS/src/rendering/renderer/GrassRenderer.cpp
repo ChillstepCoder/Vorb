@@ -159,10 +159,6 @@ void GrassRenderer::renderBillboardGrass(const Camera3D& camera, const f32v3& pl
     const vg::GLProgram& program = grassMaterial->mProgram;
     cacheUniforms(program);
 
-    VGUniform positionUniform = program.getUniform("unPosition");
-    VGUniform crossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha");
-    VGUniform crossfadeDirectionUniform = program.getUniform("unCrossfadeDirection");
-
     uploadSharedUniforms(program, nextTextureUnit);
     //VGUniform tboNormalUniform = program.getUniform("UnTboNormal");
     //glUniform3fv(program.getUniform("unPlayerPos"), 1, &playerPos.x); // No player collision yet
@@ -220,19 +216,16 @@ void GrassRenderer::uploadGrassMeshUniforms(const GrassMeshFrameRenderData& gras
     glUniform3fv(mPositionUniform, 1, &grassMesh.pos.x);
     int crossfadeDir = grassMesh.crossfadeDir;
     if (crossfadeDir != 0) {
-        glUniform1f(mCrossfadeAlphaUniform, grassMesh.crossfadeAlpha);
-        glUniform1f(mCrossfadeDirectionUniform, (crossfadeDir > 0) ? 1.0f : 0.0f);
+        glUniform1f(mCrossfadeAlphaUniform, crossfadeDir * grassMesh.crossfadeAlpha);
     }
     else {
-        glUniform1f(mCrossfadeAlphaUniform, 0.0f);
-        glUniform1f(mCrossfadeDirectionUniform, 0.0f);
+        glUniform1f(mCrossfadeAlphaUniform, -MATH_EPSILON);
     }
 }
 
 void GrassRenderer::cacheUniforms(const vg::GLProgram& program) {
     mPositionUniform = program.getUniform("unPosition");
     mCrossfadeAlphaUniform = program.getUniform("unCrossfadeAlpha");
-    mCrossfadeDirectionUniform = program.getUniform("unCrossfadeDirection");
 }
 
 void GrassRenderer::renderGrass(const Camera3D& camera, const f32v3& playerPos, const boost::container::flat_set<const GrassMesh*>& grassMeshes) {

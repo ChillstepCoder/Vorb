@@ -21,6 +21,7 @@
 #include "rendering/tasks/MeshTask.inl"
 
 TileContainerMeshManager::TileContainerMeshManager(World& world, InstancedStaticModelManager& instancedStaticModelManager) : mInstancedStaticModelManager(instancedStaticModelManager) {
+    ASSERT_GAME_THREAD(); // This is currently created on the game thread
 
     mBuildingMesher = std::make_unique<BuildingMesher>(*this);
     mChunkMesher = std::make_unique<ChunkMesher>(*this);

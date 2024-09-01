@@ -16,6 +16,7 @@ public:
     VORB_NON_COPYABLE(ModelBatch);
 
     void bindStaticModelAttribs() const;
+    // True when we want to do a crossfade pass, false when we are rendering standard
     void unbindStaticModelAttribs() const;
     void bindSkeletalModelAttribs() const;
     void unbindSkeletalModelAttribs() const;

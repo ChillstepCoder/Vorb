@@ -18,6 +18,7 @@ uniform vec3 unLightDir;
 uniform vec3 unCameraPos;
 uniform bool unOverrideMR;
 uniform float unHeightScale = 1.0;
+uniform float unCrossfade = 1.0;
 
 uniform mat4 unVP;
 
@@ -58,7 +59,8 @@ void main() {
         roughness = unRoughness;
     }
     
-    tryDiscardTransparentPixel(color.a);
+    runAlphaTestWithCrossfade(color.a, unCrossfade);
+    //runAlphaTest(color.a, 0.0);
 	
 	// Normal to tangent space
     normal = normalize(fTBN * normal);

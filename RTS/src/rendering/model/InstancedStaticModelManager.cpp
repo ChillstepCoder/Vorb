@@ -28,6 +28,10 @@
 constexpr ui8 MODEL_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeLayer) | e_cast(TileContainerEditEventType::ChangeOrientation) | e_cast(TileContainerEditEventType::ChangeZPos);
 static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
 
+// Water not supported
+std::array<MaterialRenderPassType, 2> CROSSFADE_PASSES = { MaterialRenderPassType::Default, MaterialRenderPassType::Smudge };
+static_assert(e_count(MaterialRenderPassType) == 3);
+
 struct TileContainerModelEditEvent {
 
     void* operator new(size_t count);
@@ -50,7 +54,10 @@ void TileContainerModelEditEvent::operator delete(void* pointer, size_t size) {
     return edit_singleton_task_pool::free(pointer);
 }
 
+// Maximum concurrent LOD transitioning meshes, note that an impostor doesn't count towards this
+constexpr int MAX_LOD_DITHER_TRANSITION_DRAWS = 2048;
 constexpr int WORK_GROUP_SIZE = 64;
+constexpr f32 LOD_TRANSITION_SPEED = 1.0f; // Multiplied by elapsedSec. 1 = 1 second, 2 = 0.5 seconds
 // TODO: Read about advanced gpu driven rendering https://advances.realtimerendering.com/s2015/aaltonenhaar_siggraph2015_combined_final_footer_220dpi.pdf
 
 // Must be done or we will corrupt gpu memory :P
@@ -77,16 +84,17 @@ static_assert(sizeof(MeshLODDrawInfo) == sizeof(ui32v2));
 InstancedStaticModelManager::InstancedStaticModelManager() :
     mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT)
 {
+    ASSERT_GAME_THREAD(); // This is currently created on the game thread
+
     mCullingComputeShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("culling_and_lod"));
     mBillboardLodManager = std::make_unique<ModelImpostorManager>(ModelRepository::get().getImpostorRepository());
-
+    
     constexpr size_t RESERVE_COUNT = 1024;
     mInstanceTransforms.reserve(RESERVE_COUNT);
     mInstanceGpuData.reserve(RESERVE_COUNT);
     mInstanceSources.reserve(RESERVE_COUNT);
     mInstanceDrawData.reserve(RESERVE_COUNT);
     mModelDamageZonesGpuData.emplace_back();
-
 }
 
 InstancedStaticModelManager::~InstancedStaticModelManager() {
@@ -101,6 +109,10 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
     ASSERT_RENDER_THREAD();
     if (sDebugOptions.mHideModels)
         return;
+
+    if (mNeedsInit) {
+        init();
+    }
 
     PROFILE_FUNCTION();
 
@@ -140,7 +152,8 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             for (int r = 0; r < RENDER_PASS_COUNT; ++r) {
                 std::unique_ptr<GLDrawCommandBuffer>& drawCommands = mDrawCommands[r];
                 std::unique_ptr<GLDrawCommandBuffer>& drawCommandsShadows = mDrawCommandsShadows[r];
-                const ui32 drawCommandsCount = mDrawCommandsCount[r];
+                // Keep space for dither transitions
+                const ui32 drawCommandsCount = mDrawCommandsCount[r] + MAX_LOD_DITHER_TRANSITION_DRAWS;
                 const ui32 drawCommandsShadowsCount = mDrawCommandsShadowsCount[r];
                 if (drawCommandsCount) {
                     if (!drawCommands ||
@@ -249,15 +262,75 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
         // TODO: Should the renderer handle this??
         int activeCount[e_count(MaterialRenderPassType)] = {};
         int shadowCount[e_count(MaterialRenderPassType)] = {};
+        int crossfadeActiveCount[e_count(MaterialRenderPassType)] = {};
+        crossfadeActiveCount[e_cast(MaterialRenderPassType::Water)] = INT32_MAX;
+        f32* crossfadeArrays[e_count(MaterialRenderPassType)] = {};
+        // Ignoring water
+        for (MaterialRenderPassType type : CROSSFADE_PASSES) {
+            crossfadeArrays[e_cast(type)] = static_cast<f32*>(mCrossfadeBuffers[e_cast(type)]->frameBeginAndGetDataForUpdate());
+            mDrawCommandsCrossfade[e_cast(type)]->frameBegin();
+        }
+        static_assert(e_count(MaterialRenderPassType) == 3);
 
-        constexpr auto setCommand = [](
+        auto setCommand = [](
             DrawElementsIndirectCommand& cmd, GLuint transformIndex, ui32 baseVertex, const MeshLODDrawInfo& drawInfo) {
             cmd.count_ = drawInfo.indexCount;
             cmd.instanceCount_ = 1;
             cmd.firstIndex_ = drawInfo.startIndex;
             cmd.baseVertex_ = baseVertex;
-            cmd.baseInstance_ = transformIndex;
+            cmd.baseInstance_ = transformIndex; // * 2 because we potentially have 2 instances per transform if we are crossfading
         };
+
+        auto addBillboard = [this](const InstanceDrawData& instanceDrawData, f32v3 pos, ui32 instanceIndex, f32 crossfade = -MATH_EPSILON) {
+            const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(instanceDrawData.modelId);
+            const f32AABB3& aabb = modelDef.mAABB;
+            const f32 scale = mInstanceScales[instanceIndex];
+            mBillboardLodManager->addBillboard(instanceDrawData.modelId, f32v3(pos.x, pos.y, pos.z + aabb.z * scale), f32v2(aabb.width * scale, aabb.height * scale), crossfade);
+        };
+
+        auto addCrossfadingModel = [this, &addBillboard, &activeCount, &crossfadeActiveCount, &setCommand, &crossfadeArrays](
+            MeshLODLevel lod,
+            const InstanceDrawData& instanceDrawData,
+            const ModelBatchSubmeshDrawData* drawDataArray,
+            f32v3 pos, ui32 instanceIndex, f32 crossfade
+        ) {
+            if (lod == MeshLODLevel::IMPOSTOR) {
+                addBillboard(instanceDrawData, pos, instanceIndex, crossfade);
+            }
+            else {
+                for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                    const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                    const int renderPassIndex = e_cast(drawData.renderPass);
+                    int& cActive = crossfadeActiveCount[renderPassIndex];
+                    if (cActive < MAX_LOD_DITHER_TRANSITION_DRAWS) {
+                        crossfadeArrays[renderPassIndex][cActive] = crossfade;
+                        setCommand(mDrawCommandsCrossfade[renderPassIndex]->getDrawCommands().data()[cActive++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[e_cast(lod)]);
+                    }
+                    else {
+                        // Fallback to normal render if we are out of space
+                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[e_cast(lod)]);
+                    }
+                }
+            }
+        };
+
+        auto getDesiredLOD = [&camera](const f32 distance2, const ModelLodParams& lodParams) -> MeshLODLevel{
+            if (distance2 >= lodParams.lodDistancesSQ[3] || sDebugOptions.mForceImpostors) {
+                return MeshLODLevel::IMPOSTOR;
+            }
+            else if (distance2 >= lodParams.lodDistancesSQ[2]) {
+                return MeshLODLevel::Lowest;
+            }
+            else if (distance2 >= lodParams.lodDistancesSQ[1]) {
+                return MeshLODLevel::Low;
+            }
+            else if (distance2 >= lodParams.lodDistancesSQ[0]) {
+                return MeshLODLevel::Medium;
+            }
+            return MeshLODLevel::Highest;
+        };
+
+        const f32 LodTransitionSpeed = LOD_TRANSITION_SPEED * sDebugOptions.mLodCrossfadeSpeed;
 
         ModelRepository& modelRepo = ModelRepository::get();
         for (ui32 instanceIndex = 0; instanceIndex < (ui32)mInstanceTransforms.size(); ++instanceIndex) {
@@ -265,7 +338,55 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             // Columns are first
             const f32v3& pos = reinterpret_cast<const f32v3&>(transform[3]);
             const InstanceDrawData& instanceDrawData = mInstanceDrawData[instanceIndex];
+            InstanceTransitionData& transitionData = mInstanceTransitionData[instanceIndex];
             const ModelLodParams& lodParams = modelRepo.getLodParams(instanceDrawData.modelId);
+
+            if (transitionData.isActive()) {
+                transitionData.mCrossfade += LodTransitionSpeed * elapsedSec;
+                // Stop if we are finished or we cannot fit anymore crossfades
+                if (transitionData.mCrossfade >= 1.0f) {
+                    transitionData.mCrossfade = 0.0f;
+                    transitionData.mCurrentLOD = transitionData.mTargetLOD;
+                    assert(mNumActiveLodTransitions > 0);
+                    --mNumActiveLodTransitions;
+                }
+                else {
+                    if (camera.sphereIsVisible(pos, lodParams.boundingSphereRadius)) {
+                        const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataArrayForModel(instanceDrawData.key);
+                        const f32 sourceCrossfade = -transitionData.mCrossfade;
+                        const f32 targetCrossfade = transitionData.mCrossfade;
+
+                        addCrossfadingModel(transitionData.mCurrentLOD, instanceDrawData, drawDataArray, pos, instanceIndex, sourceCrossfade);
+                        addCrossfadingModel(transitionData.mTargetLOD, instanceDrawData, drawDataArray, pos, instanceIndex, targetCrossfade);
+
+                        // DrawShadows for whichever is closer
+                        if (targetCrossfade > 0.5f) {
+                            // Draw target shadow
+                            if ((int)lodParams.shadowLodDetail > (int)transitionData.mCurrentLOD) {
+                                for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                                    const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                                    const int renderPassIndex = e_cast(drawData.renderPass);
+                                    if (drawData.castsShadow) {
+                                        setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[(int)transitionData.mCurrentLOD]);
+                                    }
+                                }
+                            }
+                        } else {
+                            // Draw source shadow
+                            if ((int)lodParams.shadowLodDetail > (int)transitionData.mTargetLOD) {
+                                for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                                    const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                                    const int renderPassIndex = e_cast(drawData.renderPass);
+                                    if (drawData.castsShadow) {
+                                        setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[(int)transitionData.mTargetLOD]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    continue;
+                }
+            }
 
             // TODO: Real bounding sphere
             if (camera.sphereIsVisible(pos, lodParams.boundingSphereRadius)) {
@@ -274,7 +395,6 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
 
                 // TODO: Remove
                 if (sDebugOptions.mDisableLOD) [[unlikely]] {
-
                     for (int m = 0; m < instanceDrawData.key.count; ++m) {
                         const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
                         const int renderPassIndex = e_cast(drawData.renderPass);
@@ -287,82 +407,49 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     continue;
                 }
 
-                if (distance2 >= lodParams.lodDistancesSQ[3] || sDebugOptions.mForceImpostors) {
-                    // TODO: Get scale somehow, decompose is expensive
-                    //f32 scale = glm::decompose(transform)
-                    const ModelDef& modelDef = modelRepo.getLoadedOrUnloadedAsset(instanceDrawData.modelId);
-                    const f32AABB3& aabb = modelDef.mAABB;
-                    const f32 scale = mInstanceScales[instanceIndex];
-                    mBillboardLodManager->addBillboard(instanceDrawData.modelId, pos, f32v2(aabb.width * scale, aabb.height * scale));
-                    continue;
+                const MeshLODLevel desiredLod = getDesiredLOD(distance2, lodParams);
+
+                // Only happens the first time
+                if (transitionData.mCurrentLOD == MeshLODLevel::INVALID) [[unlikely]] {
+                    transitionData.mCurrentLOD = desiredLod;
                 }
-                else if (distance2 >= lodParams.lodDistancesSQ[2]) {
-                    for (int m = 0; m < instanceDrawData.key.count; ++m) {
-                        const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
-                        const int renderPassIndex = e_cast(drawData.renderPass);
-                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[3]);
-                    }
-                    if (lodParams.shadowLodDetail > ShadowModelDetail::High) {
-                        for (int m = 0; m < instanceDrawData.key.count; ++m) {
-                            const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
-                            const int renderPassIndex = e_cast(drawData.renderPass);
-                            if (drawData.castsShadow) {
-                                setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[3]);
-                            }
-                        }
-                    }
-                }
-                else if (distance2 >= lodParams.lodDistancesSQ[1]) {
-                    for (int m = 0; m < instanceDrawData.key.count; ++m) {
-                        const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
-                        const int renderPassIndex = e_cast(drawData.renderPass);
-                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[2]);
-                    }
-                    if (lodParams.shadowLodDetail > ShadowModelDetail::Medium) {
-                        for (int m = 0; m < instanceDrawData.key.count; ++m) {
-                            const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
-                            const int renderPassIndex = e_cast(drawData.renderPass);
-                            if (drawData.castsShadow) {
-                                setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[3]);
-                            }
-                        }
-                    }
-                }
-                else if (distance2 >= lodParams.lodDistancesSQ[0]) {
-                    for (int m = 0; m < instanceDrawData.key.count; ++m) {
-                        const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
-                        const int renderPassIndex = e_cast(drawData.renderPass);
-                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[1]);
-                    }
-                    if (lodParams.shadowLodDetail > ShadowModelDetail::Low) {
-                        for (int m = 0; m < instanceDrawData.key.count; ++m) {
-                            const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
-                            const int renderPassIndex = e_cast(drawData.renderPass);
-                            if (drawData.castsShadow) {
-                                setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[2]);
-                            }
-                        }
-                    }
+                if (transitionData.mCurrentLOD == MeshLODLevel::IMPOSTOR || sDebugOptions.mForceImpostors) {
+                    addBillboard(instanceDrawData, pos, instanceIndex);
                 }
                 else {
                     for (int m = 0; m < instanceDrawData.key.count; ++m) {
                         const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
                         const int renderPassIndex = e_cast(drawData.renderPass);
-                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[0]);
+                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[(int)transitionData.mCurrentLOD]);
                     }
-                    if (lodParams.shadowLodDetail > ShadowModelDetail::None) {
+                    if ((int)lodParams.shadowLodDetail > (int)transitionData.mCurrentLOD) {
                         for (int m = 0; m < instanceDrawData.key.count; ++m) {
                             const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
                             const int renderPassIndex = e_cast(drawData.renderPass);
                             if (drawData.castsShadow) {
-                                setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[1]);
+                                setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[(int)transitionData.mCurrentLOD]);
                             }
                         }
                     }
                 }
+
+                transitionData.mTargetLOD = desiredLod;
+                // Enable LOD transition
+                if (transitionData.mCurrentLOD != transitionData.mTargetLOD) {
+                    transitionData.mCrossfade = MATH_EPSILON;
+                    ++mNumActiveLodTransitions;
+                }
             }
         }
 
+        for (MaterialRenderPassType type : CROSSFADE_PASSES) {
+            mCrossfadeBuffers[e_cast(type)]->flushDataAndIncrementFrame(crossfadeActiveCount[e_cast(type)]);
+            if (crossfadeActiveCount[e_cast(type)] > 0) {
+                LOG_INFO("Crossfade count: {} - {}", e_cast(type), crossfadeActiveCount[e_cast(type)]);
+            }
+            mDrawCommandsCrossfade[e_cast(type)]->setNumActiveCommands(crossfadeActiveCount[e_cast(type)]);
+            mDrawCommandsCrossfade[e_cast(type)]->uploadDrawCommands();
+        }
 
         // TODO: We lose a lot of these due to culling, so we probably don't need
         // the draw command capacity to be so high
@@ -442,7 +529,7 @@ bool InstancedStaticModelManager::hasTileInstanceAtPosition(LiteTileHandle tileH
         auto&& spit = spatialMap.find(tileHandle.index);
 
         if (spit != spatialMap.end()) {
-            return spit->second.mModelID == modelId;
+            return mInstanceDrawData[spit->second.mInstanceIndex].modelId == modelId;
         }
     }
     return false;
@@ -482,6 +569,7 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
         mInstanceGpuData.resize(mInstanceTransforms.size());
         mInstanceSources.resize(mInstanceTransforms.size());
         mInstanceDrawData.resize(mInstanceTransforms.size());
+        mInstanceTransitionData.resize(mInstanceTransforms.size());
         // Store per tile references
         for (size_t i = 0; i < sourceInstances.size(); ++i) {
             const size_t instanceIndex = startIndex + i;
@@ -503,7 +591,7 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
             incrementDrawCommandsCount(drawDataKey);
 
             assert(tileContainerModels.find(modelInstance.tileIndex) == tileContainerModels.end());
-            tileContainerModels[modelInstance.tileIndex] = { it.first, (ui32)instanceIndex };
+            tileContainerModels[modelInstance.tileIndex] = { (ui32)instanceIndex };
         }
     }
 }
@@ -721,6 +809,19 @@ void InstancedStaticModelManager::changeLooseModelInstanceScale(ModelID modelId,
     mPendingLooseModelInstances.enqueue(pendingInstance);
 }
 
+void InstancedStaticModelManager::init() {
+    mNeedsInit = false;
+
+    // Water not supported
+    for (MaterialRenderPassType type : CROSSFADE_PASSES) {
+        mCrossfadeBuffers[(int)type] = std::make_unique<GpuStreamingDataBuffer>(MAX_LOD_DITHER_TRANSITION_DRAWS, sizeof(f32));
+    }
+
+    for (MaterialRenderPassType type : CROSSFADE_PASSES) {
+        mDrawCommandsCrossfade[(int)type] = std::make_unique<GLDrawCommandBuffer>(MAX_LOD_DITHER_TRANSITION_DRAWS);
+    }
+}
+
 void InstancedStaticModelManager::updatePendingLooseModelInstances() {
     ASSERT_RENDER_THREAD();
     PROFILE_FUNCTION();
@@ -780,6 +881,16 @@ void InstancedStaticModelManager::removeModelInstanceInternal(ui32 instanceIndex
     mInstanceSources[instanceIndex] = backSource;
     mInstanceSources.pop_back();
 
+    mInstanceScales[instanceIndex] = mInstanceScales.back();
+    mInstanceScales.pop_back();
+
+    if (mInstanceTransitionData[instanceIndex].isActive()) {
+        assert(mNumActiveLodTransitions);
+        --mNumActiveLodTransitions;
+    }
+    mInstanceTransitionData[instanceIndex] = mInstanceTransitionData.back();
+    mInstanceTransitionData.pop_back();
+
     // Replace this instance with back instance
     mInstanceTransforms[instanceIndex] = std::move(mInstanceTransforms.back());
     mInstanceTransforms.pop_back();
@@ -809,6 +920,7 @@ void InstancedStaticModelManager::addTileInstanceInternal(
     InstanceGpuData& newGpuData = mInstanceGpuData.emplace_back();
 
     mInstanceScales.emplace_back(scale);
+    mInstanceTransitionData.emplace_back();
 
     newGpuData.variantIndex = variantIndex;
     if (damageData) {
@@ -823,7 +935,7 @@ void InstancedStaticModelManager::addTileInstanceInternal(
     SpatialInstanceDataMap& tileContainerModels = mTileContainerTrackedModels[containerId];
 
     assert(tileContainerModels.find(tileIndex) == tileContainerModels.end());
-    tileContainerModels[tileIndex] = { modelDef.getID(), (ui32)instanceIndex };
+    tileContainerModels[tileIndex] = { (ui32)instanceIndex };
 
     mInstanceDrawData.emplace_back(ModelRepository::get().getDrawDataSpanKeyForModel(modelDef.getID()), modelDef.getID());
     newGpuData.submeshDataIndex = mInstanceDrawData.back().key.startIndex;
@@ -918,6 +1030,7 @@ void InstancedStaticModelManager::addLooseInstanceInternal(
     mInstanceSources.emplace_back(instanceId);
 
     mInstanceScales.emplace_back(scale);
+    mInstanceTransitionData.emplace_back();
 
     // Store instance lookup
     mLooseStaticModelInstances.emplace(std::make_pair(instanceId, (ui32)instanceIndex));

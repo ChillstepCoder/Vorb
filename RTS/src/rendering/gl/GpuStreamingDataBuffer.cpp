@@ -78,6 +78,7 @@ bool GpuStreamingDataBuffer::reallocateFuzzedIfNeeded(
 
 void GpuStreamingDataBuffer::initBuffer()
 {
+    ASSERT_RENDER_THREAD();
     const size_t bufferSize = mMaxElements * mElementSize * 3;
 
     glCreateBuffers(1, &mBufferObject);

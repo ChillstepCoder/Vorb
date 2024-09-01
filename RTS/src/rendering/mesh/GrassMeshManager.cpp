@@ -10,6 +10,7 @@
 #include "options/DebugOptions.h"
 
 GrassMeshManager::GrassMeshManager(World& world) : mWorld(world) {
+    ASSERT_GAME_THREAD(); // This is currently created on the game thread
     // TODO: LISTENERS!
     LOG_CRITICAL("Missing event listeners in GrassMeshManager::GrassMeshManager");
     world.getChunkGrid().addActivatedListener([this](const ChunkGridEvent& evnt) {

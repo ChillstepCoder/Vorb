@@ -24,7 +24,7 @@ private:
    
     bool mSkeletalEditMode = true;
     bool mDirtyModelData = false;
-    int mLod = 0;
+    float mLod = 0;
     bool mShowSingle = false;
     int mSingleIndex = 0;
     int mVariantIndex = 0;

@@ -1,9 +1,11 @@
 #include "GlobalUbo.glsl"
 #include "util/wind.glsl"
 #include "util/uv.glsl"
+#include "util/tbn.glsl"
 #include "model/model_variant.glsl"
 
 uniform float unSnowLevel;
+uniform int unCrossfadeOffset = -1;
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
@@ -15,12 +17,18 @@ layout(location = 5) in vec3 vTangent;
 layout(location = 7) in mat4 vModelMatrix;
 layout(location = 13) in uvec3 vSubmeshIndexVariantIndexDamageModelIndex;
 
+layout(std430, binding = 9) readonly restrict buffer CrossfadeBuffer {
+    float crossfadeBuffer[];
+};
+
+
 out vec2 fUV;
 flat out uint fMaterialIndex;
 out vec4 fTint;
 out mat3 fTBN;
 out vec3 fViewTangent;
 out vec3 fFragPosTangent;
+flat out float fCrossfade;
 
 void main() {
     fTint = vTint;
@@ -32,13 +40,20 @@ void main() {
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vTangent);
     
+    fTBN = computeTbn(mat3(vModelMatrix), normal, tangent);
+    
     mat3 modelMatrix3 = mat3(vModelMatrix);
     normal = modelMatrix3 * normal;
     tangent = modelMatrix3 * tangent;
     
-    
 	vec3 bitangent = cross(normal, tangent);
 	fTBN = mat3(tangent, bitangent, normal);
+    
+    if (unCrossfadeOffset != -1) {
+        fCrossfade = crossfadeBuffer[unCrossfadeOffset + gl_DrawID];
+    } else {
+        fCrossfade = -0.0001; // Indicates fully rendered object
+    }
     
     vec4 adjustedPosition = vPosition;
     

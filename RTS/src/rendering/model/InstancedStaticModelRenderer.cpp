@@ -58,9 +58,12 @@ void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelMan
     }
 
     GLDrawCommandBuffer& drawCommands = *modelManager.mDrawCommands[e_cast(passType)];
-    if (!drawCommands.getNumActiveCommands()) {
+    GLDrawCommandBuffer* crossfadeDrawCommands = modelManager.mDrawCommandsCrossfade[e_cast(passType)].get();
+
+    if (!drawCommands.getNumActiveCommands() && (!crossfadeDrawCommands || crossfadeDrawCommands->getNumActiveCommands() == 0)) {
         return;
     }
+
     PROFILE_FUNCTION();
 
     // TODO: Material specific, we lose 10fps disabling this
@@ -86,6 +89,8 @@ void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelMan
 
     ui32 nextTextureIndex = 0;
     MaterialRenderer::bindMaterialShaderForRender(*def, &nextTextureIndex);
+
+    const VGUniform* crossfadeUniform = def->tryGetUniform("unCrossfadeOffset");
 
     if (passType == MaterialRenderPassType::Water) {
         // TODO: UBO?
@@ -156,7 +161,24 @@ void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelMan
 
     GL.glBindVertexArray(vao);
     assert(batch.getIndexType() == MeshIndexType::USHORT);
-    drawCommands.multiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT);
+
+    // Render standard
+    if (drawCommands.getNumActiveCommands()) {
+        if (crossfadeUniform) {
+            glUniform1i(*crossfadeUniform, -1);
+        }
+        drawCommands.multiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT);
+    }
+
+    // Render crossfades
+    if (crossfadeDrawCommands && crossfadeDrawCommands->getNumActiveCommands()) {
+        GpuStreamingDataBuffer& crossfadeBuffer = *modelManager.mCrossfadeBuffers[e_cast(passType)];
+        assert(crossfadeUniform);
+        glUniform1i(*crossfadeUniform, (int)crossfadeBuffer.getElementOffsetLastFlush());
+        crossfadeBuffer.bindBufferAsSSBO(BUFFER_BASE_CROSSFADE_SSBO);
+
+        crossfadeDrawCommands->multiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT);
+    }
 
     // TODO: Material specific
     glEnable(GL_CULL_FACE);

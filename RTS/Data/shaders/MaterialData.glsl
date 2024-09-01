@@ -72,7 +72,7 @@ void getMaterialPixelInfo(uint materialIndex, vec2 uv, inout vec4 color, inout v
 }
 
 void tryDiscardTransparentPixel(float alpha) {
-    runAlphaTest(alpha, 0.01);
+    runAlphaTest(alpha, 0.0);
 }
 
 vec2 dispMapping(vec2 uvs, sampler2D disp, vec3 viewDirection, float heightScale) {

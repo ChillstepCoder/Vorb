@@ -54,7 +54,6 @@ private:
 
     VGUniform mPositionUniform;
     VGUniform mCrossfadeAlphaUniform;
-    VGUniform mCrossfadeDirectionUniform;
     WeatherManager* mWeatherManager = nullptr;
 };
 

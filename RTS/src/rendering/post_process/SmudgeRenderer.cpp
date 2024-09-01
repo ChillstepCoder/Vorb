@@ -170,6 +170,8 @@ void SmudgeRenderer::renderPaintNoise(vg::GBuffer* activeGBuffer, const Camera3D
     glUniform1f(mPaintNoiseShader->getUniform("unNoiseFrequency"), sDebugOptions.mSmudgePaintNoiseFrequency);
     glUniform1f(mPaintNoiseShader->getUniform("unNoiseAmplitude"), sDebugOptions.mSmudgePaintNoiseAmplitude);
     glUniform2f(mPaintNoiseShader->mProgram.getUniform("unScreenResolution"), mGBuffers[0]->getWidth(), mGBuffers[0]->getHeight());
+    glUniform2f(mPaintNoiseShader->getUniform("unCameraZRange"), camera.getZNear(), camera.getZFar());
+    
     //glUniform2f(mPaintNoiseShader->mProgram.getUniform("unCameraZRange"), camera.getZNear(), camera.getZFar());
     activeGBuffer->bindDepthTexture(freeTextureIndex + 2);
     vg::DepthState::NONE.set();

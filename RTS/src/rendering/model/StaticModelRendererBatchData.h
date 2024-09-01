@@ -29,10 +29,9 @@ static_assert(e_count(StaticModelAnimationTypes) == 1);
 // Use TileIndex as key to reference their mesh data so we can dynamically update it.
 //   Queue tile mesh updates, then do them all in a single pass then do a compaction pass on the buffer
 struct TileModelInstance {
-    ModelID mModelID = 0; // TODO: No need for model ID reference
     ui32 mInstanceIndex = 0; // Index into the transforms array
 };
-static_assert(sizeof(TileModelInstance) == 8, "Keep tiny");
+static_assert(sizeof(TileModelInstance) == 4, "Keep tiny");
 
 struct StaticMeshAnimation {
     f32 currentTimeSec;
