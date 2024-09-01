@@ -92,7 +92,7 @@ std::function<void(AssetID, f32v2)> ImguiAssetThumbnails::getThumbnailFunction<M
         if (shouldRenderDummy) {
             ImGui::Image((ImTextureID)0, idims);
             ImGui::SameLine();
-            if (ImGui::Button("UNLOADED")) {
+            if (id != INVALID_MATERIAL_ID && ImGui::Button("UNLOADED")) {
                 // Force a load to begin
                 MaterialRepository::get().getAssetHandle(id);
             }

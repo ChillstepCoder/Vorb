@@ -111,7 +111,7 @@ void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const Pa
     if (particleEmitter.mDefaultMaterialName.isValid()) {
         innerNode[EMITTER_MATERIAL_KEY] << particleEmitter.mDefaultMaterialName;
     }
-    innerNode[EMITTER_SHADER_KEY] << particleEmitter.mShaderName;
+    innerNode[EMITTER_SHADER_KEY] << particleEmitter.mShaderRef;
 
     { // Emitter Update
         ryml::NodeRef updateNode = innerNode["e_update"];
@@ -148,7 +148,7 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
 
     // Defaults
     particleEmitter.mDefaultMaterialID = getDefaultMaterialID();
-    particleEmitter.mShaderName = CStrToken("particle_bb_3d");
+    particleEmitter.mShaderRef = CStrToken("particle_bb_3d");
     
     // Deserialize config
     yml::tryReadValue(node, EMITTER_SCALE_KEY, particleEmitter.mDefaultScale);
@@ -161,7 +161,7 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
     if (yml::tryReadValue(node, EMITTER_MATERIAL_KEY, particleEmitter.mDefaultMaterialName)) {
         particleEmitter.mDefaultMaterialID = MaterialRepository::get().getAssetID(particleEmitter.mDefaultMaterialName);
     }
-    yml::tryReadValue(node, EMITTER_SHADER_KEY, particleEmitter.mShaderName);
+    yml::tryReadValue(node, EMITTER_SHADER_KEY, particleEmitter.mShaderRef);
 
     { // Emitter Update
         ryml::ConstNodeRef updateNode = node["e_update"];
@@ -216,8 +216,8 @@ AssetLoadFunc ParticleSystemRepository::getAssetLoadFunc() {
             if (!loadParticleEmitter(innerNode, newEmitter)) {
                 panic("Failed to load particle emitter {} {}", filePath.getFileNameNoExtension(), filePath.getString());
             }
-            assert(newEmitter.mShaderName.isValid());
-            newDef.addDependency(MaterialShaderRepository::get().getAssetHandle(newEmitter.mShaderName));
+            assert(newEmitter.mShaderRef.isValid());
+            newDef.addDependency(newEmitter.mShaderRef.getAssetHandleBase());
         }
 
         if (newDef.getDependencies()->areAllAssetsLoaded()) {

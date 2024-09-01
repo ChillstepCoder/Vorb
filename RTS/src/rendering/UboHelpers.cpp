@@ -31,14 +31,16 @@ void UboHelpers::uploadCameraUbo(VGBuffer ubo, const Camera3D& camera) {
     glNamedBufferSubData(ubo, CAMERA_MATRICES_BYTE_SIZE, sizeof(CameraUboData), &uboData);
 }
 
-void UboHelpers::uploadGlobalUbo(VGBuffer ubo, const Camera3D& camera, const f32v3& playerPos, const f32v3& sunPosition, const TimeOfDayManager& timeOfDayManager) {
+void UboHelpers::uploadGlobalUbo(VGBuffer ubo, const Camera3D& camera, f32v3 playerPos, f32v3 sunPosition, const TimeOfDayManager* timeOfDayManager) {
     // Global UBO
     GlobalUboData uboData;
     uboData.Time = sTotalTimeSeconds;
-    uboData.TimeOfDay = timeOfDayManager.getTimeOfDayHours();
     uboData.PlayerPosWorld = playerPos;
-    uboData.SunColor = timeOfDayManager.getSunColor();
-    uboData.SunHeight = timeOfDayManager.getSunHeight();
+    if (timeOfDayManager) {
+        uboData.TimeOfDay = timeOfDayManager->getTimeOfDayHours();
+        uboData.SunColor = timeOfDayManager->getSunColor();
+        uboData.SunHeight = timeOfDayManager->getSunHeight();
+    }
     uboData.SunPosition = sunPosition;
     uboData.SunPositionCameraRelative = glm::normalize(f32v3(camera.getViewMatrix() * f32v4(sunPosition.x, sunPosition.y, sunPosition.z, 1.0f)));
     uboData.SunRight = glm::normalize(glm::cross(sunPosition, f32v3(0.0f, 0.0f, 1.0f)));

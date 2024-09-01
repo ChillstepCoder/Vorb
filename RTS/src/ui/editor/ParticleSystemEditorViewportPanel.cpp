@@ -2,6 +2,7 @@
 #include "ParticleSystemEditorViewportPanel.h"
 
 #include "resources/ResourceManager.h"
+#include "rendering/RenderContext.h"
 #include "rendering/MaterialShaderRepository.h"
 #include "resources/MaterialRepository.h"
 #include "resources/TextureRepository.h"
@@ -11,6 +12,7 @@
 #include "rendering/particle/CPUParticleSystem.h"
 
 #include "camera/SimpleCamera.h"
+#include "camera/Camera3D.h"
 
 #include "ui/UIContext.h"
 #include "ui/ImguiUtil.hpp"
@@ -109,7 +111,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 ParticleEmitterDef& defaultEmitter = mAssetData->mEmitters.emplace_back();
                 defaultEmitter.mEmitterName = CStrToken("default_emitter");
                 defaultEmitter.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
-                defaultEmitter.mShaderName = CStrToken("particle_bb_3d");
+                defaultEmitter.mShaderRef = CStrToken("particle_bb_3d");
 
                 unselect();
                 mSelectedEmitter = &defaultEmitter;
@@ -172,7 +174,7 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 ParticleEmitterDef& newEmitterDef = mAssetData->mEmitters.emplace_back();
                 newEmitterDef.mEmitterName = StrToken(mTextInputBuffer);
                 newEmitterDef.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
-                newEmitterDef.mShaderName = CStrToken("particle_bb_3d");
+                newEmitterDef.mShaderRef = CStrToken("particle_bb_3d");
 
                 unselect();
                 mSelectedEmitter = &newEmitterDef;
@@ -494,6 +496,10 @@ void ParticleSystemEditorViewportPanel::renderMesh() {
 
     // Render preview system
     if (mPreviewSystem) {
+        Camera3D camera;
+        camera.copyFromSimpleCamera(*mCamera);
+        RenderContext::getInstance().updateGlobalUbo(f32v3(0.0f), camera),
+        MaterialRepository::get().bindMaterialBuffer();
         mPreviewSystem->updateAndRenderEditor(mCurrentElapsedSec, mCamera->getViewProjectionMatrix(), mShowEmitters);
     }
 }

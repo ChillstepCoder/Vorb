@@ -36,7 +36,7 @@ CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunct
 }
 
 CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def, ParticleSystemInputs* inputs) :
-    mShaderID(MaterialShaderRepository::get().getAssetID(def.mShaderName)),
+    mShaderID(def.mShaderRef.getAssetID()),
     mInputs(inputs),
     mMaterialAssetHandles(std::make_unique<AssetHandleBundle>())
 {

@@ -8,6 +8,7 @@ uniform vec2 unGlobalScale = vec2(1.0);
 uniform uint unBaseInstanceOffset = 0;
 uniform vec3 unRootPos = vec3(0.0);
 
+// TODO: UBO
 uniform uint unIsUsingColor = 0;
 uniform uint unIsUsingHDRColor = 0;
 uniform uint unIsUsingMaterial = 0;

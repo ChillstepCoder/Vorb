@@ -331,12 +331,8 @@ void RenderContext::beginFrame(WorldRenderState* renderState, f32v3 playerPos, f
     const TimeOfDayManager& timeOfDayManager = mActiveWorld->getTimeOfDayManager();
     mRenderData.cameraZAngle = mCamera.getZAngle();
     mRenderData.skyRotMatrix = timeOfDayManager.getSkyRotMatrix();
-    
-    ShadowRenderer& shadowRenderer = mWorldRenderer->getShadowRenderer();
 
-    // Ubo data
-    UboHelpers::uploadGlobalUbo(mGlobalUbo, mCamera, playerPos, shadowRenderer.getLastUpdatedSunPosition(), timeOfDayManager);
-    UboHelpers::uploadCameraUbo(mCameraUbo, mCamera);
+    updateGlobalUbo(playerPos, mCamera);
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -411,6 +407,16 @@ void RenderContext::endFrame() {
 
 void RenderContext::selectNextDebugShader() {
     mWorldRenderer->selectNextDebugShader();
+}
+
+void RenderContext::updateGlobalUbo(f32v3 playerPos, const Camera3D& camera) {
+
+    const TimeOfDayManager* timeOfDayManager = mActiveWorld ? &mActiveWorld->getTimeOfDayManager() : nullptr;
+    ShadowRenderer& shadowRenderer = mWorldRenderer->getShadowRenderer();
+
+    // Ubo data
+    UboHelpers::uploadGlobalUbo(mGlobalUbo, camera, playerPos, shadowRenderer.getLastUpdatedSunPosition(), timeOfDayManager);
+    UboHelpers::uploadCameraUbo(mCameraUbo, camera);
 }
 
 VGTexture RenderContext::getShadowTexture() const {

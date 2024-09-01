@@ -66,6 +66,8 @@ public:
 
     void selectNextDebugShader();
 
+    void updateGlobalUbo(f32v3 playerPos, const Camera3D& camera);
+
     VGBuffer getCameraUbo() const { return mCameraUbo; }
     const GlobalRenderData& getRenderData() const { return mRenderData; }
     vg::GBuffer& getActiveGBuffer() const { return *mActiveGBuffer; }

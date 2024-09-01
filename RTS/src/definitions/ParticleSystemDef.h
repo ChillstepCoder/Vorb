@@ -40,11 +40,11 @@ public:
     ParticleEmitterDef() = default;
     ~ParticleEmitterDef() = default;
 
-    bool isValid() { return mShaderName.isValid(); }
+    bool isValid() { return mShaderRef.isValid(); }
 
     ParticleEmitterModuleContainer mModules;
 
-    StrToken mShaderName;
+    MaterialShaderAssetRef mShaderRef;
     StrToken mEmitterName;
     f32v2 mDefaultScale = f32v2(0.1f);
     color4 mDefaultColor = color::White;
