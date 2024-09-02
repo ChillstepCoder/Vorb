@@ -117,7 +117,6 @@ public:
     TileShape shape = TileShape::BLOCK;
     ui8 pathWeight = 255;
     ui8 navMask = 0xff; // Access bits mapped to Cartesian8 based on default (SOUTH) orientation
-    NavBlockerType navBlockerType = NavBlockerType::NONE;
     VisibilityBlockerType visBlockerType = VisibilityBlockerType::NONE;
     TileType tileType = TileType::Default;
     bool blocksVisibility = false;

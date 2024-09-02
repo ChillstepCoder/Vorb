@@ -590,7 +590,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\tile\TileContainerRepository.cpp" />
-    <ClCompile Include="src\tile\TileItemContainer.cpp" />
     <ClCompile Include="src\tile\TileSpatialGrid.cpp" />
     <ClCompile Include="src\tile\Tile.cpp" />
     <ClCompile Include="src\tile\TileContainer.cpp" />
@@ -1146,7 +1145,6 @@
     <ClInclude Include="src\tile\TileContainerConst.h" />
     <ClInclude Include="src\tile\TileContainerRepository.h" />
     <ClInclude Include="src\tile\TileGrass.h" />
-    <ClInclude Include="src\tile\TileItemContainer.h" />
     <ClInclude Include="src\tile\TileSpatialGrid.h" />
     <ClInclude Include="src\tile\Stairs.h" />
     <ClInclude Include="src\tile\Tile.h" />

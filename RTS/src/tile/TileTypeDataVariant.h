@@ -10,4 +10,9 @@ struct FloraTileData {
     }
 };
 
-using TileTypeDataVariant = std::variant<std::monostate, FloraTileData>;
+// For stairs, ladders, ramp parts, ect
+struct Navagable1x1Data {
+    ui8 navMask;
+};
+
+using TileTypeDataVariant = std::variant<std::monostate, FloraTileData/*, Navagable1x1Data*/>;

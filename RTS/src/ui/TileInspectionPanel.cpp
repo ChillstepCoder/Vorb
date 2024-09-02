@@ -26,14 +26,6 @@ TileInspectionPanel::TileInspectionPanel(World& world, const f32v2& screenPos, c
 inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     ImGui::Text("Flags:");
     const Tile& tile = tileHandle.getTile();
-    FLAG_DISPLAY(TileFlags::HAS_SOUTH_BLOCKER);
-    FLAG_DISPLAY(TileFlags::HAS_WEST_BLOCKER);
-    FLAG_DISPLAY(TileFlags::HAS_EAST_BLOCKER);
-    FLAG_DISPLAY(TileFlags::HAS_NORTH_BLOCKER);
-    FLAG_DISPLAY(TileFlags::HAS_DIAGONAL_BLOCKER);
-    FLAG_DISPLAY(TileFlags::BLOCKED_BY_LARGE);
-    FLAG_DISPLAY(TileFlags::MEDIUM_BLOCKER);
-    FLAG_DISPLAY(TileFlags::LARGE_BLOCKER);
     FLAG_DISPLAY(TileFlags::IS_BLOCKED_BY_BUILDING);
     FLAG_DISPLAY(TileFlags::IS_INTERACTING);
     FLAG_DISPLAY(TileFlags::IS_DAMAGED);
@@ -41,7 +33,7 @@ inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
     FLAG_DISPLAY(TileFlags::IS_RESOURCE_RESERVED);
     FLAG_DISPLAY(TileFlags::IN_CITY);
 
-    static_assert(e_cast(TileFlags::TERM) == 1 << 13, "Update");
+    static_assert(e_cast(TileFlags::TERM) == BIT(7), "Update");
 }
 
 inline void showTileLayerMainThread(const char* format, int layer, const TileHandle& tileHandle) {

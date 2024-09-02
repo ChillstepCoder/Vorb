@@ -792,9 +792,6 @@
     <ClCompile Include="src\ui\editor\AssetEditorViewportPanelBase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\tile\TileItemContainer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\ecs\component\ProjectileComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2535,9 +2532,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\serialization\CommonSerializable.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\tile\TileItemContainer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\component\TileItemComponent.h">

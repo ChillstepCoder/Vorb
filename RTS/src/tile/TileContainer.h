@@ -7,7 +7,6 @@
 #include "tile/TileContainerHarvestableRegistry.h"
 #include "tile/TileSpatialGrid.h"
 #include "tile/TileWallContainer.h"
-#include "tile/TileItemContainer.h"
 #include "tile/TileDamageData.h"
 #include "visibility/TileVisibilityContainer.h"
 
@@ -200,12 +199,6 @@ public:
     World& getWorld() const { return mWorld; }
 
 private:
-    bool tryBlockAdjTiles(TileIndex i, NavBlockerType navBlockerType);
-    bool tryBlockAdjTilesFromGeneration(TileIndex i, NavBlockerType navBlockerType);
-    void removeBlockerFromAdjTiles(TileIndex i, NavBlockerType prevNavBlockerType);
-    void updateTileDiagonalBlocked(TileIndex index);
-
-    bool canPlaceAdjNavBlockerTile(TileIndex i);
 
     void onTileChanged(TileIndex tileIndex);
 
@@ -221,7 +214,6 @@ private:
     // Tile data
     std::vector<Tile> mTiles; // TODO: Memory recycler and or compression
     TileWallContainer mTileWallsContainer; // TODO: Pointer so we remove from chunk
-    TileItemContainer mTileItemContainer;
 
     // Visibility
     mutable std::shared_mutex mVisibilityMutex;
