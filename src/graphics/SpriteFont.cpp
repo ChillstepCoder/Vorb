@@ -11,7 +11,7 @@
 //#endif
 #endif
 
-#include "Vorb/graphics/GraphicsDevice.h"
+#include "Vorb/graphics/OLDGraphicsDevice.h"
 #include "Vorb/graphics/SpriteBatch.h"
 #include "Vorb/utils.h"
 #include <iostream>
@@ -90,7 +90,7 @@ void vg::SpriteFont::init(const cString font, ui32 size, char cs, char ce) {
         h = closestPow2(h);
 
         // A Texture Must Be Feasible
-        ui32 maxTextureSize = GraphicsDevice::getCurrent()->getProperties().maxTextureSize;
+        constexpr ui32 maxTextureSize = 4096;
         if (w > maxTextureSize || h > maxTextureSize) {
             rows++;
             delete[] gr;

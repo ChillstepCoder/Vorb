@@ -4,7 +4,6 @@ uniform vec4 unGlobalOverlayColor = vec4(0.0);
 uniform vec4 unGlobalColor = vec4(1.0);
 uniform uint unGlobalMaterial = 0;
 uniform vec2 unGlobalScale = vec2(1.0);
-uniform uint unBaseInstanceOffset = 0;
 uniform vec3 unRootPos = vec3(0.0);
 
 uniform uint unIsUsingColor = 0;
@@ -81,7 +80,7 @@ vec2 rotateVector(vec2 pos, float angleRad) {
 
 
 void main() {
-    const uint particleId = unBaseInstanceOffset + gl_VertexID / 6;
+    const uint particleId = gl_VertexID / 6;
 
     const int idx = indices[gl_VertexID % 6];
 	vec2 offset = pos[idx];

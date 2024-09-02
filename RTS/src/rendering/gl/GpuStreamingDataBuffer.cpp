@@ -25,6 +25,7 @@ void GpuStreamingDataBuffer::setMaxElements(ui32 maxElements) {
 
 void* GpuStreamingDataBuffer::frameBeginAndGetDataForUpdate() {
     // Wait for the GPU to finish with this section of the buffer
+    // Zero fence means either first frame or we didn't flush last frame (due to culling likely)
     if (mFence[mFrameIndex] != 0) {
         while (glClientWaitSync(mFence[mFrameIndex], 0, GL_TIMEOUT_IGNORED) == GL_TIMEOUT_EXPIRED) {
             // Keep waiting
@@ -37,28 +38,24 @@ void* GpuStreamingDataBuffer::frameBeginAndGetDataForUpdate() {
     return (void*)&((ui8*)mMappedBuffer)[bufferOffsetBytes];
 }
 
-int GpuStreamingDataBuffer::flushDataAndIncrementFrame(ui32 elementCount) {
+void GpuStreamingDataBuffer::flushDataAndIncrementFrame(ui32 elementCount) {
     assert(elementCount <= mMaxElements);
     elementCount = glm::min(elementCount, mMaxElements);
     mByteOffsetLastFlush = mFrameIndex * mElementSize * mMaxElements;
-
-    glFlushMappedNamedBufferRange(mBufferObject, mByteOffsetLastFlush, elementCount * mElementSize);
+    mTotalBytesLastFlush = elementCount * mElementSize;
+    glFlushMappedNamedBufferRange(mBufferObject, mByteOffsetLastFlush, mTotalBytesLastFlush);
 
     mFence[mFrameIndex] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
 
-    const int bufferStartIndex = getCurrentElementOffset();
-
     incrementMod3(mFrameIndex);
-
-    return bufferStartIndex;
 }
 
 void GpuStreamingDataBuffer::bindBufferAsSSBO(GLuint bindingPoint) const {
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint, mBufferObject);
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, bindingPoint, mBufferObject, mByteOffsetLastFlush, mTotalBytesLastFlush);
 }
 
-void GpuStreamingDataBuffer::bindAsVertexArrayVertexBuffer(VGBuffer targetVao, GLuint bindingIndex, GLintptr offset, GLsizei stride) const {
-    glVertexArrayVertexBuffer(targetVao, bindingIndex, mBufferObject, mByteOffsetLastFlush + offset, stride);
+void GpuStreamingDataBuffer::bindAsVertexArrayVertexBuffer(VGBuffer targetVao, GLuint bindingIndex, GLintptr offset) const {
+    glVertexArrayVertexBuffer(targetVao, bindingIndex, mBufferObject, mByteOffsetLastFlush + offset, mElementSize);
 }
 
 bool GpuStreamingDataBuffer::reallocateFuzzedIfNeeded(

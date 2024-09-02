@@ -26,23 +26,11 @@ CPUParticleSystem::CPUParticleSystem(const ParticleSystemDef& def, f32v3 positio
     }
 }
 
-bool CPUParticleSystem::updateAndRender(f32 elapsedSec, const f32m4& VP) {
+bool CPUParticleSystem::update(f32 elapsedSec, CpuParticleEmitterRenderList& outRenderList) {
 
     const MaterialShaderDef* boundShader = nullptr;
     for (auto&& iter = mEmitters.begin(); iter != mEmitters.end();) {
-        CpuParticleEmitter& emitter = **iter;
-        const MaterialShaderDef* nextShader = MaterialShaderRepository::get().tryGetLoadedAsset(emitter.getShaderID());
-        if (!nextShader) {
-            ++iter;
-            continue;
-        }
-        if (nextShader != boundShader) {
-            MaterialRenderer::bindMaterialShaderForRender(*nextShader);
-            glUniformMatrix4fv(nextShader->getUniform("unVP"), 1, false, &VP[0][0]);
-            glUniform3fv(nextShader->getUniform("unRootPos"), 1, &mRootPosition[0]);
-            boundShader = nextShader;
-        }
-        if (emitter.updateAndRender(elapsedSec)) {
+        if ((*iter)->update(elapsedSec)) {
             iter = mEmitters.erase(iter);
         }
         else {
@@ -55,6 +43,12 @@ bool CPUParticleSystem::updateAndRender(f32 elapsedSec, const f32m4& VP) {
     if (mLifetimeRemaining <= 0.0f && mEmitters.size() == 0) {
         return true;
     }
+
+    // Add active emitters to the render list
+    for (auto&& emitter : mEmitters) {
+        outRenderList[e_cast(emitter->getBlendMode())][emitter->getShaderID()].push_back(EmitterRenderData{ emitter.get(), &mRootPosition });
+    }
+
     return false;
 }
 
@@ -78,10 +72,14 @@ bool CPUParticleSystem::updateAndRenderEditor(f32 elapsedSec, const f32m4& VP, c
                     glUniform3fv(nextShader->getUniform("unRootPos"), 1, &mRootPosition[0]);
                     boundShader = nextShader;
                 }
-                if (emitter.updateAndRender(elapsedSec)) {
+                if (emitter.update(elapsedSec)) {
                     // Editor doesn't remove from the vector
                     iter->reset();
                     --numAliveEmitters;
+                }
+                else {
+                    bindStateForParticleBlendMode(emitter.getBlendMode());
+                    emitter.render();
                 }
             }
         }
@@ -104,6 +102,19 @@ int CPUParticleSystem::getNumParticles() const {
     int total = 0;
     for (auto&& emitter : mEmitters) {
         if (emitter) {
+            total += emitter->getNumActiveParticles();
+        }
+    }
+    return total;
+}
+
+int CPUParticleSystem::getNumParticles(const std::vector<bool>& emitterVisibility) const
+{
+    assert(emitterVisibility.size() == mEmitters.size());
+    int i = 0;
+    int total = 0;
+    for (auto&& emitter : mEmitters) {
+        if (emitter && emitterVisibility[i++]) {
             total += emitter->getNumActiveParticles();
         }
     }

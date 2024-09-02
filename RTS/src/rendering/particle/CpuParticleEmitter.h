@@ -2,10 +2,10 @@
 
 #include "rendering/gl/GpuStreamingDataBuffer.h"
 #include "util/ArbitraryObjectArray.h"
-
 #include "CPUParticleEmitterModule.h"
 #include "ParticleEnumTypes.h"
 
+#include "rendering/particle/CpuParticleEmitterRenderList.h"
 #include "rendering/particle/ParticleSystemInputs.h"
 
 
@@ -26,6 +26,8 @@ struct CpuParticlesGpuData {
 static_assert(e_cast(ParticleComponentType::TERM) == 65);
 
 struct CPUParticlesData {
+    // We cannot point these to the GpuStreamingDataBuffer stores because we need coherent info from the previous frame
+    // So we will memcopy every frame into the streaming buffers
     std::unique_ptr<f32v3[]> mPositions; // If position.x == FLT_MAX, then particle is inactive
     std::unique_ptr<f32v2[]> mRotations;
     std::unique_ptr<f32v3[]> mVelocities;
@@ -52,7 +54,10 @@ public:
 
     // Bind shader before calling this.
     // Returns true once lifetime has expired
-    bool updateAndRender(f32 elapsedSec);
+    bool update(f32 elapsedSec);
+
+    // Expects shader to be already bound
+    void render();
 
     // Particles
     ParticleID tryAddParticle(f32v3 position);
@@ -82,8 +87,6 @@ public:
 
     // Inputs
     const ParticleSystemInputs& getInputs() const { return *mInputs; }
-
-    void markDataChanged() { mDataChanged = true; }
 
     // Global state
     void setGlobalParticleScale(f32v2 scale) { mGlobalParticleScale = scale; }
@@ -139,7 +142,6 @@ public:
     void emitParticles(int count);
 protected:
     void allocateParticleData();
-    void render();
     void onNewParticleAdded(ParticleID id);
 
     // Updates the whole emitter with custom logic.
@@ -166,9 +168,7 @@ protected:
     int mLastActiveParticle = -1;
     int mNumActiveParticles = 0;
     int mMaxParticles;
-    int mBaseInstance = 0;
     bool mLooping = false;
-    bool mDataChanged = false;
     bool mNeedsFindFirstParticle = false;
     bool mNeedsFindLastParticle = false;
     ParticleBlendMode mBlendMode = ParticleBlendMode::Additive;
@@ -186,3 +186,6 @@ protected:
     // Determines which data streams we will use
     BitFlags<ParticleComponentType> mComponents;
 };
+
+// Helper utility that binds depth and blend states
+extern void bindStateForParticleBlendMode(ParticleBlendMode blendMode);

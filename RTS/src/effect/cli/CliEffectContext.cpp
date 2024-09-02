@@ -3,6 +3,8 @@
 
 #include "resources/EffectRepository.h"
 #include "rendering/particle/CPUParticleSystem.h"
+#include "rendering/MaterialShaderRepository.h"
+#include "rendering/MaterialRenderer.h"
 
 #include "camera/Camera3D.h"
 
@@ -15,8 +17,8 @@ EffectInstance::~EffectInstance() = default;
 
 void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
     ASSERT_RENDER_THREAD();
-    glDisable(GL_CULL_FACE);
 
+    PROFILE_FUNCTION();
     // Pending asset load effects
     for (auto&& it = mPendingAssetLoadEffects.begin(); it != mPendingAssetLoadEffects.end();) {
         PendingEffectData& data = it->second;
@@ -48,21 +50,52 @@ void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
 
     // TODO: Frustum Culling
     // Render each effect and optionally remove them on death
-    for (auto&& it = mEffectInstances.begin(); it != mEffectInstances.end();) {
-        if (it->mSystem->updateAndRender(elapsedSec, camera.getVPMatrix())) {
-            // Decref
-            auto&& eit = mEffectReferences.find(it->mEffectDef);
-            assert(eit != mEffectReferences.end());
-            if (--eit->second.first == 0) {
-                mEffectReferences.erase(eit);
+    {
+        PROFILE_SCOPE("Update Effects");
+        for (auto&& it = mEffectInstances.begin(); it != mEffectInstances.end();) {
+            if (it->mSystem->update(elapsedSec, mEmitterRenderList)) {
+                // Decref
+                auto&& eit = mEffectReferences.find(it->mEffectDef);
+                assert(eit != mEffectReferences.end());
+                if (--eit->second.first == 0) {
+                    mEffectReferences.erase(eit);
+                }
+                // Linear erase but usually not a ton of VFX getting killed each frame
+                // and these are small. We want to preserve sort order so we get no visible
+                // popping.
+                it = mEffectInstances.erase(it);
             }
-            // Linear erase but usually not a ton of VFX getting killed each frame
-            // and these are small. We want to preserve sort order so we get no visible
-            // popping.
-            it = mEffectInstances.erase(it);
+            else {
+                ++it;
+            }
         }
-        else {
-            ++it;
+    }
+    {
+        PROFILE_SCOPE("Render Effects");
+        glDisable(GL_CULL_FACE);
+        for (int blendMode = 0; blendMode < e_count(ParticleBlendMode); ++blendMode) {
+            FlatMap<AssetID /*materialShader*/, std::vector<EmitterRenderData>>& emitters = mEmitterRenderList[blendMode];
+            if (emitters.empty()) {
+                continue;
+            }
+            bindStateForParticleBlendMode((ParticleBlendMode)blendMode);
+
+            static_assert(e_count(ParticleBlendMode) == 4, "Update switch statement for new ParticleBlendMode enum values");
+            for (auto& [shaderID, emitterList] : emitters) {
+                const MaterialShaderDef* shader = MaterialShaderRepository::get().tryGetLoadedAsset(shaderID);
+                if (!shader) {
+                    continue;
+                }
+                VGUniform unRootPos = shader->getUniform("unRootPos");
+                MaterialRenderer::bindMaterialShaderForRender(*shader);
+                glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &camera.getVPMatrix()[0][0]);
+                for (auto& renderData : emitterList) {
+                    glUniform3fv(unRootPos, 1, (const GLfloat*)renderData.rootPosition);
+                    renderData.emitter->render();
+                }
+            }
+
+            emitters.clear();
         }
     }
 }

@@ -172,9 +172,6 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
 
     DrawElementsIndirectCommand* drawCommandsBuffer = mDrawCommands->getDrawCommands().data();
 
-    const ui32 boneTransformOffset = mBoneTransformsBuffer->getCurrentElementOffset();
-    const ui32 modelTransformOffset = mModelTransformsBuffer->getCurrentElementOffset();
-
     ui32 TMP_TOTAL_JOB_COUNT = 0;
     std::atomic_int jobCount = 0;
     ui32 numDrawCommands = 0;
@@ -196,7 +193,7 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
         threadPool.addTask(
             [&camera, &frameState, &characterState, &lodParams, elapsedSec, boneTransformsArray, modelTransformsArray,
             submeshDataArray, drawCommandsBuffer, isVisible, &jobCount, numDrawCommands, boneTransformsIndex, modelTransformsIndex,
-            submeshDataIndex, boneTransformOffset, modelTransformOffset, &outLinkedSubmodels, this]() mutable
+            submeshDataIndex, &outLinkedSubmodels, this]() mutable
         {
 
             ModelRepository& modelRepo = ModelRepository::get();
@@ -256,8 +253,8 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
                     }
 
                     SubmeshInstanceData& instanceData = submeshDataArray[submeshDataIndex];
-                    instanceData.boneTransformStartIndex = boneTransformsIndex + boneTransformOffset;
-                    instanceData.modelTransformIndex = modelTransformsIndex + modelTransformOffset;
+                    instanceData.boneTransformStartIndex = boneTransformsIndex;
+                    instanceData.modelTransformIndex = modelTransformsIndex;
                     instanceData.variantIndex = modelRepo.getSubmeshIndexDataOffset(partId);
 
                     const MeshSkeletonData& skeletonData = *modelRepo.getSubmeshSkeletonData(partId);
@@ -357,7 +354,7 @@ void CharacterRenderer::renderCharactersAndGatherSubmodels(const Camera3D& camer
     mModelTransformsBuffer->bindBufferAsSSBO(BUFFER_BASE_MODEL_TRANSFORMS_SSBO);
 
     VGBuffer vao = modelBatch.getVao();
-    mSubmeshDataBuffer->bindAsVertexArrayVertexBuffer(vao, MODEL_INSTANCE_DATA_BINDING_POINT, 0, sizeof(SubmeshInstanceData));
+    mSubmeshDataBuffer->bindAsVertexArrayVertexBuffer(vao, MODEL_INSTANCE_DATA_BINDING_POINT, 0);
     static_assert(sizeof(SubmeshInstanceData) == sizeof(ui32v3));
     
     modelBatch.bindSkeletalModelAttribs();

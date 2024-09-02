@@ -90,7 +90,7 @@ void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelMan
     ui32 nextTextureIndex = 0;
     MaterialRenderer::bindMaterialShaderForRender(*def, &nextTextureIndex);
 
-    const VGUniform* crossfadeUniform = def->tryGetUniform("unCrossfadeOffset");
+    const VGUniform* crossfadeUniform = def->tryGetUniform("unCrossfadeEnabled");
 
     if (passType == MaterialRenderPassType::Water) {
         // TODO: UBO?
@@ -165,7 +165,7 @@ void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelMan
     // Render standard
     if (drawCommands.getNumActiveCommands()) {
         if (crossfadeUniform) {
-            glUniform1i(*crossfadeUniform, -1);
+            glUniform1i(*crossfadeUniform, 0);
         }
         drawCommands.multiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT);
     }
@@ -174,7 +174,7 @@ void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelMan
     if (crossfadeDrawCommands && crossfadeDrawCommands->getNumActiveCommands()) {
         GpuStreamingDataBuffer& crossfadeBuffer = *modelManager.mCrossfadeBuffers[e_cast(passType)];
         assert(crossfadeUniform);
-        glUniform1i(*crossfadeUniform, (int)crossfadeBuffer.getElementOffsetLastFlush());
+        glUniform1i(*crossfadeUniform, 1);
         crossfadeBuffer.bindBufferAsSSBO(BUFFER_BASE_CROSSFADE_SSBO);
 
         crossfadeDrawCommands->multiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT);

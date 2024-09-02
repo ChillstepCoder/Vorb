@@ -49,13 +49,13 @@ namespace vorb {
             const cString glslVersion;
         };
 
-        class GraphicsDevice {
+        class OLDGraphicsDevice {
         public:
-            GraphicsDevice();
+            OLDGraphicsDevice();
 
-            static GraphicsDevice* getCurrent() {
+            static OLDGraphicsDevice* getCurrent() {
                 if (!_current) {
-                    _current = new GraphicsDevice();
+                    _current = new OLDGraphicsDevice();
                     _current->refreshInformation();
                 }
                 return _current;
@@ -70,7 +70,7 @@ namespace vorb {
         private:
             GraphicsDeviceProperties _props;
 
-            static GraphicsDevice* _current;
+            static OLDGraphicsDevice* _current;
         };
     }
 }

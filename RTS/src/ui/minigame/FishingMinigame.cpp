@@ -181,8 +181,6 @@ f32v2 getTextScreenPosition(f32v2 gamePosition, const f32v2 screenResolution) {
 }
 
 void FishingMinigame::render(f32 elapsedSec) {
-    vg::DepthState::NONE.set();
-    vg::BlendState::set(vg::BlendStateType::ALPHA);
 
     const FishingMinigameFishData& minigameData = mFishDef.mMinigameData;
 
@@ -239,15 +237,32 @@ void FishingMinigame::render(f32 elapsedSec) {
         mUIParticleSystem->getEmitter(0).setParticlePosition(mChestParticleID, f32v3(mChestPosition.x, mChestPosition.y, 0.0f));
     }
 
-    // TODO: Each its own emitter???
-    mBackgroundParticleSystem->updateAndRender(elapsedSec, camera);
-    mBubbleParticleSystem->updateAndRender(elapsedSec, camera);
-    mUIParticleSystem->updateAndRender(elapsedSec, camera);
-    if (mBlockerParticleSystem) {
-        mBlockerParticleSystem->updateAndRender(elapsedSec, camera);
-    }
-    mPlayerParticleSystem->updateAndRender(elapsedSec, camera);
+    vg::DepthState::NONE.set();
+    vg::BlendState::set(vg::BlendStateType::ALPHA);
 
+    const VGUniform unRootPos = mUIShader->getUniform("unRootPos");
+    glUniformMatrix4fv(mUIShader->getUniform("unVP"), 1, false, &camera[0][0]);
+
+    CpuParticleEmitterRenderList renderList;
+
+    mBackgroundParticleSystem->update(elapsedSec, renderList);
+    mBubbleParticleSystem->update(elapsedSec, renderList);
+    mUIParticleSystem->update(elapsedSec, renderList);
+    if (mBlockerParticleSystem) {
+        mBlockerParticleSystem->update(elapsedSec, renderList);
+    }
+    mPlayerParticleSystem->update(elapsedSec, renderList);
+
+    auto& emitters = renderList[e_cast(ParticleBlendMode::Alpha)];
+    assert(emitters.size() == 1);
+    for (auto& [shaderID, emitterList] : emitters) {
+        assert(shaderID == mUIShader->getID());
+
+        for (auto& renderData : emitterList) {
+            glUniform3fv(unRootPos, 1, (const GLfloat*)renderData.rootPosition);
+            renderData.emitter->render();
+        }
+    }
     vg::DepthState::restorePrevious();
 }
 

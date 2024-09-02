@@ -15,8 +15,8 @@ public:
     CPUParticleSystem(const ParticleSystemDef& def, f32v3 position);
 
     // Inputs
-    void setPosition(f32v3 position) { mRootPosition = position; }
     f32v3 getPosition() const { return mRootPosition; }
+    void setPosition(f32v3 position) { mRootPosition = position; }
     void setInputs(ParticleSystemInputs inputs) {
         mInputs = inputs;
     }
@@ -27,7 +27,9 @@ public:
 
     // Bind shader before calling this
     // Return true if lifetime expired
-    bool updateAndRender(f32 elapsedSec, const f32m4& VP);
+    // TODO: Camera culling
+    bool update(f32 elapsedSec, CpuParticleEmitterRenderList& outRenderList);
+
     // Return true if lifetime expired
     bool updateAndRenderEditor(f32 elapsedSec, const f32m4& VP, const std::vector<bool>& emitterVisibility);
 
@@ -37,6 +39,7 @@ public:
     CpuParticleEmitter& getEmitter(int index) { return *mEmitters.at(index); }
     const std::vector<CpuParticleEmitterPtr>& getEmitters() const { return mEmitters; }
     int getNumParticles() const;
+    int getNumParticles(const std::vector<bool>& emitterVisibility) const;
     // Returns number of iterations over dead particles each frame
     int getFragmentation() const;
 

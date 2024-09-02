@@ -3,6 +3,8 @@
 #include "effect/IEffectContext.h"
 #include "definitions/EffectDef.h"
 
+#include "rendering/particle/CpuParticleEmitterRenderList.h"
+
 #include <concurrent_queue.h>
 
 class CPUParticleSystem;
@@ -58,5 +60,7 @@ private:
     FlatMap<EffectAssetRef, PendingEffectData> mPendingAssetLoadEffects;
     std::vector<EffectInstance> mEffectInstances;
     FlatMap<const EffectDef*, std::pair<int, AssetHandlePtr<EffectDef>>> mEffectReferences;
+
+    CpuParticleEmitterRenderList mEmitterRenderList;
 };
 

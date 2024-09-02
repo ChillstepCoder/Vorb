@@ -43,15 +43,8 @@ namespace vorb {
 							TextureWrapMode texWrapT, TextureWrapMode texWrapR);
 		    SamplerState(ui32 texMinFilter, ui32 texMagFilter, ui32 texWrapS, ui32 texWrapT, ui32 texWrapR);
 		
-		    //void initObject();
-		    // Initialize All The Sampler Objects When OpenGL Context Is Created
-		   // static void initPredefined();
-		
-		    // Target Is Of The Family GL_TEXTURE_2D/3D/etc. For Use On A Texture
 		    void setForTarget(ui32 textureTarget) const;
 		    void setForTexture(VGTexture texture) const;
-		    // Unit Is In The Range [0 - GraphicsDeviceProperties::maxTextureUnits)
-		   // void setObject(ui32 textureUnit) const;
 		
 		private:
 		    //VGSampler m_id;

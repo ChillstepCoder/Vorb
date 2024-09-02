@@ -22,6 +22,29 @@ constexpr ui32 MAX_PARTICLES = 20000;
 
 POOLED_ALLOC_DEF_NOT_THREADSAFE(CpuParticleEmitter, 64, ASSERT_RENDER_THREAD());
 
+void bindStateForParticleBlendMode(ParticleBlendMode blendMode) {
+
+    // TODO: Switch to using RenderDevice
+    switch (blendMode) {
+        case ParticleBlendMode::Opaque:
+            vg::DepthState::FULL.set();
+            vg::sBlendStates.REPLACE.set();
+            break;
+        case ParticleBlendMode::Alpha:
+            vg::DepthState::READ.set();
+            vg::sBlendStates.ALPHA.set();
+            break;
+        case ParticleBlendMode::Additive:
+            vg::DepthState::READ.set();
+            vg::sBlendStates.ADDITIVE.set();
+            break;
+        case ParticleBlendMode::Subtractive:
+            vg::DepthState::READ.set();
+            vg::sBlendStates.SUBTRACTIVE.set();
+            break;
+    }
+}
+
 CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, ParticleSystemInputs* inputs, f32 lifetime /*= FLT_MAX*/) :
     mShaderID(shader.getID()),
     mNativeUpdateFunction(updateFunction),
@@ -81,7 +104,7 @@ CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def, ParticleSy
 CpuParticleEmitter::~CpuParticleEmitter() {
 }
 
-bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
+bool CpuParticleEmitter::update(f32 elapsedSec) {
     PROFILE_FUNCTION();
     ASSERT_RENDER_THREAD();
 
@@ -91,7 +114,6 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
     const bool lifetimeExpired = mTotalElapsedSec >= mLifetimeSec;
 
     if (mNativeUpdateFunction) {
-        mDataChanged = true;
         mNativeUpdateFunction(*this, mParticleData, elapsedSec);
     }
 
@@ -114,7 +136,6 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
         PROFILE_SCOPE("Particle Update Methods");
         if (mComponents.isBitSet(ParticleComponentType::Lifespan)) {
             if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
-                mDataChanged = true;
 
                 for (int i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
                     if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
@@ -147,7 +168,6 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
         }
         else {
             if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
-                mDataChanged = true;
 
                 for (int i = mFirstActiveParticle; i <= mLastActiveParticle; ++i) {
                     if (mParticleData.mPositions[i].x == FLT_MAX) [[unlikely]] {
@@ -180,17 +200,147 @@ bool CpuParticleEmitter::updateAndRender(f32 elapsedSec) {
         }
     }
 
-    render();
-
     return lifetimeExpired && (mNumActiveParticles <= 0);
 }
+
+void CpuParticleEmitter::render() {
+
+    PROFILE_FUNCTION();
+    if (mNumActiveParticles == 0) {
+        return;
+    }
+    const MaterialShaderDef& shader = MaterialShaderRepository::get().getLoadedAsset(mShaderID);
+    const vg::GLProgram& program = shader.mProgram;
+
+    // TODO: UBO?
+    const VGUniform unIsUsingColor = program.getUniform("unIsUsingColor");
+    const VGUniform unIsUsingHDRColor = program.getUniform("unIsUsingHDRColor");
+    const VGUniform unIsUsingMaterial = program.getUniform("unIsUsingMaterial");
+    const VGUniform unIsUsingScale = program.getUniform("unIsUsingScale");
+    const VGUniform unIsUsingRotation = program.getUniform("unIsUsingRotation");
+    const VGUniform unGlobalColor = program.getUniform("unGlobalColor");
+    const VGUniform unGlobalScale = program.getUniform("unGlobalScale");
+    const VGUniform unGlobalMaterial = program.getUniform("unGlobalMaterial");
+
+    // Upload globals
+    glUniform4f(unGlobalColor,
+        mGlobalParticleColor.r / 255.0f,
+        mGlobalParticleColor.g / 255.0f,
+        mGlobalParticleColor.b / 255.0f,
+        mGlobalParticleColor.a / 255.0f);
+    glUniform2fv(unGlobalScale, 1, &mGlobalParticleScale.x);
+
+    // Find first and last particles so we ensure we are drawing the minimum number of elements
+    // TODO: profile this as we could use bit array for faster testing?
+    if (mNeedsFindFirstParticle) {
+        PROFILE_SCOPE("Find First Particle");
+        for (ui32 i = mFirstActiveParticle + 1; i < mMaxParticles; ++i) {
+            if (mParticleData.mPositions[i].x != FLT_MAX) {
+                mFirstActiveParticle = i;
+                break;
+            }
+        }
+        mNeedsFindFirstParticle = false;
+    }
+    if (mNeedsFindLastParticle) {
+        PROFILE_SCOPE("Find Last Particle");
+        for (int i = (int)mLastActiveParticle - 1; i >= 0; --i) {
+            if (mParticleData.mPositions[i].x != FLT_MAX) {
+                mLastActiveParticle = i;
+                break;
+            }
+        }
+        mNeedsFindLastParticle = false;
+    }
+
+    const ui32 particlesToRender = (mLastActiveParticle - mFirstActiveParticle) + 1;
+
+    // Positions + padding float
+    f32v4* positions = (f32v4*)mGpuData.mPositionsBuffer->frameBeginAndGetDataForUpdate();
+    for (ui32 i = 0; i < particlesToRender; ++i) {
+        const ui32 particleIndex = mFirstActiveParticle + i;
+        const f32v3& sourcePos = mParticleData.mPositions[particleIndex];
+        positions[i] = f32v4(sourcePos.x, sourcePos.y, sourcePos.z, 0.0f /*Rotation??*/);
+    }
+    mGpuData.mPositionsBuffer->flushDataAndIncrementFrame(particlesToRender);
+    mGpuData.mPositionsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_POSITIONS_SSBO);
+
+    // Rotations
+    if (mParticleData.mRotations) {
+        f32v2* rotations = (f32v2*)mGpuData.mRotationsBuffer->frameBeginAndGetDataForUpdate();
+        memcpy(rotations, &mParticleData.mRotations[mFirstActiveParticle], particlesToRender * sizeof(f32v2));
+        mGpuData.mRotationsBuffer->flushDataAndIncrementFrame(particlesToRender);
+        mGpuData.mRotationsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_ROTATIONS_SSBO);
+        glUniform1ui(unIsUsingRotation, 1u);
+    }
+    else {
+        glUniform1ui(unIsUsingRotation, 0u);
+    }
+
+    // Scales
+    if (mGpuData.mScalesBuffer) {
+        f32v2* scales = (f32v2*)mGpuData.mScalesBuffer->frameBeginAndGetDataForUpdate();
+        memcpy(scales, &mParticleData.mScales[mFirstActiveParticle], sizeof(f32v2) * particlesToRender);
+        mGpuData.mScalesBuffer->flushDataAndIncrementFrame(particlesToRender);
+        mGpuData.mScalesBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_SCALES_SSBO);
+        glUniform1ui(unIsUsingScale, 1u);
+    }
+    else {
+        glUniform1ui(unIsUsingScale, 0u);
+    }
+
+    // Colors
+    if (mGpuData.mColorsBuffer) {
+        if (mComponents.isBitSet(ParticleComponentType::HDRColor)) {
+            f32v4* colors = (f32v4*)mGpuData.mColorsBuffer->frameBeginAndGetDataForUpdate();
+            memcpy(colors, &mParticleData.mHDRColors[mFirstActiveParticle], sizeof(f32v4) * particlesToRender);
+            mGpuData.mColorsBuffer->flushDataAndIncrementFrame(particlesToRender);
+            mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_HDR_COLORS_SSBO);
+            glUniform1ui(unIsUsingHDRColor, 1u);
+            glUniform1ui(unIsUsingColor, 0u);
+        }
+        else {
+            color4* colors = (color4*)mGpuData.mColorsBuffer->frameBeginAndGetDataForUpdate();
+            memcpy(colors, &mParticleData.mColors[mFirstActiveParticle], sizeof(color4) * particlesToRender);
+            mGpuData.mColorsBuffer->flushDataAndIncrementFrame(particlesToRender);
+            mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_COLORS_SSBO);
+            glUniform1ui(unIsUsingHDRColor, 0u);
+            glUniform1ui(unIsUsingColor, 1u);
+        }
+    }
+    else {
+        glUniform1ui(unIsUsingColor, 0u);
+        glUniform1ui(unIsUsingHDRColor, 0u);
+    }
+
+    // Materials
+    if (mGpuData.mMaterialsBuffer) {
+        ui32* materials = (ui32*)mGpuData.mMaterialsBuffer->frameBeginAndGetDataForUpdate();
+        memcpy(materials, &mParticleData.mMaterials[mFirstActiveParticle], sizeof(ui32) * particlesToRender);
+        mGpuData.mMaterialsBuffer->flushDataAndIncrementFrame(particlesToRender);
+        mGpuData.mMaterialsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_MATERIALS_SSBO);
+        glUniform1ui(unIsUsingMaterial, 1u);
+    }
+    else {
+        glUniform1ui(unGlobalMaterial, (GLuint)mGlobalMaterialID);
+        glUniform1ui(unIsUsingMaterial, 0u);
+    }
+
+    // Render two triangles per particle with no vertex data
+    {
+        PROFILE_SCOPE("Draw");
+        sGlobalFullTriangleVAO.drawNTriangles(particlesToRender * 2);
+    }
+
+    checkGlError("CpuParticleEmitter::render");
+    return;
+}
+
 
 ParticleID CpuParticleEmitter::tryAddParticle(f32v3 position) {
     if (mNumActiveParticles >= mMaxParticles) {
         return INVALID_PARTICLE_ID;
     }
-
-    mDataChanged = true;
 
     ParticleID newId;
     if (mFreeParticleIDs.size()) {
@@ -207,7 +357,6 @@ ParticleID CpuParticleEmitter::tryAddParticle(f32v3 position) {
 }
 
 void CpuParticleEmitter::removeParticle(ParticleID id) {
-    mDataChanged = true;
     assert(mNumActiveParticles > 0);
 
     if (--mNumActiveParticles == 0) {
@@ -236,49 +385,41 @@ void CpuParticleEmitter::removeParticle(ParticleID id) {
 
 void CpuParticleEmitter::setParticlePosition(ParticleID id, f32v3 position) {
     mParticleData.mPositions[id] = position;
-    mDataChanged = true;
 }
 
 void CpuParticleEmitter::setParticleScale(ParticleID id, f32v2 scale) {
     assert(mComponents.isBitSet(ParticleComponentType::Scale));
     mParticleData.mScales[id] = scale;
-    mDataChanged = true;
 }
 
 void CpuParticleEmitter::multiplyParticleScale(ParticleID id, f32v2 scale) {
     assert(mComponents.isBitSet(ParticleComponentType::Scale));
     mParticleData.mScales[id] *= scale;
-    mDataChanged = true;
 }
 
 void CpuParticleEmitter::setParticleVelocity(ParticleID id, f32v3 velocity) {
     assert(mComponents.isBitSet(ParticleComponentType::Velocity));
     mParticleData.mVelocities[id] = velocity;
-    mDataChanged = true;
 }
 
 void CpuParticleEmitter::addParticleVelocity(ParticleID id, f32v3 velocity) {
     assert(mComponents.isBitSet(ParticleComponentType::Velocity));
     mParticleData.mVelocities[id] += velocity;
-    mDataChanged = true;
 }
 
 void CpuParticleEmitter::multiplyParticleVelocity(ParticleID id, f32v3 scale) {
     assert(mComponents.isBitSet(ParticleComponentType::Velocity));
     mParticleData.mVelocities[id] *= scale;
-    mDataChanged = true;
 }
 
 void CpuParticleEmitter::setParticleColor(ParticleID id, color4 color) {
     assert(mComponents.isBitSet(ParticleComponentType::Color));
     mParticleData.mColors[id] = color;
-    mDataChanged = true;
 }
 
 void CpuParticleEmitter::setParticleHDRColor(ParticleID id, f32v4 color) {
     assert(mComponents.isBitSet(ParticleComponentType::HDRColor));
     mParticleData.mHDRColors[id] = color;
-    mDataChanged = true;
 }
 
 void CpuParticleEmitter::setParticleMaterial(ParticleID id, MaterialID material) {
@@ -289,20 +430,17 @@ void CpuParticleEmitter::setParticleMaterial(ParticleID id, MaterialID material)
         mContainedMaterials.insert(material);
         mMaterialAssetHandles->addAssetHandle(MaterialRepository::get().getAssetHandle(material));
     }
-    mDataChanged = true;
 }
 
 void CpuParticleEmitter::setParticleRotation(ParticleID id, f32v2 rollPitch) {
     assert(mComponents.isBitSet(ParticleComponentType::Rotation));
     mParticleData.mRotations[id].x = rollPitch.x;
     mParticleData.mRotations[id].y = rollPitch.y;
-    mDataChanged = true;
 }
 
 void CpuParticleEmitter::setParticleLifespan(ParticleID id, f32 lifespan) {
     assert(mComponents.isBitSet(ParticleComponentType::Lifespan));
     mParticleData.mLifespans[id] = lifespan;
-    mDataChanged = true;
 }
 
 f32 CpuParticleEmitter::getParticleNormalizedLifetime(ParticleID id) const {
@@ -334,7 +472,6 @@ void CpuParticleEmitter::emitParticles(int count) {
     }
     assert(mNumActiveParticles <= mMaxParticles);
     count = glm::min(count, mMaxParticles - mNumActiveParticles);
-    mDataChanged = true;
     for (int i = 0; i < count; ++i) {
         if (mFreeParticleIDs.size()) {
             ParticleID recycledId = mFreeParticleIDs.back();
@@ -393,195 +530,6 @@ void CpuParticleEmitter::allocateParticleData()
     }
 
     static_assert(e_cast(ParticleComponentType::TERM) == 65);
-}
-
-void CpuParticleEmitter::render() {
-
-    PROFILE_FUNCTION();
-    if (mNumActiveParticles == 0) {
-        return;
-    }
-    const MaterialShaderDef& shader = MaterialShaderRepository::get().getLoadedAsset(mShaderID);
-    const vg::GLProgram& program = shader.mProgram;
-
-    // TODO: UBO?
-    const VGUniform unIsUsingColor = program.getUniform("unIsUsingColor");
-    const VGUniform unIsUsingHDRColor = program.getUniform("unIsUsingHDRColor");
-    const VGUniform unIsUsingMaterial = program.getUniform("unIsUsingMaterial");
-    const VGUniform unIsUsingScale = program.getUniform("unIsUsingScale");
-    const VGUniform unIsUsingRotation = program.getUniform("unIsUsingRotation");
-
-    // Upload globals
-    glUniform4f(program.getUniform("unGlobalColor"),
-        mGlobalParticleColor.r / 255.0f,
-        mGlobalParticleColor.g / 255.0f,
-        mGlobalParticleColor.b / 255.0f,
-        mGlobalParticleColor.a / 255.0f);
-    glUniform2fv(program.getUniform("unGlobalScale"), 1, &mGlobalParticleScale.x);
-
-    // Find first and last particles so we ensure we are drawing the minimum number of elements
-    // TODO: profile this as we could use bit array for faster testing?
-    if (mNeedsFindFirstParticle) {
-        for (ui32 i = mFirstActiveParticle + 1; i < mMaxParticles; ++i) {
-            if (mParticleData.mPositions[i].x != FLT_MAX) {
-                mFirstActiveParticle = i;
-                break;
-            }
-        }
-        mNeedsFindFirstParticle = false;
-    }
-    if (mNeedsFindLastParticle) {
-        PROFILE_SCOPE("Find Last Particle");
-        for (int i = (int)mLastActiveParticle - 1; i >= 0; --i) {
-            if (mParticleData.mPositions[i].x != FLT_MAX) {
-                mLastActiveParticle = i;
-                break;
-            }
-        }
-        mNeedsFindLastParticle = false;
-    }
-
-    const ui32 particlesToRender = (mLastActiveParticle - mFirstActiveParticle) + 1;
-
-    // Always bind positions
-    mGpuData.mPositionsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_POSITIONS_SSBO);
-    if (mDataChanged) {
-        mDataChanged = false;
-        // Positions + padding float
-        f32v4* positions = (f32v4*)mGpuData.mPositionsBuffer->frameBeginAndGetDataForUpdate();
-        for (ui32 i = 0; i < particlesToRender; ++i) {
-            const ui32 particleIndex = mFirstActiveParticle + i;
-            const f32v3& sourcePos = mParticleData.mPositions[particleIndex];
-            positions[i] = f32v4(sourcePos.x, sourcePos.y, sourcePos.z, 0.0f /*Rotation??*/);
-        }
-        mBaseInstance = mGpuData.mPositionsBuffer->flushDataAndIncrementFrame(particlesToRender);
-
-        // Rotations
-        if (mParticleData.mRotations) {
-            f32v2* rotations = (f32v2*)mGpuData.mRotationsBuffer->frameBeginAndGetDataForUpdate();
-            memcpy(rotations, &mParticleData.mRotations[mFirstActiveParticle], particlesToRender * sizeof(f32v2));
-            mGpuData.mRotationsBuffer->flushDataAndIncrementFrame(particlesToRender);
-            mGpuData.mRotationsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_ROTATIONS_SSBO);
-            glUniform1ui(unIsUsingRotation, 1u);
-        }
-        else {
-            glUniform1ui(unIsUsingRotation, 0u);
-        }
-
-        // Scales
-        if (mGpuData.mScalesBuffer) {
-            f32v2* scales = (f32v2*)mGpuData.mScalesBuffer->frameBeginAndGetDataForUpdate();
-            memcpy(scales, &mParticleData.mScales[mFirstActiveParticle], sizeof(f32v2) * particlesToRender);
-            mGpuData.mScalesBuffer->flushDataAndIncrementFrame(particlesToRender);
-            mGpuData.mScalesBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_SCALES_SSBO);
-            glUniform1ui(unIsUsingScale, 1u);
-        }
-        else {
-            glUniform1ui(unIsUsingScale, 0u);
-        }
-
-        // Colors
-        if (mGpuData.mColorsBuffer) {
-            if (mComponents.isBitSet(ParticleComponentType::HDRColor)) {
-                f32v4* colors = (f32v4*)mGpuData.mColorsBuffer->frameBeginAndGetDataForUpdate();
-                memcpy(colors, &mParticleData.mHDRColors[mFirstActiveParticle], sizeof(f32v4) * particlesToRender);
-                mGpuData.mColorsBuffer->flushDataAndIncrementFrame(particlesToRender);
-                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_HDR_COLORS_SSBO);
-                glUniform1ui(unIsUsingHDRColor, 1u);
-                glUniform1ui(unIsUsingColor, 0u);
-            }
-            else {
-                color4* colors = (color4*)mGpuData.mColorsBuffer->frameBeginAndGetDataForUpdate();
-                memcpy(colors, &mParticleData.mColors[mFirstActiveParticle], sizeof(color4) * particlesToRender);
-                mGpuData.mColorsBuffer->flushDataAndIncrementFrame(particlesToRender);
-                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_COLORS_SSBO);
-                glUniform1ui(unIsUsingHDRColor, 0u);
-                glUniform1ui(unIsUsingColor, 1u);
-            }
-        }
-        else {
-            glUniform1ui(unIsUsingColor, 0u);
-            glUniform1ui(unIsUsingHDRColor, 0u);
-        }
-
-        // Materials
-        if (mGpuData.mMaterialsBuffer) {
-            ui32* materials = (ui32*)mGpuData.mMaterialsBuffer->frameBeginAndGetDataForUpdate();
-            memcpy(materials, &mParticleData.mMaterials[mFirstActiveParticle], sizeof(ui32) * particlesToRender);
-            mGpuData.mMaterialsBuffer->flushDataAndIncrementFrame(particlesToRender);
-            mGpuData.mMaterialsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_MATERIALS_SSBO);
-            glUniform1ui(unIsUsingMaterial, 1u);
-        }
-        else {
-            glUniform1ui(program.getUniform("unGlobalMaterial"), (GLuint)mGlobalMaterialID);
-            glUniform1ui(unIsUsingMaterial, 0u);
-        }
-    }
-    else {
-        // Scales
-        if (mGpuData.mScalesBuffer) {
-            mGpuData.mScalesBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_SCALES_SSBO);
-            glUniform1ui(unIsUsingScale, 1u);
-        }
-        else {
-            glUniform1ui(unIsUsingScale, 0u);
-        }
-
-        // Colors
-        if (mGpuData.mColorsBuffer) {
-            if (mComponents.isBitSet(ParticleComponentType::HDRColor)) {
-                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_HDR_COLORS_SSBO);
-                glUniform1ui(unIsUsingHDRColor, 1u);
-                glUniform1ui(unIsUsingColor, 0u);
-            }
-            else {
-                mGpuData.mColorsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_COLORS_SSBO);
-                glUniform1ui(unIsUsingHDRColor, 0u);
-                glUniform1ui(unIsUsingColor, 1u);
-            }
-        }
-        else {
-            glUniform1ui(unIsUsingColor, 0u);
-            glUniform1ui(unIsUsingHDRColor, 0u);
-        }
-
-        // Materials
-        if (mGpuData.mMaterialsBuffer) {
-            mGpuData.mMaterialsBuffer->bindBufferAsSSBO(BUFFER_BASE_PARTICLE_MATERIALS_SSBO);
-            glUniform1ui(unIsUsingMaterial, 1u);
-        }
-        else {
-            glUniform1ui(program.getUniform("unGlobalMaterial"), (GLuint)mGlobalMaterialID);
-            glUniform1ui(unIsUsingMaterial, 0u);
-        }
-    }
-    static_assert(e_cast(ParticleComponentType::TERM) == 65);
-
-    glUniform1ui(program.getUniform("unBaseInstanceOffset"), mBaseInstance);
-
-    vg::DepthState::READ.set();
-    switch (mBlendMode) {
-        case ParticleBlendMode::Additive:
-            vg::BlendState::set(vorb::graphics::BlendStateType::ADDITIVE);
-            break;
-        case ParticleBlendMode::Subtractive:
-            vg::BlendState::set(vorb::graphics::BlendStateType::SUBTRACTIVE);
-            break;
-        case ParticleBlendMode::Alpha:
-            vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
-            break;
-        default:
-            break;
-    }
-    static_assert(e_count(ParticleBlendMode) == 3);
-
-    // Render two triangles per particle with no vertex data
-    sGlobalFullTriangleVAO.drawNTriangles(particlesToRender * 2);
-
-    checkGlError("CpuParticleEmitter::render");
-    vg::DepthState::restorePrevious();
-    vg::BlendState::restorePrevious();
-    return;
 }
 
 void CpuParticleEmitter::onNewParticleAdded(ParticleID id) {

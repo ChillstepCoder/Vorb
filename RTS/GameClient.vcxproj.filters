@@ -3185,6 +3185,9 @@
     <ClInclude Include="src\tile\TileTypeDataVariant.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\rendering\particle\CpuParticleEmitterRenderList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />

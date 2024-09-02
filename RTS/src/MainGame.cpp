@@ -25,7 +25,7 @@
 #include "Vorb/graphics/GLStates.h"
 #include "ui/IGameScreen.h"
 #include "input/InputDispatcher.h"
-#include "Vorb/graphics/GraphicsDevice.h"
+#include "Vorb/graphics/OLDGraphicsDevice.h"
 #include "ui/ScreenList.h"
 #include "Vorb/Timing.h"
 #include "input/InputDispatcherEventCatcher.h"

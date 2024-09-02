@@ -24,6 +24,9 @@ void ModelImpostorRenderer::renderBillboards(const ModelImpostorManager& billboa
         return;
     }
 
+    if (!billboardManager.getNumBillboards()) {
+        return;
+    }
     const MaterialShaderDef& shader = mShader->getLoadedOrUnloadedAsset();
     ui32 nextTextureIndex = 0;
     MaterialRenderer::bindMaterialShaderForRender(shader, &nextTextureIndex);
@@ -38,8 +41,6 @@ void ModelImpostorRenderer::renderBillboards(const ModelImpostorManager& billboa
         return;
     }
 
-    const ui32 offset = billboardBuffer->getElementOffsetLastFlush();
-    glUniform1ui(shader.getUniform("unBaseInstanceOffset"), offset);
     billboardBuffer->bindBufferAsSSBO(BUFFER_BASE_MODEL_IMPOSTOR_DATA_SSBO);
 
     // Render two triangles per billboard with no vertex data

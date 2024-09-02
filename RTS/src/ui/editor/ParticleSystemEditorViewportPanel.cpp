@@ -75,10 +75,20 @@ void ParticleSystemEditorViewportPanel::updateAndRenderInternal(f32 elapsedSec) 
 
 void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
 
-
     // Add FPS for convenience
     char buffer[64];
     sprintf_s(buffer, sizeof(buffer), "FPS: %.0f", sFps);
+    ImGui::Text(buffer);
+
+    if (mPreviewSystem) {
+        if (mShowEmitters.size() == mPreviewSystem->getNumEmitters()) {
+            mNumParticles = mPreviewSystem->getNumParticles();
+        }
+    }
+    else {
+        mNumParticles = 0;
+    }
+    sprintf_s(buffer, sizeof(buffer), "Particles: %d", (int)mNumParticles);
     ImGui::Text(buffer);
 
     ImGui::Spacing();

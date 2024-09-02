@@ -745,10 +745,8 @@ void WorldRenderer::renderPassTransparent(f32 elapsedSec) {
         vg::DepthState::READ.set();
         vg::BlendState::set(vorb::graphics::BlendStateType::ALPHA);
         mStaticModelRenderer->renderModelPass(mCurrentWorldRenderDataManager->getInstancedStaticModelManager(), *mCamera, MaterialRenderPassType::Water, cubeMap);
-        vg::BlendState::restorePrevious();
         glDisable(GL_DEPTH_CLAMP);
     }
-
 
     // Light transparent layer
 

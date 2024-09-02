@@ -1,16 +1,5 @@
 emitters:
-  - DefaultEmitter:
-      scale: [0.1,0.1]
-      color: [255,255,255,255]
-      max_particles: 2000
-      lifetime: 3
-      p_lifespan: 3
-      looping: 1
-      blend: additive
-      e_update: []
-      p_init: []
-      p_update: []
-  - DefaultEmitter:
+  - defaultemitter:
       scale: [0.1,0.1]
       color: [255,255,255,255]
       max_particles: 2000
@@ -18,6 +7,7 @@ emitters:
       p_lifespan: 3
       looping: 1
       blend: additive
+      shader: particle_bb_3d
       e_update:
         - spawn_rate:
             emit_rate: 0.01

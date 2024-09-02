@@ -85,7 +85,7 @@ void Instrumentor::buildDebugStrings(InstrumentorDebugOutput inputData, Instrume
     std::ostringstream outSS[3];
 
     for (int i = 0; i < 3; ++i)
-        outSS[i].precision(1);
+        outSS[i].precision(2);
 
     const unsigned depthFill = inputData.depth * 2;
     outSS[0] << std::setfill(' ') << std::setw(depthFill) << "" << inputData.functionName;

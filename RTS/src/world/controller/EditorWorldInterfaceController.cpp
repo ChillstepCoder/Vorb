@@ -15,6 +15,7 @@
 #include "ui/UIContext.h"
 #include "pathfinding/NavWorld.h"
 #include "world/chunk/SimChunkGrid.h"
+#include "effect/IEffectContext.h"
 
 #include "resources/TileRepository.h"
 #include "math/Random.h"
@@ -44,6 +45,7 @@ void EditorWorldInterfaceController::update()
     assert(mWorld);
 
     static bool wasMPressed = false;
+    static bool wasOPressed = false;
     if (vui::InputDispatcher::key.isKeyPressed(VKEY_Y)) {
         // TODO: ITEMFactory
         GameThreadTasks::getInstance().addGenericTask([this]() {
@@ -54,7 +56,23 @@ void EditorWorldInterfaceController::update()
             sDebugOptions.mCities = !sDebugOptions.mCities;
         });
     }
-    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_M)) {
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_O)) {
+        if (!wasOPressed) {
+            GameThreadTasks::getInstance().addGenericTask([this]() {
+                ParticleSystemInputs inputs;
+                for (int i = 0; i < 50; ++i) {
+                    mWorld->getEffectContext().playParticleEffectAtPoint(
+                        EffectAssetRef(CStrToken("snow")), mWorld->getECS().getLocalPlayerPosition(), inputs, BitFlags<EffectCreateFlags>()
+                    );
+                }
+            });
+        }
+        wasOPressed = true;
+    }
+    else {
+        wasOPressed = false;
+    }
+    if (vui::InputDispatcher::key.isKeyPressed(VKEY_M)) {
         // Test item container
         if (!wasMPressed) {
 

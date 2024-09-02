@@ -175,8 +175,8 @@ void InstancedDynamicModelRenderer::renderModelPass(MaterialRenderPassType rende
 
         // Bind our transforms every frame as we could be using different instanced static model managers
         VGBuffer vao = batch.getVao();
-        mTransformsBuffer->bindAsVertexArrayVertexBuffer(vao, MODEL_TRANSFORMS_BINDING_POINT, 0, sizeof(f32m4));
-        mVariantIndexBuffer->bindAsVertexArrayVertexBuffer(vao, MODEL_INSTANCE_DATA_BINDING_POINT, 0, sizeof(ui32));
+        mTransformsBuffer->bindAsVertexArrayVertexBuffer(vao, MODEL_TRANSFORMS_BINDING_POINT, 0);
+        mVariantIndexBuffer->bindAsVertexArrayVertexBuffer(vao, MODEL_INSTANCE_DATA_BINDING_POINT, 0);
 
         batch.bindStaticModelAttribs();
         batch.setInstanceDataAttribFormat(1);

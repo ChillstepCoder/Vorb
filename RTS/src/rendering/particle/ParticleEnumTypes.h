@@ -14,13 +14,16 @@ enum class ParticleComponentType : ui8 {
 };
 
 enum class ParticleBlendMode {
+    // Lower values render first
+    Opaque,
+    Alpha,
     Additive,
     Subtractive,
-    Alpha,
     COUNT
 };
 SERIALIZABLE_ENUM_SAME_NAME(ParticleBlendMode,
+    pair{ ParticleBlendMode::Opaque, "opaque"sv },
+    pair{ ParticleBlendMode::Alpha, "alpha"sv },
     pair{ ParticleBlendMode::Additive, "additive"sv },
-    pair{ ParticleBlendMode::Subtractive, "subtractive"sv },
-    pair{ ParticleBlendMode::Alpha, "alpha"sv }
+    pair{ ParticleBlendMode::Subtractive, "subtractive"sv }
 );

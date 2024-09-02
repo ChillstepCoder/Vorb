@@ -4,7 +4,7 @@
 #include <Vorb/io/FileOps.h>
 
 #include <Vorb/graphics/SamplerState.h>
-#include <Vorb/graphics/GraphicsDevice.h>
+#include <Vorb/graphics/OLDGraphicsDevice.h>
 #include <SDL_ttf/SDL_ttf.h>
 
 #define FIRST_PRINTABLE_CHAR ((char)32)
@@ -63,7 +63,7 @@ bool FontRepository::loadFont(const vio::Path& fontPath)
         h = closestPowerOf2(h);
 
         // A Texture Must Be Feasible
-        ui32 maxTextureSize = vg::GraphicsDevice::getCurrent()->getProperties().maxTextureSize;
+        constexpr ui32 maxTextureSize = 4096;
         if (w > maxTextureSize || h > maxTextureSize) {
             rows++;
             delete[] gr;

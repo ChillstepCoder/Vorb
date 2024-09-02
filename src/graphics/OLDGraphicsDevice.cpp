@@ -1,5 +1,5 @@
 #include "Vorb/stdafx.h"
-#include "Vorb/graphics/GraphicsDevice.h"
+#include "Vorb/graphics/OLDGraphicsDevice.h"
 
 #include <Vorb/logging/Logger.h>
 
@@ -21,12 +21,12 @@
 #include <SFML/Window/VideoMode.hpp>
 #endif
 
-vg::GraphicsDevice::GraphicsDevice() :
+vg::OLDGraphicsDevice::OLDGraphicsDevice() :
 _props({}) {
     // Empty
 }
 
-void vg::GraphicsDevice::refreshInformation() {
+void vg::OLDGraphicsDevice::refreshInformation() {
     // Whenever Information Is Refreshed, The Current Device Is Refreshed
     _current = this;
 
@@ -88,7 +88,7 @@ void vg::GraphicsDevice::refreshInformation() {
 #endif // DEBUG
 }
 
-void vg::GraphicsDevice::initResolutions(void* w) {
+void vg::OLDGraphicsDevice::initResolutions(void* w) {
 #if defined(VORB_IMPL_UI_SDL)
     i32 dispIndex = SDL_GetWindowDisplayIndex((SDL_Window*)w);
     i32 dispCount = SDL_GetNumDisplayModes(dispIndex);
@@ -119,4 +119,4 @@ void vg::GraphicsDevice::initResolutions(void* w) {
     _props.resolutionOptions.resize(iter - _props.resolutionOptions.begin());
 }
 
-vg::GraphicsDevice* vg::GraphicsDevice::_current = nullptr;
+vg::OLDGraphicsDevice* vg::OLDGraphicsDevice::_current = nullptr;

@@ -56,6 +56,7 @@ private:
     f32 mCurrentTime = 0.0f;
 
     f32 mBottomHeight = 120.0f;
+    ui32 mNumParticles = 0;
 
     static constexpr size_t TEXT_INPUT_SIZE = 64;
     char mTextInputBuffer[TEXT_INPUT_SIZE];

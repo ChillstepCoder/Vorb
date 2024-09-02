@@ -5,7 +5,7 @@
 #include "model/model_variant.glsl"
 
 uniform float unSnowLevel;
-uniform int unCrossfadeOffset = -1;
+uniform int unCrossfadeEnabled = 0;
 
 layout(location = 0) in vec4 vPosition;
 layout(location = 1) in vec2 vUV;
@@ -81,8 +81,8 @@ void main() {
     
 	fTBN = computeTbn(mat3(vModelMatrix), normal, tangent);
     
-    if (unCrossfadeOffset != -1) {
-        fCrossfade = crossfadeBuffer[unCrossfadeOffset + gl_DrawID];
+    if (unCrossfadeEnabled == 1) {
+        fCrossfade = crossfadeBuffer[gl_DrawID];
     } else {
         fCrossfade = -0.0001; // Indicates fully rendered object
     }

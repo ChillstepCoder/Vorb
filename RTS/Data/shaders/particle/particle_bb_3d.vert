@@ -5,7 +5,6 @@ uniform mat4 unVP;
 uniform vec4 unGlobalColor = vec4(1.0);
 uniform uint unGlobalMaterial = 0;
 uniform vec2 unGlobalScale = vec2(1.0);
-uniform uint unBaseInstanceOffset = 0;
 uniform vec3 unRootPos = vec3(0.0);
 
 // TODO: UBO
@@ -124,7 +123,7 @@ mat3 createTransformMatrix(float pitch, float roll) {
 }
 
 void main() {
-    const uint particleId = unBaseInstanceOffset + gl_VertexID / 6;
+    const uint particleId = gl_VertexID / 6;
 
     const int idx = indices[gl_VertexID % 6];
 	vec2 offset = pos[idx];

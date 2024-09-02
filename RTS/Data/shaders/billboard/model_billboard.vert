@@ -29,8 +29,6 @@ layout(std430, binding = 3) restrict readonly buffer BillboardSSBO {
     BillboardData billboardData[];
 };
 
-uniform uint unBaseInstanceOffset = 0;
-
 out vec2 fUV;
 flat out uint fMaterialIndex;
 out mat3 fTBN;
@@ -72,7 +70,7 @@ mat3 computeBillboardTBN(vec3 CameraRelativePos) {
 
 void main() {
     const int idx = indices[gl_VertexID % 6];
-    const uint billboardId = unBaseInstanceOffset + (gl_VertexID / 6);
+    const uint billboardId = (gl_VertexID / 6);
 
     BillboardData data = billboardData[billboardId];
     
