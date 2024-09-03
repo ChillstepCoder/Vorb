@@ -30,15 +30,15 @@ class Tile {
     friend class BuildingBuilder; // TODO: Remove? Only for debug?
 public:
 	Tile() {};
-    Tile(TileID ground, TileID mid);
-    Tile(TileID ground, TileID mid, f32 zPos);
-    Tile(TileID ground, TileID mid, f32 zPos, TileFlags flags);
+    Tile(TileID id);
+    Tile(TileID id, f32 zPos);
+    Tile(TileID id, f32 zPos, TileFlags flags);
 
     bool hasFlag(TileFlags flag) const { return tileFlags.isBitSet(flag); }
     bool hasFlagsMaskAny(TileFlagType mask) const { return tileFlags.isMaskPartiallySet(mask); }
     TileFlagType getFlags() const { return tileFlags.getBits(); }
 
-    bool hasHarvestableResource(TileHarvestable resource, TileLayer* outLayer) const;
+    bool isHarvestableResource(TileHarvestable resource) const;
 
     // Only nav thread can access this data TODO: MOVE
     bool canNavInDirection(Cartesian8 dir) const;
@@ -46,15 +46,12 @@ public:
 
     f32 getGroundZOffset() const { return groundZOffset; }
 
-	const TileID* getLayers() const { return layers; }
-    TileID getGroundID() const { return groundLayer; }
-    ui8 getGroundLayerVariant() const { return groundLayerVariant; }
     TileID getMainID() const { return mainLayer; }
-    ui8 getMainLayerVariant() const { return mainLayerVariant; }
+    ui8 getMainLayerVariant() const { return variant; }
 
-    Cartesian getOrientation(TileLayer layer) const;
+    Cartesian getOrientation() const;
 
-    bool isEmpty() const { return layers[TILE_LAYER_GROUND] == TILE_ID_NONE && layers[TILE_LAYER_MAIN] == TILE_ID_NONE; }
+    bool isEmpty() const { return mainLayer == TILE_ID_NONE; }
     bool isRoofed() const { return tileFlags.isBitSet(TileFlags::ROOFED); }
     bool isBuildingExterior() const { return tileFlags.isBitSet(TileFlags::IS_BUILDING_EXTERIOR); }
 
@@ -67,33 +64,26 @@ private:
     bool canAddTileData(const TileDef& tile) const;
     void setTileFlag(TileFlags flag);
     void overwriteTileFlags(TileFlags flags);
-    void setOrientation(Cartesian dir, TileLayer layer);
+    void setOrientation(Cartesian dir);
     void clearTileFlag(TileFlags flag);
     void zeroTileFlags();
     void setGroundZOffset(f32 groundZPosition);
 
     // ================================= Data =================================
-    union { // These can safely be modified at any time and will only be accessed by the main thread
-        struct {
-            TileID groundLayer; // floors, foundation     // ALWAYS BOX COLLISION
-            TileID mainLayer;
-        };
-        TileID layers[TILE_LAYER_COUNT] = { TILE_ID_NONE, TILE_ID_NONE };
-    };
+    TileID mainLayer = TILE_ID_NONE;
     BitFlags<TileFlags> tileFlags;
-    TileOrientation orientation = {}; // TODO: Combine these?
-    ui8 groundLayerVariant : 4 = {};
-    ui8 mainLayerVariant : 4 = {};
     f32 groundZOffset = 0.0f;
     // TODO: Some kind of generic "view" class that lets us readonly with updates from sim thread?
     TileTypeDataVariant typeDataCopy; // State owned by sim thread
-    // TODO: Flyweight
+    Cartesian orientation : 2;
+    ui8 variant : 4 = {};
 };
-static_assert(sizeof(Tile) == 16, "Keep small");
+static_assert(sizeof(Tile) == 12, "Keep small");
 
 // TODO: We have to include tile wall container because of these
 // All meshable (and visibility) data from a container, copied to prevent race conditions or mutex locks
 struct ContainerMeshDataCopy {
+    std::vector<TileID> floorIds;
     std::vector<Tile> tiles;
     TileWallContainer walls;
     TileSpatialGrid spatialGrid;
@@ -102,6 +92,7 @@ struct ContainerMeshDataCopy {
 
 struct ContainerNavDataCopy {
     std::vector<HarvestableSubchunkRegistry> harvestables; // TODO: hmmm....
+    std::vector<TileID> floorIds;
     std::vector<Tile> tiles;
     TileWallContainer walls;
     TileSpatialGrid spatialGrid;

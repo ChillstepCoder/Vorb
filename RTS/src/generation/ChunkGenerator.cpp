@@ -72,7 +72,7 @@ Tile ChunkGenerator::generateTileAtPos(i32v2 worldPos, f32 height, f32v3 normal,
                             for (size_t i = possibleTile.variantStartIndex; i < possibleTile.variantStartIndex + possibleTile.variantCount; ++i) {
                                 const VariantWithWeightThreshold& variant = category.allVariants[i];
                                 if (variantRoll <= variant.weightThreshold) {
-                                    tile.mainLayerVariant = variant.tileVariant;
+                                    tile.variant = variant.tileVariant;
                                     break;
                                 }
                             }
@@ -142,7 +142,7 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& bui
         }
         else {
             tiles[index].mainLayer = data.tileId;
-            tiles[index].mainLayerVariant = data.variant;
+            tiles[index].variant = data.variant;
             tiles[index].typeDataCopy = data.typeData;
             chunk.mGrass[index] = TileGrass();
             ++it;
@@ -209,7 +209,7 @@ void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
 
             SimTileData tileData;
             tileData.tileId = tile.mainLayer;
-            tileData.variant = tile.mainLayerVariant;
+            tileData.variant = tile.variant;
             chunkData.tileIndexToTileData.emplace((ChunkTileIndex)i, tileData);
             chunkData.debugValidateHarvestables();
             const TileDef& def = tileRepo.getLoadedOrUnloadedAsset(tile.mainLayer);

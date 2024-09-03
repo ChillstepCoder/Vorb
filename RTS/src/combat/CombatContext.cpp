@@ -282,7 +282,6 @@ void CombatContext::hitTile(LiteTileHandle liteHandle, const SkillDef& skillDef,
     TileHandle tileHandle = liteHandle.toTileHandle(mWorld);
     tileHandle.getMutableContainer()->adjustTileHealth(
         tileHandle.tileIndex,
-        TileLayer::Main,
         getRandomDamageValue(damageRange),
         impactPosition,
         impactNormal

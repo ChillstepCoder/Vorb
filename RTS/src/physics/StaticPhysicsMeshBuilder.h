@@ -20,7 +20,7 @@ public:
     void addQuadBetweenPoints(const f32v3 vertPoints[4]);
     void addQuadBetweenPoints(const f32v3& v0, const f32v3& v1, const f32v3& v2, const f32v3& v3);
     void addTriangleBetweenPoints(const f32v3 vertPoints[3]);
-    void addTrackedTileModelCollider(TileIndex ownerTilePosition, TileID id, ui8 layer, f32v3 pos, f32q orientation, f32 scale, ModelID modelId) { mTrackedRigidBodyGatherer.addTileModelCollider(ownerTilePosition, id, layer, pos, orientation, scale, modelId); }
+    void addTrackedTileModelCollider(TileIndex ownerTilePosition, TileID id, f32v3 pos, f32q orientation, f32 scale, ModelID modelId) { mTrackedRigidBodyGatherer.addTileModelCollider(ownerTilePosition, id, pos, orientation, scale, modelId); }
     TileContainerID getOwnerTileContainerID() const { return mTrackedRigidBodyGatherer.getOwnerTileContainerID(); }
 
     bool hasAnyCollision();

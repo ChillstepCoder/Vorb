@@ -154,18 +154,16 @@ void SimChunk::bindEditEventToChunkTileContainer(Chunk& chunk) {
         ASSERT_GAME_THREAD();
 
         const TileContainerEditEvent& editEvent = std::get<TileContainerEditEvent>(containerEvent.varEvent);
-        if (editEvent.type == TileContainerEditEventType::ChangeLayer) {
+        if (editEvent.type == TileContainerEditEventType::ChangeTileID) {
             allocate();
             std::lock_guard lock(mMutex);
             for (i32 i = 0; i < editEvent.editCount; ++i) {
                 TileContainerEditLayerEventData& data = editEvent.changeLayerArray[i];
-                if (data.layer == TileLayer::Main) [[likely]] {
-                    if (data.prevId != TILE_ID_NONE) {
-                        mTileData->removeTile(data.tileIndex);
-                    }
-                    if (data.newId != TILE_ID_NONE) {
-                        mTileData->addTile(data.tileIndex, data.newId, data.newVariant);
-                    }
+                if (data.prevId != TILE_ID_NONE) {
+                    mTileData->removeTile(data.tileIndex);
+                }
+                if (data.newId != TILE_ID_NONE) {
+                    mTileData->addTile(data.tileIndex, data.newId, data.newVariant);
                 }
             }
             mIsSaveUpToDate.clear();

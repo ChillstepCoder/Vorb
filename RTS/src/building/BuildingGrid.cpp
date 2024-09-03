@@ -398,7 +398,7 @@ void BuildingGrid::connectBuildingToChunks(Building& building) {
         --buildingData.numLoadingBuildingsRef();
         Chunk& chunk = mWorld.getChunkGrid().getChunk(id);
         // Check if we are in a state where we should instantly connect
-        if (chunk.getState() == ChunkState::ACTIVATED || chunk.getState() == ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY) {
+        if (chunk.getState() == ChunkState::ACTIVATED || chunk.getState() == ChunkState::LOADING_MESH_PHYSICS_NAV) {
             connectBuildingToChunk(building, chunk);
             // Remove from disconnected array
             std::vector<Building*>& disconnectedBuildings = buildingData.getDisconnectedBuildings();

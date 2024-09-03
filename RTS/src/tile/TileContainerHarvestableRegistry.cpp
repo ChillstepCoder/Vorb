@@ -122,43 +122,40 @@ void TileContainerHarvestableRegistry::debugDraw() const {
 }
 
 void TileContainerHarvestableRegistry::onTileLayerChanged(TileContainerEditEvent& evnt) {
-    assert(evnt.type == TileContainerEditEventType::ChangeLayer);
+    assert(evnt.type == TileContainerEditEventType::ChangeTileID);
     TileRepository& tileRepo = TileRepository::get();
     for (ui32 i = 0; i < evnt.editCount; ++i) {
         TileContainerEditLayerEventData& editData = evnt.changeLayerArray[i];
-        // Only main layer matters
-        if ((int)editData.layer == TILE_LAYER_MAIN) {
-            TileHarvestable prevHarvestable = TileHarvestable::None;
-            TileHarvestable newHarvestable = TileHarvestable::None;
+        TileHarvestable prevHarvestable = TileHarvestable::None;
+        TileHarvestable newHarvestable = TileHarvestable::None;
 
-            if (!isTileNone(editData.prevId)) {
-                prevHarvestable = tileRepo.getLoadedOrUnloadedAsset(editData.prevId).harvestable;
-            }
-            if (!isTileNone(editData.newId)) {
-                newHarvestable = tileRepo.getLoadedOrUnloadedAsset(editData.newId).harvestable;
-            }
+        if (!isTileNone(editData.prevId)) {
+            prevHarvestable = tileRepo.getLoadedOrUnloadedAsset(editData.prevId).harvestable;
+        }
+        if (!isTileNone(editData.newId)) {
+            newHarvestable = tileRepo.getLoadedOrUnloadedAsset(editData.newId).harvestable;
+        }
 
-            if (newHarvestable != prevHarvestable) {
-                const SubchunkIndex registryIndex = mOwner->getSubchunkIndexFromTileIndex(editData.tileIndex);
-                HarvestableSubchunkRegistry& subchunkRegistry = mRegistries[registryIndex];
-                if (prevHarvestable != TileHarvestable::None) {
-                    --mTotalHarvestables[e_cast(prevHarvestable)];
-                    --subchunkRegistry.mTotalHarvestables[e_cast(prevHarvestable)];
-                    if (newHarvestable != TileHarvestable::None) {
-                        // Replacing harvestable with a new harvestable
-                        ++mTotalHarvestables[e_cast(newHarvestable)];
-                        ++subchunkRegistry.mTotalHarvestables[e_cast(newHarvestable)];
-                        subchunkRegistry.mHarvestablePositions[editData.tileIndex] = newHarvestable;
-                    }
-                    else {
-                        subchunkRegistry.mHarvestablePositions.erase(editData.tileIndex);
-                    }
-                } else {
-                    // Simply adding a new harvestable where there was none before
+        if (newHarvestable != prevHarvestable) {
+            const SubchunkIndex registryIndex = mOwner->getSubchunkIndexFromTileIndex(editData.tileIndex);
+            HarvestableSubchunkRegistry& subchunkRegistry = mRegistries[registryIndex];
+            if (prevHarvestable != TileHarvestable::None) {
+                --mTotalHarvestables[e_cast(prevHarvestable)];
+                --subchunkRegistry.mTotalHarvestables[e_cast(prevHarvestable)];
+                if (newHarvestable != TileHarvestable::None) {
+                    // Replacing harvestable with a new harvestable
                     ++mTotalHarvestables[e_cast(newHarvestable)];
                     ++subchunkRegistry.mTotalHarvestables[e_cast(newHarvestable)];
                     subchunkRegistry.mHarvestablePositions[editData.tileIndex] = newHarvestable;
                 }
+                else {
+                    subchunkRegistry.mHarvestablePositions.erase(editData.tileIndex);
+                }
+            } else {
+                // Simply adding a new harvestable where there was none before
+                ++mTotalHarvestables[e_cast(newHarvestable)];
+                ++subchunkRegistry.mTotalHarvestables[e_cast(newHarvestable)];
+                subchunkRegistry.mHarvestablePositions[editData.tileIndex] = newHarvestable;
             }
         }
     }

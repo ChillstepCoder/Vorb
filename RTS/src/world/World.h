@@ -35,7 +35,6 @@ class CombatContext;
 class NavWorld;
 class FishEcosystem;
 class WorldRenderState;
-class VisibilityManager;
 class WeatherManager;
 class WorldSaveContext;
 
@@ -98,7 +97,6 @@ public:
     ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
     FishEcosystem& getFishEcosystem() const { return *mFishEcosystem; }
     IEffectContext& getEffectContext() const { return *mEffectContext; }
-    VisibilityManager& getVisibilityManager() const { return *mVisibilityManager; }
     WeatherManager& getWeatherManager() const { return *mWeatherManager; }
     HostSimContext* tryGetHostSimContext() const { return mHostSimContext.get(); }
     SimECS* tryGetSimECS() const;
@@ -117,7 +115,7 @@ public:
     f32 getTerrainHeightAtPoint(f32v2 worldPos) const;
 
     // Queries
-    bool terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer);
+    bool terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource);
     void efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);
     
     // Structures TODO: Needs to be StructureRef so it isnt destroyed
@@ -193,8 +191,6 @@ private:
     std::unique_ptr<FishEcosystem> mFishEcosystem;
     // Effects
     std::unique_ptr<IEffectContext> mEffectContext;
-    // Visibility
-    std::unique_ptr<VisibilityManager> mVisibilityManager;
     // Weather
     std::unique_ptr<WeatherManager> mWeatherManager;
     // Factions 

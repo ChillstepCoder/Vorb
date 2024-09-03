@@ -328,8 +328,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([tileHandlePtr]() {
                     TileContainer* container = tileHandlePtr->getMutableContainer();
-                    container->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Ground, TILE_ID_NONE, 0);
-                    container->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TILE_ID_NONE, 0);
+                    container->setTile(tileHandlePtr->tileIndex, TILE_ID_NONE, 0);
                     delete tileHandlePtr;
                 });
             }
@@ -338,7 +337,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
             if (mSelectedTileHandle.isValid()) {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([tileHandlePtr]() {
-                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::get().getTileID(CStrToken("tree_a")), 0);
+                    tileHandlePtr->getMutableContainer()->setTile(tileHandlePtr->tileIndex, TileRepository::get().getTileID(CStrToken("tree_a")), 0);
                     delete tileHandlePtr;
                 });
             }
@@ -347,7 +346,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
             if (mSelectedTileHandle.isValid()) {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([tileHandlePtr]() {
-                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::get().getTileID(CStrToken("bush_med")), 0);
+                    tileHandlePtr->getMutableContainer()->setTile(tileHandlePtr->tileIndex, TileRepository::get().getTileID(CStrToken("bush_med")), 0);
                     delete tileHandlePtr;
                 });
             }
@@ -356,7 +355,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
             if (mSelectedTileHandle.isValid()) {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([tileHandlePtr]() {
-                    tileHandlePtr->getMutableContainer()->setTileLayer(tileHandlePtr->tileIndex, TileLayer::Main, TileRepository::get().getTileID(CStrToken("rock1")), 0);
+                    tileHandlePtr->getMutableContainer()->setTile(tileHandlePtr->tileIndex, TileRepository::get().getTileID(CStrToken("rock1")), 0);
                     delete tileHandlePtr;
                 });
             }

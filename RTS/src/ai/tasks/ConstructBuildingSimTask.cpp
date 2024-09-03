@@ -980,21 +980,21 @@ void ConstructBuildingSimTask::updateConstructFull(World& world, entt::registry&
                 BuildingBlueprintTileTarget& target = mContext.blueprint.tileTargets[data.targetIndex];
                 tileIndex = target.tileIndex;
                 target.fillableRecipe.setConstructed(true);
-                container.setTileLayer(tileIndex, TileLayer::Main, target.id, 0);
+                container.setTile(tileIndex, target.id, 0);
                 break;
             }
             case BuildContextTargetData::Type::Wall: {
                 BuildingBlueprintWallTarget& target = mContext.blueprint.wallTargets[data.targetIndex];
                 tileIndex = target.tileIndex;
                 target.fillableRecipe.setConstructed(true);
-                container.setTileLayer(tileIndex, TileLayer::Main, target.id, 0);
+                container.setTile(tileIndex, target.id, 0);
                 break;
             }
             case BuildContextTargetData::Type::Stairs: {
                 StairTileTarget& target = mContext.blueprint.stairTargets[data.targetIndex];
                 tileIndex = target.piece.pos;
                 target.fillableRecipe.setConstructed(true);
-                container.setTileLayer(tileIndex, TileLayer::Main, target.piece.isFlatPart ? mContext.blueprint.stairsFlatTileID : mContext.blueprint.stairsTileID, 0);
+                container.setTile(tileIndex, target.piece.isFlatPart ? mContext.blueprint.stairsFlatTileID : mContext.blueprint.stairsTileID, 0);
                 const f32 height = target.piece.height * STAIR_TILE_HEIGHT;
                 // TODO: TileContainerLoader also uses floor true Z pos???
                 container.setTileGroundZPosition(tileIndex, height);

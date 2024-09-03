@@ -266,6 +266,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                     continue;
                 }
                 const Tile& tile = tiles[index];
+                const TileID floorId = tileData.floorIds[index];
                 tileFineNavData.zPositionOffsetFromFloor = tile.getGroundZOffset();
                 // Impassible or empty tiles are not part of navgraph
                 if (IsTileNavBlocked(tile.getFlags())) {
@@ -273,7 +274,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
                     continue;
                 }
                 // Only terrain tiles can be empty
-                if (!isTerrain && tile.isEmpty()) {
+                if (!isTerrain && tile.isEmpty() && isTileNone(floorId)) {
                     continue;
                 }
                 tileFineNavData.isOwned = true;
@@ -285,10 +286,9 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
 
                 // ================= Fine Nav Data =================
                 // TODO: which tile do we use for path weight?
-                const TileID groundId = tile.getGroundID();
                 const TileID mainId = tile.getMainID();
-                if (groundId != TILE_ID_NONE) {
-                    tileFineNavData.pathWeight = tileRepo.getLoadedOrUnloadedAsset(groundId).pathWeight;
+                if (floorId != TILE_ID_NONE) {
+                    tileFineNavData.pathWeight = tileRepo.getLoadedOrUnloadedAsset(floorId).pathWeight;
                 }
                 if (mainId != TILE_ID_NONE) {
                     // Floating point multiply

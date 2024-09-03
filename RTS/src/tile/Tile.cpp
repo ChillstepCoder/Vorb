@@ -2,6 +2,14 @@
 #include "tile/Tile.h"
 
 #include "resources/TileRepository.h"
+// TODO: REMOVE for random rotation
+#include "math/Random.h"
+
+// TODO: REMOVE for random rotation
+f32 getTileModelRotationAtPosition(f32v2 worldPos) {
+    return Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI;
+}
+
 
 void Tile::setTileFlag(TileFlags flag) {
     ASSERT_GAME_THREAD();
@@ -13,18 +21,8 @@ void Tile::overwriteTileFlags(TileFlags flags) {
     tileFlags = flags;
 }
 
-void Tile::setOrientation(Cartesian dir, TileLayer layer) {
-    switch (layer) {
-        case TileLayer::Ground: {
-            orientation.orientationBase = dir;
-            break;
-        }
-        case TileLayer::Main: {
-            orientation.orientationMain = dir;
-            break;
-        }
-    }
-    static_assert(e_cast(TileLayer::COUNT) == 2);
+void Tile::setOrientation(Cartesian dir) {
+    orientation = dir;
 }
 
 void Tile::clearTileFlag(TileFlags flag) {
@@ -37,41 +35,29 @@ void Tile::zeroTileFlags() {
     tileFlags = 0;
 }
 
-Tile::Tile(TileID ground, TileID mid) {
-    groundLayer = ground;
-    mainLayer = mid;
+Tile::Tile(TileID id) {
+    mainLayer = id;
 }
 
-Tile::Tile(TileID ground, TileID mid, f32 zPos) {
-    groundLayer = ground;
-    mainLayer = mid;
+Tile::Tile(TileID id, f32 zPos) {
+    mainLayer = id;
     groundZOffset = zPos;
     // TODO: Do we need to update thread safe layers here?????
     // add TILE_FLAG_QUEUED_THREADSAFE_UPDATE??
 }
 
-Tile::Tile(TileID ground, TileID mid, f32 zPos, TileFlags flags) : tileFlags(flags){
-    groundLayer = ground;
-    mainLayer = mid;
+Tile::Tile(TileID id, f32 zPos, TileFlags flags) : tileFlags(flags){
+    mainLayer = id;
     groundZOffset = zPos;
     // TODO: Do we need to update thread safe layers here?????
     // add TILE_FLAG_QUEUED_THREADSAFE_UPDATE??
 }
 
-bool Tile::hasHarvestableResource(TileHarvestable resource, TileLayer* outLayer) const {
+bool Tile::isHarvestableResource(TileHarvestable resource) const {
     ASSERT_GAME_THREAD();
     TileRepository& tileRepo = TileRepository::get();
-    for (int i = 0; i < TILE_LAYER_COUNT; ++i) {
-        // Harvestble resources only exist on ground floor
-        TileID tileId = layers[i];
-        if (tileId != TILE_ID_NONE) {
-            if (tileRepo.getLoadedOrUnloadedAsset(tileId).harvestable == resource) {
-                if (outLayer) {
-                    *outLayer = (TileLayer)i;
-                }
-                return true;
-            }
-        }
+    if (tileRepo.getLoadedOrUnloadedAsset(mainLayer).harvestable == resource) {
+        return true;
     }
     return false;
 }
@@ -118,7 +104,7 @@ bool Tile::canNavInDirection(Cartesian8 dir) const {
     ui8 navMask = TileRepository::get().getLoadedOrUnloadedAsset(mainLayer).navMask;
     // South is base case
     // Rotate dir based on orientation to match the mask
-    switch (orientation.orientationMain) {
+    switch (orientation) {
         case Cartesian::WEST:
             dir = ORIENTATION_ROTATE_DIR_WEST[e_cast(dir)];
             break;
@@ -137,7 +123,7 @@ f32 Tile::getEdgeHeightOffset(Cartesian dir) const {
     const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(mainLayer);
     // TODO: Cut out this check
     Cartesian8 dir8 = CARTESIAN_TO_CARTESIAN8[e_cast(dir)];
-    switch (orientation.orientationMain) {
+    switch (orientation) {
         case Cartesian::WEST:
             dir8 = ORIENTATION_ROTATE_DIR_WEST[e_cast(dir8)];
             break;
@@ -152,20 +138,13 @@ f32 Tile::getEdgeHeightOffset(Cartesian dir) const {
     return tileData.heightOffsets[e_cast(dir)];
 }
 
-Cartesian Tile::getOrientation(TileLayer layer) const {
-    switch (layer) {
-        case TileLayer::Ground: {
-            return orientation.orientationBase;
-        }
-        case TileLayer::Main: {
-            return orientation.orientationMain;
-        }
-    }
+Cartesian Tile::getOrientation() const {
+    return orientation;
 }
 
 bool Tile::canAddTileData(const TileDef& tile) const {
     ASSERT_GAME_THREAD();
-    return layers[tile.layer] == TILE_ID_NONE;
+    return mainLayer == TILE_ID_NONE;
 }
 
 void Tile::setGroundZOffset(f32 groundZPosition) {
@@ -183,10 +162,3 @@ void Tile::setGroundZOffset(f32 groundZPosition) {
 //    }
 //    walls[e_cast(cartesianSouthOrWest)] = wall;
 //}
-
-
-// TODO: REMOVE
-#include "math/Random.h"
-f32 getTileModelRotationAtPosition(f32v2 worldPos) {
-    return Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI;
-}

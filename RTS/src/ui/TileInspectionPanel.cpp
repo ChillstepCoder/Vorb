@@ -37,8 +37,13 @@ inline void showTileFlagsMainThread(const TileHandle& tileHandle) {
 }
 
 inline void showTileLayerMainThread(const char* format, int layer, const TileHandle& tileHandle) {
-
-    const ui32 id = tileHandle.getTile().getLayers()[layer];
+    ui32 id;
+    if (layer == 0) {
+        id = tileHandle.getTile().getMainID();
+    }
+    else {
+        id = tileHandle.getFloorTile();
+    }
     if (id == TILE_ID_NONE) {
         ImGui::Text(format, id, "NONE");
     }

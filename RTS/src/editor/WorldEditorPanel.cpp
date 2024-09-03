@@ -686,7 +686,7 @@ void WorldEditorPanel::updateTileEdit() {
                     TileIndex tileIndex = std::get<1>(*taskData);
                     const TileDef& data = TileRepository::get().getLoadedOrUnloadedAsset(std::get<2>(*taskData));
                     TileContainer& tileContainer = *chunk.getTileContainer();
-                    tileContainer.setTileLayer(tileIndex, data);
+                    tileContainer.setTile(tileIndex, data);
                 }
                 delete taskData;
             });

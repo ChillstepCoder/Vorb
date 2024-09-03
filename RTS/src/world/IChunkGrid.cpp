@@ -8,8 +8,6 @@
 
 #include "world/ecosystem/FishEcosystem.h"
 
-#include "visibility/VisibilityManager.h"
-
 // TODO: SrvChunkGrid?
 
 #include "services/Services.h"
@@ -269,10 +267,6 @@ void IChunkGrid::updateActivatingChunks() {
                         chunk.mTileContainer->setDidInitNav();
                     }
 
-                    // Begin vis load
-                    // TODO: Make this system real
-                    mWorld->getVisibilityManager().initContainerVisibility(*chunk.mTileContainer);
-
                     // Tile container loaded
                     chunk.mTileContainer->setState(TileContainerState::READY);
 
@@ -285,11 +279,11 @@ void IChunkGrid::updateActivatingChunks() {
                     loadFinishedEvent.container = chunk.mTileContainer;
                     mWorld->getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 
-                    chunk.setState(ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY);
+                    chunk.setState(ChunkState::LOADING_MESH_PHYSICS_NAV);
                 }
                 break;
             }
-            case ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY: {
+            case ChunkState::LOADING_MESH_PHYSICS_NAV: {
                 if (chunk.mTileContainer->didInitMeshPhysicsAndNav()) {
                     mActivatingChunks[i] = mActivatingChunks.back();
                     mActivatingChunks.pop_back();
@@ -577,7 +571,7 @@ void IChunkGrid::onAllNeighborsAlive(Chunk& chunk) {
         case ChunkState::WAITING_BUILDINGS:
             panic("Tried to re-load chunk already being loaded");
             break;
-        case ChunkState::LOADING_MESH_PHYSICS_NAV_VISIBILITY:
+        case ChunkState::LOADING_MESH_PHYSICS_NAV:
             panic("Tried to re-load chunk already being loaded (mesh)");
             break;
         case ChunkState::ACTIVATED:

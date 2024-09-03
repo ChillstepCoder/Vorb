@@ -1030,7 +1030,7 @@ void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelCol
     assert(physicsData.mTileKeyToPhysBodyID.empty());
 
     for (auto& it : gatherer.mRigidBodiesToAdd) {
-        const TileKey key = TileKey{ it.ownerTilePosition, it.tileId, it.layer };
+        const TileKey key = TileKey{ it.ownerTilePosition, it.tileId };
         physicsData.mTileKeyToPhysBodyID.emplace(key, createTileBody(gatherer.mContainerId, it.ownerTilePosition, it.position, it.orientation, it.modelId, it.scale));
     }
 }
@@ -1043,7 +1043,7 @@ void PhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticModel
     addedKeys.reserve(gatherer.mRigidBodiesToAdd.size());
 
     for (auto& it : gatherer.mRigidBodiesToAdd) {
-        const TileKey key = TileKey{ it.ownerTilePosition, it.tileId, it.layer };
+        const TileKey key = TileKey{ it.ownerTilePosition, it.tileId };
         auto&& pit = physicsData.mTileKeyToPhysBodyID.find(key);
         // Only add if it doesn't already exist
         if (pit == physicsData.mTileKeyToPhysBodyID.end()) {

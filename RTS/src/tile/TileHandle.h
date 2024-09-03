@@ -22,6 +22,7 @@ struct TileHandle {
     i32v3 getWorldPos3D() const;
     ui32v3 getContainerOffset() const;
     const Tile& getTile() const;
+    const TileID getFloorTile() const;
     LiteTileHandle toLiteTileHandle() const;
     ChunkID getChunkIDAtPos() const;
     World& getWorld() const;

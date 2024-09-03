@@ -9,7 +9,7 @@ enum class ChunkState : ui8 {
     LOADING_TILES, // Only worker thread can change from LOADING_TILES to TILE_LOAD_FINISHED
     WAITING_BUILDINGS, // Waiting for all dependant buildings to be loaded
     CAN_GENERATE_NAV, // All states after this point can generate navmesh
-    LOADING_MESH_PHYSICS_NAV_VISIBILITY = CAN_GENERATE_NAV,
+    LOADING_MESH_PHYSICS_NAV = CAN_GENERATE_NAV,
     ACTIVATED, // Fully simulated
     COUNT
 };

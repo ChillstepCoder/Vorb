@@ -25,7 +25,7 @@
 //#include <glm/gtx/matrix_decompose.hpp>
 
 // Types of events we handle
-constexpr ui8 MODEL_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeLayer) | e_cast(TileContainerEditEventType::ChangeOrientation) | e_cast(TileContainerEditEventType::ChangeZPos);
+constexpr ui8 MODEL_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeTileID) | e_cast(TileContainerEditEventType::ChangeOrientation) | e_cast(TileContainerEditEventType::ChangeZPos);
 static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
 
 // Water not supported
@@ -360,8 +360,8 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                         addCrossfadingModel(transitionData.mTargetLOD, instanceDrawData, drawDataArray, pos, instanceIndex, targetCrossfade);
 
                         // DrawShadows for whichever is closer
-                        if (targetCrossfade > 0.5f) {
-                            // Draw target shadow
+                        if (targetCrossfade < 0.5f) {
+                            // Draw current shadow
                             if ((int)lodParams.shadowLodDetail > (int)transitionData.mCurrentLOD) {
                                 for (int m = 0; m < instanceDrawData.key.count; ++m) {
                                     const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
@@ -372,7 +372,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                                 }
                             }
                         } else {
-                            // Draw source shadow
+                            // Draw target shadow
                             if ((int)lodParams.shadowLodDetail > (int)transitionData.mTargetLOD) {
                                 for (int m = 0; m < instanceDrawData.key.count; ++m) {
                                     const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
@@ -660,7 +660,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
     switch (editEvent.type) {
         case TileContainerEditEventType::ChangeFlags:
             break;
-        case TileContainerEditEventType::ChangeLayer: {
+        case TileContainerEditEventType::ChangeTileID: {
             for (ui32 i = 0; i < editEvent.editCount; ++i) {
                 TileContainerEditLayerEventData& edit = editEvent.changeLayerArray[i];
                 const TileID prevId = edit.prevId;

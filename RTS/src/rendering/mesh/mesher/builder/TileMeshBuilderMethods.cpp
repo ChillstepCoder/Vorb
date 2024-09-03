@@ -202,58 +202,40 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
 
     //LOG_DEBUG("Meshing Container {}", tileContainer.getId());
 
-    // =============== Mesh tiles ===============
-    TileIndex index = 0;
+    TileIndex index;
     i32v3 xyz;
-    for (xyz.z = 0; xyz.z < tileDims.z; ++xyz.z) {
-        for (xyz.y = 0; xyz.y < tileDims.y; ++xyz.y) {
-            for (xyz.x = 0; xyz.x < tileDims.x; ++xyz.x, ++index) {
-                const Tile& tile = tiles.tiles[index];
-                for (int layerIndex = 0; layerIndex < TILE_LAYER_COUNT; ++layerIndex) {
-                    TileID layerTile = tile.getLayers()[layerIndex];  // TODO: Thread safe when async
-                    // Blocked or invalid tiles have no render (Unowned tiles should all be NONE)
-                    if (isTileNone(layerTile)) {
-                        continue;
-                    }
-                    const TileDef& tileData = tileRepo.getLoadedOrUnloadedAsset(layerTile);
+    if (tiles.floorIds.size()) {
+        index = 0;
+        for (xyz.z = 0; xyz.z < tileDims.z; ++xyz.z) {
+            for (xyz.y = 0; xyz.y < tileDims.y; ++xyz.y) {
+                for (xyz.x = 0; xyz.x < tileDims.x; ++xyz.x, ++index) {
+                    const TileID floorTile = tiles.floorIds[index];
+                    if (!isTileNone(floorTile)) {
 
-                    // Tile mesh
-                    // Flora mesh ONLY
-                    if (tileData.shape == TileShape::THIN) {
-                        // Billboards
-                        const f32v3 tilePosition = spatialGrid.getTileCenterWorldPos3D(index, tiles.tiles[index].getGroundZOffset());
-                        builders.addMaterial(tileData.materialData[0].id);
-                        builders.billboardBuilder.addBillboard(tilePosition, tileData.dims, tileData.materialData[0].id, true);
-                    }
-                    else if (tileData.shape == TileShape::BLOCK) {
-                        // TODO: Handle other materials?
-                        builders.addMaterial(tileData.materialData[0].id);
-                        TileMeshBuilderMethods::addBlock(builders.staticBuilder, f32v3(xyz.x, xyz.y, xyz.z * floorHeight), tiles.tiles[index], tileData, physics);
-                    }
-                    else if (tileData.shape == TileShape::FLOOR) {
+                        const TileDef& tileData = tileRepo.getLoadedOrUnloadedAsset(floorTile);
                         builders.addMaterial(tileData.materialData[0].id);
                         // Adjacent shapes are for culling (ONLY WORKS ON STRUCTURE WITH UNIFORM FLOOR POSITIONS)
                         TileShape adjacentShapes[4] = { TileShape::NONE, TileShape::NONE, TileShape::NONE, TileShape::NONE };
                         if (xyz.y > 0) {
-                            TileID south = tiles.tiles[index - tileDims.x].getLayers()[layerIndex];
+                            TileID south = tiles.floorIds[index - tileDims.x];
                             if (!isTileNone(south)) {
                                 adjacentShapes[e_cast(Cartesian::SOUTH)] = tileRepo.getLoadedOrUnloadedAsset(south).shape;
                             }
                         }
                         if (xyz.x > 0) {
-                            TileID west = tiles.tiles[index - 1].getLayers()[layerIndex];
+                            TileID west = tiles.floorIds[index - 1];
                             if (!isTileNone(west)) {
                                 adjacentShapes[e_cast(Cartesian::WEST)] = tileRepo.getLoadedOrUnloadedAsset(west).shape;
                             }
                         }
                         if (xyz.x < tileDims.x - 1) {
-                            TileID east = tiles.tiles[index + 1].getLayers()[layerIndex];
+                            TileID east = tiles.floorIds[index + 1];
                             if (!isTileNone(east)) {
                                 adjacentShapes[e_cast(Cartesian::EAST)] = tileRepo.getLoadedOrUnloadedAsset(east).shape;
                             }
                         }
                         if (xyz.y < tileDims.y - 1) {
-                            TileID north = tiles.tiles[index + tileDims.x].getLayers()[layerIndex];
+                            TileID north = tiles.floorIds[index + tileDims.x];
                             if (!isTileNone(north)) {
                                 adjacentShapes[e_cast(Cartesian::NORTH)] = tileRepo.getLoadedOrUnloadedAsset(north).shape;
                             }
@@ -261,50 +243,74 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
 
                         TileMeshBuilderMethods::addFloor(builders.staticBuilder, adjacentShapes, floorHeight, xyz, tileData.materialData[0], physics);
                     }
-                    else if (tileData.shape == TileShape::STAIRS) {
-                        builders.addMaterial(tileData.materialData[0].id);
-                        TileMeshBuilderMethods::addStairs(builders.staticBuilder, floorHeight, xyz, tile.getGroundZOffset(), tile.getOrientation((TileLayer)layerIndex), tileData, physics);
+                }
+            }
+        }
+    }
+
+    // =============== Mesh tiles ===============
+    index = 0;
+    for (xyz.z = 0; xyz.z < tileDims.z; ++xyz.z) {
+        for (xyz.y = 0; xyz.y < tileDims.y; ++xyz.y) {
+            for (xyz.x = 0; xyz.x < tileDims.x; ++xyz.x, ++index) {
+                const Tile& tile = tiles.tiles[index];
+                TileID layerTile = tile.getMainID();  // TODO: Thread safe when async
+                // Blocked or invalid tiles have no render (Unowned tiles should all be NONE)
+                if (isTileNone(layerTile)) {
+                    continue;
+                }
+                const TileDef& tileData = tileRepo.getLoadedOrUnloadedAsset(layerTile);
+
+                // Tile mesh
+                // Flora mesh ONLY
+                if (tileData.shape == TileShape::THIN) {
+                    // Billboards
+                    const f32v3 tilePosition = spatialGrid.getTileCenterWorldPos3D(index, tiles.tiles[index].getGroundZOffset());
+                    builders.addMaterial(tileData.materialData[0].id);
+                    builders.billboardBuilder.addBillboard(tilePosition, tileData.dims, tileData.materialData[0].id, true);
+                }
+                else if (tileData.shape == TileShape::BLOCK) {
+                    // TODO: Handle other materials?
+                    builders.addMaterial(tileData.materialData[0].id);
+                    TileMeshBuilderMethods::addBlock(builders.staticBuilder, f32v3(xyz.x, xyz.y, xyz.z * floorHeight), tiles.tiles[index], tileData, physics);
+                }
+                else if (tileData.shape == TileShape::STAIRS) {
+                    builders.addMaterial(tileData.materialData[0].id);
+                    TileMeshBuilderMethods::addStairs(builders.staticBuilder, floorHeight, xyz, tile.getGroundZOffset(), tile.getOrientation(), tileData, physics);
+                }
+                else if (tileData.shape == TileShape::MODEL) {
+                    f32v3 worldPos = spatialGrid.getTileCenterWorldPos3D(index, tiles.tiles[index].getGroundZOffset());
+                    ui8 variantIndex = 0;
+                    variantIndex = tileData.modelVariants[tiles.tiles[index].getMainLayerVariant()];
+
+                    TileDamageDataPtr damageData;
+                    if (tiles.tiles[index].hasFlag(TileFlags::IS_DAMAGED)) {
+                        auto it = tiles.damageData.find(index);
+                        if (it != tiles.damageData.end()) {
+                            damageData = std::make_unique<TileDamageData>(it->second);
+                        }
                     }
-                    else if (tileData.shape == TileShape::MODEL) {
-                        f32v3 worldPos = spatialGrid.getTileCenterWorldPos3D(index, tiles.tiles[index].getGroundZOffset());
-                        ui8 variantIndex = 0;
-                        if (layerIndex == TILE_LAYER_MAIN) [[likely]] {
-                            variantIndex = tileData.modelVariants[tiles.tiles[index].getMainLayerVariant()];
-                        }
-                        else {
-                            // Should be impossible?
-                            panic("Ground tile {} - {} has a model shape on a non-main layer", index, tiles.tiles[index].getGroundID());
-                        }
+                    f32 rotation = getTileModelRotationAtPosition(worldPos);
 
-                        TileDamageDataPtr damageData;
-                        if (tiles.tiles[index].hasFlag(TileFlags::IS_DAMAGED)) {
-                            auto it = tiles.damageData.find(index);
-                            if (it != tiles.damageData.end()) {
-                                damageData = std::make_unique<TileDamageData>(it->second);
-                            }
-                        }
-                        f32 rotation = getTileModelRotationAtPosition(worldPos);
-
-                        const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
-                        f32 scale;
-                        if (const FloraTileData* data = std::get_if<FloraTileData>(&tile.getTypeData())) {
-                            scale = modelDef.getScaleFromFloraAge(data->age);
-                        }
-                        else {
-                            scale = modelDef.getRandomScaleAtPosition(worldPos);
-                        }
-                        if (heightData) {
-                            //sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
-                            builders.modelGatherer.addInstance(
-                                tileData.modelId, index, worldPos, f32v3(0.0f, 0.0f, 1.0f), rotation, variantIndex, std::move(damageData), scale
-                            );
-                        }
-                        else {
-                            builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, rotation, variantIndex, std::move(damageData), scale);
-                        }
-                        if (modelDef.mCollisionShapeID != INVALID_COLLISION_SHAPE_ID) {
-                            physics.addTrackedTileModelCollider(index, layerTile, layerIndex, worldPos, f32q(f32v3(0.0f, 0.0f, rotation)), scale, tileData.modelId);
-                        }
+                    const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
+                    f32 scale;
+                    if (const FloraTileData* data = std::get_if<FloraTileData>(&tile.getTypeData())) {
+                        scale = modelDef.getScaleFromFloraAge(data->age);
+                    }
+                    else {
+                        scale = modelDef.getRandomScaleAtPosition(worldPos);
+                    }
+                    if (heightData) {
+                        //sHeightmapGrid->getHeightDataAt(chunk.getHeightmapPatchID())->data;
+                        builders.modelGatherer.addInstance(
+                            tileData.modelId, index, worldPos, f32v3(0.0f, 0.0f, 1.0f), rotation, variantIndex, std::move(damageData), scale
+                        );
+                    }
+                    else {
+                        builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, rotation, variantIndex, std::move(damageData), scale);
+                    }
+                    if (modelDef.mCollisionShapeID != INVALID_COLLISION_SHAPE_ID) {
+                        physics.addTrackedTileModelCollider(index, layerTile, worldPos, f32q(f32v3(0.0f, 0.0f, rotation)), scale, tileData.modelId);
                     }
                 }
             }

@@ -39,9 +39,6 @@
 #include "weather/WeatherManager.h"
 #include "faction/HostFactionManager.h"
 
-#include "visibility/VisibilityManager.h"
-#include "visibility/VisibilityThread.h"
-
 // TODO: Move this stuff out with a separate manager class
 #include "rendering/renderstate/GameRenderStateManager.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
@@ -146,8 +143,6 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     mItemStockpileRegistry = std::make_unique<ItemStockpileRegistry>(*this);
     // Fish
     mFishEcosystem = std::make_unique<FishEcosystem>(*this);
-    // Visibility
-    mVisibilityManager = std::make_unique<VisibilityManager>(*this);
     // Weather
     mWeatherManager = std::make_unique<WeatherManager>(*this);
     // Save
@@ -258,11 +253,6 @@ void World::tick(f32 elapsedSec) {
         mNavWorld->tickGameThread();
     }
 
-    // Visibility
-   /* if (VisibilityThread::hasInstance()) {
-        VisibilityThread::getInstance().mainThreadUpdate();
-    }*/
-
     // Fish
     mFishEcosystem->tickGameThread(elapsedSec);
 
@@ -298,7 +288,6 @@ void World::shutdown() {
     mCombatContext.reset();
     mItemStockpileRegistry.reset();
     mFishEcosystem.reset();
-    mVisibilityManager.reset();
     mWeatherManager.reset();
     mNavWorld.reset();
     mChunkGrid.reset();
@@ -405,10 +394,10 @@ f32 World::getTerrainHeightAtPoint(f32v2 worldPos) const {
     return mHeightmapGrid->computeHeightAtPoint<true>(worldPos);
 }
 
-bool World::terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource, TileLayer* outLayer) {
+bool World::terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource) {
     TileHandle handle = getTerrainTileHandleAtWorldPos(worldPos);
     if (handle.isValid()) {
-        return handle.getTile().hasHarvestableResource(resource, outLayer);
+        return handle.getTile().isHarvestableResource(resource);
     }
     return false;
 }

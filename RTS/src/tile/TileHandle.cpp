@@ -88,6 +88,11 @@ inline const Tile& TileHandle::getTile() const {
     return container->getTileAt(tileIndex);
 }
 
+const TileID TileHandle::getFloorTile() const {
+    assert(container);
+    return container->getFloorTile(tileIndex);
+}
+
 LiteTileHandle TileHandle::toLiteTileHandle() const {
     return LiteTileHandle(container->getId(), tileIndex);
 }

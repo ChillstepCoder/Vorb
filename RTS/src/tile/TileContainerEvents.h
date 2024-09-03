@@ -17,7 +17,7 @@ enum class TileContainerEventType {
 
 enum class TileContainerEditEventType : ui8 {
     ChangeFlags       = BIT(0),
-    ChangeLayer       = BIT(1),
+    ChangeTileID      = BIT(1),
     ChangeZPos        = BIT(2),
     ChangeOrientation = BIT(3),
     ChangeWall        = BIT(4),
@@ -37,7 +37,6 @@ struct TileContainerEditLayerEventData {
     TileID prevId;
     TileID newId;
     ui8 newVariant;
-    TileLayer layer;
     TileTypeDataVariant typeData;
 };
 
@@ -51,8 +50,8 @@ struct TileContainerEditZPosEventData {
 struct TileContainerEditOrientationEventData {
     TileIndex tileIndex;
     f32v3 worldPosition;
-    TileOrientation prevOrientation;
-    TileOrientation newOrientation;
+    Cartesian prevOrientation;
+    Cartesian newOrientation;
 };
 
 struct TileContainerEditEvent {

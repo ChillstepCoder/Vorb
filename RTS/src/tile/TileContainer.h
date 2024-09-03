@@ -8,7 +8,6 @@
 #include "tile/TileSpatialGrid.h"
 #include "tile/TileWallContainer.h"
 #include "tile/TileDamageData.h"
-#include "visibility/TileVisibilityContainer.h"
 
 class Chunk;
 class Building;
@@ -65,10 +64,12 @@ public:
     void updateActiveDynamicTiles();
 
     // =========== Tile mutators ===========
-    bool canAddTileData(TileIndex i, const TileDef& tileData) const;
-    void setTileLayer(TileIndex i, const TileDef& tileData);
-    bool tryAddTileLayer(TileIndex i, const TileDef& tileData);
-    void setTileLayer(TileIndex i, TileLayer layer, TileID id, ui8 variant);
+    bool canSetTile(TileIndex i, const TileDef& tileData) const;
+    void setTile(TileIndex i, const TileDef& tileData);
+    bool trySetTile(TileIndex i, const TileDef& tileData);
+    void setTile(TileIndex i, TileID id, ui8 variant);
+    void setFloorTile(TileIndex i, TileID id);
+    TileID getFloorTile(TileIndex i) const { return mFloorIds.empty() ? TILE_ID_NONE : mFloorIds[i]; }
 
     void setTileFlag(TileIndex i, TileFlags flag);
     void overwriteTileFlags(TileIndex i, TileFlags flags);
@@ -76,12 +77,12 @@ public:
     void clearTileFlags(TileIndex i);
     void setTileGroundZPosition(TileIndex i, f32 groundZPosition);
     void bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editData, size_t count);
-    void setTileOrientation(TileIndex i, Cartesian dir, TileLayer layer);
+    void setTileOrientation(TileIndex i, Cartesian dir);
     void setWallAt(TileIndex index, Cartesian dir, TileWall wall);
     void setWallsAt(TileIndex index, TileWall walls[4]);
 
     // Returns true if tile was destroyed by this adjust (i.e. health becomes <= 0)
-    bool adjustTileHealth(TileIndex index, TileLayer layer, int healthAdjust, f32v3 impactPosition, f32v3 impactNormal);
+    bool adjustTileHealth(TileIndex index, int healthAdjust, f32v3 impactPosition, f32v3 impactNormal);
 
     const std::vector<DynamicTile>& getDynamicTiles() const { return mDynamicTiles; }
     const TileContainerHarvestableRegistry& getHarvestables() const { return mHarvestableRegistry; }
@@ -167,12 +168,11 @@ public:
     }
     ui32 getRefCount() const { return mRefCount; }
 
-    bool didInitMeshPhysicsAndNav() const { return mDidInitNav && mDidInitMesh && mDidInitPhysics && mDidInitVisibility; }
-    bool didInitMeshPhysics() const { return mDidInitMesh && mDidInitPhysics && mDidInitVisibility; }
+    bool didInitMeshPhysicsAndNav() const { return mDidInitNav && mDidInitMesh && mDidInitPhysics; }
+    bool didInitMeshPhysics() const { return mDidInitMesh && mDidInitPhysics; }
     void setDidInitMesh() const { mDidInitMesh = true; }
     void setDidInitPhysics() const { mDidInitPhysics = true; }
     void setDidInitNav() const { mDidInitNav = true; }
-    void setDidInitVisibility() const { mDidInitVisibility = true; }
 
     // =========== Dirty bits  ===========
     bool isDirtyData() const { return mDirtyData; }
@@ -213,11 +213,8 @@ private:
 
     // Tile data
     std::vector<Tile> mTiles; // TODO: Memory recycler and or compression
+    std::vector<TileID> mFloorIds; // Only used by buildings
     TileWallContainer mTileWallsContainer; // TODO: Pointer so we remove from chunk
-
-    // Visibility
-    mutable std::shared_mutex mVisibilityMutex;
-    TileVisibilityContainer mTileVisibilityContainer;
 
     // Dynamic tiles
     std::vector<DynamicTile> mDynamicTiles; // TODO: Memory recycler and or compression
@@ -231,7 +228,6 @@ private:
     mutable std::atomic_bool mDidInitMesh = false;
     mutable std::atomic_bool mDidInitPhysics = false;
     mutable std::atomic_bool mDidInitNav = false;
-    mutable std::atomic_bool mDidInitVisibility = false;
 
     mutable std::atomic_uint8_t mState = e_cast(TileContainerState::LOADING);
     bool mDirtyData = false;

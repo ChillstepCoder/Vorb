@@ -61,8 +61,8 @@ void TileContainer::freeData() {
     assert(mRefCount.load() == 0);
     std::vector<Tile>().swap(mTiles);
     std::vector<DynamicTile>().swap(mDynamicTiles);
+    std::vector<TileID>().swap(mFloorIds);
     mTileWallsContainer.destroy();
-    mTileVisibilityContainer.destroy();
     mHarvestableRegistry.destroy();
 }
 
@@ -83,30 +83,48 @@ void TileContainer::updateActiveDynamicTiles() {
     }
 }
 
-bool TileContainer::canAddTileData(TileIndex i, const TileDef& tileData) const
+bool TileContainer::canSetTile(TileIndex i, const TileDef& tileData) const
 {
     return mTiles[i].canAddTileData(tileData);
 }
 
-void TileContainer::setTileLayer(TileIndex i, const TileDef& tileData) {
+void TileContainer::setTile(TileIndex i, const TileDef& tileData) {
     assert(isReady());
-    setTileLayer(i, (TileLayer)tileData.layer, (TileID)tileData.getID(), 0);
+    if (tileData.layer == e_cast(TileLayer::Main)) {
+        setTile(i, (TileID)tileData.getID(), 0);
+    }
+    else {
+        setFloorTile(i, tileData.getID());
+    }
 }
 
-bool TileContainer::tryAddTileLayer(TileIndex i, const TileDef& tileData) {
-    assert(isReady());
-    Tile& tile = mTiles[i];
-    if (!tile.canAddTileData(tileData)) {
-        return false;
+void TileContainer::setFloorTile(TileIndex i, TileID id) {
+    {
+        std::lock_guard lock(mSharedMutex);
+        mFloorIds.resize(mTiles.size());
+        mFloorIds[i] = id;
     }
-    setTileLayer(i, (TileLayer)tileData.layer, (TileID)tileData.getID(), 0);
+}
+
+bool TileContainer::trySetTile(TileIndex i, const TileDef& tileData) {
+    assert(isReady());
+    if (tileData.layer == e_cast(TileLayer::Main)) {
+        Tile& tile = mTiles[i];
+        if (!tile.canAddTileData(tileData)) {
+            return false;
+        }
+        setTile(i, (TileID)tileData.getID(), 0);
+    }
+    else {
+        setFloorTile(i, tileData.getID());
+    }
     return true;
 }
 
-void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id, ui8 variant) {
+void TileContainer::setTile(TileIndex i, TileID id, ui8 variant) {
     assert(isReady());
     Tile& tile = mTiles[i];
-    TileID prevId = tile.layers[e_cast(layer)];
+    TileID prevId = tile.mainLayer;
     if (prevId == id) {
         return;
     }
@@ -116,7 +134,7 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id, ui8 va
     TileContainerEditLayerEventData eventData;
 
     TileContainerEditEvent editEvent;
-    editEvent.type = TileContainerEditEventType::ChangeLayer;
+    editEvent.type = TileContainerEditEventType::ChangeTileID;
     editEvent.changeLayerArray = &eventData;
 
     evnt.varEvent = editEvent;
@@ -126,12 +144,11 @@ void TileContainer::setTileLayer(TileIndex i, TileLayer layer, TileID id, ui8 va
     eventData.prevId = prevId;
     eventData.newVariant = variant;
     eventData.newId = id;
-    eventData.layer = layer;
     eventData.typeData = tile.typeDataCopy;
     // Edit
     {
         std::lock_guard lock(mSharedMutex);
-        tile.layers[e_cast(layer)] = id;
+        tile.mainLayer = id;
     }
     // Dispatch notify
     mHarvestableRegistry.onTileLayerChanged(editEvent);
@@ -326,12 +343,12 @@ void TileContainer::bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editDa
     dispatchEditTiles(evnt);
 }
 
-void TileContainer::setTileOrientation(TileIndex i, Cartesian dir, TileLayer layer) {
+void TileContainer::setTileOrientation(TileIndex i, Cartesian dir) {
     assert(isReady());
     assert(i < mTiles.size());
     Tile& tile = mTiles[i];
 
-    if (tile.getOrientation(layer) != dir) {
+    if (tile.getOrientation() != dir) {
 
         TileContainerEvent evnt;
         TileContainerEditOrientationEventData eventData;
@@ -345,7 +362,7 @@ void TileContainer::setTileOrientation(TileIndex i, Cartesian dir, TileLayer lay
         eventData.prevOrientation = tile.orientation;
         {
             std::lock_guard lock(mSharedMutex);
-            tile.setOrientation(dir, layer);
+            tile.setOrientation(dir);
         }
         eventData.newOrientation = tile.orientation;
         eventData.worldPosition = getTileCenterWorldPosition(i);
@@ -381,9 +398,6 @@ void TileContainer::setWallAt(TileIndex index, Cartesian dir, TileWall wall) {
         mTileWallsContainer.setWallAtTile(index, wall, dir);
     }
 
-    // Visibility
-    mTileVisibilityContainer.refreshTileVisibility(index, prevTileWall, wall, dir);
-
     onTileChanged(index);
 }
 
@@ -413,12 +427,10 @@ void TileContainer::setWallsAt(TileIndex index, TileWall walls[4]) {
     onTileChanged(index);
 }
 
-bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healthAdjust, f32v3 impactPosition, f32v3 impactNormal) {
+bool TileContainer::adjustTileHealth(TileIndex index, int healthAdjust, f32v3 impactPosition, f32v3 impactNormal) {
     ASSERT_GAME_THREAD();
 
     healthAdjust = glm::clamp(healthAdjust , -(int)UINT16_MAX, (int)UINT16_MAX);
-
-    assert(layer == TileLayer::Main && "Only main damage currently supported"); // TODO: Support other damage layers
 
     assert(isReady());
     assert(index < mTiles.size());
@@ -426,7 +438,7 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
         return false;
     }
 
-    const TileID tileId = mTiles[index].layers[e_cast(layer)];
+    const TileID tileId = mTiles[index].mainLayer;
     assert(tileId != TILE_ID_NONE && "Tried to damage empty tile");
 
     auto destroyTile = [&](TileContainerEvent evnt) {
@@ -442,7 +454,7 @@ bool TileContainer::adjustTileHealth(TileIndex index, TileLayer layer, int healt
         std::get<TileDamagedEvent>(evnt.varEvent).wasDestroyed = true;
         // Destroy tile
         mTiles[index].clearTileFlag(TileFlags::IS_DAMAGED);
-        setTileLayer(index, TileLayer::Main, TILE_ID_NONE, 0);
+        setTile(index, TILE_ID_NONE, 0);
         // Damage + Death event
         dispatchTileDamaged(evnt);
         mWorld.getTileContainerRepository().dispatchTileDamaged(evnt);
@@ -594,10 +606,14 @@ void TileContainer::copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) co
     PROFILE_SCOPE("copyDataWorkerThread::MESH");
     // Allocate outside critical section
     dataCopy.tiles.resize(mTiles.size());
+    dataCopy.floorIds.resize(mFloorIds.size());
     dataCopy.walls.resizeForCopy(mTiles.size());
     {
         std::shared_lock lock(mSharedMutex);
         memcpy(dataCopy.tiles.data(), mTiles.data(), mTiles.size() * sizeof(Tile));
+        if (mFloorIds.size()) {
+            memcpy(dataCopy.floorIds.data(), mFloorIds.data(), mFloorIds.size() * sizeof(TileID));
+        }
         dataCopy.walls.copyFrom(mTileWallsContainer);
         dataCopy.spatialGrid = mTileSpatialGrid;
         dataCopy.damageData.reserve(mDamagedTiles.size());
@@ -605,6 +621,10 @@ void TileContainer::copyDataWorkerThread(OUT ContainerMeshDataCopy& dataCopy) co
             dataCopy.damageData.emplace_hint(dataCopy.damageData.end(), index, *damageData);
         }
     } // End scope so profiler can do a mutex lock without having this lock, preventing potential deadlock
+    // Simplify lookups
+    if (dataCopy.floorIds.empty()) {
+        dataCopy.floorIds.resize(dataCopy.tiles.size(), TILE_ID_NONE);
+    }
 }
 
 void TileContainer::copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) const {
@@ -613,10 +633,14 @@ void TileContainer::copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) con
     // Allocate outside critical section
     dataCopy.harvestables.resize(mHarvestableRegistry.getRegistryCount());
     dataCopy.tiles.resize(mTiles.size());
+    dataCopy.floorIds.resize(mFloorIds.size());
     dataCopy.walls.resizeForCopy(mTiles.size());
     {
         std::shared_lock lock(mSharedMutex);
         memcpy(dataCopy.tiles.data(), mTiles.data(), mTiles.size() * sizeof(Tile));
+        if (mFloorIds.size()) {
+            memcpy(dataCopy.floorIds.data(), mFloorIds.data(), mFloorIds.size() * sizeof(TileID));
+        }
         dataCopy.walls.copyFrom(mTileWallsContainer);
         for (size_t i = 0; i < dataCopy.harvestables.size(); ++i) {
             // Only copying positions cause its all we care about when navving
@@ -630,6 +654,10 @@ void TileContainer::copyDataWorkerThread(OUT ContainerNavDataCopy& dataCopy) con
             dataCopy.ownedDTiles.resize(0);
         }
     } // End scope so profiler can do a mutex lock without having this lock, preventing potential deadlock
+    // Simplify lookups
+    if (dataCopy.floorIds.empty()) {
+        dataCopy.floorIds.resize(dataCopy.tiles.size(), TILE_ID_NONE);
+    }
 }
 
 void TileContainer::onTileChanged(TileIndex tileIndex) {

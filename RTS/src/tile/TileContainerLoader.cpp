@@ -58,6 +58,8 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
         TileContainer& tileContainer = *building.getTileContainer();
 
         std::vector<Tile>& tiles = tileContainer.mTiles;
+        std::vector<TileID>& floorTiles = tileContainer.mFloorIds;
+        floorTiles.resize(tiles.size(), TILE_ID_NONE);
         const i32v3 dims(aabb.dims.x, aabb.dims.y, bp.floorCount);
         const i32 floorStride = dims.x * dims.y;
 
@@ -70,7 +72,12 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
                 assert(isTileValid(tileTarget.id));
                 Tile& tile = tiles[tileTarget.tileIndex];
                 const TileDef& data = tileRepo.getLoadedOrUnloadedAsset(tileTarget.id);
-                tile.layers[data.layer] = tileTarget.id;
+                if (data.layer == e_cast(TileLayer::Main)) {
+                    tile.mainLayer = tileTarget.id;
+                }
+                else {
+                    floorTiles[i] = tileTarget.id;
+                }
                 tile.tileFlags.setBit(TileFlags::ROOFED);
             }
         }
@@ -94,11 +101,10 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
                 const f32 heightAdd = stairPiece.height * STAIR_TILE_HEIGHT;
                 const f32 stairPieceBaseHeight = tilePos.z + heightAdd;
                 Tile& tile = tiles[stairPiece.pos];
-                tile.groundLayer = bp.defaultFloorID;
                 tile.mainLayer = stairPiece.isFlatPart ? bp.stairsFlatTileID : bp.stairsTileID;
                 // TODO: Should we really be using tilePos.z here?
                 tile.groundZOffset = tilePos.z + heightAdd;
-                tile.setOrientation(stairPiece.dir, TileLayer::Main);
+                tile.setOrientation(stairPiece.dir);
                 tile.tileFlags.setBit(TileFlags::ROOFED);
                 // Mark above tile as roofed as well
                 tiles[stairPiece.pos + floorStride].tileFlags.setBit(TileFlags::ROOFED);
@@ -142,7 +148,7 @@ void TileContainerLoader::loadChunkFromSimChunkAsync(TileContainer& container) c
         TileContainer& container = *chunk->mTileContainer;
         // Worker thread
         //
-        // Initialize containers lookupap
+        // Initialize containers lookup
         chunk->mTileContainersLookup = std::make_unique<ChunkTileContainersLookup>();
         chunk->mTileContainersLookup->chunkContainerID = container.getId();
         for (int i = 0; i < CHUNK_SIZE; ++i) {
@@ -151,9 +157,6 @@ void TileContainerLoader::loadChunkFromSimChunkAsync(TileContainer& container) c
 
         // Generate chunk
         chunk->getWorld().getWorldGenerator().generateChunkFromSimChunk(*chunk, buildingFootprint);
-
-        // Build visibility
-        container.mTileVisibilityContainer.init(&container.getTileSpatialGrid(), container.getTiles(), container.getTileWallContainer());
 
         // Cache harvestables
         //container.mHarvestableRegistry.refreshFromOwner();

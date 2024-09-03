@@ -580,10 +580,6 @@
     <ClCompile Include="src\ui\ScreenList.cpp" />
     <ClCompile Include="src\util\FixedSizeVector.cpp" />
     <ClCompile Include="src\util\TilingVoronoiMap.cpp" />
-    <ClCompile Include="src\visibility\TileVisibilityContainer.cpp" />
-    <ClCompile Include="src\visibility\VisibilityGraph.cpp" />
-    <ClCompile Include="src\visibility\VisibilityManager.cpp" />
-    <ClCompile Include="src\visibility\VisibilityThread.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -1128,10 +1124,6 @@
     <ClInclude Include="src\util\RandomQuaternion.h" />
     <ClInclude Include="src\util\RollTable.h" />
     <ClInclude Include="src\util\TilingVoronoiMap.h" />
-    <ClInclude Include="src\visibility\TileVisibilityContainer.h" />
-    <ClInclude Include="src\visibility\VisibilityGraph.h" />
-    <ClInclude Include="src\visibility\VisibilityManager.h" />
-    <ClInclude Include="src\visibility\VisibilityThread.h" />
     <ClInclude Include="src\serialization\CommonSerializable.h" />
     <ClInclude Include="src\serialization\NetSerialize.h" />
     <ClInclude Include="src\serialization\VorbSerializableDefs.h" />
