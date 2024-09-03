@@ -32,6 +32,13 @@ static bool sShowCollision = true;
 static bool sDisableDepth = false;
 static bool sWireframe = true;
 static std::unique_ptr<ImguiUtil::AssetSelectorPopup> sModelSelectorPopup;
+static std::vector<f32v3> sCollisionColors;
+
+void addNewColorsIfNeeded(size_t count) {
+    while (sCollisionColors.size() < count) {
+        sCollisionColors.push_back(f32v3((rand() % 255) / 255.f, (rand() % 255) / 255.f, (rand() % 255) / 255.f));
+    }
+}
 
 bool CollisionEditor::updateAndRenderImguiControlsForShapeVector(std::vector<ModelColliderShape>& shapes) {
     ImGui::Checkbox("Show Collision", &sShowCollision);
@@ -56,8 +63,10 @@ bool CollisionEditor::updateAndRenderImguiControlsForShapeVector(std::vector<Mod
         return false;
     }
     else {
+        addNewColorsIfNeeded(shapes.size());
         return ImguiUtil::ObjectVector<ModelColliderShape, true>("Shapes", shapes,
-            [](ModelColliderShape& o, ui32) {
+            [](ModelColliderShape& o, ui32 i) {
+                ImGui::ColorEdit3("Color", &sCollisionColors[i].x);
                 return CollisionEditor::updateAndRenderImguiControlsForShape(o);
             }, true /*resizable*/, ModelColliderShape()
         );
@@ -126,12 +135,15 @@ bool CollisionEditor::updateAndRenderImguiControlsForShape(ModelColliderShape& s
 }
 
 void CollisionEditor::renderShapesInEditor(const std::vector<ModelColliderShape>& shapes, const SimpleCamera& camera) {
+    addNewColorsIfNeeded(shapes.size());
+    int i = 0;
     for (auto& shape : shapes) {
-        renderShapeInEditor(shape, camera);
+        renderShapeInEditor(shape, camera, sCollisionColors[i]);
+        ++i;
     }
 }
 
-void CollisionEditor::renderShapeInEditor(const ModelColliderShape& shape, const SimpleCamera& camera) {
+void CollisionEditor::renderShapeInEditor(const ModelColliderShape& shape, const SimpleCamera& camera, f32v3 color) {
 #ifdef JPH_DEBUG_RENDERER
     if (!sShowCollision) {
         return;
@@ -155,25 +167,27 @@ void CollisionEditor::renderShapeInEditor(const ModelColliderShape& shape, const
     // Retain this until end frame
     std::unique_ptr<JPH::Shape> joltShape;
 
+    const JPH::Color joltColor(ui8(color.r * 255.f), ui8(color.g * 255.f), ui8(color.b * 255.f), 255);
+
     switch (shape.mShape) {
         case CollisionShapes::Capsule: {
             joltShape = std::make_unique<JPH::CapsuleShape>(shape.mHalfDims.y, shape.mHalfDims.x);
-            joltShape->Draw(sPhysicsDebugRenderer.get(), JPH::DMat44::sRotationTranslation(rotation, shapePos), scale, JPH::Color::sGreen, false, sWireframe);
+            joltShape->Draw(sPhysicsDebugRenderer.get(), JPH::DMat44::sRotationTranslation(rotation, shapePos), scale, joltColor, false, sWireframe);
             break;
         }
         case CollisionShapes::Cylinder: {
             joltShape = std::make_unique<JPH::CylinderShape>(shape.mHalfDims.y, shape.mHalfDims.x);
-            joltShape->Draw(sPhysicsDebugRenderer.get(), JPH::DMat44::sRotationTranslation(rotation, shapePos), scale, JPH::Color::sGreen, false, sWireframe);
+            joltShape->Draw(sPhysicsDebugRenderer.get(), JPH::DMat44::sRotationTranslation(rotation, shapePos), scale, joltColor, false, sWireframe);
             break;
         }
         case CollisionShapes::Box: {
             joltShape = std::make_unique<JPH::BoxShape>(JPH::Vec3(shape.mHalfDims.x, shape.mHalfDims.y, shape.mHalfDims.z));
-            joltShape->Draw(sPhysicsDebugRenderer.get(), JPH::DMat44::sRotationTranslation(rotation, shapePos), scale, JPH::Color::sGreen, false, sWireframe);
+            joltShape->Draw(sPhysicsDebugRenderer.get(), JPH::DMat44::sRotationTranslation(rotation, shapePos), scale, joltColor, false, sWireframe);
             break;
         }
         case CollisionShapes::Sphere: {
             joltShape = std::make_unique<JPH::SphereShape>(shape.mHalfDims.x);
-            joltShape->Draw(sPhysicsDebugRenderer.get(), JPH::DMat44::sRotationTranslation(rotation, shapePos), scale, JPH::Color::sGreen, false, sWireframe);
+            joltShape->Draw(sPhysicsDebugRenderer.get(), JPH::DMat44::sRotationTranslation(rotation, shapePos), scale, joltColor, false, sWireframe);
             break;
         }
         default:
