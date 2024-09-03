@@ -25,8 +25,8 @@
 //#include <glm/gtx/matrix_decompose.hpp>
 
 // Types of events we handle
-constexpr ui8 MODEL_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeTileID) | e_cast(TileContainerEditEventType::ChangeOrientation) | e_cast(TileContainerEditEventType::ChangeZPos);
-static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
+constexpr ui8 MODEL_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeTileID) | e_cast(TileContainerEditEventType::ChangeOrientation) | e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::Transform);
+static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(5), "Update handler");
 
 // Water not supported
 std::array<MaterialRenderPassType, 2> CROSSFADE_PASSES = { MaterialRenderPassType::Default, MaterialRenderPassType::Smudge };
@@ -693,11 +693,14 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
             break;
         case TileContainerEditEventType::ChangeOrientation:
             break;
+        case TileContainerEditEventType::Transform:
+            assert(false);
+            break;
         default:
             assert(false && "Unhandled model edit event in InstancedStaticModelRenderer");
             break;
     }
-    static_assert(e_cast(TileContainerEditEventType::TYPES) == 5, "Update handler");
+    static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(5), "Update handler");
 
 
     if (editEvents.removeEvents.size() || editEvents.addEvents.size()) {

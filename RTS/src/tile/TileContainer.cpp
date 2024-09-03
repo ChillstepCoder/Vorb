@@ -158,6 +158,48 @@ void TileContainer::setTile(TileIndex i, TileID id, ui8 variant) {
     onTileChanged(i);
 }
 
+bool TileContainer::tryTransformTile(TileIndex i, TileTransformationType type) {
+    assert(isReady());
+    Tile& tile = mTiles[i];
+    const TileID prevId = tile.mainLayer;
+    const TileDef& tileDef = TileRepository::get().getLoadedOrUnloadedAsset(prevId);
+
+    const TileID newId = tileDef.transformations[e_cast(type)];
+    if (newId == TILE_ID_NONE) {
+        return false;
+    }
+
+    // Build notify
+    TileContainerEvent evnt;
+    TileContainerTransformEventData eventData;
+
+    TileContainerEditEvent editEvent;
+    editEvent.type = TileContainerEditEventType::Transform;
+    editEvent.transformArray = &eventData;
+
+    evnt.container = this;
+    evnt.varEvent = editEvent;
+    eventData.tileIndex = i;
+    eventData.worldPosition = getTileCenterWorldPosition(i);
+    eventData.prevTile = prevId;
+    eventData.newTile = newId;
+    eventData.type = type;
+
+    // Edit
+    {
+        std::lock_guard lock(mSharedMutex);
+        tile.mainLayer = eventData.newTile;
+    }
+
+    // Dispatch notify
+    mHarvestableRegistry.onTileLayerChanged(editEvent);
+    mWorld.getTileContainerRepository().dispatchEditTiles(evnt);
+    dispatchEditTiles(evnt);
+
+    onTileChanged(i);
+    return true;
+}
+
 void TileContainer::setTileFlag(TileIndex i, TileFlags flag) {
     assert(isReady());
     Tile& tile = mTiles[i];

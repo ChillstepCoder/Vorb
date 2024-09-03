@@ -543,8 +543,11 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
                         def.mTotalSubmeshJointTransformsNeeded += skeletonData.mNumJoints;
                     }
 
-                    ModelSubmeshData& newSubmeshData = def.mSubmeshData.emplace_back();
-                    newSubmeshData.name = subMesh.mName;
+                    const ui32 submeshId = def.mSubmeshData.size() - 1;
+                    if (def.mSubmeshData.size() <= submeshId) {
+                        def.mSubmeshData.resize(submeshId + 1);
+                    }
+                    def.mSubmeshData[submeshId].name = subMesh.mName;
                 }
             }
 

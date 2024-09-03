@@ -10,6 +10,7 @@ public:
 
     BINARY_SERIALIZE();
     BINARY_SERIALIZE_OUTPUT() {
+        assert(mModelDef.mSubmeshCpuData.size() == mModelDef.mSubmeshData.size());
         // Version
         s.value2b(RUNTIME_MODEL_SERIALIZE_VERSION);
         // Submodels

@@ -7,7 +7,32 @@
 
 #include "item/ItemRollTable.h"
 
+enum class TileTransformationType {
+    BCorrupt,
+    BPurify,
+    CCorrupt,
+    CPurify,
+    Grow,
+    Decay,
+    COUNT
+};
+SERIALIZABLE_ENUM_SAME_NAME(TileTransformationType,
+    ENUM_FIELD_SIMPLE(TileTransformationType, BCorrupt),
+    ENUM_FIELD_SIMPLE(TileTransformationType, BPurify),
+    ENUM_FIELD_SIMPLE(TileTransformationType, CCorrupt),
+    ENUM_FIELD_SIMPLE(TileTransformationType, CPurify),
+    ENUM_FIELD_SIMPLE(TileTransformationType, Grow),
+    ENUM_FIELD_SIMPLE(TileTransformationType, Decay)
+);
 
+struct TileTransformationDef {
+    TileTransformationType type = TileTransformationType::BCorrupt;
+    TileAssetRef target;
+};;
+SERIALIZABLE_IMGUI_CONTROLLED(TileTransformationDef,
+    make_field(o.type, "type"sv),
+    make_field(o.target, "target"sv)
+);
 
 enum class TileLayer : ui8 {
     Ground = 0,
@@ -100,7 +125,6 @@ class TileDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(TileDef, AssetType::Tile);
 
-    f32v3 dims = f32v3(1.0f);
     // TileCollider collider;
      //ui8v2 tileDims = ui8v2(1); // 4x4 is max size
     TileHarvestable harvestable = TileHarvestable::None;
@@ -119,7 +143,8 @@ public:
     ui8 navMask = 0xff; // Access bits mapped to Cartesian8 based on default (SOUTH) orientation
     VisibilityBlockerType visBlockerType = VisibilityBlockerType::NONE;
     TileType tileType = TileType::Default;
-    bool blocksVisibility = false;
+    std::array<TileID, e_count(TileTransformationType)> transformations;
+    std::vector<TileTransformationDef> transformationDefs;
     union {
         struct {
             f32 heightOffsetSouth;
@@ -135,7 +160,6 @@ public:
 };
 SERIALIZABLE_IMGUI_CONTROLLED(TileDef,
     make_field(o.tileType, "type"),
-    make_field(o.dims, "dims"),
     make_field(o.harvestable, "harvestable"),
     make_field(o.materialNames, "materials"),
     make_field(o.textureMethod, "texture_method"),
@@ -147,8 +171,8 @@ SERIALIZABLE_IMGUI_CONTROLLED(TileDef,
     make_field(o.shape, "shape"),
     make_field(o.pathWeight, "path_weight"),
     make_field(o.navMask, "nav_mask"),
-    make_field(o.blocksVisibility, "block_vis"),
     make_field(o.displayName, "name"),
     make_field(o.itemDrops, "item_drops"),
-    make_field(o.recipeData, "recipe")
+    make_field(o.recipeData, "recipe"),
+    make_field(o.transformationDefs, "transforms")
 );

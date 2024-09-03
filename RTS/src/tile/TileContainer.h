@@ -70,6 +70,7 @@ public:
     void setTile(TileIndex i, TileID id, ui8 variant);
     void setFloorTile(TileIndex i, TileID id);
     TileID getFloorTile(TileIndex i) const { return mFloorIds.empty() ? TILE_ID_NONE : mFloorIds[i]; }
+    bool tryTransformTile(TileIndex i, TileTransformationType type);
 
     void setTileFlag(TileIndex i, TileFlags flag);
     void overwriteTileFlags(TileIndex i, TileFlags flags);

@@ -264,10 +264,11 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                 // Tile mesh
                 // Flora mesh ONLY
                 if (tileData.shape == TileShape::THIN) {
+                    assert(false); // Unsuppoprted
                     // Billboards
-                    const f32v3 tilePosition = spatialGrid.getTileCenterWorldPos3D(index, tiles.tiles[index].getGroundZOffset());
-                    builders.addMaterial(tileData.materialData[0].id);
-                    builders.billboardBuilder.addBillboard(tilePosition, tileData.dims, tileData.materialData[0].id, true);
+                    //const f32v3 tilePosition = spatialGrid.getTileCenterWorldPos3D(index, tiles.tiles[index].getGroundZOffset());
+                    //builders.addMaterial(tileData.materialData[0].id);
+                    //builders.billboardBuilder.addBillboard(tilePosition, tileData.dims, tileData.materialData[0].id, true);
                 }
                 else if (tileData.shape == TileShape::BLOCK) {
                     // TODO: Handle other materials?
