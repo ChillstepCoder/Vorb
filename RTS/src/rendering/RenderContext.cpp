@@ -490,10 +490,6 @@ void RenderContext::updateCamera(f32 frameAlpha) {
 
 void RenderContext::initEvents()
 {
-    /*World::registerWorldListeners(mWorldEventListeners);
-    World::addOnWorldEndRenderThreadListener(mWorldEventListeners, [this](World& world) {
-
-    });*/
 }
 
 void RenderContext::initImguiStyle()

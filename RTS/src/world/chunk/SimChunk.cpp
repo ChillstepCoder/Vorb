@@ -149,7 +149,7 @@ void SimChunk::bindEditEventToChunkTileContainer(Chunk& chunk) {
     assert(chunk.getTileContainer());
     // Thread safe updates of the sim tile grid
     mEditTilesEventHandle = chunkTileContainer->addEditTilesListener([this](const TileContainerEvent& containerEvent) {
-        static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(5), "Update handler");
+        static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(4), "Update handler");
 
         ASSERT_GAME_THREAD();
 
@@ -167,21 +167,6 @@ void SimChunk::bindEditEventToChunkTileContainer(Chunk& chunk) {
                 }
             }
             mIsSaveUpToDate.clear();
-        }
-        if (editEvent.type == TileContainerEditEventType::Transform) {
-            allocate();
-            std::lock_guard lock(mMutex);
-            assert(false);
-            /*for (i32 i = 0; i < editEvent.editCount; ++i) {
-                TileContainerEditLayerEventData& data = editEvent.changeLayerArray[i];
-                if (data.prevId != TILE_ID_NONE) {
-                    mTileData->removeTile(data.tileIndex);
-                }
-                if (data.newId != TILE_ID_NONE) {
-                    mTileData->addTile(data.tileIndex, data.newId, data.newVariant);
-                }
-            }
-            mIsSaveUpToDate.clear();*/
         }
     });
 }

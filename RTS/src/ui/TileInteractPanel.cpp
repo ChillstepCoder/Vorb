@@ -176,6 +176,9 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
             if (ImGui::Button("Rebuild Navmesh", sButtonSize)) {
                 resultFlags |= INTERACT_MENU_RESULT_REBUILD_NAVMESH;
             }
+            if (ImGui::Button("Transform Test", sButtonSize)) {
+                resultFlags |= INTERACT_MENU_RESULT_TRANSFORM_TILE;
+            }
             break;
         }
         case UIInteractMenuState::SELECTED_STOCKPILE: {
@@ -228,7 +231,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
     // TODO: Not thread safe!
     tilePos.z += handle.getTile().getGroundZOffset();
     AM::DebugRenderer::drawWireQuad(tilePos, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 1.0f));
-    static_assert(INTERACT_MENU_RESULT_COUNT == 16, "update");
+    static_assert(INTERACT_MENU_RESULT_COUNT == 17, "update");
     static_assert(e_cast(UIInteractMenuState::COUNT) == 5, "update");
     return resultFlags;
 }

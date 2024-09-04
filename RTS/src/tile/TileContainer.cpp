@@ -164,6 +164,9 @@ bool TileContainer::tryTransformTile(TileIndex i, TileTransformationType type) {
     const TileID prevId = tile.mainLayer;
     const TileDef& tileDef = TileRepository::get().getLoadedOrUnloadedAsset(prevId);
 
+    // TODO: real variant
+    ui8 newVariant = 0;
+
     const TileID newId = tileDef.transformations[e_cast(type)];
     if (newId == TILE_ID_NONE) {
         return false;
@@ -171,24 +174,26 @@ bool TileContainer::tryTransformTile(TileIndex i, TileTransformationType type) {
 
     // Build notify
     TileContainerEvent evnt;
-    TileContainerTransformEventData eventData;
+    TileContainerEditLayerEventData eventData;
 
     TileContainerEditEvent editEvent;
-    editEvent.type = TileContainerEditEventType::Transform;
-    editEvent.transformArray = &eventData;
+    editEvent.type = TileContainerEditEventType::ChangeTileID;
+    editEvent.changeLayerArray = &eventData;
 
     evnt.container = this;
     evnt.varEvent = editEvent;
     eventData.tileIndex = i;
     eventData.worldPosition = getTileCenterWorldPosition(i);
-    eventData.prevTile = prevId;
-    eventData.newTile = newId;
-    eventData.type = type;
+    eventData.prevId = prevId;
+    eventData.newId = newId;
+    eventData.transformType = type;
+    eventData.newVariant = newVariant;
 
     // Edit
     {
         std::lock_guard lock(mSharedMutex);
-        tile.mainLayer = eventData.newTile;
+        tile.mainLayer = eventData.newId;
+        tile.variant = newVariant;
     }
 
     // Dispatch notify

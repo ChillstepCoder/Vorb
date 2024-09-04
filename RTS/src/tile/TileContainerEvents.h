@@ -21,7 +21,6 @@ enum class TileContainerEditEventType : ui8 {
     ChangeZPos        = BIT(2),
     ChangeOrientation = BIT(3),
     ChangeWall        = BIT(4),
-    Transform         = BIT(5),
 
     E,
     TERM = E - 1
@@ -41,6 +40,7 @@ struct TileContainerEditLayerEventData {
     TileID newId;
     ui8 newVariant;
     TileTypeDataVariant typeData;
+    TileTransformationType transformType = TileTransformationType::COUNT;
 };
 
 struct TileContainerEditZPosEventData {
@@ -57,21 +57,12 @@ struct TileContainerEditOrientationEventData {
     Cartesian newOrientation;
 };
 
-struct TileContainerTransformEventData {
-    TileIndex tileIndex;
-    f32v3 worldPosition;
-    TileID prevTile;
-    TileID newTile;
-    TileTransformationType type;
-};
-
 struct TileContainerEditEvent {
     union {
         TileContainerEditFlagsEventData* changeFlagsArray;
         TileContainerEditLayerEventData* changeLayerArray;
         TileContainerEditZPosEventData* changeZPosArray;
         TileContainerEditOrientationEventData* changeOrientationArray;
-        TileContainerTransformEventData* transformArray;
         // TODO: Walls
     };
     i32 editCount = 1;

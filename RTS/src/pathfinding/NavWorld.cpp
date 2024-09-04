@@ -873,7 +873,7 @@ void NavWorld::initEventHandlers() {
     tileContainerRepository.addEditTilesListener(mTileContainerEventListeners, [this](const TileContainerEvent& containerEvent) {
 
         constexpr ui8 EDIT_TYPES_MASK = 0xffui8;
-        static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(5), "Update handler");
+        static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(4), "Update handler");
 
         ASSERT_GAME_THREAD();
 

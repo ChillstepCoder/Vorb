@@ -88,6 +88,15 @@ void TileRepository::fixupRegisteredAsset(AssetID id) {
         };
     }
 
+    std::fill(def.transformations.begin(), def.transformations.end(), TILE_ID_NONE);
+
+    // Transformations
+    for (auto& t : def.transformationDefs) {
+        assert(t.type != TileTransformationType::COUNT);
+        assert(def.transformations[e_cast(t.type)] == TILE_ID_NONE);
+        def.transformations[e_cast(t.type)] = t.target.getAssetID();
+    }
+
     // Nav bits
     if (def.shape == TileShape::STAIRS) {
         def.navMask = 0b01000010; // SOUTH and NORTH access

@@ -25,8 +25,8 @@
 //#include <glm/gtx/matrix_decompose.hpp>
 
 // Types of events we handle
-constexpr ui8 MODEL_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeTileID) | e_cast(TileContainerEditEventType::ChangeOrientation) | e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::Transform);
-static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(5), "Update handler");
+constexpr ui8 MODEL_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeTileID) | e_cast(TileContainerEditEventType::ChangeOrientation) | e_cast(TileContainerEditEventType::ChangeZPos);
+static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(4), "Update handler");
 
 // Water not supported
 std::array<MaterialRenderPassType, 2> CROSSFADE_PASSES = { MaterialRenderPassType::Default, MaterialRenderPassType::Smudge };
@@ -693,14 +693,12 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
             break;
         case TileContainerEditEventType::ChangeOrientation:
             break;
-        case TileContainerEditEventType::Transform:
-            assert(false);
             break;
         default:
             assert(false && "Unhandled model edit event in InstancedStaticModelRenderer");
             break;
     }
-    static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(5), "Update handler");
+    static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(4), "Update handler");
 
 
     if (editEvents.removeEvents.size() || editEvents.addEvents.size()) {
@@ -897,7 +895,7 @@ void InstancedStaticModelManager::removeModelInstanceInternal(ui32 instanceIndex
     // Replace this instance with back instance
     mInstanceTransforms[instanceIndex] = std::move(mInstanceTransforms.back());
     mInstanceTransforms.pop_back();
-    const ui32 damageModelIndex = mInstanceGpuData.back().damageModelIndex;
+    const ui32 damageModelIndex = mInstanceGpuData[instanceIndex].damageModelIndex;
     // If we had a damage model, need to remove it and fixup ref
     if (damageModelIndex != 0) {
         removeDamageModelInternal(damageModelIndex);
@@ -1070,22 +1068,20 @@ void InstancedStaticModelManager::updateLooseInstanceTransformInternal(StaticMod
 }
 
 void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec) {
-    std::vector<LiteTileHandle> animsToErase;
 
-    for (auto&& it = mAnimatedTileInstances.begin(); it != mAnimatedTileInstances.end(); ++it) {
+    for (auto it = mAnimatedTileInstances.begin(); it != mAnimatedTileInstances.end();) {
 
         StaticMeshAnimation& animation = it->second;
         const f32 animDuration = STATIC_MODEL_ANIM_DURATIONS_SEC[e_cast(animation.animType)];
         animation.currentTimeSec += elapsedSec;
         if (animation.currentTimeSec >= animDuration) {
-            animsToErase.emplace_back(it->first);
-            // TODO: Restore previous transform on GPU
+            it = mAnimatedTileInstances.erase(it);
         }
         else {
-
             TileModelInstance* instance = getTileInstanceAtPosition(it->first);
             if (!instance) {
-                return;
+                it = mAnimatedTileInstances.erase(it);
+                continue;
             }
             const f32m4& baseTransform = mInstanceTransforms[instance->mInstanceIndex];
 
@@ -1111,18 +1107,15 @@ void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec) {
             static_assert(e_count(StaticModelAnimationTypes) == 1);
 
             // Override transform on gpu
-            // TODO: MapUnmap will be faster maybe?
             glNamedBufferSubData(
                 mTransformsVbo,
                 instance->mInstanceIndex * sizeof(f32m4),
                 sizeof(f32m4),
                 &newTransform[0][0]
             );
-        }
-    }
 
-    for (auto&& h : animsToErase) {
-        mAnimatedTileInstances.erase(h);
+            ++it;
+        }
     }
 }
 

@@ -191,6 +191,8 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
     const f32v2 origin2D(attackStartPos);
     const f32v2 start2D = origin2D + glm::vec2(coneData.radius * std::cos(sourceRotation - halfArcAngleRad), coneData.radius * std::sin(sourceRotation - halfArcAngleRad));
     const f32v2 end2D = origin2D + glm::vec2(coneData.radius * std::cos(sourceRotation + halfArcAngleRad), coneData.radius * std::sin(sourceRotation + halfArcAngleRad));
+
+    boost::unordered::unordered_flat_set<LiteTileHandle> hitTiles;
     
     // Damage tile
     for (int i = 0; i < resultCount; ++i) {
@@ -259,10 +261,14 @@ void CombatContext::performConeAttack(entt::entity source, const SkillDef& skill
 
             // Hit!
             if (intersectsArc) {
-                const f32 angleRad = MathUtil::yawFromDirection(normalToTarget2D);
-                impactDir = MathUtil::rotateVectorYawRad(attackData.swingDir, angleRad);
                 LiteTileHandle hitTileHandle(bodyUserData.getTileData());
-                hitTile(hitTileHandle, skillDef, attackData.damageRange, impactPosition, impactNormal, impactDir);
+                // Only one hit per tile
+                if (hitTiles.find(hitTileHandle) == hitTiles.end()) {
+                    hitTiles.insert(hitTileHandle);
+                    const f32 angleRad = MathUtil::yawFromDirection(normalToTarget2D);
+                    impactDir = MathUtil::rotateVectorYawRad(attackData.swingDir, angleRad);
+                    hitTile(hitTileHandle, skillDef, attackData.damageRange, impactPosition, impactNormal, impactDir);
+                }
             }
         }
         else if (type == PhysicsBodyUserDataType::Entity) {

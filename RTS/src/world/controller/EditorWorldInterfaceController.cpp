@@ -430,7 +430,17 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                 }
             });
         }
-        static_assert(INTERACT_MENU_RESULT_COUNT == 16, "update");
+        else if (result & INTERACT_MENU_RESULT_TRANSFORM_TILE) {
+            if (mSelectedTileHandle.isValid()) {
+                TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
+                GameThreadTasks::getInstance().addGenericTask([tileHandlePtr]() {
+                    TileContainer* container = tileHandlePtr->getMutableContainer();
+                    container->tryTransformTile(tileHandlePtr->tileIndex, TileTransformationType::CCorrupt);
+                    delete tileHandlePtr;
+                });
+            }
+        }
+        static_assert(INTERACT_MENU_RESULT_COUNT == 17, "update");
 
         // If we had a result, close window
         if (result) {
