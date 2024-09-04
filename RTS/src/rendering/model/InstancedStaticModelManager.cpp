@@ -307,8 +307,10 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                         setCommand(mDrawCommandsCrossfade[renderPassIndex]->getDrawCommands().data()[cActive++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[e_cast(lod)]);
                     }
                     else {
-                        // Fallback to normal render if we are out of space
-                        setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[e_cast(lod)]);
+                        // Fallback to normal render if we are out of space, but only for the fading in model
+                        if (crossfade > 0.0) {
+                            setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[e_cast(lod)]);
+                        }
                     }
                 }
             }
@@ -343,7 +345,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
 
             if (transitionData.isActive()) {
                 transitionData.mCrossfade += LodTransitionSpeed * elapsedSec;
-                // Stop if we are finished or we cannot fit anymore crossfades
+                // Stop if we are finished
                 if (transitionData.mCrossfade >= 1.0f) {
                     transitionData.mCrossfade = 0.0f;
                     transitionData.mCurrentLOD = transitionData.mTargetLOD;
@@ -383,6 +385,13 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                                 }
                             }
                         }
+                    }
+                    else {
+                        // Offscreen can instantly finish crossfading
+                        transitionData.mCrossfade = 0.0f;
+                        transitionData.mCurrentLOD = transitionData.mTargetLOD;
+                        assert(mNumActiveLodTransitions > 0);
+                        --mNumActiveLodTransitions;
                     }
                     continue;
                 }

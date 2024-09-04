@@ -63,7 +63,6 @@ public:
     // Return true on success
     bool playAnimationOnInstanceAtPosition(LiteTileHandle targetTile, StaticModelAnimationTypes animType, f32v2 direction, ModelID modelId);
 
-    // TODO: CURRENTLY UNUSED
     void onContainerEditEvent(const TileContainerEvent& evnt);
 
     void onTileDamagedEvent(const TileContainerEvent& evnt);
