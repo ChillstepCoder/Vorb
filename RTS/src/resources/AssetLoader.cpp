@@ -78,8 +78,7 @@ void processRenderFunc(AssetLoadTaskPtr& task) {
     postData->mRenderPostFunc = std::move(task->mRenderPostFunc);
     postData->mIsFinishedFlagPtr = task->mIsFinishedFlagPtr;
     postData->mUserData = std::move(task->mUserData);
-    RenderThreadTasks::getInstance().addGenericTask([](RenderContext& renderContext, void* vPathHandle) {
-        PostData* postData = static_cast<PostData*>(vPathHandle);
+    RenderThreadTasks::getInstance().addGenericTask([postData]() {
         if (postData->mRenderPostFunc(AssetLoader::getInstance(), postData->mAssetID, postData->mPath, postData->mAssetDataPtr, postData->mUserData)) {
             if (postData->mIsFinishedFlagPtr) {
                 LOG_TRACE("    Finished load on render thread {} {}", postData->mAssetID, postData->mPath.getCString());
@@ -90,7 +89,7 @@ void processRenderFunc(AssetLoadTaskPtr& task) {
             }
         }
         delete postData;
-    }, postData);
+    });
 }
 
 void AssetLoader::workerThreadFunc(AssetLoader* loader) {

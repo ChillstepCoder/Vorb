@@ -121,6 +121,8 @@ public:
         return scoffset.z * subchunkDims.x * subchunkDims.y + scoffset.y * subchunkDims.x + scoffset.x;
     }
 
+    const FlatMap<TileIndex, TileDamageDataPtr>& getDamagedTiles() const { return mDamagedTiles; }
+
     // =========== State  ===========
     bool isReady() const { return mState == e_cast(TileContainerState::READY); }
     TileContainerState getState() const { return (TileContainerState)mState.load(); }

@@ -19,15 +19,15 @@ void RenderThreadTasks::processRenderThread(RenderContext& context){
     // process them in a loop until we hit a time limit,
     // and hold onto the unprocessed ones until the next frame
     constexpr int BULK_DEQUEUE_SIZE = 4;
-    std::pair<RenderFunction, void*> procs[BULK_DEQUEUE_SIZE];
+    RenderFunction procs[BULK_DEQUEUE_SIZE];
 
-    constexpr f32 MAX_PROCESS_TIME_MS = 8.0f;
+    constexpr f32 MAX_PROCESS_TIME_MS = 6.0f;
     PreciseTimer timer;
     // TODO: Use optik for profiling?
     do {
         if (size_t count = mRenderThreadProcs.try_dequeue_bulk(mToken, procs, BULK_DEQUEUE_SIZE)) {
             for (size_t i = 0; i < count; ++i) {
-                procs[i].first(context, procs[i].second);
+                procs[i]();
             }
         }
         else {
@@ -68,10 +68,8 @@ RenderThreadTasks& RenderThreadTasks::getInstance()
 
 // TODO: Move to characterRenderer?
 void RenderThreadTasks::playOneShotAnimation(entt::entity characterEntity, ui32 animationId) {
-    std::pair<ui32, ui32> animationTask{ e_cast(characterEntity), animationId };
-    static_assert(sizeof(std::pair<ui32, ui32>) == sizeof(void*));
-    mRenderThreadProcs.enqueue(std::make_pair([](RenderContext& context, void* data) {
-        std::pair<ui32, ui32> animationTask = *((std::pair<ui32, ui32>*)&data);
-        context.getCharacterRenderer().playOneShotAnimation(entt::entity(animationTask.first), animationTask.second);
-    }, (void*)(*((void**)&animationTask)))); // Black magic casting TODO: Cleaner?
+    const std::pair<ui32, ui32> animationTask{ e_cast(characterEntity), animationId };
+    mRenderThreadProcs.enqueue([animationTask]() {
+        RenderContext::getInstance().getCharacterRenderer().playOneShotAnimation(entt::entity(animationTask.first), animationTask.second);
+    });
 }

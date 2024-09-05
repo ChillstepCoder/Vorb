@@ -151,8 +151,7 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
         createTerrainAndWaterMesh(taskData->world, taskData->terrainBuilder, PATCH_POSITIONS.data[taskData->patchIndex].xy, lod, mWorldPos);
 
         // To render thread for upload
-        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
-            TerrainMeshGenTaskData* taskData = static_cast<TerrainMeshGenTaskData*>(vTaskData);
+        RenderThreadTasks::getInstance().addGenericTask([taskData]() {
             HeightmapTerrainQuadtree* owner = taskData->owner;
             owner->finishMeshes(taskData->terrainBuilder, taskData->patchIndex);
             taskData->isAnyMeshValid = owner->mTerrainMeshes[taskData->patchIndex] || owner->mWaterMeshes[taskData->patchIndex];
@@ -164,7 +163,7 @@ void HeightmapTerrainQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod,
                 // Free resources
                 delete taskData;
             });
-        }, taskData);
+        });
     });
 }
 

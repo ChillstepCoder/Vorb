@@ -123,11 +123,10 @@ void NavigationSystem::requestFinePathToPoint(World& world, NavigationComponent&
 
 			std::vector<f32v3>* pointsHandle = new std::vector<f32v3>(std::move(pathHandle->convertToWorldPoints(world.getHeightmapGrid())));
 
-			RenderThreadTasks::getInstance().addGenericTask([](RenderContext&, void* vPathHandle) {
-				std::vector<f32v3>* pathHandle = static_cast<std::vector<f32v3>*>(vPathHandle);
-				AM::DebugRenderer::drawPath(*pathHandle, color4(1.0f, 0.0f, 1.0f), 200);
-				delete pathHandle;
-			}, pointsHandle);
+			RenderThreadTasks::getInstance().addGenericTask([pointsHandle]() {
+				AM::DebugRenderer::drawPath(*pointsHandle, color4(1.0f, 0.0f, 1.0f), 200);
+				delete pointsHandle;
+			});
 		});
 	}
     else {

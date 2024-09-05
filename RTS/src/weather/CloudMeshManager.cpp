@@ -250,8 +250,7 @@ void CloudMeshManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
             }
         }
 
-        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& c, void* vData) {
-            CloudBatchTaskData* data = static_cast<CloudBatchTaskData*>(vData);
+        RenderThreadTasks::getInstance().addGenericTask([data]() {
             CloudBatch* batch = data->cloudBatch;
             CloudMeshManager* manager = data->cloudManager;
             data->meshBuilder.finishMesh(batch->mMesh, f32v3(0.0f), 0 /*bufferFlags*/);
@@ -262,7 +261,7 @@ void CloudMeshManager::tryGenerateCloudBatchAt(i32v2 cloudPos) {
             }
             manager->mGeneratingBatches.erase(it);
             delete data;
-        }, data);
+        });
     });
 }
 

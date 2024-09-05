@@ -32,10 +32,10 @@ public:
                 NoesisLocalXamlProvider* provider;
             };
             ProviderTaskData* data = new ProviderTaskData({ uri, this });
-            RenderThreadTasks::getInstance().addGenericTask([](class RenderContext&, void* data) {
-                ProviderTaskData* pData = (ProviderTaskData*)data;
-                pData->provider->RaiseXamlChanged(pData->uri);
-            }, data);
+            RenderThreadTasks::getInstance().addGenericTask([data]() {
+                data->provider->RaiseXamlChanged(data->uri);
+                delete data;
+            });
         };
     }
     ~NoesisLocalXamlProvider() {

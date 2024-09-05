@@ -56,7 +56,7 @@ namespace vorb {
             /// Adds a task to the task queue
             /// @param task: The task to add
             inline void addTask(std::function<void()> workerProc, TaskPriority priority = TaskPriority::Normal) {
-                mTasks[(int)priority].enqueue(workerProc);
+                mTasks[(int)priority].enqueue(std::move(workerProc));
                 mTaskSemaphore.release();
             }
 

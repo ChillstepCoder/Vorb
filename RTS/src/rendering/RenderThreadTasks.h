@@ -3,7 +3,7 @@
 class RenderContext;
 
 // We enforce no std::function so that we can avoid heap allocations and use singleton_pool for task allocations
-typedef void(*RenderFunction)(class RenderContext& context, void*);
+using RenderFunction = std::function<void()>;
 
 // Singleton class that manages passing render tasks so we don't need to include RenderContext in every object
 class RenderThreadTasks
@@ -28,8 +28,8 @@ public:
     void playOneShotAnimation(entt::entity characterEntity, ui32 animationId);
     //void addStaticMeshFromBuilder(StaticPhysicsMeshBuilder&& meshBuilder, Mesh* mesh);
     // TODO: Add cancel logic for if we destroy the threadpool so we can free data ptr?
-    void addGenericTask(RenderFunction func, void* data) { mRenderThreadProcs.enqueue(std::make_pair(func, data)); }
-    void addShutdownTask(std::function<void()>&& func) { mShutdownTasks.enqueue(std::move(func)); }
+    void addGenericTask(RenderFunction func) { mRenderThreadProcs.enqueue(std::move(func)); }
+    void addShutdownTask(std::function<void()> func) { mShutdownTasks.enqueue(std::move(func)); }
 
     size_t getQueuedProcsApprox() const { return mRenderThreadProcs.size_approx(); }
     size_t getQueuedShutdownTasksApprox() const { return mShutdownTasks.size_approx(); }
@@ -48,7 +48,7 @@ private:
     // Task queue
     // TODO: Clear task queues on destroy?
     // TODO: Investigate performance of https://gitlab.com/rmettler/cpp_delegates instead
-    moodycamel::ConcurrentQueue<std::pair<RenderFunction, void*>> mRenderThreadProcs;
+    moodycamel::ConcurrentQueue<RenderFunction> mRenderThreadProcs;
     moodycamel::ConcurrentQueue<std::function<void()>> mShutdownTasks;
     moodycamel::ConsumerToken mToken;
 

@@ -12,6 +12,7 @@ class ContainerMeshBuilders;
 class WorldRenderDataManager;
 class World;
 
+// Manages the mesh data and passes off to physics world
 class TileContainerMeshManager
 {
 public:
@@ -21,6 +22,9 @@ public:
     void frameUpdate();
 
     void shutdown();
+
+    // Call when tile container is generated/loaded
+    void initModelsForTileContainer(std::span<TileIndex> modelTileIndices, const TileContainer& container);
 
     static void updateMeshFromBuilders(const TileContainer* containerToMesh, ContainerMeshBuilders&& builders);
 

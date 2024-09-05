@@ -111,8 +111,7 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
         GrassMeshTaskData* taskData = new GrassMeshTaskData(this, patchIndex, mMeshes[patchIndex]->mMesh);
         if (GrassMeshBuilderMethods::createGrassMesh(taskData->meshBuilder, mChunk, PATCH_POSITIONS.data[patchIndex].xy, lod)) {
             // Back to render thread for upload and state update
-            RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
-                GrassMeshTaskData* taskData = static_cast<GrassMeshTaskData*>(vTaskData);
+            RenderThreadTasks::getInstance().addGenericTask([taskData]() {
                 taskData->owner->finishMesh(taskData->meshBuilder, taskData->patchIndex);
 
                 ChunkGrassQuadtree* owner = taskData->owner;
@@ -121,16 +120,15 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
                 --owner->mRefCount;
                 // Free resources
                 delete taskData;
-            }, taskData);
+            });
         }
         else {
             // Rare failure case, must decrement ref on render thread
-            RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskData) {
+            RenderThreadTasks::getInstance().addGenericTask([taskData]() {
                 __debugbreak(); // Just make sure this doesnt cause a crash or anything
-                GrassMeshTaskData* taskData = static_cast<GrassMeshTaskData*>(vTaskData);
                 --taskData->owner->mRefCount;
                 delete taskData;
-            }, taskData);
+            });
         }
     });
    

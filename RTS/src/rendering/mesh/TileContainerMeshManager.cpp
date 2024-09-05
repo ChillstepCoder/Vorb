@@ -8,8 +8,14 @@
 #include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/RenderContext.h"
 
+#include "resources/ModelRepository.h"
 #include "resources/MaterialRepository.h"
+#include "resources/TileRepository.h"
 #include "resources/asset/AssetHandleBundle.h"
+
+#include "gamethread/GameThreadTasks.h"
+
+#include "physics/TrackedStaticModelColliderGatherer.h"
 
 #include "world/World.h"
 
@@ -34,6 +40,57 @@ TileContainerMeshManager::~TileContainerMeshManager()
 
 void TileContainerMeshManager::shutdown() {
     mTileContainerListeners.reset();
+}
+
+void TileContainerMeshManager::initModelsForTileContainer(std::span<TileIndex> modelTileIndices, const TileContainer& container) {
+    // This will run on the threadpool
+    assert(!IS_RENDER_THREAD() && !IS_GAME_THREAD());
+
+    std::unique_ptr<InstancedStaticModelGatherer> gatherer = std::make_unique<InstancedStaticModelGatherer>(container.getId(), container.getWorldPos());
+    std::unique_ptr<TrackedStaticModelColliderGatherer> physics = std::make_unique<TrackedStaticModelColliderGatherer>(container.getId());
+    TileRepository& tileRepo = TileRepository::get();
+    const TileSpatialGrid& spatialGrid = container.getTileSpatialGrid();
+    const FlatMap<TileIndex, TileDamageDataPtr>& damagedTiles = container.getDamagedTiles();
+
+    // Turn all models into meshes and physics objects
+    for (const TileIndex& tileIndex : modelTileIndices) {
+        const Tile& tile = container.getTileAt(tileIndex);
+        const TileDef& tileDef = tileRepo.getLoadedOrUnloadedAsset(tile.getMainID());
+
+        f32v3 worldPos = spatialGrid.getTileCenterWorldPos3D(tileIndex, tile.getGroundZOffset());
+        ui8 variantIndex = 0;
+        variantIndex = tileDef.modelVariants[tile.getMainLayerVariant()];
+
+        TileDamageDataPtr damageData;
+        if (tile.hasFlag(TileFlags::IS_DAMAGED)) {
+            auto it = damagedTiles.find(tileIndex);
+            if (it != damagedTiles.end()) {
+                damageData = std::make_unique<TileDamageData>(it->second->getCurrentHealth());
+            }
+        }
+        const f32 rotation = getTileModelRotationAtPosition(worldPos);
+
+        const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileDef.modelId);
+        f32 scale;
+        if (const FloraTileData* data = std::get_if<FloraTileData>(&tile.getTypeData())) {
+            scale = modelDef.getScaleFromFloraAge(data->age);
+        }
+        else {
+            scale = modelDef.getRandomScaleAtPosition(worldPos);
+        }
+        gatherer->addInstance(
+            tileDef.modelId, tileIndex, worldPos, f32v3(0.0f, 0.0f, 1.0f), rotation, variantIndex, std::move(damageData), scale
+        );
+        
+        if (modelDef.mCollisionShapeID != INVALID_COLLISION_SHAPE_ID) {
+            physics->addTileModelCollider(tileIndex, tile.getMainID(), worldPos, f32q(f32v3(0.0f, 0.0f, rotation)), scale, tileDef.modelId);
+        }
+    }
+    assert(false);
+    /*GameThreadTasks::getInstance().addGenericTask([gatherer = std::move(gatherer)]() {
+
+
+    });*/
 }
 
 void TileContainerMeshManager::frameUpdate()
@@ -73,13 +130,12 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
 
     //assert(containerToMesh->getState() == TileContainerState::WAITING_MESH_AND_PHYSICS);
     // Pass result to the render thread
-    RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* meshTaskData) {
+    RenderThreadTasks::getInstance().addGenericTask([taskData]() {
         PROFILE_SCOPE("TileContainerRenderer::updateMeshFromBuilders");
 
-        MeshTaskData* taskData = static_cast<MeshTaskData*>(meshTaskData);
         const TileContainerID id = taskData->builders.containerId;
         World& world = taskData->builders.world;
-        WorldRenderDataManager& renderDataManager = context.getRenderDataManagerForWorld(world);
+        WorldRenderDataManager& renderDataManager = RenderContext::getInstance().getRenderDataManagerForWorld(world);
         TileContainerMeshManager& meshManager = renderDataManager.getTileContainerMeshManager();
         TileContainerMeshData& meshData = meshManager.getMeshDataForTileContainer(id);
         InstancedStaticModelManager& instancedModelManager = renderDataManager.getInstancedStaticModelManager();
@@ -128,7 +184,7 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
         taskData->container.decRef();
 
         delete taskData;
-    }, taskData);
+    });
 }
 
 void TileContainerMeshManager::removeMeshesForData(TileContainerMeshData& meshData) {

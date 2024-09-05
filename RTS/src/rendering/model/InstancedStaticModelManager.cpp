@@ -731,8 +731,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
 
         ModelEditEvents* editPtr = new ModelEditEvents(std::move(editEvents));
 
-        RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vEditsPtr) {
-            ModelEditEvents* editPtr = static_cast<ModelEditEvents*>(vEditsPtr);
+        RenderThreadTasks::getInstance().addGenericTask([editPtr]() {
             TileContainerID containerId = editPtr->containerId;
             InstancedStaticModelManager* manager = editPtr->manager;
             for (auto&& index : editPtr->removeEvents) {
@@ -756,7 +755,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
                 }
             }
             delete editPtr;
-        }, editPtr);
+        });
     }
 }
 
@@ -789,8 +788,7 @@ void InstancedStaticModelManager::onTileDamagedEvent(const TileContainerEvent& e
 
     evnt.container->incRef();
 
-    RenderThreadTasks::getInstance().addGenericTask([](RenderContext& context, void* vTaskDataPtr) {
-        const TaskData* taskData = static_cast<const TaskData*>(vTaskDataPtr);
+    RenderThreadTasks::getInstance().addGenericTask([taskData]() {
         TileDamagedEvent evnt = taskData->damageEvent;
 
         f32v2 hitNormal = evnt.impactNormal;
@@ -804,7 +802,7 @@ void InstancedStaticModelManager::onTileDamagedEvent(const TileContainerEvent& e
 
         taskData->container->decRef();
         delete taskData;
-    }, taskData);
+    });
 }
 
 StaticModelInstanceID InstancedStaticModelManager::addLooseModelInstance(ModelID modelId, const glm::quat& orient, f32v3 position, ui8 variantIndex, f32 scale) {
