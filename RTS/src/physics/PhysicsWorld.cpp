@@ -34,6 +34,8 @@
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
 
+#include "tile/TileContainerRepository.h"
+
 #include "terrain/HeightmapPatch.h"
 
 #include "options/DebugOptions.h"
@@ -929,11 +931,23 @@ void PhysicsWorld::updateAndRenderImguiDebugControls() {
 void PhysicsWorld::debugRender(const Camera3D& camera) const {
 #ifdef JPH_DEBUG_RENDERER
     PROFILE_FUNCTION();
+
     if (!sPhysicsDebugRenderer) {
         sPhysicsDebugRenderer = std::make_unique<PhysicsDebugRenderer>();
     }
     mContext->debugDraw(camera);
 #endif //JPH_DEBUG_RENDERER
+}
+
+void PhysicsWorld::initEvents() { 
+    TileContainerRepository& tileContainerRepository = mWorld.getTileContainerRepository();
+    tileContainerRepository.registerTileContainerListeners(mTileContainerListeners);
+
+    tileContainerRepository.addEditTilesListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
+        /* if (containerEvent.varEvent) {
+             updateTileContainerMeshFromBuilder(*containerEvent.varEvent);
+         }*/
+    });
 }
 
 JPH::ObjectLayer PhysicsWorld::makeObjectLayerMasked(JPH::ObjectLayer layerBits, JPH::ObjectLayer collideMaskBits) {

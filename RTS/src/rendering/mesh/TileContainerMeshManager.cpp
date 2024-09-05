@@ -154,13 +154,11 @@ void TileContainerMeshManager::initEventHandlers(World& world) {
 
     tileContainerRepository.addLoadFinishedListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
         ASSERT_GAME_THREAD();
-        updateTileContainerMesh(*containerEvent.container);
+        initTileContainerMesh(*containerEvent.container);
     });
 
     tileContainerRepository.addEditTilesListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
-        updateTileContainerMesh(*containerEvent.container);
-        // THIS HAS BEEN DEPRECATED BECAUSE ITS RUNNING THE GATHERER AGAIN ANYWAYS?
-        //mInstancedStaticModelManager.onContainerEditEvent(containerEvent);
+        mInstancedStaticModelManager.onContainerEditEvent(containerEvent);
     });
 
     tileContainerRepository.addTileDamagedListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
@@ -173,7 +171,7 @@ void TileContainerMeshManager::initEventHandlers(World& world) {
     });
 }
 
-void TileContainerMeshManager::updateTileContainerMesh(TileContainer& tileContainer)
+void TileContainerMeshManager::initTileContainerMesh(TileContainer& tileContainer)
 {
     switch (tileContainer.getOwnerType()) {
         case TileContainerOwnerType::CHUNK:

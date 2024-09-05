@@ -184,48 +184,43 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
         // Allocate VBO
         {
             PROFILE_SCOPE("VBO");
-            // GPU buffer is larger to accommodate the work group size, or we get corruption
-            const GLsizei transformsBufferSizeBytes = sizeof(f32m4) * numInstances;
             assert(mInstanceGpuData.size() == mInstanceTransforms.size());
-            if (mTransformsVbo == 0) {
-                GL.glCreateBuffers(1, &mTransformsVbo);
-                GL.glCreateBuffers(1, &mInstanceDataVbo);
-                GL.glCreateBuffers(1, &mDamageZonesSSBO);
-                GL.glNamedBufferStorage(mTransformsVbo, transformsBufferSizeBytes, mInstanceTransforms.data(), GL_DYNAMIC_STORAGE_BIT);
-                GL.glNamedBufferStorage(mInstanceDataVbo, sizeof(InstanceGpuData) * numInstances, mInstanceGpuData.data(), GL_DYNAMIC_STORAGE_BIT);
-                GL.glNamedBufferStorage(mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), mModelDamageZonesGpuData.data(), GL_DYNAMIC_STORAGE_BIT);
-                mTransformsVboSizeBytes = transformsBufferSizeBytes;
-            }
-            else if (transformsBufferSizeBytes > mTransformsVboSizeBytes) {
-                //LOG_INFO("GROW {} {}", cpuBufferSizeBytes, gpuBufferSizeBytes);
+            if (numInstances > mInstancesCapacity) {
+                constexpr i32 CAPACITY_PADDING = 256; // Prevent many reallocations
+                mInstancesCapacity = numInstances + CAPACITY_PADDING;
+
                 // Grow to new size
-                GL.glDeleteBuffers(1, &mTransformsVbo);
+                GL.glDeleteBuffers(1, &mTransformsVbo); // Deleting 0 is safe
                 GL.glDeleteBuffers(1, &mInstanceDataVbo);
                 GL.glDeleteBuffers(1, &mDamageZonesSSBO);
                 GL.glCreateBuffers(1, &mTransformsVbo);
                 GL.glCreateBuffers(1, &mInstanceDataVbo);
                 GL.glCreateBuffers(1, &mDamageZonesSSBO);
-                GL.glNamedBufferStorage(mTransformsVbo, transformsBufferSizeBytes, mInstanceTransforms.data(), GL_DYNAMIC_STORAGE_BIT);
-                GL.glNamedBufferStorage(mInstanceDataVbo, sizeof(InstanceGpuData) * numInstances, mInstanceGpuData.data(), GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferStorage(mTransformsVbo, sizeof(f32m4) * mInstancesCapacity, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferSubData(mTransformsVbo, 0, sizeof(f32m4) * numInstances, mInstanceTransforms.data());
+                GL.glNamedBufferStorage(mInstanceDataVbo, sizeof(InstanceGpuData) * mInstancesCapacity, nullptr, GL_DYNAMIC_STORAGE_BIT);
+                GL.glNamedBufferSubData(mInstanceDataVbo, 0, sizeof(InstanceGpuData) * numInstances, mInstanceGpuData.data());
+                // TODO: we don't always need to recreate the damage zones SSBO...
                 GL.glNamedBufferStorage(mDamageZonesSSBO, sizeof(ModelDamageZoneGpuData) * mModelDamageZonesGpuData.size(), mModelDamageZonesGpuData.data(), GL_DYNAMIC_STORAGE_BIT);
-                mTransformsVboSizeBytes = transformsBufferSizeBytes;
             }
             else {
-                //LOG_INFO("SHRINK {} {}  {} {}", instanceData.mFirstDirtyInstance, instanceData.mInstanceTransforms.size(), cpuBufferSizeBytes, gpuBufferSizeBytes);
-                // Only upload data after the first dirty instance, which should amortize things a bit
+                // Note that we never shrink the buffer if its too big. Probably fine.
+                assert(mLastDirtyInstance >= mFirstDirtyInstance);
+                const ui32 totalDirty = mLastDirtyInstance - mFirstDirtyInstance + 1;
+                // Only upload data between the dirty instances, which should amortize things a bit though worst case is still full upload
+                //   If this shows up in profiling, we can store a list of dirty instances and just upload those unless there is more than N
                 glNamedBufferSubData(
                     mTransformsVbo,
                     mFirstDirtyInstance * sizeof(f32m4),
-                    transformsBufferSizeBytes - mFirstDirtyInstance * sizeof(f32m4),
+                    totalDirty * sizeof(f32m4),
                     mInstanceTransforms.data() + mFirstDirtyInstance
                 );
                 glNamedBufferSubData(
                     mInstanceDataVbo,
                     mFirstDirtyInstance * sizeof(InstanceGpuData),
-                    (sizeof(InstanceGpuData) * mInstanceGpuData.size()) - mFirstDirtyInstance * sizeof(InstanceGpuData),
+                    totalDirty * sizeof(InstanceGpuData),
                     mInstanceGpuData.data() + mFirstDirtyInstance
                 );
-
 
                 // Refresh all damage zones except the first one every time
                 // TODO: We likely only need to do this if a damage zone was added or removed
@@ -239,6 +234,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
         }
 
         mFirstDirtyInstance = UINT32_MAX;
+        mLastDirtyInstance = 0;
     }
 
     for (int r = 0; r < RENDER_PASS_COUNT; ++r) {
@@ -472,6 +468,7 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     mDrawCommandsShadows[r]->setNumActiveCommands(shadowCount[r]);
                     mDrawCommandsShadows[r]->uploadDrawCommands();
                 }
+
             }
         }
     }
@@ -496,7 +493,7 @@ void InstancedStaticModelManager::addTileInstanceAtPosition(TileContainerID cont
     const ModelDef* modelDefPtr = ModelRepository::get().tryGetLoadedAsset(modelId);
     assert(modelDefPtr);
 
-    addTileInstanceInternal(*modelDefPtr, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation), variantIndex, std::move(damageData), scale);
+    addTileInstanceInternal(*modelDefPtr, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation, scale), variantIndex, std::move(damageData), scale);
 }
 
 void InstancedStaticModelManager::removeTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex) {
@@ -552,6 +549,7 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
         return;
     }
     // Remove all instances before we add new ones
+    // TODO: We should never do this as instead we should handle model changes directly
     removeTileInstancesFromContainer(gatherer.mContainerID);
 
     ModelRepository& modelRepo = ModelRepository::get();
@@ -569,16 +567,19 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
         const VariantIndexData variantData = modelRepo.getVariantArrayIndexDataForModel(modelId);
 
         const size_t startIndex = mInstanceTransforms.size();
-        // Track where our buffer is dirty
-        if (startIndex < mFirstDirtyInstance) {
-            mFirstDirtyInstance = startIndex;
-        }
         mInstanceTransforms.resize(startIndex + sourceInstances.size());
         mInstanceScales.resize(mInstanceTransforms.size());
         mInstanceGpuData.resize(mInstanceTransforms.size());
         mInstanceSources.resize(mInstanceTransforms.size());
         mInstanceDrawData.resize(mInstanceTransforms.size());
         mInstanceTransitionData.resize(mInstanceTransforms.size());
+
+
+        // Dirty the beginning of range
+        onDirtyModelInstance(startIndex);
+        // Dirty the end of range
+        onDirtyModelInstance(mInstanceTransforms.size() - 1);
+
         // Store per tile references
         for (size_t i = 0; i < sourceInstances.size(); ++i) {
             const size_t instanceIndex = startIndex + i;
@@ -655,10 +656,15 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
         ModelID modelId;
         f32 scale;
     };
+    struct ModelHeightAdjustEvent {
+        f32 zPos;
+        TileIndex tileIndex;
+    };
     struct ModelEditEvents {
         TileContainerID containerId;
         InstancedStaticModelManager* manager = nullptr;
         std::vector<ModelAddEvent> addEvents;
+        std::vector<ModelHeightAdjustEvent> heightAdjustEvents;
         std::vector<TileIndex> removeEvents;
     };
 
@@ -698,10 +704,22 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
             }
             break;
         }
-        case TileContainerEditEventType::ChangeZPos:
+        case TileContainerEditEventType::ChangeZPos: {
+            for (ui32 i = 0; i < editEvent.editCount; ++i) {
+                TileContainerEditZPosEventData& edit = editEvent.changeZPosArray[i];
+                const Tile& tile = evnt.container->getTileAt(edit.tileIndex);
+               
+                if (edit.tileId != TILE_ID_NONE) {
+                    const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(edit.tileId);
+                    if (tileData.shape == TileShape::MODEL) {
+                        const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
+                        editEvents.heightAdjustEvents.emplace_back(ModelHeightAdjustEvent{ edit.worldPosition.z, edit.tileIndex });
+                    }
+                }
+            }
             break;
+        }
         case TileContainerEditEventType::ChangeOrientation:
-            break;
             break;
         default:
             assert(false && "Unhandled model edit event in InstancedStaticModelRenderer");
@@ -710,7 +728,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
     static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(4), "Update handler");
 
 
-    if (editEvents.removeEvents.size() || editEvents.addEvents.size()) {
+    if (editEvents.removeEvents.size() || editEvents.addEvents.size() || editEvents.heightAdjustEvents.size()) {
 
         ModelEditEvents* editPtr = new ModelEditEvents(std::move(editEvents));
 
@@ -723,7 +741,20 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
             }
             for (auto&& addEvent : editPtr->addEvents) {
                 // Assume no damage for now!
-                manager->addTileInstanceAtPosition(containerId, addEvent.tileIndex, addEvent.modelId, addEvent.worldPosition, getTileModelRotationAtPosition(addEvent.worldPosition), 0 /*TODO: Variant*/, nullptr, addEvent.scale);
+                manager->addTileInstanceAtPosition(
+                    containerId, addEvent.tileIndex, addEvent.modelId, addEvent.worldPosition, getTileModelRotationAtPosition(addEvent.worldPosition), 0 /*TODO: Variant*/, nullptr, addEvent.scale
+                );
+            }
+            for (auto&& heightAdjustEvent : editPtr->heightAdjustEvents) {
+                SpatialInstanceDataMap& tileContainerModels = manager->mTileContainerTrackedModels[containerId];
+
+                auto it = tileContainerModels.find(heightAdjustEvent.tileIndex);
+                if (it != tileContainerModels.end()) {
+                    TileModelInstance& tileInstance = it->second;
+                    // Just change zpos in the transform
+                    manager->mInstanceTransforms[tileInstance.mInstanceIndex][3][2] = heightAdjustEvent.zPos;
+                    manager->onDirtyModelInstance(tileInstance.mInstanceIndex);
+                }
             }
             delete editPtr;
         }, editPtr);
@@ -863,9 +894,7 @@ void InstancedStaticModelManager::updatePendingLooseModelInstances() {
 
 void InstancedStaticModelManager::removeModelInstanceInternal(ui32 instanceIndex) {
 
-    if (instanceIndex < mFirstDirtyInstance) {
-        mFirstDirtyInstance = instanceIndex;
-    }
+    onDirtyModelInstance(instanceIndex);
 
     ModelInstanceOwnerVariant backSource = mInstanceSources.back();
     // Tell back source about new position by grabbing transform position to look up
@@ -922,17 +951,19 @@ void InstancedStaticModelManager::addTileInstanceInternal(
 ) {
 
     const size_t instanceIndex = mInstanceTransforms.size();
-    if (instanceIndex < mFirstDirtyInstance) {
-        mFirstDirtyInstance = instanceIndex;
-    }
+    onDirtyModelInstance(instanceIndex);
+
     // Store per tile references (note scale is already applied)
     mInstanceTransforms.emplace_back(transform);
     InstanceGpuData& newGpuData = mInstanceGpuData.emplace_back();
 
+    ModelRepository& modelRepo = ModelRepository::get();
+    const VariantIndexData variantData = modelRepo.getVariantArrayIndexDataForModel(modelDef.getID());
+
     mInstanceScales.emplace_back(scale);
     mInstanceTransitionData.emplace_back();
 
-    newGpuData.variantIndex = variantIndex;
+    newGpuData.variantIndex = variantData.offset + (InstanceVariantIndexType)variantIndex * variantData.stride;
     if (damageData) {
         newGpuData.damageModelIndex = mModelDamageZonesGpuData.size();
         ModelDamageZoneGpuData& gpuDamageData = mModelDamageZonesGpuData.emplace_back();
@@ -947,7 +978,7 @@ void InstancedStaticModelManager::addTileInstanceInternal(
     assert(tileContainerModels.find(tileIndex) == tileContainerModels.end());
     tileContainerModels[tileIndex] = { (ui32)instanceIndex };
 
-    mInstanceDrawData.emplace_back(ModelRepository::get().getDrawDataSpanKeyForModel(modelDef.getID()), modelDef.getID());
+    mInstanceDrawData.emplace_back(modelRepo.getDrawDataSpanKeyForModel(modelDef.getID()), modelDef.getID());
     newGpuData.submeshDataIndex = mInstanceDrawData.back().key.startIndex;
     incrementDrawCommandsCount(mInstanceDrawData.back().key);
 
@@ -1030,9 +1061,8 @@ void InstancedStaticModelManager::addLooseInstanceInternal(
     const VariantIndexData variantData = ModelRepository::get().getVariantArrayIndexDataForModel(modelId);
     increfModelDef(modelId, 1);
     const size_t instanceIndex = mInstanceTransforms.size();
-    if (instanceIndex < mFirstDirtyInstance) {
-        mFirstDirtyInstance = instanceIndex;
-    }
+    onDirtyModelInstance(instanceIndex);
+
     mInstanceTransforms.emplace_back(transform);
     InstanceGpuData& newGpuData = mInstanceGpuData.emplace_back();
     newGpuData.variantIndex = variantData.offset + (InstanceVariantIndexType)variantIndex * variantData.stride;
@@ -1068,9 +1098,7 @@ void InstancedStaticModelManager::updateLooseInstanceTransformInternal(StaticMod
     assert(lit != mLooseStaticModelInstances.end());
     const ui32 instanceIndex = lit->second;
 
-    if (instanceIndex < mFirstDirtyInstance) {
-        mFirstDirtyInstance = instanceIndex;
-    }
+    onDirtyModelInstance(instanceIndex);
 
     mInstanceTransforms[instanceIndex] = transform;
     mInstanceScales[scale] = scale;
@@ -1174,5 +1202,14 @@ void InstancedStaticModelManager::decrementDrawCommandsCount(ModelBatchSubmeshDr
             assert(mDrawCommandsShadowsCount[e_cast(submeshDrawData.renderPass)]);
             --mDrawCommandsShadowsCount[e_cast(submeshDrawData.renderPass)];
         }
+    }
+}
+
+void InstancedStaticModelManager::onDirtyModelInstance(ui32 instanceIndex) {
+    if (instanceIndex < mFirstDirtyInstance) {
+        mFirstDirtyInstance = instanceIndex;
+    }
+    if (instanceIndex > mLastDirtyInstance) {
+        mLastDirtyInstance = instanceIndex;
     }
 }

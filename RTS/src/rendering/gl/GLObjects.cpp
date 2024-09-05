@@ -126,10 +126,14 @@ void GLBuffer::bindAsVertexArrayVertexBuffer(VGBuffer targetVao, GLuint bindingI
 }
 
 void GLDrawCommandBuffer::uploadDrawCommands() {
-    mIndirectBuffer.flushDataAndIncrementFrame(mNumActiveCommands);
+    // Do nothing on zero
+    if (mNumActiveCommands) {
+        mIndirectBuffer.flushDataAndIncrementFrame(mNumActiveCommands);
+    }
 }
 
 void GLDrawCommandBuffer::multiDrawElementsIndirect(GLenum mode, GLenum type) const {
+    assert(mNumActiveCommands);
     GL.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, getHandle());
     void* byteOffset = (void*)getByteOffsetLastFlush();
     checkGlError("InstancedStaticModelRenderer::renderModelPass::B");

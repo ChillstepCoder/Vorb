@@ -332,6 +332,7 @@ void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
         TileContainerEditEvent editEvent;
         editEvent.type = TileContainerEditEventType::ChangeZPos;
         editEvent.changeZPosArray = &eventData;
+        eventData.tileId = tile.mainLayer;
 
         evnt.container = this;
         evnt.varEvent = editEvent;
@@ -382,6 +383,7 @@ void TileContainer::bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editDa
         TileContainerEditZPosEventData& currEventData = sEventData[i];
         const TileIndex tileIndex = editData[i].first;
         currEventData.tileIndex = tileIndex;
+        currEventData.tileId = mTiles[tileIndex].mainLayer;
         currEventData.worldPosition = getTileCenterWorldPosition(currEventData.tileIndex);
         onTileChanged(tileIndex);
     }

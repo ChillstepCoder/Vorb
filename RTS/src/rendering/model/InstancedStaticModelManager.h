@@ -96,6 +96,8 @@ private:
     void incrementDrawCommandsCount(ModelBatchSubmeshDrawDataSpanKey drawDataKey);
     void decrementDrawCommandsCount(ModelBatchSubmeshDrawDataSpanKey drawDataKey);
 
+    void onDirtyModelInstance(ui32 instanceIndex);
+
     struct InstanceDrawData {
         InstanceDrawData() = default;
         InstanceDrawData(ModelBatchSubmeshDrawDataSpanKey key, ModelID modelId) : key(key), modelId(modelId) {}
@@ -140,8 +142,9 @@ private:
     VGBuffer mTransformsVbo = 0;
     VGBuffer mInstanceDataVbo = 0;
     VGBuffer mDamageZonesSSBO = 0;
-    ui32 mTransformsVboSizeBytes = 0;
-    ui32 mFirstDirtyInstance = UINT32_MAX;
+    ui32 mInstancesCapacity = 0;
+    ui32 mFirstDirtyInstance = INT32_MAX;
+    ui32 mLastDirtyInstance = 0;
     // Crossfade Transitions
     std::unique_ptr<GpuStreamingDataBuffer> mCrossfadeBuffers[e_count(MaterialRenderPassType)];
     i32 mNumActiveLodTransitions = 0;

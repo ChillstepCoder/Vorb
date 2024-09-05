@@ -291,7 +291,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                             damageData = std::make_unique<TileDamageData>(it->second);
                         }
                     }
-                    f32 rotation = getTileModelRotationAtPosition(worldPos);
+                    const f32 rotation = getTileModelRotationAtPosition(worldPos);
 
                     const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
                     f32 scale;

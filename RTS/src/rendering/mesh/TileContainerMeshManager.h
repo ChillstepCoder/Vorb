@@ -40,7 +40,7 @@ private:
     void removeBillboardMesh(const Mesh* mesh) { ASSERT_RENDER_THREAD(); mBillboardMeshes.erase(mesh); }
 
     void initEventHandlers(World& world);
-    void updateTileContainerMesh(TileContainer& tileContainer);
+    void initTileContainerMesh(TileContainer& tileContainer);
     // Mesh management
     UnorderedFlatMap<TileContainerID, TileContainerMeshData> mTileContainerMeshData;
     moodycamel::ConcurrentQueue<TileContainerID> mTileContainersToRemove;

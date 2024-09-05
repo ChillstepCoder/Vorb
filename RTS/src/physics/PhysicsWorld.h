@@ -23,6 +23,8 @@ class HeightmapPatch;
 #include "PhysicsObjectLayer.h"
 #include "physics/PhysicsWorldEvents.h"
 
+#include "tile/TileContainerEvents.h"
+
 #define ENABLE_PHYSICS_ANALYTICS 1
 
 class Camera3D;
@@ -131,6 +133,8 @@ public:
 #endif
 
 private:
+    void initEvents();
+
     JPH::ObjectLayer makeObjectLayerMasked(JPH::ObjectLayer layerBits, JPH::ObjectLayer collideMaskBits);
 
     // ===========================================================================
@@ -170,6 +174,9 @@ private:
     // TODO: Profile vs FlatSet and Vector? Vector may be faster for small N
     UnorderedFlatSet<entt::entity> mItemEntitiesRestedThisFrame;
     UnorderedFlatSet<entt::entity> mItemEntitiesMovedThisFrame;
+
+    // Events
+    TileContainerListeners mTileContainerListeners;
 
     EVENT_DISPATCHER_DEF(PhysicsWorld);
 

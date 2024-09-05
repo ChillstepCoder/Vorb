@@ -45,6 +45,7 @@ struct TileContainerEditLayerEventData {
 
 struct TileContainerEditZPosEventData {
     TileIndex tileIndex;
+    TileID tileId;
     f32v3 worldPosition;
     f32 prevGroundZOffset;
     f32 newGroundZOffset;
