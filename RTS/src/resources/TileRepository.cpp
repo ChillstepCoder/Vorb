@@ -112,3 +112,13 @@ void TileRepository::fixupRegisteredAsset(AssetID id) {
         def.heightOffsetNorth = 0.0f;
     }
 }
+
+void TileRepository::onAllAssetTypesRegistered() {
+    mAllTileShapes.resize(mAssets.size());
+    mAllTileModelIds.resize(mAssets.size());
+    for (AssetID id = 0; id < mAssets.size(); ++id) {
+        TileDef& def = *mAssets[id];
+        mAllTileShapes[id] = def.shape;
+        mAllTileModelIds[id] = def.modelRef.getAssetID();
+    }
+}

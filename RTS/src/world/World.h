@@ -35,6 +35,7 @@ class CombatContext;
 class NavWorld;
 class FishEcosystem;
 class WorldRenderState;
+class WorldRenderDataManager;
 class WeatherManager;
 class WorldSaveContext;
 
@@ -120,6 +121,9 @@ public:
     
     // Structures TODO: Needs to be StructureRef so it isnt destroyed
     Building* tryGetStructureAtWorldPos(TileCoord worldPos) const;
+
+    // Calls into the RenderContext
+    WorldRenderDataManager& getRenderDataManager() const;
 
     entt::entity getLocalPlayer();
 

@@ -157,6 +157,9 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
         mSimChunkGrid->setWorld(this);
     }
 
+    // Post allocation initializations
+    mPhysicsWorld->init();
+
     LOG_DEBUG("Chunks allocated in {}", timer.stop());
     LOG_DEBUG("Finished allocating world {} net mode {}", (void*)this, e_cast(netMode));
 
@@ -434,6 +437,10 @@ void World::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk
 
 Building* World::tryGetStructureAtWorldPos(TileCoord worldPos) const {
     return mStructureGrid->tryGetBuildingAtWorldPos(worldPos);
+}
+
+WorldRenderDataManager& World::getRenderDataManager() const {
+    return RenderContext::getInstance().getRenderDataManagerForWorld(*this);
 }
 
 entt::entity World::getLocalPlayer() {

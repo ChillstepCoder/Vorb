@@ -254,7 +254,6 @@ entt::entity EntityFactory::createItemProjectile(World& world, f32v3 position, f
     //        registry.remove<DynamicModelComponent>(entity);
     //        registry.remove<AngularVelocityComponent>(entity);
     //        assert(RenderContext::exists());
-    //        // TODO: This incurs a mutex lock in getRenderDataManagerForWorld, and it also could crash during shutdown if the render data manager is destroyed after we access it
     //        InstancedStaticModelManager& modelMgr = RenderContext::getInstance().getRenderDataManagerForWorld(world).getInstancedStaticModelManager();
     //        staticCmp.staticModelInstanceId = modelMgr.addLooseModelInstance(
     //            staticCmp.modelId, registry.get<OrientationComponent>(entity).mOrientation, registry.get<PositionComponent>(entity).mPosition, 0 /*TODO Variant*/
@@ -279,9 +278,7 @@ void finalizeItemOnGroundEntity(entt::entity newEntity, World& world, f32v3 posi
     OrientationComponent& orientCmp = registry.emplace<OrientationComponent>(newEntity, glm::angleAxis(Random::getCachedRandomf() * M_2_PIF, f32v3(0.0f, 0.0f, 1.0f)));
 
     StaticModelComponent& staticCmp = registry.emplace<StaticModelComponent>(newEntity, modelId, scale);
-    assert(RenderContext::exists());
-    // TODO: This incurs a mutex lock in getRenderDataManagerForWorld, and it also could crash during shutdown if the render data manager is destroyed after we access it
-    InstancedStaticModelManager& modelMgr = RenderContext::getInstance().getRenderDataManagerForWorld(world).getInstancedStaticModelManager();
+    InstancedStaticModelManager& modelMgr = world.getRenderDataManager().getInstancedStaticModelManager();
     staticCmp.staticModelInstanceId = modelMgr.addLooseModelInstance(
         staticCmp.modelId, orientCmp.mOrientation, position, 0 /*TODO Variant*/, scale
     );
@@ -380,7 +377,7 @@ entt::entity EntityFactory::createItemContainerOnGround(World& world, f32v3 posi
         ASSERT_GAME_THREAD();
         const f32 scale = buildContainerNameplateAndGetScale(world, cmp, newEntity);
 
-        InstancedStaticModelManager& modelMgr = RenderContext::getInstance().getRenderDataManagerForWorld(world).getInstancedStaticModelManager();
+        InstancedStaticModelManager& modelMgr = world.getRenderDataManager().getInstancedStaticModelManager();
         entt::registry& registry = world.getECS().mRegistry;
         if (StaticModelComponent* staticCmp = registry.try_get<StaticModelComponent>(newEntity)) {
             modelMgr.changeLooseModelInstanceScale(
@@ -424,8 +421,7 @@ void EntityFactory::destroyEntity(World& world, entt::entity entity) {
     }
 
     if (StaticModelComponent* cmp = registry.try_get<StaticModelComponent>(entity)) {
-        // TODO: This incurs a mutex lock in getRenderDataManagerForWorld, and it also could crash during shutdown if the render data manager is destroyed after we access it
-        InstancedStaticModelManager& modelMgr = RenderContext::getInstance().getRenderDataManagerForWorld(world).getInstancedStaticModelManager();
+        InstancedStaticModelManager& modelMgr = world.getRenderDataManager().getInstancedStaticModelManager();
         modelMgr.removeLooseModelInstance(cmp->modelId, cmp->staticModelInstanceId);
     }
 

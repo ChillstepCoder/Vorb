@@ -138,7 +138,7 @@ void ChunkGrassQuadtree::buildMeshForPatch(QuadtreePatch& patch, ui32 lod, ui32 
 
 void ChunkGrassQuadtree::freeMeshForPatch(ui32 patchIndex) {
     if (mMeshes[patchIndex]) {
-        RenderContext::getInstance().getRenderDataManagerForWorld(mChunk.getWorld()).getGrassMeshManager().removeGrassMesh(mMeshes[patchIndex].get());
+        mChunk.getWorld().getRenderDataManager().getGrassMeshManager().removeGrassMesh(mMeshes[patchIndex].get());
         mMeshes[patchIndex].reset();
         ASSERT_RENDER_THREAD();
     }
@@ -150,7 +150,7 @@ void ChunkGrassQuadtree::finishMesh(GrassBillboardMeshBuilder& meshBuilder, ui32
     mesh->mPosition = getWorldPos3D();
     meshBuilder.finishMesh();
 
-    GrassMeshManager& grassMeshManager = RenderContext::getInstance().getRenderDataManagerForWorld(mChunk.getWorld()).getGrassMeshManager();
+    GrassMeshManager& grassMeshManager = mChunk.getWorld().getRenderDataManager().getGrassMeshManager();
     if (mesh->mMesh.isValid()) {
         if (!mesh->mHadMesh) {
             assert(mesh->mIndex < ChunkGrassFlatQuadtree::NODE_COUNT);

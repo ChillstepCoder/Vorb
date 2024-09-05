@@ -25,7 +25,7 @@
 //#include <glm/gtx/matrix_decompose.hpp>
 
 // Types of events we handle
-constexpr ui8 MODEL_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeTileID) | e_cast(TileContainerEditEventType::ChangeOrientation) | e_cast(TileContainerEditEventType::ChangeZPos);
+constexpr ui8 MODEL_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeTileID) | e_cast(TileContainerEditEventType::ChangeOrientation);
 static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(4), "Update handler");
 
 // Water not supported
@@ -680,25 +680,24 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
                 TileContainerEditLayerEventData& edit = editEvent.changeLayerArray[i];
                 const TileID prevId = edit.prevId;
                 if (prevId != TILE_ID_NONE) {
-                    const TileDef& prevTileData = TileRepository::get().getLoadedOrUnloadedAsset(edit.prevId);
-                    if (prevTileData.shape == TileShape::MODEL) {
+                    if (TileRepository::get().getTileShape(edit.prevId) == TileShape::MODEL) {
                         editEvents.removeEvents.emplace_back(edit.tileIndex);
                     }
                 }
                 const TileID newId = edit.newId;
                 assert(newId != prevId);
                 if (newId != TILE_ID_NONE) {
-                    const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(newId);
-                    if (tileData.shape == TileShape::MODEL) {
+                    const ModelID modelId = TileRepository::get().getTileModelID(newId);
+                    if (modelId != INVALID_MODEL_ID) {
                         f32 scale;
-                        const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
+                        const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(modelId);
                         if (const FloraTileData* data = std::get_if<FloraTileData>(&edit.typeData)) {
                             scale = modelDef.getScaleFromFloraAge(data->age);
                         }
                         else {
                             scale = modelDef.getRandomScaleAtPosition(edit.worldPosition);
                         }
-                        editEvents.addEvents.emplace_back(ModelAddEvent{ edit.worldPosition, edit.tileIndex, tileData.modelId, scale });
+                        editEvents.addEvents.emplace_back(ModelAddEvent{ edit.worldPosition, edit.tileIndex, modelId, scale });
                     }
                 }
             }
@@ -710,9 +709,9 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
                 const Tile& tile = evnt.container->getTileAt(edit.tileIndex);
                
                 if (edit.tileId != TILE_ID_NONE) {
-                    const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(edit.tileId);
-                    if (tileData.shape == TileShape::MODEL) {
-                        const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
+                    const ModelID modelId = TileRepository::get().getTileModelID(edit.tileId);
+                    if (modelId != INVALID_MODEL_ID) {
+                        const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(modelId);
                         editEvents.heightAdjustEvents.emplace_back(ModelHeightAdjustEvent{ edit.worldPosition.z, edit.tileIndex });
                     }
                 }

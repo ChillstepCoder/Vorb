@@ -41,7 +41,7 @@ enum class TileLayer : ui8 {
 };
 static_assert(TILE_LAYER_COUNT == e_cast(TileLayer::COUNT));
 
-enum class TileShape {
+enum class TileShape : ui8 {
     THIN,  // Trees and flora
     BLOCK, // Most blocks
     FLOOR,

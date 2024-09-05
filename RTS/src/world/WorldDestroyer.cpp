@@ -54,7 +54,7 @@ void WorldDestroyer::shutdownWorld(World& world) {
     } while (!finishedGameThreadShutdown);
     RenderThreadTasks::getInstance().processShutdownTasks(); // One more for good measure
 
-    RenderContext::getInstance().getWorldRenderer().removeRenderDataManagerForWorld(world);
+    RenderContext::getInstance().getWorldRenderer().destroyRenderDataManagerForWorld(world);
 
     LOG_DEBUG("Finished shutdown");
 

@@ -115,11 +115,26 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& bui
         return;
     }
 
+    // Keep track of which tiles are models
+    TileIndex modelTiles[CHUNK_SIZE];
+    i32 numModelTiles = 0;
+    TileIndex proceduralTiles[CHUNK_SIZE];
+    i32 numProceduralTiles = 0;
+
+    f32 minHeight = FLT_MAX;
+    f32 maxHeight = -FLT_MAX;
+
     // Set all tile ground positions, mark building locations, and generate grass
     std::vector<Tile>& tiles = chunk.mTileContainer->mTiles;
     for (i32 index = 0; index < CHUNK_SIZE; ++index) {
         const TileCoord coord(chunkPosWorld + i32v2(index & TILE_INDEX_X_MASK, index >> TILE_INDEX_Y_SHIFT));
         tiles[index].groundZOffset = heightGrid.computeCenterHeightAtTile<true>(coord);
+        if (tiles[index].groundZOffset < minHeight) {
+            minHeight = tiles[index].groundZOffset;
+        }
+        else if (tiles[index].groundZOffset > maxHeight) {
+            maxHeight = tiles[index].groundZOffset;
+        }
         if (!buildingFootprint.isEmpty() && buildingFootprint.getBit(index)) {
             tiles[index].tileFlags.setBit(TileFlags::IS_BLOCKED_BY_BUILDING);
         }
@@ -128,40 +143,56 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& bui
         }
     }
     // Read+write lock
-    std::lock_guard lock(simData.mMutex);
-    assert(simData.mTileData);
-    SimChunkTileData& simChunkTileData = *simData.mTileData;
-    auto& tileIndexToTileData = simChunkTileData.tileIndexToTileData;
-    for (auto&& it = tileIndexToTileData.begin(); it != tileIndexToTileData.end();) {
-        auto& [index, data] = *it;
-        Tile& tile = tiles[index];
-        assert(isTileValid(data.tileId));
-        if (tile.tileFlags.isBitSet(TileFlags::IS_BLOCKED_BY_BUILDING)) {
-            // Remove blocked tile from sim layer and do not add to this chunk
-            it = simChunkTileData.removeTileDuringIter(it);
-        }
-        else {
-            tiles[index].mainLayer = data.tileId;
-            tiles[index].variant = data.variant;
-            tiles[index].typeDataCopy = data.typeData;
-            chunk.mGrass[index] = TileGrass();
-            ++it;
+    {
+        std::lock_guard lock(simData.mMutex);
+        assert(simData.mTileData);
+        SimChunkTileData& simChunkTileData = *simData.mTileData;
+        auto& tileIndexToTileData = simChunkTileData.tileIndexToTileData;
+        for (auto&& it = tileIndexToTileData.begin(); it != tileIndexToTileData.end();) {
+            auto& [index, data] = *it;
+            Tile& tile = tiles[index];
+            assert(isTileValid(data.tileId));
+            if (tile.tileFlags.isBitSet(TileFlags::IS_BLOCKED_BY_BUILDING)) {
+                // Remove blocked tile from sim layer and do not add to this chunk
+                it = simChunkTileData.removeTileDuringIter(it);
+            }
+            else {
+                tiles[index].mainLayer = data.tileId;
+                tiles[index].variant = data.variant;
+                tiles[index].typeDataCopy = data.typeData;
+                chunk.mGrass[index] = TileGrass();
+                ++it;
+
+                if (tileRepo.getTileModelID(data.tileId) != INVALID_MODEL_ID) {
+                    modelTiles[numModelTiles++] = index;
+                }
+                else {
+                    proceduralTiles[numProceduralTiles++] = index;
+                }
+            }
         }
 
-        // TODO: Not ideal
-        //const NavBlockerType navBlockerType = tileRepo.getLoadedOrUnloadedAsset(data.tileId).navBlockerType;
-        //if (navBlockerType != NavBlockerType::NONE) {
-        //    // Set blocked flags and erase tile if failed
-        //    if (!chunk.mTileContainer->tryBlockAdjTilesFromGeneration(index, navBlockerType)) {
-        //        tiles[index].mainLayer = TILE_ID_NONE; // Clear the main layer since it wont fit
-        //        tiles[index].mainLayerVariant = 0;
-        //    }
-        //}
+        // Copy walls
+        chunk.mTileContainer->mTileWallsContainer = simChunkTileData.tileWalls;
     }
 
-    // Copy walls
-    chunk.mTileContainer->mTileWallsContainer = simChunkTileData.tileWalls;
-    chunk.mAABB.height = 50; // ???
+    // We need some class that is in charge of creating the orientations, sizes, and positions for our models,
+    // sending them to both the model manager and the physics world (And maybe the nav graph)
+    // Handle is a ContainerID and a TileIndex as we have no layers. Only one model may exist per tile right now.
+    // Then each manager just has to listen for update events for new tiles, removed tiles, or container destruction
+    // A good name for this class is TileContainerMeshManager
+    // We could potentially collapse all the update logic into addPhysics/MeshesForTileModels(std::span<tiles>)
+    //x;
+
+    if (numModelTiles) {
+
+    }
+    if (numProceduralTiles) {
+
+    }
+    constexpr f32 AABB_Z_PADDING = 10.0f;
+    chunk.mAABB.pos.z = minHeight - AABB_Z_PADDING;
+    chunk.mAABB.height = (maxHeight - minHeight) + AABB_Z_PADDING;
 }
 
 

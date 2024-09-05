@@ -24,9 +24,11 @@ public:
     ~TileRepository();
 
     // TODO: Recipe repository
-    const Recipe& getRecipeForTile(TileID tileId) { return mTileRecipes[tileId]; }
+    const Recipe& getRecipeForTile(TileID tileId) const { return mTileRecipes[tileId]; }
+    TileShape getTileShape(TileID tileId) const { return mAllTileShapes[tileId]; }
+    ModelID getTileModelID(TileID tileId) const { return mAllTileModelIds[tileId]; }
 
-    TileID getTileID(StrToken name) { return (TileID)getAssetID(name); }
+    TileID getTileID(StrToken name) const { return (TileID)getAssetID(name); }
 
     DEFAULT_ASSET_SAVE_FUNC();
 
@@ -34,9 +36,15 @@ public:
     const char* const getAssetTypeDisplayName() const override { return "Tile"; }
 
 private:
+
     AssetLoadFunc getAssetLoadFunc() override { return nullptr; } // TODO:?
     void onRegisteredAsset(AssetID id) override;
     void fixupRegisteredAsset(AssetID id) override;
+    void onAllAssetTypesRegistered() override;
     // TODO: Recipe repository
     inline static std::vector<Recipe> mTileRecipes;
+
+    // Flyweight lookup data for cache friendly generation and meshing
+    std::vector<TileShape> mAllTileShapes;
+    std::vector<ModelID> mAllTileModelIds;
 };

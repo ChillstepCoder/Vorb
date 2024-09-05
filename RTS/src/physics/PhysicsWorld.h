@@ -57,6 +57,9 @@ public:
 
     static void initializeJPH();
 
+    // Call after world is fully initialized
+    void init();
+
     // Returns number of steps taken
     int stepSimulation(f32 deltaTime);
 

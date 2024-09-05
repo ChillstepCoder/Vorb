@@ -447,7 +447,7 @@ CharacterRenderer& RenderContext::getCharacterRenderer() const {
     return mWorldRenderer->getCharacterRenderer();
 }
 
-WorldRenderDataManager& RenderContext::getRenderDataManagerForWorld(World& world) const {
+WorldRenderDataManager& RenderContext::getRenderDataManagerForWorld(const World& world) const {
     return mWorldRenderer->getRenderDataManagerForWorld(world);
 }
 
@@ -690,12 +690,10 @@ void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState&
         yOffset += GAP_SIZE;
 
         {
-            WorldRenderDataManager* mgr = mWorldRenderer->tryGetRenderDataManagerForWorld(*mActiveWorld);
-            if (mgr) {
-                sprintf_s(buffer, STR_BUFFER_SIZE, "Models: %u", mgr->getInstancedStaticModelManager().getNumModels());
-                mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
-                yOffset += GAP_SIZE;
-            }
+            WorldRenderDataManager& mgr = mWorldRenderer->getRenderDataManagerForWorld(*mActiveWorld);
+            sprintf_s(buffer, STR_BUFFER_SIZE, "Models: %u", mgr.getInstancedStaticModelManager().getNumModels());
+            mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, color::White);
+            yOffset += GAP_SIZE;
         }
 
         sprintf_s(buffer, STR_BUFFER_SIZE, "Characters: %u", (ui32)renderState.getCharacterRenderState().size());

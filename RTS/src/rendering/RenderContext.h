@@ -87,7 +87,7 @@ public:
     TileContainerRenderer& getTileContainerRenderer() const;
     CharacterRenderer& getCharacterRenderer() const;
     WorldRenderer& getWorldRenderer() const { return *mWorldRenderer; }
-    WorldRenderDataManager& getRenderDataManagerForWorld(World& world) const;
+    WorldRenderDataManager& getRenderDataManagerForWorld(const World& world) const;
     vg::SpriteFont& getDebugFont() { return *mSpriteFont; }
 
     f32 getCurrentFrameAlpha() const { return mCurrentFrameAlpha; }

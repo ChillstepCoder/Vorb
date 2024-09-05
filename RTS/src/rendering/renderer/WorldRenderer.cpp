@@ -111,8 +111,6 @@ WorldRenderer::WorldRenderer(const f32v2& screenResolution) : mScreenResolution(
     mHDRLightGBuffer = std::make_unique<vg::GBuffer>(screenResolution);
     mHDRLightGBuffer->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGB16F);
 
-
-
     initEventHandlers();
 }
 
@@ -160,23 +158,6 @@ void WorldRenderer::onBeginFrame(WorldRenderState* renderState, f32v3 playerPos)
         }
     }
 
-    // This happens when a world is shutting down. The render state may have a world pointer
-    // but it can be invalid due to being shut down
-    {
-        std::lock_guard lock(mRenderDataManagersMutex);
-        auto&& it = mRenderDataManagers.find(mActiveWorld);
-        if (it == mRenderDataManagers.end()) {
-            if (mActiveWorld) {
-                setActiveWorld(nullptr);
-            }
-            return;
-        }
-        else {
-            mCurrentWorldRenderDataManager = it->second.get();
-        }
-    }
-
-
     mRenderState = renderState;
     mPlayerPos = playerPos;
 
@@ -191,6 +172,9 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
     mCamera = camera;
 
     // Any per frame world render data
+    const RenderableWorldIndex worldIndex = mActiveWorld->isEditorWorld() ? RenderableWorldIndex::Editor : RenderableWorldIndex::Game;
+    mCurrentWorldRenderDataManager = mRenderDataManagers[e_cast(worldIndex)].get();
+
     mCurrentWorldRenderDataManager->frameUpdate(*camera, elapsedSec);
 
     updateThreadSharedComponents();
@@ -563,33 +547,20 @@ void WorldRenderer::renderDebug() {
 }
 
 WorldRenderDataManager& WorldRenderer::getRenderDataManagerForWorld(const World& world) {
-    std::lock_guard lock(mRenderDataManagersMutex);
-    auto&& it = mRenderDataManagers.find(&world);
-    if (it == mRenderDataManagers.end()) {
+    const RenderableWorldIndex worldIndex = world.isEditorWorld() ? RenderableWorldIndex::Editor : RenderableWorldIndex::Game;
+    if (!mRenderDataManagers[e_cast(worldIndex)]) {
         panic("Missing world in WorldRenderer::getRenderDataManagerForWorld");
     }
-    return *it->second;
+    return *mRenderDataManagers[e_cast(worldIndex)];
 }
 
-WorldRenderDataManager* WorldRenderer::tryGetRenderDataManagerForWorld(const World& world)
-{
-    WorldID id = world.getId();
-    std::lock_guard lock(mRenderDataManagersMutex);
-    auto&& it = mRenderDataManagers.find(&world);
-    if (it == mRenderDataManagers.end()) {
-        return nullptr;
-    }
-    return it->second.get();
-}
 
-void WorldRenderer::removeRenderDataManagerForWorld(const World& world) {
-    {
-        std::lock_guard lock(mRenderDataManagersMutex);
-        auto&& it = mRenderDataManagers.find(&world);
-        if (it != mRenderDataManagers.end()) {
-            mRenderDataManagers.erase(it);
-        }
+void WorldRenderer::destroyRenderDataManagerForWorld(const World& world) {
+    const RenderableWorldIndex worldIndex = world.isEditorWorld() ? RenderableWorldIndex::Editor : RenderableWorldIndex::Game;
+    if (!mRenderDataManagers[e_cast(worldIndex)]) {
+        panic("Missing world in WorldRenderer::clearRenderDataManagerForWorld");
     }
+    mRenderDataManagers[e_cast(worldIndex)].reset();
 }
 
 void WorldRenderer::selectNextDebugShader() {
@@ -610,27 +581,21 @@ StrToken WorldRenderer::getCurrentPassthroughRenderStageName() const
 void WorldRenderer::initEventHandlers() {
     World::registerStaticWorldListeners(mEventHandles.worldEventListeners);
     World::addOnWorldBeginGameThreadListener(mEventHandles.worldEventListeners, [this](World& world) {
-        std::lock_guard lock(mRenderDataManagersMutex);
-        mRenderDataManagers.insert(
-            std::make_pair(&world, std::make_unique<WorldRenderDataManager>(world))
-        );
+        mRenderDataManagers[e_cast(RenderableWorldIndex::Game)] = std::make_unique<WorldRenderDataManager>(world);
         mCharacterRenderer->onWorldBegin(world);
-
     });
     World::addOnWorldEndRenderThreadListener(mEventHandles.worldEventListeners, [this](World& world) {
         WorldRenderDataManager* mgr = nullptr;
-        {
-            std::lock_guard lock(mRenderDataManagersMutex);
-            auto&& it = mRenderDataManagers.find(&world);
-            if (it != mRenderDataManagers.end()) {
-                mgr = it->second.get();
-            }
-        }
+
+        const RenderableWorldIndex worldIndex = world.isEditorWorld() ? RenderableWorldIndex::Editor : RenderableWorldIndex::Game;
+        mgr = mRenderDataManagers[e_cast(worldIndex)].get();
         // Have to pull out of critical section as nested calls might lock mutex
         if (mgr) {
+            if (mCurrentWorldRenderDataManager == mgr) {
+                mCurrentWorldRenderDataManager = nullptr;
+            }
             mgr->shutdown();
         }
-        // TODO: What if we are still holding on to the handle?
 
         mEventHandles.skillsComponentListeners.reset();
     });

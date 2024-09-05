@@ -41,6 +41,12 @@ struct GlobalRenderData;
 
 DECL_VG(class GBuffer);
 
+enum class RenderableWorldIndex {
+    Game,
+    Editor,
+    COUNT
+};
+
 // Manages both rendering and data for one or more worlds
 // TODO: Split into data + render?
 class WorldRenderer
@@ -61,8 +67,7 @@ public:
 
     // Assets
     WorldRenderDataManager& getRenderDataManagerForWorld(const World& world);
-    WorldRenderDataManager* tryGetRenderDataManagerForWorld(const World& world);
-    void removeRenderDataManagerForWorld(const World& world);
+    void destroyRenderDataManagerForWorld(const World& world);
 
     void selectNextDebugShader();
     StrToken getCurrentPassthroughRenderStageName() const;
@@ -106,8 +111,7 @@ private:
 
     // World Data
     WorldRenderDataManager* mCurrentWorldRenderDataManager = nullptr;
-    mutable std::mutex mRenderDataManagersMutex;
-    UnorderedFlatMap<const World*, std::unique_ptr<WorldRenderDataManager>> mRenderDataManagers;
+    std::unique_ptr<WorldRenderDataManager> mRenderDataManagers[e_count(RenderableWorldIndex)];
     std::unique_ptr<Mesh> mHorizonQuad;
     std::unique_ptr<Skybox> mSkyBox;
 

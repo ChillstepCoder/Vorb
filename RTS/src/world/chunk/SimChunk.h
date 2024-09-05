@@ -24,6 +24,7 @@ enum class SimChunkState : ui8 {
     Allocated // Tiles are loaded into memory
 };
 
+// TODO: May prefer FlatMap for updates?
 typedef UnorderedFlatMap<ChunkTileIndex, SimTileData> SimTileDataMap;
 
 constexpr i16 MAX_SIM_TILE_RESERVATIONS_PER_QUERY = 128;

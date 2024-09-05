@@ -43,6 +43,7 @@
 #include "debugging/DebugRenderer.h"
 
 #include "resources/ModelRepository.h"
+#include "resources/TileRepository.h"
 
 static const JPH::Quat ROTATE_ZUP = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f);
 
@@ -50,6 +51,7 @@ static const JPH::Quat ROTATE_ZUP = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JP
 PhysicsWorld* sGamePhysicsWorld = nullptr;
 
 constexpr const char* PHYSICS_STEP_PROFILE_NAME = "Physics Step";
+constexpr ui8 TILE_EDIT_HANDLE_MASK = e_cast(TileContainerEditEventType::ChangeZPos) | e_cast(TileContainerEditEventType::ChangeTileID) | e_cast(TileContainerEditEventType::ChangeOrientation);
 
 // Shared query shapes
 static std::unique_ptr<JPH::SphereShape> sUnitSphereShape;
@@ -450,6 +452,10 @@ void PhysicsWorld::initializeJPH() {
     sUnitSphereShape->SetUserData(PhysicsShapeUserData(CollisionShapes::Sphere));
     sUnitCylinderShape = std::make_unique<JPH::CylinderShape>(1.0_r, 1.0_r);
     sUnitCylinderShape->SetUserData(PhysicsShapeUserData(CollisionShapes::Cylinder));
+}
+
+void PhysicsWorld::init() {
+    initEvents();
 }
 
 int PhysicsWorld::stepSimulation(f32 deltaTime) {
@@ -943,10 +949,69 @@ void PhysicsWorld::initEvents() {
     TileContainerRepository& tileContainerRepository = mWorld.getTileContainerRepository();
     tileContainerRepository.registerTileContainerListeners(mTileContainerListeners);
 
-    tileContainerRepository.addEditTilesListener(mTileContainerListeners, [this](const TileContainerEvent& containerEvent) {
-        /* if (containerEvent.varEvent) {
-             updateTileContainerMeshFromBuilder(*containerEvent.varEvent);
-         }*/
+    tileContainerRepository.addEditTilesListener(mTileContainerListeners, [this](const TileContainerEvent& evnt) {
+      /*  ASSERT_GAME_THREAD();
+
+        const TileContainerEditEvent& editEvent = std::get<TileContainerEditEvent>(evnt.varEvent);
+
+        if ((e_cast(editEvent.type) & TILE_EDIT_HANDLE_MASK) == 0) {
+            return;
+        }
+
+        switch (editEvent.type) {
+            case TileContainerEditEventType::ChangeFlags:
+                break;
+            case TileContainerEditEventType::ChangeTileID: {
+                for (ui32 i = 0; i < editEvent.editCount; ++i) {
+                    TileContainerEditLayerEventData& edit = editEvent.changeLayerArray[i];
+                    const TileID prevId = edit.prevId;
+                    if (prevId != TILE_ID_NONE) {
+                        const TileDef& prevTileData = TileRepository::get().getLoadedOrUnloadedAsset(edit.prevId);
+                        if (prevTileData.shape == TileShape::MODEL) {
+                            editEvents.removeEvents.emplace_back(edit.tileIndex);
+                        }
+                    }
+                    const TileID newId = edit.newId;
+                    assert(newId != prevId);
+                    if (newId != TILE_ID_NONE) {
+                        const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(newId);
+                        if (tileData.shape == TileShape::MODEL) {
+                            f32 scale;
+                            const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
+                            if (const FloraTileData* data = std::get_if<FloraTileData>(&edit.typeData)) {
+                                scale = modelDef.getScaleFromFloraAge(data->age);
+                            }
+                            else {
+                                scale = modelDef.getRandomScaleAtPosition(edit.worldPosition);
+                            }
+                            editEvents.addEvents.emplace_back(ModelAddEvent{ edit.worldPosition, edit.tileIndex, tileData.modelId, scale });
+                        }
+                    }
+                }
+                break;
+            }
+            case TileContainerEditEventType::ChangeZPos: {
+                for (ui32 i = 0; i < editEvent.editCount; ++i) {
+                    TileContainerEditZPosEventData& edit = editEvent.changeZPosArray[i];
+                    const Tile& tile = evnt.container->getTileAt(edit.tileIndex);
+
+                    if (edit.tileId != TILE_ID_NONE) {
+                        const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(edit.tileId);
+                        if (tileData.shape == TileShape::MODEL) {
+                            const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
+                            editEvents.heightAdjustEvents.emplace_back(ModelHeightAdjustEvent{ edit.worldPosition.z, edit.tileIndex });
+                        }
+                    }
+                }
+                break;
+            }
+            case TileContainerEditEventType::ChangeOrientation:
+                break;
+            default:
+                assert(false && "Unhandled model edit event in InstancedStaticModelRenderer");
+                break;
+        }*/
+        static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(4), "Update handler");
     });
 }
 
