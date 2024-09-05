@@ -31,6 +31,9 @@
 #include <thread>
 #include <type_traits>
 #include <assert.h>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 /************************************************************************/
 /* Boost Containers                                                     */

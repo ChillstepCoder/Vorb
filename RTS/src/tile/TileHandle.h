@@ -1,6 +1,5 @@
 #pragma once
 
-#include "world/GridID.h"
 #include "tile/Tile.h"
 
 #include <boost/container_hash/hash.hpp>

@@ -60,12 +60,9 @@
 #include "building/BuildingGrid.h"
 
 #include "resources/ResourceManager.h"
-#include "resources/TextureRepository.h"
 #include "resources/MaterialRepository.h"
 #include "resources/CubemapRepository.h"
 #include "rendering/MaterialShaderRepository.h"
-
-#include "weather/CloudMeshManager.h"
 
 #include "time/TimeOfDayManager.h"
 

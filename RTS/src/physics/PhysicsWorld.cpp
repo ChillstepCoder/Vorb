@@ -9,7 +9,6 @@
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Physics/PhysicsSettings.h>
 #include <Jolt/Physics/PhysicsSystem.h>
-#include <Jolt/Physics/Collision/Shape/CapsuleShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/CylinderShape.h>
 #include <Jolt/Physics/Collision/Shape/HeightFieldShape.h>
@@ -29,7 +28,6 @@
 #include "physics/PhysicsDebugRenderer.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
 #include "physics/CollisionShapeRepository.h"
-#include "physics/PhysicsBodyFilters.h"
 #include "physics/PhysicsJobSystem.h"
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
@@ -38,12 +36,9 @@
 
 #include "terrain/HeightmapPatch.h"
 
-#include "options/DebugOptions.h"
-
 #include "debugging/DebugRenderer.h"
 
 #include "resources/ModelRepository.h"
-#include "resources/TileRepository.h"
 
 static const JPH::Quat ROTATE_ZUP = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f);
 

@@ -17,7 +17,6 @@
 
 #include "rendering/model/InstancedStaticModelManager.h"
 
-#include <boost/pool/singleton_pool.hpp>
 #include "rendering/tasks/MeshTask.inl"
 
 TileContainerMeshManager::TileContainerMeshManager(World& world, InstancedStaticModelManager& instancedStaticModelManager) : mInstancedStaticModelManager(instancedStaticModelManager) {

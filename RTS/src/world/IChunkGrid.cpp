@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "IChunkGrid.h"
 
-#include "generation/ChunkGenerator.h"
 #include "world/World.h"
 #include "building/BuildingGrid.h"
 #include "tile/TileContainerRepository.h"
@@ -14,9 +13,6 @@
 #include "pathfinding/NavWorld.h"
 
 #include "options/DebugOptions.h"
-
-// Meshing
-#include "rendering/mesh/mesher/ChunkMesher.h"
 
 // How many tiles the load center has to move before we force update edge chunks
 constexpr f32 DISTANCE_SQ_CHANGE_UNTIL_FORCE_UPDATE_EDGES = SQ(16.0f);

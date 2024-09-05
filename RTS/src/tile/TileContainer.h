@@ -1,7 +1,6 @@
 #pragma once
 
 #include "tile/TileContainerConst.h"
-#include "tile/TileHandle.h"
 #include "util/BitArray.h"
 #include "tile/TileContainerEvents.h"
 #include "tile/TileContainerHarvestableRegistry.h"

@@ -5,11 +5,9 @@
 
 #include "world/biome/BiomeGrid.h"
 #include "world/Chunk.h"
-#include "math/Noise.h"
 #include "math/Random.h"
 
 #include "world/World.h"
-#include "world/WorldDefaults.h"
 #include "world/IHeightmapGrid.h"
 #include "world/chunk/SimChunkGrid.h"
 #include "world/road/TerrainSurfaceGrid.h"

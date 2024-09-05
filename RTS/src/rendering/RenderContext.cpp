@@ -1,78 +1,45 @@
 #include "stdafx.h"
-#include "RenderContext.h"
-#include "resources/ResourceManager.h"
-#include "resources/MaterialRepository.h"
-#include "resources/TextureRepository.h"
-#include "resources/FontRepository.h"
-#include "world/World.h"
-#include "world/HeightmapTerrainQuadtree.h"
-#include "resources/TileRepository.h"
-#include "resources/AssetLoader.h"
 #include "pathfinding/NavWorld.h"
+#include "RenderContext.h"
+#include "resources/AssetLoader.h"
+#include "resources/FontRepository.h"
+#include "resources/ResourceManager.h"
+#include "resources/TextureRepository.h"
+#include "world/HeightmapTerrainQuadtree.h"
+#include "world/World.h"
 // Performance counters
 #include "pathfinding/NavThread.h"
 #include "gamethread/GameThread.h"
 
-#include "debugging/DebugRenderer.h"
 #include "debugging/VisualLogger.h"
-#include "ECSRenderer.h"
 #include "rendering/CharacterRenderer.h"
-#include "rendering/renderer/GrassRenderer.h"
 #include "rendering/TileContainerRenderer.h"
-#include "rendering/ChunkGrassQuadtree.h"
-#include "rendering/CloudRenderer.h"
-#include "rendering/post_process/AmbientOcclusionPostProcess.h"
-#include "rendering/post_process/DepthOfFieldPostProcess.h"
-#include "rendering/ItemRenderer.h"
-#include "rendering/LightRenderer.h"
-#include "rendering/MaterialShaderRepository.h"
-#include "rendering/MaterialRenderer.h"
-#include "rendering/Skybox.h"
 #include "rendering/post_process/ShadowRenderer.h"
-#include "rendering/post_process/TonemapRenderer.h"
 #include "rendering/RenderStats.h"
-#include "rendering/TerrainRenderer.h"
 #include "rendering/material/BrdfLUT.h"
-#include "rendering/MaterialUtils.h"
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 #include "rendering/mesh/mesher/builder/TerrainMeshBuilder.h"
 #include "rendering/model/InstancedStaticModelManager.h"
 #include "rendering/renderstate/GameRenderStateManager.h"
-#include "rendering/StencilBufferIDs.h"
 #include "rendering/renderer/WorldRenderer.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
 #include "rendering/UboHelpers.h"
-#include "rendering/particle/CPUParticleSystem.h"
-#include "rendering/model/ModelImpostorManager.h"
-#include "weather/CloudMeshManager.h"
 
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimThread.h"
-
 #include "gamethread/GameThreadTasks.h"
-
 #include "screens/ScreenState.h"
 #include "network/srv/GameServer.h"
-
-#include "building/BuildingGrid.h"
+#include "debugging/DebugRenderer.h"
 
 #include "ui/UIContext.h"
-
-#include "tile/TileContainerRepository.h"
-
-#include "editor/WorldEditorPanel.h"
-
-// TODO: Move to renderer?
-#include "city/CityQuartermaster.h"
-#include "item/ItemStockpileRegistry.h"
 
 #include "camera/Camera3D.h"
 #include "camera/CameraController.h"
 
 #include "time/TimeOfDayManager.h" // TODO: Move to WorldRenderer
 
-#include "input/InputDispatcher.h"
 #include <Vorb/graphics/SpriteBatch.h>
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>

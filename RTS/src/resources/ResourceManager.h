@@ -4,7 +4,6 @@ DECL_VIO(class IOManager);
 DECL_VG(class TextureCache);
 
 #include "IAssetRepository.h"
-#include "filesystem/FileSystem.h"
 
 class AnimationRepository;
 class AnimMachineRepository;

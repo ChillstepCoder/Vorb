@@ -5,7 +5,6 @@
 #include "rendering/RenderContext.h"
 #include "rendering/MaterialShaderRepository.h"
 #include "rendering/ShaderLoader.h"
-#include "building/building.h"
 #include "building/buildingRepository.h"
 #include "ecs/EntityRepository.h"
 #include "item/ItemRepository.h"
@@ -33,10 +32,8 @@
 #include "editor/EditorResources.h"
 
 #include <Vorb/io/IOManager.h>
-#include <Vorb/IO.h>
 #include <vorb/io/FileOps.h>
 #include <Vorb/graphics/ShaderManager.h>
-#include <Vorb/graphics/GLProgram.h>
 
 ResourceManager* sInstance = nullptr;
 

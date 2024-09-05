@@ -6,8 +6,6 @@
 
 #include "definitions/ModelDef.h"
 
-#include <boost/container/flat_set.hpp>
-
 #include "tile/TileHandle.h"
 
 struct TileContainerEvent;

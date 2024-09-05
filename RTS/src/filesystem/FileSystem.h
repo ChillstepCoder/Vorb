@@ -1,10 +1,5 @@
 #pragma once
 
-#include <functional>
-#include <filesystem>
-
-namespace fs = std::filesystem;
-
 enum class FileSystemAction : ui8{
     Added, Rename, Modified, Delete
 };

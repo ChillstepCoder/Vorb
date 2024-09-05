@@ -1,15 +1,12 @@
 #pragma once
 
 #include "terrain/HeightmapPatch.h"
-#include "world/TerrainConstants.h"
 
 #include <boost/container/flat_set.hpp>
 
 #include "util/SpatialGrid2D.h"
 
 #include "world/ChunkGridEvent.h"
-
-#include <mutex>
 
 class World;
 class BitArray;

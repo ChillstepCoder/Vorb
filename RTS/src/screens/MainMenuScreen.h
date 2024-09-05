@@ -3,7 +3,6 @@
 #include "ui/IGameScreen.h"
 #include <yojimbo/yojimbo.h>
 #include "network/NetworkConst.h"
-
 #include "filesystem/FileSystem.h"
 
 class App;

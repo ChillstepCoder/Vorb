@@ -1,17 +1,7 @@
 #pragma once
 #include "ui/IGameScreen.h"
 
-#include <Vorb/graphics/Texture.h>
-
-// TODO: MOVE
-#include "ecs/IFullECS.h"
 #include "network/WorldNetMode.h"
-
-#include <Vorb/Timing.h>
-#include "input/KeyboardEventManager.h"
-
-#include "world/WorldObjectQuery.h"
-
 #include "ui/UIContextEvents.h"
 
 constexpr f64 MS_PER_GAME_TICK = 40.0;

@@ -3,56 +3,23 @@
 
 #include "App.h"
 
-#include "input/InputDispatcher.h"
-#include <Vorb/graphics/SpriteFont.h>
-#include <glm/gtx/rotate_vector.hpp>
-
-#include "pathfinding/NavThread.h"
-
-#include "debugging/DebugRenderer.h"
-
 #include "camera/CameraController.h"
-
-#include "network/cli/GameClient.h"
-#include "network/cli/CliMessage.h"
-#include "network/srv/GameServer.h"
-
 #include "ecs/IFullECS.h"
-#include "ecs/srv/HostFullECS.h"
-#include "world/IHeightmapGrid.h"
-#include "world/WorldObjectQuery.h"
-#include "util/Utils.h"
-
-#include "gamethread/GameThreadTasks.h"
-
-#include "resources/ResourceManager.h"
-#include "resources/TileRepository.h"
-#include "item/ItemRepository.h"
-#include "item/ItemStockpile.h"
-#include "item/ItemStockpileRegistry.h"
-#include "item/ItemReservation.h"
-
-#include "physics/PhysHitResult.h"
-#include "physics/PhysicsWorld.h"
-
-#include "pathfinding/NavWorld.h"
-#include "rendering/RenderContext.h"
-#include "rendering/LoadScreenRenderer.h"
-
 #include "gamethread/GameThread.h"
-
-#include "math/Random.h"
-
-#include "ui/TileInteractPanel.h"
-#include "ui/UIContext.h"
-
-#include <imgui.h>
-
+#include "input/InputDispatcher.h"
+#include "item/ItemStockpileRegistry.h"
+#include "network/cli/CliMessage.h"
+#include "network/cli/GameClient.h"
+#include "network/srv/GameServer.h"
 #include "options/DebugOptions.h"
-
-#include "world/controller/EditorWorldInterfaceController.h"
-
+#include "pathfinding/NavWorld.h"
+#include "physics/PhysicsWorld.h"
+#include "rendering/LoadScreenRenderer.h"
+#include "rendering/RenderContext.h"
+#include "resources/ResourceManager.h"
 #include "screens/ScreenState.h"
+#include "ui/UIContext.h"
+#include "world/controller/EditorWorldInterfaceController.h"
 
 constexpr ui32 MAX_TICKS_PER_UPDATE = 3;
 constexpr f64 TICK_RATE_MS = 40.0;

@@ -22,19 +22,16 @@
 #include "tile/TileHandle.h"
 #include "time/TimeOfDayManager.h"
 #include "world/Chunk.h"
-#include "world/biome/BiomeGrid.h"
 #include "world/cli/CliChunkGrid.h"
 #include "world/cli/CliHeightmapGrid.h"
 #include "world/HeightmapTerrainQuadtree.h"
 #include "world/IChunkGrid.h"
 #include "world/IHeightmapGrid.h"
 #include "world/srv/SrvChunkGrid.h"
-#include "world/srv/HostHeightmapGrid.h"
 #include "world/ecosystem/FishEcosystem.h"
 #include "world/host/HostWorldData.h"
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimECS.h"
-#include "world/road/TerrainSurfaceGrid.h"
 #include "serialization/gamesave/WorldSaveContext.h"
 #include "weather/WeatherManager.h"
 #include "faction/HostFactionManager.h"
@@ -42,10 +39,6 @@
 // TODO: Move this stuff out with a separate manager class
 #include "rendering/renderstate/GameRenderStateManager.h"
 #include "rendering/renderdata/WorldRenderDataManager.h"
-#include "rendering/mesh/TerrainMeshManager.h"
-#include "rendering/mesh/GrassMeshManager.h"
-#include "rendering/ChunkGrassQuadtree.h"
-#include "world/HeightmapTerrainQuadtree.h"
 
 static WorldID sWorldId = 0;
 std::unique_ptr<World> sGameWorld;

@@ -1,12 +1,8 @@
 #pragma once
 
-#include "GridID.h"
-#include "tile/TileHandle.h"
 #include "tile/TileContainer.h"
 
-#include "item/ItemStack.h"
 #include "util/AABB.hpp"
-#include "util/TinyThreadsafeVector.hpp"
 #include "world/ChunkState.h"
 #include "world/ChunkEvents.h"
 

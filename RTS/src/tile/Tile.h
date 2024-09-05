@@ -7,9 +7,7 @@
 // TODO: Too many includes?
 #include "tile/TileFlags.h"
 #include "tile/TileDamageData.h"
-#include "item/ItemStack.h"
 #include "tile/TileWallContainer.h"
-#include "item/Recipe.h"
 #include "tile/HarvestableSubChunkRegistry.h"
 
 #include "util/BitArray.h"

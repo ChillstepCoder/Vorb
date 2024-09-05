@@ -3,7 +3,6 @@
 #include "GlobalRenderData.h"
 #include "camera/Camera3D.h"
 #include "camera/Camera3DGameThreadData.h"
-#include "world/WorldEvents.h"
 
 class AmbientOcclusionPostProcess;
 class CameraController;

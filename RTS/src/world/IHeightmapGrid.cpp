@@ -1,16 +1,8 @@
 #include "stdafx.h"
 #include "IHeightmapGrid.h"
 
-#include "generation/ChunkGenerator.h"
-
-#include "util/IntersectionUtil.h"
-
-#include "camera/Camera3D.h"
-#include "debugging/DebugRenderer.h"
-
 // TODO: move
 #include "rendering/ChunkGrassQuadtree.h"
-#include "world/HeightmapTerrainQuadtree.h"
 #include "physics/PhysicsWorld.h"
 
 #include "world/World.h"
@@ -18,9 +10,6 @@
 
 #include "util/BitArray.h"
 
-#include "gamethread/GameThreadTasks.h"
-
-#include <boost/pool/singleton_pool.hpp>
 
 //
 // https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates

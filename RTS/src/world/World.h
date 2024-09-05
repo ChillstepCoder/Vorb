@@ -7,6 +7,7 @@
 
 #include "tile/TileHarvestable.h"
 #include "world/WorldEvents.h"
+#include "world/WorldConstants.h"
 
 class HostWorldData;
 class Building;

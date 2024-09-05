@@ -1,7 +1,7 @@
 #pragma once
 
-#include "tile/Tile.h"
-
+#include "definitions/TileDef.h"
+#include "item/Recipe.h"
 #include "resources/IAssetRepository.h"
 
 DECL_VIO(class IOManager);
