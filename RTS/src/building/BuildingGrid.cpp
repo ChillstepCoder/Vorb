@@ -113,6 +113,7 @@ Building* BuildingGrid::makeNewEmptyBuilding(std::unique_ptr<BuildingBlueprint>&
             // Mark as load finished for now ( TODO: IS THIS NEEDED? )
             TileContainerEvent loadFinishedEvent;
             loadFinishedEvent.container = newBuilding->getTileContainer();
+            loadFinishedEvent.containerId = loadFinishedEvent.container->getId();
             mWorld.getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 
             newBuilding->mState = BuildingState::ACTIVE;
@@ -484,6 +485,7 @@ void BuildingGrid::onBuildingFinishedLoad(Building& building) {
     GameThreadTasks::getInstance().addGenericTask([this, &building]() {
 
         TileContainerEvent loadFinishedEvent;
+        loadFinishedEvent.containerId = loadFinishedEvent.container->getId();
         loadFinishedEvent.container = building.getTileContainer();
         mWorld.getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 

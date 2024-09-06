@@ -44,6 +44,8 @@ public:
 
 void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) const {
     PROFILE_FUNCTION();
+    // Sim thread must initiate the load to ensure thread safety with sim access
+    ASSERT_SIM_THREAD();
 
     Services::Threadpool::ref().addTask([this, &building]() {
 
@@ -156,7 +158,7 @@ void TileContainerLoader::loadChunkFromSimChunkAsync(TileContainer& container) c
         }
 
         // Generate chunk
-        chunk->getWorld().getWorldGenerator().generateChunkFromSimChunk(*chunk, buildingFootprint);
+        chunk->getWorld().getChunkGenerator().generateChunkFromSimChunk(*chunk, buildingFootprint);
 
         // Cache harvestables
         //container.mHarvestableRegistry.refreshFromOwner();

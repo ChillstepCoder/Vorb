@@ -6,7 +6,6 @@
 #include <boost/container/flat_set.hpp>
 
 class BuildingMesher;
-class ChunkMesher;
 class InstancedStaticModelManager;
 class ContainerMeshBuilders;
 class WorldRenderDataManager;
@@ -56,12 +55,13 @@ private:
 
     // Meshers
     std::unique_ptr<BuildingMesher> mBuildingMesher;
-    std::unique_ptr<ChunkMesher> mChunkMesher;
 
     // Events
     TileContainerListeners mTileContainerListeners;
 
     // Models
     InstancedStaticModelManager& mInstancedStaticModelManager;
+
+    World& mWorld;
 };
 

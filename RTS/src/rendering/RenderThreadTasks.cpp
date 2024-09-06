@@ -2,14 +2,7 @@
 #include "RenderThreadTasks.h"
 
 #include "rendering/RenderContext.h"
-#include "rendering/mesh/mesher/builder/TileMeshBuilderMethods.h"
-#include "rendering/mesh/mesher/builder/BillboardMeshBuilder.h"
 #include "rendering/CharacterRenderer.h"
-#include "rendering/model/InstancedStaticModelGatherer.h"
-
-#include "tile/TileContainer.h"
-
-#include <boost/pool/singleton_pool.hpp>
 
 void RenderThreadTasks::processRenderThread(RenderContext& context){
     ASSERT_RENDER_THREAD();
@@ -52,7 +45,6 @@ RenderThreadTasks::~RenderThreadTasks()
 
 }
 
-
 RenderThreadTasks& RenderThreadTasks::initInstance() {
     if (!sInstance) {
         sInstance = new RenderThreadTasks();
@@ -60,8 +52,7 @@ RenderThreadTasks& RenderThreadTasks::initInstance() {
     return *sInstance;
 }
 
-RenderThreadTasks& RenderThreadTasks::getInstance()
-{
+RenderThreadTasks& RenderThreadTasks::getInstance() {
     assert(sInstance);
     return *sInstance;
 }

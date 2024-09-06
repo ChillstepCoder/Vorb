@@ -20,7 +20,7 @@ void TileRepository::onRegisteredAsset(AssetID id) {
     YmlSerializer::readFileData(readFileToString(mAssetRegistry[id].mFilePath), def);
 
     // Copy all data
-    assert(def.layer < TILE_LAYER_COUNT);
+    assert(def.layer < e_count(TileLayer));
   
     // Nav blocking
     if (def.pathWeight == 0) {

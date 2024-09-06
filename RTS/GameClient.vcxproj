@@ -414,9 +414,8 @@
     <ClCompile Include="src\rendering\mesh\mesher\builder\ProceduralMeshHelpers.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\TerrainMeshBuilder.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\builder\TextMeshBuilder.cpp" />
-    <ClCompile Include="src\rendering\mesh\mesher\builder\TileMeshBuilderMethods.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\builder\ProceduralTileMeshBuilderMethods.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\BuildingMesher.cpp" />
-    <ClCompile Include="src\rendering\mesh\mesher\ChunkMesher.cpp" />
     <ClCompile Include="src\rendering\mesh\mesher\ITileContainerMesher.cpp" />
     <ClCompile Include="src\rendering\mesh\MeshOperations.cpp" />
     <ClCompile Include="src\rendering\mesh\PrimitiveShapeMeshes.cpp" />
@@ -958,9 +957,8 @@
     <ClInclude Include="src\rendering\mesh\mesher\builder\ProceduralMeshHelpers.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\TerrainMeshBuilder.h" />
     <ClInclude Include="src\rendering\mesh\mesher\builder\TextMeshBuilder.h" />
-    <ClInclude Include="src\rendering\mesh\mesher\builder\TileMeshBuilderMethods.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\builder\ProceduralTileMeshBuilderMethods.h" />
     <ClInclude Include="src\rendering\mesh\mesher\BuildingMesher.h" />
-    <ClInclude Include="src\rendering\mesh\mesher\ChunkMesher.h" />
     <ClInclude Include="src\rendering\mesh\mesher\ITileContainerMesher.h" />
     <ClInclude Include="src\rendering\mesh\MeshIndexType.h" />
     <ClInclude Include="src\rendering\mesh\MeshLODData.h" />

@@ -40,7 +40,7 @@ namespace JPH {
     class ObjectLayerFilter;
 }
 
-struct NewTileContainerPhysicsData {
+struct TileContainerPhysicsData {
     UnorderedFlatMap<TileKey, PhysBodyID> mTileKeyToPhysBodyID;
     PhysBodyID mStaticMesh = INVALID_PHYS_BODY_ID;
 };
@@ -76,7 +76,8 @@ public:
 
     void changeStaticItemBodyScale(PhysBodyID id, f32 scale);
 
-    void updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder);
+    void updateProceduralTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder);
+    void addTileContainerModelColliders(TrackedStaticModelColliderGatherer& gatherer);
 
     // This will also clear user data from the body
     void removeBody(PhysBodyID id, bool shouldDestroy);
@@ -148,8 +149,8 @@ private:
     PhysBodyID createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, f32q orientation, ModelID modelId, f32 scale);
     PhysBodyID createTerrainBody(f32v3 position, JPH::Shape* terrainShape);
     JPH::MeshShapeSettings createStaticMeshShapeSettings(std::span<f32v3> verts, std::span<ui32> indices);
-    void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelColliderGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
-    void updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelColliderGatherer& gatherer, NewTileContainerPhysicsData& physicsData);
+    void addTrackedStaticRigidBodiesFromGathererForNewContainer(TrackedStaticModelColliderGatherer& gatherer, TileContainerPhysicsData& physicsData);
+    void addTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelColliderGatherer& gatherer, TileContainerPhysicsData& physicsData);
     void updateItemEntitiesChangedThisFrame();
 
     // ===========================================================================
@@ -171,7 +172,7 @@ private:
 
     f32 mTickTimeRemainder = 0.0f;
 
-    UnorderedFlatMap<TileContainerID, std::unique_ptr<NewTileContainerPhysicsData>> mTileContainerPhysicsData;
+    UnorderedFlatMap<TileContainerID, std::unique_ptr<TileContainerPhysicsData>> mTileContainerPhysicsData;
 
     std::mutex mItemEntitiesMutex;
     // TODO: Profile vs FlatSet and Vector? Vector may be faster for small N

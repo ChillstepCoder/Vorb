@@ -83,6 +83,7 @@ struct TileDamagedEvent {
 struct TileContainerEvent {
     TileContainer* container = nullptr;
     std::variant<TileContainerEditEvent, TileDamagedEvent> varEvent;
+    TileContainerID containerId = INVALID_TILE_CONTAINER_ID;
 };
 EVENT_DISPATCHER_TYPE(TileContainer, TileContainerEventType, const TileContainerEvent&);
 

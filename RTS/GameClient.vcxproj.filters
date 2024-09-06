@@ -525,9 +525,6 @@
     <ClCompile Include="src\rendering\material\BrdfLUT.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\mesh\mesher\ChunkMesher.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\rendering\mesh\mesher\BuildingMesher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -546,7 +543,7 @@
     <ClCompile Include="src\rendering\mesh\mesher\builder\TextMeshBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\mesh\mesher\builder\TileMeshBuilderMethods.cpp">
+    <ClCompile Include="src\rendering\mesh\mesher\builder\ProceduralTileMeshBuilderMethods.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\mesh\mesher\builder\MeshBuilderCommon.cpp">
@@ -2093,9 +2090,6 @@
     <ClInclude Include="src\rendering\material\BrdfLUT.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\mesh\mesher\ChunkMesher.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\rendering\mesh\mesher\BuildingMesher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -2114,7 +2108,7 @@
     <ClInclude Include="src\rendering\mesh\mesher\builder\TextMeshBuilder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\mesh\mesher\builder\TileMeshBuilderMethods.h">
+    <ClInclude Include="src\rendering\mesh\mesher\builder\ProceduralTileMeshBuilderMethods.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\mesh\mesher\builder\MeshBuilderCommon.h">

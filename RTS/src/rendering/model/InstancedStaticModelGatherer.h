@@ -10,6 +10,7 @@ public:
 
     void addInstance(ModelID modelId, TileIndex tileIndex, const f32v3& position, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData, f32 scale);
     void addInstance(ModelID modelId, TileIndex tileIndex, const f32v3& position, const f32v3& normal, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData, f32 scale);
+    bool hasInstances() const { return !mInstances.empty(); }
 private:
     // TODO: Store tileIndex or position
     FlatMap<ModelID, std::vector<StaticModelInstance>> mInstances;

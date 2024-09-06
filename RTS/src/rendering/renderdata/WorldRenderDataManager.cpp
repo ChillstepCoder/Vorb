@@ -15,7 +15,7 @@
 
 WorldRenderDataManager::WorldRenderDataManager(World& world) : mWorld(world) {
     ASSERT_GAME_THREAD(); // This is currently created on the game thread
-    mCloudManager = std::make_unique<CloudMeshManager>(world.getWorldGenerator());
+    mCloudManager = std::make_unique<CloudMeshManager>(world.getChunkGenerator());
     mTerrainMeshManager = std::make_unique<TerrainMeshManager>(mWorld);
     mGrassMeshManager = std::make_unique<GrassMeshManager>(mWorld);
     mInstancedStaticModelManager = std::make_unique<InstancedStaticModelManager>();

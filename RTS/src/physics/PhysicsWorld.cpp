@@ -32,6 +32,8 @@
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
 
+#include "tile/TileContainer.h"
+
 #include "tile/TileContainerRepository.h"
 
 #include "terrain/HeightmapPatch.h"
@@ -39,6 +41,7 @@
 #include "debugging/DebugRenderer.h"
 
 #include "resources/ModelRepository.h"
+#include "resources/TileRepository.h"
 
 static const JPH::Quat ROTATE_ZUP = JPH::Quat::sRotation(JPH::Vec3::sAxisX(), JPH::JPH_PI * 0.5f);
 
@@ -290,7 +293,7 @@ public:
 
     void updateShape(PhysBodyID id, const JPH::Shape* newShape, bool updateMass, JPH::EActivation activateMode) {
         ASSERT_GAME_THREAD();
-        JPH::BodyInterface& bodyInterface = getBodyInterfaceNonLocking();
+        JPH::BodyInterface& bodyInterface = getBodyInterface();
 
         // TODO: Wake nearby bodies?
         bodyInterface.SetShape(JPH::BodyID(id), newShape, updateMass, activateMode);
@@ -303,7 +306,7 @@ public:
 
     JPH::Body& createBody(const JPH::BodyCreationSettings& createSettings, JPH::EActivation inActivationMode, CollisionShapeID shapeId) {
         ASSERT_GAME_THREAD();
-        JPH::BodyInterface& bodyInterface = getBodyInterfaceNonLocking();
+        JPH::BodyInterface& bodyInterface = getBodyInterface();
         JPH::Body* body = bodyInterface.CreateBody(createSettings);
         if (body == nullptr) {
             panic("Failed to create entity body with shape ID {}", (int)shapeId);
@@ -324,7 +327,7 @@ public:
 
     void removeBody(PhysBodyID id, bool shouldDestroy) {
         ASSERT_GAME_THREAD();
-        JPH::BodyInterface& bodyInterface = getBodyInterfaceNonLocking();
+        JPH::BodyInterface& bodyInterface = getBodyInterface();
 #if ENABLE_PHYSICS_ANALYTICS == 1
 
         JPH::ObjectLayer layer = bodyInterface.GetObjectLayer(JPH::BodyID(id));
@@ -616,7 +619,7 @@ std::unique_ptr<JPH::CharacterBase> PhysicsWorld::createSimpleCharacter(entt::en
 }
 
 void PhysicsWorld::changeStaticItemBodyScale(PhysBodyID id, f32 scale) {
-    JPH::BodyInterface& bodyInterface = mContext->getBodyInterfaceNonLocking();
+    JPH::BodyInterface& bodyInterface = mContext->getBodyInterface();
 
     JPH::RefConst<JPH::Shape> shapeRef = bodyInterface.GetShape(JPH::BodyID(id));
     const JPH::Shape* shapePtr = shapeRef.GetPtr();
@@ -633,18 +636,15 @@ void PhysicsWorld::changeStaticItemBodyScale(PhysBodyID id, f32 scale) {
     }
 }
 
-void PhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder) {
+void PhysicsWorld::updateProceduralTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& meshBuilder) {
     PROFILE_FUNCTION();
     ASSERT_GAME_THREAD();
 
-    auto&& it = mTileContainerPhysicsData.find(meshBuilder.getOwnerTileContainerID());
+    auto it = mTileContainerPhysicsData.find(meshBuilder.getOwnerTileContainerID());
 
-    // Remove old collision and return
+    // Remove old procedural collision
     if (!meshBuilder.hasAnyCollision()) {
         if (it != mTileContainerPhysicsData.end()) {
-            for (auto& [key, physBodyID] : it->second->mTileKeyToPhysBodyID) {
-                mContext->removeBody(physBodyID, true);
-            }
 
             PhysBodyID& staticMesh = it->second->mStaticMesh;
             if (staticMesh != INVALID_PHYS_BODY_ID) {
@@ -652,24 +652,25 @@ void PhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& 
                 staticMesh = INVALID_PHYS_BODY_ID;
             }
 
-            mTileContainerPhysicsData.erase(it);
+            // If we also have no models, remove
+            if (it->second->mTileKeyToPhysBodyID.empty()) {
+                mTileContainerPhysicsData.erase(it);
+            }
         }
         return;
     }
 
-    // Update rigid bodies and cache static mesh pointer
+    // Cache static mesh pointer
     PhysBodyID* staticMesh;
     if (it == mTileContainerPhysicsData.end()) {
         // Simply creating brand new collision
-        NewTileContainerPhysicsData& newData = *mTileContainerPhysicsData.emplace(meshBuilder.getOwnerTileContainerID(), std::make_unique<NewTileContainerPhysicsData>()).first->second;
+        TileContainerPhysicsData& newData = *mTileContainerPhysicsData.emplace(meshBuilder.getOwnerTileContainerID(), std::make_unique<TileContainerPhysicsData>()).first->second;
         staticMesh = &newData.mStaticMesh;
-        addTrackedStaticRigidBodiesFromGatherer(meshBuilder.mTrackedRigidBodyGatherer, newData);
     }
     else {
-        // May remove some old collision
-        NewTileContainerPhysicsData& data = *it->second;
+        // Already exists
+        TileContainerPhysicsData& data = *it->second;
         staticMesh = &data.mStaticMesh;
-        updateTrackedStaticRigidBodiesFromGatherer(meshBuilder.mTrackedRigidBodyGatherer, data);
     }
 
     // Update procedural mesh
@@ -699,6 +700,20 @@ void PhysicsWorld::updateTileContainerMeshFromBuilder(StaticPhysicsMeshBuilder& 
     else if (*staticMesh != INVALID_PHYS_BODY_ID) {
         mContext->removeBody(*staticMesh, true);
         *staticMesh = INVALID_PHYS_BODY_ID;
+    }
+}
+
+void PhysicsWorld::addTileContainerModelColliders(TrackedStaticModelColliderGatherer& gatherer) {
+    auto it = mTileContainerPhysicsData.find(gatherer.getOwnerTileContainerID());
+    // Update rigid bodies and cache static mesh pointer
+    if (it == mTileContainerPhysicsData.end()) {
+        // Simply creating brand new collision
+        TileContainerPhysicsData& newData = *mTileContainerPhysicsData.emplace(gatherer.getOwnerTileContainerID(), std::make_unique<TileContainerPhysicsData>()).first->second;
+        addTrackedStaticRigidBodiesFromGathererForNewContainer(gatherer, newData);
+    }
+    else {
+        TileContainerPhysicsData& data = *it->second;
+        addTrackedStaticRigidBodiesFromGatherer(gatherer, data);
     }
 }
 
@@ -945,13 +960,15 @@ void PhysicsWorld::initEvents() {
     tileContainerRepository.registerTileContainerListeners(mTileContainerListeners);
 
     tileContainerRepository.addEditTilesListener(mTileContainerListeners, [this](const TileContainerEvent& evnt) {
-      /*  ASSERT_GAME_THREAD();
+        ASSERT_GAME_THREAD();
 
         const TileContainerEditEvent& editEvent = std::get<TileContainerEditEvent>(evnt.varEvent);
 
         if ((e_cast(editEvent.type) & TILE_EDIT_HANDLE_MASK) == 0) {
             return;
         }
+
+        TileRepository& tileRepo = TileRepository::get();
 
         switch (editEvent.type) {
             case TileContainerEditEventType::ChangeFlags:
@@ -961,25 +978,33 @@ void PhysicsWorld::initEvents() {
                     TileContainerEditLayerEventData& edit = editEvent.changeLayerArray[i];
                     const TileID prevId = edit.prevId;
                     if (prevId != TILE_ID_NONE) {
-                        const TileDef& prevTileData = TileRepository::get().getLoadedOrUnloadedAsset(edit.prevId);
-                        if (prevTileData.shape == TileShape::MODEL) {
-                            editEvents.removeEvents.emplace_back(edit.tileIndex);
+                        if (tileRepo.getTileModelID(prevId) != INVALID_MODEL_ID) {
+                            TileKey key{ edit.tileIndex, prevId };
+                            auto it = mTileContainerPhysicsData.find(evnt.containerId);
+                            if (it != mTileContainerPhysicsData.end()) {
+                                auto pit = it->second->mTileKeyToPhysBodyID.find(key);
+                                if (pit != it->second->mTileKeyToPhysBodyID.end()) {
+                                    removeBody(pit->second, true);
+                                }
+                            }
                         }
                     }
                     const TileID newId = edit.newId;
                     assert(newId != prevId);
                     if (newId != TILE_ID_NONE) {
-                        const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(newId);
-                        if (tileData.shape == TileShape::MODEL) {
+                        const ModelID modelId = tileRepo.getTileModelID(newId);
+                        if (modelId != INVALID_MODEL_ID) {
                             f32 scale;
-                            const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
+                            const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(modelId);
                             if (const FloraTileData* data = std::get_if<FloraTileData>(&edit.typeData)) {
                                 scale = modelDef.getScaleFromFloraAge(data->age);
                             }
                             else {
                                 scale = modelDef.getRandomScaleAtPosition(edit.worldPosition);
                             }
-                            editEvents.addEvents.emplace_back(ModelAddEvent{ edit.worldPosition, edit.tileIndex, tileData.modelId, scale });
+                            // TODO: Handle rotation better
+                            
+                            createTileBody(evnt.containerId, edit.tileIndex, edit.worldPosition, f32q(f32v3(0.0f, 0.0f, getTileModelRotationAtPosition(edit.worldPosition))), modelId, scale);
                         }
                     }
                 }
@@ -991,10 +1016,19 @@ void PhysicsWorld::initEvents() {
                     const Tile& tile = evnt.container->getTileAt(edit.tileIndex);
 
                     if (edit.tileId != TILE_ID_NONE) {
-                        const TileDef& tileData = TileRepository::get().getLoadedOrUnloadedAsset(edit.tileId);
-                        if (tileData.shape == TileShape::MODEL) {
-                            const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(tileData.modelId);
-                            editEvents.heightAdjustEvents.emplace_back(ModelHeightAdjustEvent{ edit.worldPosition.z, edit.tileIndex });
+                        if (tileRepo.getTileModelID(edit.tileId) != INVALID_MODEL_ID) {
+                            TileKey key{ edit.tileIndex, edit.tileId };
+                            auto it = mTileContainerPhysicsData.find(evnt.containerId);
+                            if (it != mTileContainerPhysicsData.end()) {
+                                auto pit = it->second->mTileKeyToPhysBodyID.find(key);
+                                if (pit != it->second->mTileKeyToPhysBodyID.end()) {
+                                    mContext->getBodyInterface().SetPosition(
+                                        JPH::BodyID(pit->second),
+                                        JPH::DVec3(edit.worldPosition.x, edit.worldPosition.y, edit.worldPosition.z),
+                                        JPH::EActivation::DontActivate
+                                    );
+                                }
+                            }
                         }
                     }
                 }
@@ -1005,7 +1039,7 @@ void PhysicsWorld::initEvents() {
             default:
                 assert(false && "Unhandled model edit event in InstancedStaticModelRenderer");
                 break;
-        }*/
+        }
         static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(4), "Update handler");
     });
 }
@@ -1099,7 +1133,7 @@ JPH::MeshShapeSettings PhysicsWorld::createStaticMeshShapeSettings(std::span<f32
     return JPH::MeshShapeSettings(std::move(jpVerts), std::move(jpInds));
 }
 
-void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelColliderGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
+void PhysicsWorld::addTrackedStaticRigidBodiesFromGathererForNewContainer(TrackedStaticModelColliderGatherer& gatherer, TileContainerPhysicsData& physicsData) {
     PROFILE_FUNCTION();
     assert(physicsData.mTileKeyToPhysBodyID.empty());
 
@@ -1109,33 +1143,17 @@ void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelCol
     }
 }
 
-void PhysicsWorld::updateTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelColliderGatherer& gatherer, NewTileContainerPhysicsData& physicsData) {
+void PhysicsWorld::addTrackedStaticRigidBodiesFromGatherer(TrackedStaticModelColliderGatherer& gatherer, TileContainerPhysicsData& physicsData) {
     PROFILE_FUNCTION();
-
-    // TODO: Scratch allocator?
-    static thread_local UnorderedFlatSet<TileKey> addedKeys;
-    addedKeys.reserve(gatherer.mRigidBodiesToAdd.size());
 
     for (auto& it : gatherer.mRigidBodiesToAdd) {
         const TileKey key = TileKey{ it.ownerTilePosition, it.tileId };
-        auto&& pit = physicsData.mTileKeyToPhysBodyID.find(key);
+        auto pit = physicsData.mTileKeyToPhysBodyID.find(key);
         // Only add if it doesn't already exist
         if (pit == physicsData.mTileKeyToPhysBodyID.end()) {
             physicsData.mTileKeyToPhysBodyID.emplace(key, createTileBody(gatherer.mContainerId, it.ownerTilePosition, it.position, it.orientation, it.modelId, it.scale));
         }
-        addedKeys.insert(key);
     }
-    // Remove any keys that are not in the gatherer
-    for (auto it = physicsData.mTileKeyToPhysBodyID.begin(); it != physicsData.mTileKeyToPhysBodyID.end();) {
-        if (!addedKeys.contains(it->first)) {
-            mContext->removeBody(it->second, true);
-            it = physicsData.mTileKeyToPhysBodyID.erase(it);
-        }
-        else {
-            ++it;
-        }
-    }
-    addedKeys.clear();
 }
 
 

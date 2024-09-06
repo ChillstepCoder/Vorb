@@ -273,6 +273,7 @@ void IChunkGrid::updateActivatingChunks() {
                     // Dispatch load finished
                     TileContainerEvent loadFinishedEvent;
                     loadFinishedEvent.container = chunk.mTileContainer;
+                    loadFinishedEvent.containerId = chunk.mTileContainer->getId();
                     mWorld->getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 
                     chunk.setState(ChunkState::LOADING_MESH_PHYSICS_NAV);

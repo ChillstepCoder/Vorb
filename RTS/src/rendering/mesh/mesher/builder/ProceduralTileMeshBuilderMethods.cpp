@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "TileMeshBuilderMethods.h"
+#include "ProceduralTileMeshBuilderMethods.h"
 
 #include "rendering/model/InstancedStaticModelGatherer.h"
 #include "rendering/mesh/mesher/builder/ContainerMeshBuilders.h"
@@ -189,7 +189,7 @@ void meshWallsDefault(const TileSpatialGrid& spatialGrid, const TileWallContaine
 }
 
 // TODO: Dual grid meshing? https://www.youtube.com/watch?v=buKQjkad2I0
-void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, StaticPhysicsMeshBuilder& physics, OPT const CompressedHeight* heightData) {
+void ProceduralTileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, StaticPhysicsMeshBuilder& physics, OPT const CompressedHeight* heightData) {
     PROFILE_FUNCTION();
 
     TileRepository& tileRepo = TileRepository::get();
@@ -241,7 +241,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                             }
                         }
 
-                        TileMeshBuilderMethods::addFloor(builders.staticBuilder, adjacentShapes, floorHeight, xyz, tileData.materialData[0], physics);
+                        ProceduralTileMeshBuilderMethods::addFloor(builders.staticBuilder, adjacentShapes, floorHeight, xyz, tileData.materialData[0], physics);
                     }
                 }
             }
@@ -273,11 +273,11 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                 else if (tileData.shape == TileShape::BLOCK) {
                     // TODO: Handle other materials?
                     builders.addMaterial(tileData.materialData[0].id);
-                    TileMeshBuilderMethods::addBlock(builders.staticBuilder, f32v3(xyz.x, xyz.y, xyz.z * floorHeight), tiles.tiles[index], tileData, physics);
+                    ProceduralTileMeshBuilderMethods::addBlock(builders.staticBuilder, f32v3(xyz.x, xyz.y, xyz.z * floorHeight), tiles.tiles[index], tileData, physics);
                 }
                 else if (tileData.shape == TileShape::STAIRS) {
                     builders.addMaterial(tileData.materialData[0].id);
-                    TileMeshBuilderMethods::addStairs(builders.staticBuilder, floorHeight, xyz, tile.getGroundZOffset(), tile.getOrientation(), tileData, physics);
+                    ProceduralTileMeshBuilderMethods::addStairs(builders.staticBuilder, floorHeight, xyz, tile.getGroundZOffset(), tile.getOrientation(), tileData, physics);
                 }
                 else if (tileData.shape == TileShape::MODEL) {
                     f32v3 worldPos = spatialGrid.getTileCenterWorldPos3D(index, tiles.tiles[index].getGroundZOffset());
@@ -309,9 +309,6 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
                     }
                     else {
                         builders.modelGatherer.addInstance(tileData.modelId, index, worldPos, rotation, variantIndex, std::move(damageData), scale);
-                    }
-                    if (modelDef.mCollisionShapeID != INVALID_COLLISION_SHAPE_ID) {
-                        physics.addTrackedTileModelCollider(index, layerTile, worldPos, f32q(f32v3(0.0f, 0.0f, rotation)), scale, tileData.modelId);
                     }
                 }
             }
@@ -373,7 +370,7 @@ void TileMeshBuilderMethods::meshTileContainer(ContainerMeshBuilders& builders, 
 }
 
 
-void TileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const Tile& tile, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
+void ProceduralTileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const Tile& tile, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
     switch (tileData.textureMethod) {
         case TileTextureMethod::SIMPLE: {
             meshBuilder.addAxisAlignedQuad(
@@ -409,7 +406,7 @@ void TileMeshBuilderMethods::addBlock(ProceduralMeshBuilder& meshBuilder, const 
     static_assert((int)TileTextureMethod::COUNT == 6, "Implement geo generation for new method");
 }
 
-void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const Tile& tile, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
+void ProceduralTileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const Tile& tile, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
 
     const MaterialDesc& materialData = tileData.materialData[0];
 
@@ -505,7 +502,7 @@ void TileMeshBuilderMethods::addBlockVertical(ProceduralMeshBuilder& meshBuilder
     }
 }
 
-void TileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const Tile& tile, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
+void ProceduralTileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const Tile& tile, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh) {
     const f32 topHeight = tilePos.z + tile.getGroundZOffset();
 
     const f32v3 botSW(tilePos);
@@ -528,7 +525,7 @@ void TileMeshBuilderMethods::addBlockWorldTiling(ProceduralMeshBuilder& meshBuil
     physMesh.addQuadBetweenPoints(botNW, topNW, topNE, botNE);
 }
 
-void TileMeshBuilderMethods::addFloor(ProceduralMeshBuilder& meshBuilder, TileShape adjacentShapes[4], f32 floorHeight, const ui32v3& tileXYZ, const MaterialDesc& materialData, StaticPhysicsMeshBuilder& physMesh) {
+void ProceduralTileMeshBuilderMethods::addFloor(ProceduralMeshBuilder& meshBuilder, TileShape adjacentShapes[4], f32 floorHeight, const ui32v3& tileXYZ, const MaterialDesc& materialData, StaticPhysicsMeshBuilder& physMesh) {
 
     constexpr f32 FLOOR_THICKNESS = 0.05f;
     // Epsilon to prevent Z fighting
@@ -604,7 +601,7 @@ void TileMeshBuilderMethods::addFloor(ProceduralMeshBuilder& meshBuilder, TileSh
     }*/
 }
 
-void TileMeshBuilderMethods::addCeiling(ProceduralMeshBuilder& meshBuilder, f32 floorHeight, const ui32v3& tileXYZ, const MaterialDesc& materialData, StaticPhysicsMeshBuilder& physMesh) {
+void ProceduralTileMeshBuilderMethods::addCeiling(ProceduralMeshBuilder& meshBuilder, f32 floorHeight, const ui32v3& tileXYZ, const MaterialDesc& materialData, StaticPhysicsMeshBuilder& physMesh) {
     const f32v3 tilePos(tileXYZ.x, tileXYZ.y, tileXYZ.z * floorHeight + 0.0001f);
 
     f32v3 positions[4];
@@ -655,7 +652,7 @@ const f32v2 STAIR_DIR_DIMS[CARTESIAN_COUNT] = {
     f32v2(1, 0.25), // NORTH
 };
 
-void TileMeshBuilderMethods::addStairs(ProceduralMeshBuilder& meshBuilder, f32 floorHeight, const ui32v3& tileXYZ, float tileGroundZOffset, Cartesian tileOrientation, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh)
+void ProceduralTileMeshBuilderMethods::addStairs(ProceduralMeshBuilder& meshBuilder, f32 floorHeight, const ui32v3& tileXYZ, float tileGroundZOffset, Cartesian tileOrientation, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh)
 {
     const f32v3 tilePos(tileXYZ.x, tileXYZ.y, tileXYZ.z * floorHeight);
     // Place stair steps
@@ -967,11 +964,11 @@ void TileMeshBuilderMethods::addStairs(ProceduralMeshBuilder& meshBuilder, f32 f
     physMesh.addQuadBetweenPoints(&(pointsSide[4]));
 }
 
-f32v2 TileMeshBuilderMethods::getStructureWoobleAtPoint(const ui32v3& xyz) {
+f32v2 ProceduralTileMeshBuilderMethods::getStructureWoobleAtPoint(const ui32v3& xyz) {
     return getStructureWoobleAtPoint(xyz.x, xyz.y, xyz.z);
 }
 
-f32v2 TileMeshBuilderMethods::getStructureWoobleAtPoint(ui32 x, ui32 y, ui32 z) {
+f32v2 ProceduralTileMeshBuilderMethods::getStructureWoobleAtPoint(ui32 x, ui32 y, ui32 z) {
     // No wooble on the bottom layer
     if (z != 0 && Random::getCachedRandomfSpecific(x | (y << 3) + z * 1523u) <= sDebugOptions.mWallWoobleChance) {
         f32v2 outWooble = f32v2(Random::getThreadSafef(x, y + z * 1200u), Random::getThreadSafef(y - z * 1200u, x));

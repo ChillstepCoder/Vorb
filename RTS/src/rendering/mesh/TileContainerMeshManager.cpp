@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "TileContainerMeshManager.h"
 
-#include "rendering/mesh/mesher/ChunkMesher.h"
 #include "rendering/mesh/mesher/BuildingMesher.h"
 #include "rendering/mesh/mesher/builder/ContainerMeshBuilders.h"
 #include "rendering/RenderThreadTasks.h"
@@ -16,6 +15,7 @@
 #include "gamethread/GameThreadTasks.h"
 
 #include "physics/TrackedStaticModelColliderGatherer.h"
+#include "physics/PhysicsWorld.h"
 
 #include "world/World.h"
 
@@ -25,11 +25,10 @@
 
 #include "rendering/tasks/MeshTask.inl"
 
-TileContainerMeshManager::TileContainerMeshManager(World& world, InstancedStaticModelManager& instancedStaticModelManager) : mInstancedStaticModelManager(instancedStaticModelManager) {
+TileContainerMeshManager::TileContainerMeshManager(World& world, InstancedStaticModelManager& instancedStaticModelManager) : mInstancedStaticModelManager(instancedStaticModelManager), mWorld(world) {
     ASSERT_GAME_THREAD(); // This is currently created on the game thread
 
     mBuildingMesher = std::make_unique<BuildingMesher>(*this);
-    mChunkMesher = std::make_unique<ChunkMesher>(*this);
 
     initEventHandlers(world);
 }
@@ -46,8 +45,8 @@ void TileContainerMeshManager::initModelsForTileContainer(std::span<TileIndex> m
     // This will run on the threadpool
     assert(!IS_RENDER_THREAD() && !IS_GAME_THREAD());
 
-    std::unique_ptr<InstancedStaticModelGatherer> gatherer = std::make_unique<InstancedStaticModelGatherer>(container.getId(), container.getWorldPos());
-    std::unique_ptr<TrackedStaticModelColliderGatherer> physics = std::make_unique<TrackedStaticModelColliderGatherer>(container.getId());
+    std::shared_ptr<InstancedStaticModelGatherer> gatherer = std::make_shared<InstancedStaticModelGatherer>(container.getId(), container.getWorldPos());
+    std::shared_ptr<TrackedStaticModelColliderGatherer> physics = std::make_shared<TrackedStaticModelColliderGatherer>(container.getId());
     TileRepository& tileRepo = TileRepository::get();
     const TileSpatialGrid& spatialGrid = container.getTileSpatialGrid();
     const FlatMap<TileIndex, TileDamageDataPtr>& damagedTiles = container.getDamagedTiles();
@@ -86,11 +85,17 @@ void TileContainerMeshManager::initModelsForTileContainer(std::span<TileIndex> m
             physics->addTileModelCollider(tileIndex, tile.getMainID(), worldPos, f32q(f32v3(0.0f, 0.0f, rotation)), scale, tileDef.modelId);
         }
     }
-    assert(false);
-    /*GameThreadTasks::getInstance().addGenericTask([gatherer = std::move(gatherer)]() {
+    assert(gatherer->hasInstances());
 
-
-    });*/
+    // No need for refcounting as we cannot be destroyed while initing
+    GameThreadTasks::getInstance().addGenericTask([physics = std::move(physics), physicsWorld = &mWorld.getPhysicsWorld(), &container]() mutable {
+        physicsWorld->addTileContainerModelColliders(*physics);
+        container.onPhysicsInitFinished();
+    });
+    RenderThreadTasks::getInstance().addGenericTask([gatherer = std::move(gatherer), &container, modelManager = &mWorld.getRenderDataManager().getInstancedStaticModelManager()]() {
+        modelManager->addTileInstancesFromGatherer(*gatherer);
+        container.onMeshInitFinished();
+    });
 }
 
 void TileContainerMeshManager::frameUpdate()
@@ -180,7 +185,7 @@ void TileContainerMeshManager::updateMeshFromBuilders(const TileContainer* conta
         meshData.mAssetDependencies.swap(dependencies);
 
         // Release
-        taskData->container.setDidInitMesh();
+        taskData->container.onMeshInitFinished();
         taskData->container.decRef();
 
         delete taskData;
@@ -230,7 +235,6 @@ void TileContainerMeshManager::initTileContainerMesh(TileContainer& tileContaine
 {
     switch (tileContainer.getOwnerType()) {
         case TileContainerOwnerType::CHUNK:
-            mChunkMesher->initMeshAndPhysicsAsync(tileContainer);
             break;
         case TileContainerOwnerType::BUILDING:
             mBuildingMesher->buildMeshAndPhysicsAsync(*tileContainer.getOwnerBuilding());

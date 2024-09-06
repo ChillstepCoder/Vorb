@@ -170,10 +170,10 @@ public:
     }
     ui32 getRefCount() const { return mRefCount; }
 
-    bool didInitMeshPhysicsAndNav() const { return mDidInitNav && mDidInitMesh && mDidInitPhysics; }
-    bool didInitMeshPhysics() const { return mDidInitMesh && mDidInitPhysics; }
-    void setDidInitMesh() const { mDidInitMesh = true; }
-    void setDidInitPhysics() const { mDidInitPhysics = true; }
+    bool didInitMeshPhysicsAndNav() const { return mDidInitNav && mMeshInitWaiting == 0 && mPhysicsInitWaiting == 0; }
+    bool didInitMeshPhysics() const { return mMeshInitWaiting == 0 && mPhysicsInitWaiting == 0; }
+    void onMeshInitFinished() const { --mMeshInitWaiting; }
+    void onPhysicsInitFinished() const { --mPhysicsInitWaiting; }
     void setDidInitNav() const { mDidInitNav = true; }
 
     // =========== Dirty bits  ===========
@@ -227,8 +227,8 @@ private:
     TileContainerHarvestableRegistry mHarvestableRegistry;
     TileContainerID mId;
     mutable std::atomic_uint32_t mRefCount = 0u;
-    mutable std::atomic_bool mDidInitMesh = false;
-    mutable std::atomic_bool mDidInitPhysics = false;
+    mutable std::atomic_int mMeshInitWaiting = 0;
+    mutable std::atomic_int mPhysicsInitWaiting = 0;
     mutable std::atomic_bool mDidInitNav = false;
 
     mutable std::atomic_uint8_t mState = e_cast(TileContainerState::LOADING);

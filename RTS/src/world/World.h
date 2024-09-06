@@ -94,7 +94,7 @@ public:
     TimeOfDayManager& getTimeOfDayManager() const { return *mTimeOfDayManager; }
     TileContainerRepository& getTileContainerRepository() const { return *mTileContainerRepository; }
     TileContainerLoader& getTileContainerLoader() const { return *mTileContainerLoader; }
-    ChunkGenerator& getWorldGenerator() const { return *mChunkGenerator; }
+    ChunkGenerator& getChunkGenerator() const { return *mChunkGenerator; }
     CombatContext& getCombatContext() const { return *mCombatContext; }
     ItemStockpileRegistry& getItemStockpileRegistry() const { return *mItemStockpileRegistry; }
     FishEcosystem& getFishEcosystem() const { return *mFishEcosystem; }

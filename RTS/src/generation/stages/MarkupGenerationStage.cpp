@@ -304,7 +304,7 @@ void MarkupGenerationStage::generateChunkMarkup(ui32 jobIndex, ui32 chunkRowsPer
 
             // Only generate chunk if we have a land chunk
             if (chunkMarkup.mainLandBodyID != UINT32_MAX) {
-                mWorldPtr->getWorldGenerator().generateSimChunk(mWorldPtr->getSimChunkGrid().getChunkForGeneration(chunkID), *mWorldPtr);
+                mWorldPtr->getChunkGenerator().generateSimChunk(mWorldPtr->getSimChunkGrid().getChunkForGeneration(chunkID), *mWorldPtr);
             }
 
             if (chunkMarkup.mainLandBodyID != UINT32_MAX) {

@@ -7,7 +7,7 @@
 #include "rendering/mesh/mesher/builder/ProceduralMeshBuilder.h"
 #include "rendering/mesh/mesher/builder/BillboardMeshBuilder.h"
 #include "rendering/RenderContext.h"
-#include "rendering/mesh/mesher/builder/TileMeshBuilderMethods.h"
+#include "rendering/mesh/mesher/builder/ProceduralTileMeshBuilderMethods.h"
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/model/InstancedStaticModelGatherer.h"
 #include "rendering/mesh/TileContainerMeshManager.h"
@@ -42,7 +42,7 @@ void ITileContainerMesher::buildMeshAndPhysicsAsyncInternal(const TileContainer&
             builders.staticBuilder.reserveIndexCount((ui32)(reserveStaticVertexCount * 1.5f)); // Approx
         }
 
-        TileMeshBuilderMethods::meshTileContainer(builders, physicsBuilder, heightData);
+        ProceduralTileMeshBuilderMethods::meshTileContainer(builders, physicsBuilder, heightData);
 
         // Custom per-builder stuff, such as building roofs
         addCustomMeshData(builders, physicsBuilder, userData);
@@ -57,7 +57,7 @@ void ITileContainerMesher::buildMeshAndPhysicsAsyncInternal(const TileContainer&
         }
         else {
             // This is an init and we dont already have collision, so do nothing
-            container.setDidInitPhysics();
+            //container.setDidInitPhysics();
             container.decRef();
         }
 

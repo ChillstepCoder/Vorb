@@ -36,8 +36,8 @@ namespace ModelUtil {
         const float s = glm::sin(yaw);
         const float c = glm::cos(yaw);
         return f32m4(
-            c * scale, -s * scale, 0.0f, 0.0f,
-            s * scale, c * scale, 0.0f, 0.0f,
+            c * scale, s * scale, 0.0f, 0.0f,
+            -s * scale, c * scale, 0.0f, 0.0f,
             0.0f, 0.0f, scale, 0.0f,
             position.x, position.y, position.z, 1.0f
         );

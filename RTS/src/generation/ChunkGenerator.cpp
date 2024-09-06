@@ -17,6 +17,9 @@
 #include "generation/WorldGenerationData.h"
 #include "generation/TileDistributionSampler.h"
 
+#include "rendering/renderdata/WorldRenderDataManager.h"
+#include "rendering/mesh/TileContainerMeshManager.h"
+
 //#include "debugging/DebugRenderer.h"
 
 #include "util/BitArray.h"
@@ -182,11 +185,16 @@ void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& bui
     // We could potentially collapse all the update logic into addPhysics/MeshesForTileModels(std::span<tiles>)
     //x;
 
-    if (numModelTiles) {
 
+    if (numModelTiles) {
+        mWorld.getRenderDataManager().getTileContainerMeshManager().initModelsForTileContainer({ modelTiles, (ui32)numModelTiles }, *chunk.mTileContainer);
+        ++chunk.mTileContainer->mPhysicsInitWaiting;
+        ++chunk.mTileContainer->mMeshInitWaiting;
     }
     if (numProceduralTiles) {
-
+        assert(false); // Build this
+        //++chunk.mTileContainer->mPhysicsInitWaiting;
+        //++chunk.mTileContainer->mMeshInitWaiting;
     }
     constexpr f32 AABB_Z_PADDING = 10.0f;
     chunk.mAABB.pos.z = minHeight - AABB_Z_PADDING;

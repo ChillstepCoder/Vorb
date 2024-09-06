@@ -153,8 +153,8 @@ void TileInspectionPanel::updateAndRender() {
 
     ImGui::Separator();
     ImGui::Text("Layers:");
-    showTileLayerMainThread("  Ground: %u %s", TILE_LAYER_GROUND, mTileHandle);
-    showTileLayerMainThread("  Main: %u %s", TILE_LAYER_MAIN, mTileHandle);
+    showTileLayerMainThread("  Ground: %u %s", 1, mTileHandle);
+    showTileLayerMainThread("  Main: %u %s", 0, mTileHandle);
     ImGui::Separator();
     showTileFlagsMainThread(mTileHandle);
 

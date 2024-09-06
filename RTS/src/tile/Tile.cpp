@@ -7,9 +7,8 @@
 
 // TODO: REMOVE for random rotation
 f32 getTileModelRotationAtPosition(f32v2 worldPos) {
-    return Random::getCachedRandomfSpecific((ui32)(worldPos.x + worldPos.y * 1000.0f)) * M_2_PI;
+    return Random::getCachedRandomfSpecific((ui32)((ui32)worldPos.x + (ui32)worldPos.y * 1000)) * M_2_PI;
 }
-
 
 void Tile::setTileFlag(TileFlags flag) {
     ASSERT_GAME_THREAD();

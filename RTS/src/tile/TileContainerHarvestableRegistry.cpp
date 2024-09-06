@@ -76,7 +76,6 @@ void TileContainerHarvestableRegistry::refreshFromOwner() {
             for (ui32 x = 0; x < containerDims.x; ++x, ++tileIndex) {
                 const Tile& tile = tiles[tileIndex];
                 TileID mainId = tile.getMainID();
-                static_assert(TILE_LAYER_COUNT == 2, "If harvestables can exist on more than one level we need this to be a loop");
                 if (isTileNone(mainId)) {
                     mHarvestables[tileIndex] = TileHarvestable::None;
                 } else {

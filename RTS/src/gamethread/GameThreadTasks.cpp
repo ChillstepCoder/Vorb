@@ -79,7 +79,7 @@ void GameThreadTasks::addTileContainerStaticPhysicsMeshUpdateTask(const TileCont
     StaticPhysicsMeshBuilder* builderData = new StaticPhysicsMeshBuilder(std::move(meshBuilder));
     mGameThreadFuncProcs.enqueue([world = &container->getWorld(), container, builderData]() {
         builderData->finish(world->getPhysicsWorld());
-        container->setDidInitPhysics();
+        //container->setDidInitPhysics();
         container->decRef();
         delete builderData;
     });

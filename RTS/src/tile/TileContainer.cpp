@@ -139,6 +139,7 @@ void TileContainer::setTile(TileIndex i, TileID id, ui8 variant) {
 
     evnt.varEvent = editEvent;
     evnt.container = this;
+    evnt.containerId = mId;
     eventData.worldPosition = getTileCenterWorldPosition(i);
     eventData.tileIndex = i;
     eventData.prevId = prevId;
@@ -181,6 +182,7 @@ bool TileContainer::tryTransformTile(TileIndex i, TileTransformationType type) {
     editEvent.changeLayerArray = &eventData;
 
     evnt.container = this;
+    evnt.containerId = mId;
     evnt.varEvent = editEvent;
     eventData.tileIndex = i;
     eventData.worldPosition = getTileCenterWorldPosition(i);
@@ -218,6 +220,7 @@ void TileContainer::setTileFlag(TileIndex i, TileFlags flag) {
         editEvent.changeFlagsArray = &eventData;
 
         evnt.container = this;
+        evnt.containerId = mId;
         evnt.varEvent = editEvent;
         eventData.prevFlags = tile.tileFlags;
         {
@@ -247,6 +250,7 @@ void TileContainer::overwriteTileFlags(TileIndex i, TileFlags flags) {
         editEvent.changeFlagsArray = &eventData;
 
         evnt.container = this;
+        evnt.containerId = mId;
         evnt.varEvent = editEvent;
         eventData.prevFlags = tile.tileFlags;
         {
@@ -276,6 +280,7 @@ void TileContainer::clearTileFlag(TileIndex i, TileFlags flag) {
         editEvent.changeFlagsArray = &eventData;
 
         evnt.container = this;
+        evnt.containerId = mId;
         evnt.varEvent = editEvent;
 
         eventData.prevFlags = tile.tileFlags;
@@ -306,6 +311,7 @@ void TileContainer::clearTileFlags(TileIndex i) {
         editEvent.changeFlagsArray = &eventData;
 
         evnt.container = this;
+        evnt.containerId = mId;
         evnt.varEvent = editEvent;
         eventData.prevFlags = tile.tileFlags;
         {
@@ -335,6 +341,7 @@ void TileContainer::setTileGroundZPosition(TileIndex i, f32 groundZPosition) {
         eventData.tileId = tile.mainLayer;
 
         evnt.container = this;
+        evnt.containerId = mId;
         evnt.varEvent = editEvent;
 
         eventData.prevGroundZOffset = tile.getGroundZOffset();
@@ -364,6 +371,7 @@ void TileContainer::bulkSetTileGroundZPosition(std::pair<TileIndex, f32>* editDa
     editEvent.editCount = count;
 
     evnt.container = this;
+    evnt.containerId = mId;
     evnt.varEvent = editEvent;
     { // Critical section
         std::lock_guard lock(mSharedMutex);
@@ -407,6 +415,7 @@ void TileContainer::setTileOrientation(TileIndex i, Cartesian dir) {
         editEvent.changeOrientationArray = &eventData;
 
         evnt.container = this;
+        evnt.containerId = mId;
         evnt.varEvent = editEvent;
         eventData.prevOrientation = tile.orientation;
         {
@@ -538,6 +547,7 @@ bool TileContainer::adjustTileHealth(TileIndex index, int healthAdjust, f32v3 im
                 // Instant death
                 TileContainerEvent evnt;
                 evnt.container = this;
+                evnt.containerId = mId;
                 evnt.varEvent = TileDamagedEvent{
                     .tileIndex = index,
                     .tileId = mTiles[index].mainLayer,
@@ -570,6 +580,7 @@ bool TileContainer::adjustTileHealth(TileIndex index, int healthAdjust, f32v3 im
         // TODO: Add source
         TileContainerEvent evnt;
         evnt.container = this;
+        evnt.containerId = mId;
         evnt.varEvent = TileDamagedEvent{
             .tileIndex = index,
             .tileId = mTiles[index].mainLayer,

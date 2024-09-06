@@ -39,7 +39,6 @@ enum class TileLayer : ui8 {
     Main = 1,
     COUNT = 2
 };
-static_assert(TILE_LAYER_COUNT == e_cast(TileLayer::COUNT));
 
 enum class TileShape : ui8 {
     THIN,  // Trees and flora

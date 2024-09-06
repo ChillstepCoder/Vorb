@@ -130,9 +130,9 @@ void StaticPhysicsMeshBuilder::addTriangleBetweenPoints(const f32v3 vertPoints[3
 }
 
 bool StaticPhysicsMeshBuilder::hasAnyCollision() {
-    return mVerts.size() || mTrackedRigidBodyGatherer.getNumStaticObjectsToAdd();
+    return mVerts.size();
 }
 
 void StaticPhysicsMeshBuilder::finish(PhysicsWorld& physicsWorld) {
-    physicsWorld.updateTileContainerMeshFromBuilder(*this);
+    physicsWorld.updateProceduralTileContainerMeshFromBuilder(*this);
 }

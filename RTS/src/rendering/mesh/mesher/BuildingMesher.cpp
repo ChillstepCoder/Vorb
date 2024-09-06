@@ -17,7 +17,7 @@
 
 #include "tile/TileHandle.h"
 #include "resources/TileRepository.h"
-#include "rendering/mesh/mesher/builder/TileMeshBuilderMethods.h"
+#include "rendering/mesh/mesher/builder/ProceduralTileMeshBuilderMethods.h"
 
 #include "util/GridEdgeFinder.h"
 

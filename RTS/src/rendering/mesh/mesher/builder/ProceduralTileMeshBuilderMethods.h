@@ -11,7 +11,7 @@ struct MaterialDesc;
 class ContainerMeshBuilders;
 class StaticPhysicsMeshBuilder;
 
-namespace TileMeshBuilderMethods {
+namespace ProceduralTileMeshBuilderMethods {
     void meshTileContainer(ContainerMeshBuilders& builders, StaticPhysicsMeshBuilder& physics, OPT const CompressedHeight* heightData);
 
     void addBlock(ProceduralMeshBuilder& meshBuilder, const f32v3& tilePos, const Tile& tile, const TileDef& tileData, StaticPhysicsMeshBuilder& physMesh);
