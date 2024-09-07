@@ -870,6 +870,7 @@ void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const
                      __debugbreak();*/
                     continue;
                 }
+
                 // Add this as a new valid node if needed
                 // This always picks first position for node due to overwrites, but thats OK we will let fine nav / steering do
                 // string pulling to improve the path

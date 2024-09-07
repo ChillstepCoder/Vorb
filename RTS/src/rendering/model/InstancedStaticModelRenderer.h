@@ -1,6 +1,5 @@
 #pragma once
 
-#include "rendering/model/StaticModelRendererBatchData.h"
 #include "rendering/model/MaterialRenderPassType.h"
 #include "resources/asset/AssetHandleBundle.h"
 
@@ -28,6 +27,8 @@ private:
 
     const MaterialShaderDef* mStandardShader = nullptr;
     const MaterialShaderDef* mShadowMapperShader = nullptr;
+    // TODO: USE
+    //const MaterialShaderDef* mCutoutShadowMapperShader = nullptr;
     const MaterialShaderDef* mSmudgeShader = nullptr;
     const MaterialShaderDef* mWaterShader = nullptr;
     AssetHandleBundle mShaderAssets;

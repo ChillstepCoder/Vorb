@@ -56,6 +56,7 @@ void TileContainerModelEditEvent::operator delete(void* pointer, size_t size) {
 
 // Maximum concurrent LOD transitioning meshes, note that an impostor doesn't count towards this
 constexpr int MAX_LOD_DITHER_TRANSITION_DRAWS = 2048;
+constexpr int MAX_TRANSFORMATION_TRANSITION_DRAWS = 512;
 constexpr int WORK_GROUP_SIZE = 64;
 constexpr f32 LOD_TRANSITION_SPEED = 1.0f; // Multiplied by elapsedSec. 1 = 1 second, 2 = 0.5 seconds
 // TODO: Read about advanced gpu driven rendering https://advances.realtimerendering.com/s2015/aaltonenhaar_siggraph2015_combined_final_footer_220dpi.pdf
@@ -328,68 +329,124 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             return MeshLODLevel::Highest;
         };
 
+        std::vector<TileModelInstanceIndex> transformationIndicesToRemove;
+
         const f32 LodTransitionSpeed = LOD_TRANSITION_SPEED * sDebugOptions.mLodCrossfadeSpeed;
+        const f32 TransformationSpeed = LOD_TRANSITION_SPEED; // TODO: Dynamic?
 
         ModelRepository& modelRepo = ModelRepository::get();
-        for (ui32 instanceIndex = 0; instanceIndex < (ui32)mInstanceTransforms.size(); ++instanceIndex) {
+        for (TileModelInstanceIndex instanceIndex = 0; instanceIndex < (TileModelInstanceIndex)mInstanceTransforms.size(); ++instanceIndex) {
             const f32m4& transform = mInstanceTransforms[instanceIndex];
             // Columns are first
             const f32v3& pos = reinterpret_cast<const f32v3&>(transform[3]);
             const InstanceDrawData& instanceDrawData = mInstanceDrawData[instanceIndex];
-            InstanceTransitionData& transitionData = mInstanceTransitionData[instanceIndex];
+            InstanceCrossfadeData& transitionData = mInstanceCrossfadeData[instanceIndex];
             const ModelLodParams& lodParams = modelRepo.getLodParams(instanceDrawData.modelId);
 
             if (transitionData.isActive()) {
-                transitionData.mCrossfade += LodTransitionSpeed * elapsedSec;
-                // Stop if we are finished
-                if (transitionData.mCrossfade >= 1.0f) {
-                    transitionData.mCrossfade = 0.0f;
-                    transitionData.mCurrentLOD = transitionData.mTargetLOD;
-                    assert(mNumActiveLodTransitions > 0);
-                    --mNumActiveLodTransitions;
-                }
-                else {
-                    if (camera.sphereIsVisible(pos, lodParams.boundingSphereRadius)) {
-                        const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataArrayForModel(instanceDrawData.key);
-                        const f32 sourceCrossfade = -transitionData.mCrossfade;
-                        const f32 targetCrossfade = transitionData.mCrossfade;
+                if (transitionData.mTransformationDataIndex != INVALID_TRANSFORMATION_DATA_INDEX) {
+                    TransformationData& transformationData = mTransformationData[transitionData.mTransformationDataIndex];
+                    // Transformation transition updates, such as corruption
+                    if (transformationData.isFrom) {
+                        transitionData.mCrossfade -= TransformationSpeed * elapsedSec;
+                    }
+                    else {
+                        transitionData.mCrossfade += TransformationSpeed * elapsedSec;
+                    }
+                    if (std::fabs(transitionData.mCrossfade) >= 1.0f) {
 
-                        addCrossfadingModel(transitionData.mCurrentLOD, instanceDrawData, drawDataArray, pos, instanceIndex, sourceCrossfade);
-                        addCrossfadingModel(transitionData.mTargetLOD, instanceDrawData, drawDataArray, pos, instanceIndex, targetCrossfade);
+                        assert(mNumActiveTransformationTransitions > 0);
+                        --mNumActiveTransformationTransitions;
 
-                        // DrawShadows for whichever is closer
-                        if (targetCrossfade < 0.5f) {
-                            // Draw current shadow
-                            if ((int)lodParams.shadowLodDetail > (int)transitionData.mCurrentLOD) {
-                                for (int m = 0; m < instanceDrawData.key.count; ++m) {
-                                    const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
-                                    const int renderPassIndex = e_cast(drawData.renderPass);
-                                    if (drawData.castsShadow) {
-                                        setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[(int)transitionData.mCurrentLOD]);
-                                    }
-                                }
-                            }
-                        } else {
-                            // Draw target shadow
-                            if ((int)lodParams.shadowLodDetail > (int)transitionData.mTargetLOD) {
-                                for (int m = 0; m < instanceDrawData.key.count; ++m) {
-                                    const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
-                                    const int renderPassIndex = e_cast(drawData.renderPass);
-                                    if (drawData.castsShadow) {
-                                        setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[(int)transitionData.mTargetLOD]);
+                        transitionData.mCrossfade = 0.0f;
+
+                        // Add from index to remove later:
+                        transitionData.mTransformationDataIndex = INVALID_TRANSFORMATION_DATA_INDEX;
+                        if (transformationData.isFrom) {
+                            assert(transformationData.fromIndex == instanceIndex);
+                            transformationIndicesToRemove.push_back(transformationData.fromIndex);
+                            continue;
+                        }
+                    }
+                    else {
+                        if (camera.sphereIsVisible(pos, lodParams.boundingSphereRadius)) {
+                            const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataArrayForModel(instanceDrawData.key);
+
+                            addCrossfadingModel(transitionData.mCurrentLOD, instanceDrawData, drawDataArray, pos, instanceIndex, transitionData.mCrossfade);
+
+                            // DrawShadows for whichever is closer
+                            if ((transformationData.isFrom && transitionData.mCrossfade > -0.5f) || (!transformationData.isFrom && transitionData.mCrossfade >= 0.5f)) {
+                                // Draw current shadow
+                                if ((int)lodParams.shadowLodDetail > (int)transitionData.mCurrentLOD) {
+                                    const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataArrayForModel(instanceDrawData.key);
+                                    for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                                        const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                                        const int renderPassIndex = e_cast(drawData.renderPass);
+                                        if (drawData.castsShadow) {
+                                            setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[(int)transitionData.mCurrentLOD]);
+                                        }
                                     }
                                 }
                             }
                         }
+
+                        continue;
                     }
-                    else {
-                        // Offscreen can instantly finish crossfading
+                }
+                else {
+                    // LOD Dither transitions
+                    transitionData.mCrossfade += LodTransitionSpeed * elapsedSec;
+                    // Stop if we are finished
+                    if (transitionData.mCrossfade >= 1.0f) {
                         transitionData.mCrossfade = 0.0f;
                         transitionData.mCurrentLOD = transitionData.mTargetLOD;
                         assert(mNumActiveLodTransitions > 0);
                         --mNumActiveLodTransitions;
                     }
-                    continue;
+                    else {
+                        if (camera.sphereIsVisible(pos, lodParams.boundingSphereRadius)) {
+                            const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataArrayForModel(instanceDrawData.key);
+                            const f32 sourceCrossfade = -transitionData.mCrossfade;
+                            const f32 targetCrossfade = transitionData.mCrossfade;
+
+                            addCrossfadingModel(transitionData.mCurrentLOD, instanceDrawData, drawDataArray, pos, instanceIndex, sourceCrossfade);
+                            addCrossfadingModel(transitionData.mTargetLOD, instanceDrawData, drawDataArray, pos, instanceIndex, targetCrossfade);
+
+                            // DrawShadows for whichever is closer
+                            if (targetCrossfade < 0.5f) {
+                                // Draw current shadow
+                                if ((int)lodParams.shadowLodDetail > (int)transitionData.mCurrentLOD) {
+                                    for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                                        const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                                        const int renderPassIndex = e_cast(drawData.renderPass);
+                                        if (drawData.castsShadow) {
+                                            setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[(int)transitionData.mCurrentLOD]);
+                                        }
+                                    }
+                                }
+                            }
+                            else {
+                                // Draw target shadow
+                                if ((int)lodParams.shadowLodDetail > (int)transitionData.mTargetLOD) {
+                                    for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                                        const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                                        const int renderPassIndex = e_cast(drawData.renderPass);
+                                        if (drawData.castsShadow) {
+                                            setCommand(mDrawCommandsShadows[renderPassIndex]->getDrawCommands().data()[shadowCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[(int)transitionData.mTargetLOD]);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else {
+                            // Offscreen can instantly finish crossfading
+                            transitionData.mCrossfade = 0.0f;
+                            transitionData.mCurrentLOD = transitionData.mTargetLOD;
+                            assert(mNumActiveLodTransitions > 0);
+                            --mNumActiveLodTransitions;
+                        }
+                        continue;
+                    }
                 }
             }
 
@@ -471,16 +528,14 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
 
             }
         }
+
+        // Remove transformations that finished
+        for (TileModelInstanceIndex index : transformationIndicesToRemove) {
+            removeModelInstanceInternal(index);
+        }
     }
 
     mBillboardLodManager->flushDataAndIncrementFrame();
-
-    // Compact indirect buffer is actually slower due to atomic operation and cpu-gpu sync
-    // Sync start of draw
-    /* if (inDrawCommands.mDrawCommands.size()) {
-        glMemoryBarrier(GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT);
-        instanceData.mFenceSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-    }*/
 
     updateAnimatedModels(elapsedSec);
 }
@@ -490,10 +545,9 @@ void InstancedStaticModelManager::addTileInstanceAtPosition(TileContainerID cont
 
     increfModelDef(modelId, 1);
     
-    const ModelDef* modelDefPtr = ModelRepository::get().tryGetLoadedAsset(modelId);
-    assert(modelDefPtr);
+    const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(modelId);
 
-    addTileInstanceInternal(*modelDefPtr, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation, scale), variantIndex, std::move(damageData), scale);
+    addTileInstanceInternal(modelDef, containerId, tileIndex, ModelUtil::computeTransformMatrixForModel(position, rotation, scale), variantIndex, std::move(damageData), scale);
 }
 
 void InstancedStaticModelManager::removeTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex) {
@@ -505,7 +559,7 @@ void InstancedStaticModelManager::removeTileInstanceAtPosition(TileContainerID c
         auto&& spit = spatialMap.find(tileIndex);
 
         if (spit != spatialMap.end()) {
-            removeTileInstanceInternal(spit->second);
+            removeModelInstanceInternal(spit->second);
             spatialMap.erase(spit);
             if (spatialMap.empty()) {
                 mTileContainerTrackedModels.erase(it);
@@ -514,7 +568,7 @@ void InstancedStaticModelManager::removeTileInstanceAtPosition(TileContainerID c
     }
 }
 
-TileModelInstance* InstancedStaticModelManager::getTileInstanceAtPosition(LiteTileHandle tileHandle) {
+TileModelInstanceIndex InstancedStaticModelManager::getTileInstanceIndexAtPosition(LiteTileHandle tileHandle) {
     ASSERT_RENDER_THREAD();
     auto&& it = mTileContainerTrackedModels.find(tileHandle.containerId);
     if (it != mTileContainerTrackedModels.end()) {
@@ -522,10 +576,10 @@ TileModelInstance* InstancedStaticModelManager::getTileInstanceAtPosition(LiteTi
         auto&& spit = spatialMap.find(tileHandle.index);
 
         if (spit != spatialMap.end()) {
-            return &spit->second;
+            return spit->second;
         }
     }
-    return nullptr;
+    return INVALID_TILE_MODEL_INSTANCE_INDEX;
 }
 
 bool InstancedStaticModelManager::hasTileInstanceAtPosition(LiteTileHandle tileHandle, ModelID modelId) {
@@ -535,7 +589,7 @@ bool InstancedStaticModelManager::hasTileInstanceAtPosition(LiteTileHandle tileH
         auto&& spit = spatialMap.find(tileHandle.index);
 
         if (spit != spatialMap.end()) {
-            return mInstanceDrawData[spit->second.mInstanceIndex].modelId == modelId;
+            return mInstanceDrawData[spit->second].modelId == modelId;
         }
     }
     return false;
@@ -572,8 +626,7 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
         mInstanceGpuData.resize(mInstanceTransforms.size());
         mInstanceSources.resize(mInstanceTransforms.size());
         mInstanceDrawData.resize(mInstanceTransforms.size());
-        mInstanceTransitionData.resize(mInstanceTransforms.size());
-
+        mInstanceCrossfadeData.resize(mInstanceTransforms.size());
 
         // Dirty the beginning of range
         onDirtyModelInstance(startIndex);
@@ -606,8 +659,7 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
     }
 }
 
-void InstancedStaticModelManager::removeTileInstancesFromContainer(TileContainerID containerId)
-{
+void InstancedStaticModelManager::removeTileInstancesFromContainer(TileContainerID containerId) {
     // TODO: There is a race condition if the tile container is being meshed. Make sure we only destroy tile containers once they are done
     // being meshed?
     ASSERT_RENDER_THREAD();
@@ -616,7 +668,7 @@ void InstancedStaticModelManager::removeTileInstancesFromContainer(TileContainer
     if (it != mTileContainerTrackedModels.end()) {
         SpatialInstanceDataMap& tileContainerModels = it->second;
         for (auto& it2 : tileContainerModels) {
-            removeTileInstanceInternal(it2.second);
+            removeModelInstanceInternal(it2.second);
         }
         mTileContainerTrackedModels.erase(it);
     }
@@ -628,6 +680,7 @@ ui32 InstancedStaticModelManager::getNumModels() const {
 }
 
 bool InstancedStaticModelManager::playAnimationOnInstanceAtPosition(LiteTileHandle targetTile, StaticModelAnimationTypes animType, f32v2 direction, ModelID modelId) {
+    ASSERT_RENDER_THREAD();
     // Ensure tile exists as static model
     if (!hasTileInstanceAtPosition(targetTile, modelId)) {
         return false;
@@ -660,12 +713,23 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
         f32 zPos;
         TileIndex tileIndex;
     };
+    struct ModelTransformEvent {
+        ModelID nextId;
+        TileIndex tileIndex;
+        ui8 nextVariant;
+        TileTransformationType transformType;
+    };
     struct ModelEditEvents {
         TileContainerID containerId;
         InstancedStaticModelManager* manager = nullptr;
         std::vector<ModelAddEvent> addEvents;
         std::vector<ModelHeightAdjustEvent> heightAdjustEvents;
         std::vector<TileIndex> removeEvents;
+        std::vector<ModelTransformEvent> transformEvents;
+
+        bool hasAny() const {
+            return removeEvents.size() || addEvents.size() || heightAdjustEvents.size() || transformEvents.size();
+        }
     };
 
     ModelEditEvents editEvents;
@@ -678,16 +742,21 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
         case TileContainerEditEventType::ChangeTileID: {
             for (ui32 i = 0; i < editEvent.editCount; ++i) {
                 TileContainerEditLayerEventData& edit = editEvent.changeLayerArray[i];
-                const TileID prevId = edit.prevId;
-                if (prevId != TILE_ID_NONE) {
+
+                if (edit.transformType != TileTransformationType::COUNT) {
+                    assert(edit.prevId != TILE_ID_NONE && edit.newId != TILE_ID_NONE);
+                    editEvents.transformEvents.emplace_back(ModelTransformEvent{ TileRepository::get().getTileModelID(edit.newId), edit.tileIndex, 0/*TODO: VARIANTS*/, edit.transformType});
+                    continue;
+                }
+
+                if (edit.prevId != TILE_ID_NONE) {
                     if (TileRepository::get().getTileShape(edit.prevId) == TileShape::MODEL) {
                         editEvents.removeEvents.emplace_back(edit.tileIndex);
                     }
                 }
-                const TileID newId = edit.newId;
-                assert(newId != prevId);
-                if (newId != TILE_ID_NONE) {
-                    const ModelID modelId = TileRepository::get().getTileModelID(newId);
+                assert(edit.newId != edit.prevId);
+                if (edit.newId != TILE_ID_NONE) {
+                    const ModelID modelId = TileRepository::get().getTileModelID(edit.newId);
                     if (modelId != INVALID_MODEL_ID) {
                         f32 scale;
                         const ModelDef& modelDef = ModelRepository::get().getLoadedOrUnloadedAsset(modelId);
@@ -727,31 +796,91 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
     static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(4), "Update handler");
 
 
-    if (editEvents.removeEvents.size() || editEvents.addEvents.size() || editEvents.heightAdjustEvents.size()) {
+    if (editEvents.hasAny()) {
 
         ModelEditEvents* editPtr = new ModelEditEvents(std::move(editEvents));
 
         RenderThreadTasks::getInstance().addGenericTask([editPtr]() {
             TileContainerID containerId = editPtr->containerId;
-            InstancedStaticModelManager* manager = editPtr->manager;
+            InstancedStaticModelManager* mgr = editPtr->manager;
+            ModelRepository& modelRepo = ModelRepository::get();
             for (auto&& index : editPtr->removeEvents) {
-                manager->removeTileInstanceAtPosition(containerId, index);
+                mgr->removeTileInstanceAtPosition(containerId, index);
             }
             for (auto&& addEvent : editPtr->addEvents) {
                 // Assume no damage for now!
-                manager->addTileInstanceAtPosition(
+                mgr->addTileInstanceAtPosition(
                     containerId, addEvent.tileIndex, addEvent.modelId, addEvent.worldPosition, getTileModelRotationAtPosition(addEvent.worldPosition), 0 /*TODO: Variant*/, nullptr, addEvent.scale
                 );
             }
             for (auto&& heightAdjustEvent : editPtr->heightAdjustEvents) {
-                SpatialInstanceDataMap& tileContainerModels = manager->mTileContainerTrackedModels[containerId];
+                SpatialInstanceDataMap& tileContainerModels = mgr->mTileContainerTrackedModels[containerId];
 
                 auto it = tileContainerModels.find(heightAdjustEvent.tileIndex);
                 if (it != tileContainerModels.end()) {
-                    TileModelInstance& tileInstance = it->second;
+                    TileModelInstanceIndex tileInstance = it->second;
                     // Just change zpos in the transform
-                    manager->mInstanceTransforms[tileInstance.mInstanceIndex][3][2] = heightAdjustEvent.zPos;
-                    manager->onDirtyModelInstance(tileInstance.mInstanceIndex);
+                    mgr->mInstanceTransforms[tileInstance][3][2] = heightAdjustEvent.zPos;
+                    mgr->onDirtyModelInstance(tileInstance);
+                }
+            }
+            for (auto&& transformEvent : editPtr->transformEvents) {
+                SpatialInstanceDataMap& tileContainerModels = mgr->mTileContainerTrackedModels[containerId];
+
+                auto it = tileContainerModels.find(transformEvent.tileIndex);
+                if (it != tileContainerModels.end()) {
+                    TileModelInstanceIndex sourceInstance = it->second;
+                    const ModelDef& nextModelDef = ModelRepository::get().getLoadedOrUnloadedAsset(transformEvent.nextId);
+                    InstanceCrossfadeData& sourceCrossfadeData = mgr->mInstanceCrossfadeData[sourceInstance];
+                    if (sourceCrossfadeData.isActive()) {
+                        if (sourceCrossfadeData.mTransformationDataIndex != INVALID_TRANSFORMATION_DATA_INDEX) {
+                            assert(sourceCrossfadeData.mTargetLOD == sourceCrossfadeData.mCurrentLOD);
+                            // We transformed an already transforming tile. Just update the target and refresh the crossfade
+                            TransformationData& transformationData = mgr->mTransformationData[sourceCrossfadeData.mTransformationDataIndex];
+                            mgr->mInstanceDrawData[transformationData.toIndex] = InstanceDrawData(modelRepo.getDrawDataSpanKeyForModel(nextModelDef.getID()), nextModelDef.getID());
+                            mgr->mInstanceGpuData[transformationData.toIndex].submeshDataIndex = mgr->mInstanceDrawData[transformationData.toIndex].key.startIndex;
+
+                            sourceCrossfadeData.mCrossfade = -MATH_EPSILON;
+                            InstanceCrossfadeData& targetCrossfadeData = mgr->mInstanceCrossfadeData[transformationData.toIndex];
+                            assert(targetCrossfadeData.mTargetLOD == targetCrossfadeData.mCurrentLOD);
+                            targetCrossfadeData.mCrossfade = MATH_EPSILON;
+                        }
+                        else {
+                            // Force finish crossfade
+                            sourceCrossfadeData.mCrossfade = 0.0f;
+                            sourceCrossfadeData.mCurrentLOD = sourceCrossfadeData.mTargetLOD;
+                        }
+                    }
+                    else {
+                        // Remove old instance tracking as we will replace with new in addTileInstanceInternal
+                        SpatialInstanceDataMap& tileContainerModels = mgr->mTileContainerTrackedModels[containerId];
+                        tileContainerModels.erase(transformEvent.tileIndex);
+                        mgr->mInstanceSources[sourceInstance] = std::monostate{};
+
+                        // Create a new instance that is identical to our current one except for its model
+                        TileModelInstanceIndex targetInstance = mgr->addTileInstanceInternal(
+                            nextModelDef,
+                            containerId,
+                            transformEvent.tileIndex,
+                            mgr->mInstanceTransforms[sourceInstance],
+                            transformEvent.nextVariant,
+                            nullptr /*no damage?*/,
+                            mgr->mInstanceScales[sourceInstance]
+                        );
+
+                        sourceCrossfadeData.mCrossfade = -MATH_EPSILON;
+                        sourceCrossfadeData.mTransformationDataIndex = mgr->mTransformationData.size();
+                        mgr->mTransformationData.emplace_back(TransformationData{ sourceInstance, targetInstance, transformEvent.transformType, true });
+
+                        InstanceCrossfadeData& targetCrossfadeData = mgr->mInstanceCrossfadeData[targetInstance];
+                        targetCrossfadeData.mCrossfade = MATH_EPSILON;
+                        targetCrossfadeData.mTransformationDataIndex = mgr->mTransformationData.size();
+                        targetCrossfadeData.mCurrentLOD = sourceCrossfadeData.mCurrentLOD;
+                        targetCrossfadeData.mTargetLOD = sourceCrossfadeData.mTargetLOD;
+                        mgr->mTransformationData.emplace_back(TransformationData{ sourceInstance, targetInstance, transformEvent.transformType, false });
+
+                        mgr->mNumActiveTransformationTransitions += 2;
+                    }
                 }
             }
             delete editPtr;
@@ -853,11 +982,10 @@ void InstancedStaticModelManager::init() {
     // Water not supported
     for (MaterialRenderPassType type : CROSSFADE_PASSES) {
         mCrossfadeBuffers[(int)type] = std::make_unique<GpuStreamingDataBuffer>(MAX_LOD_DITHER_TRANSITION_DRAWS, sizeof(f32));
+        mDrawCommandsCrossfade[(int)type] = std::make_unique<GLDrawCommandBuffer>(MAX_LOD_DITHER_TRANSITION_DRAWS);
+        mDrawCommandsTransformations[(int)type] = std::make_unique<GLDrawCommandBuffer>(MAX_TRANSFORMATION_TRANSITION_DRAWS);
     }
 
-    for (MaterialRenderPassType type : CROSSFADE_PASSES) {
-        mDrawCommandsCrossfade[(int)type] = std::make_unique<GLDrawCommandBuffer>(MAX_LOD_DITHER_TRANSITION_DRAWS);
-    }
 }
 
 void InstancedStaticModelManager::updatePendingLooseModelInstances() {
@@ -889,7 +1017,9 @@ void InstancedStaticModelManager::updatePendingLooseModelInstances() {
     }
 }
 
-void InstancedStaticModelManager::removeModelInstanceInternal(ui32 instanceIndex) {
+void InstancedStaticModelManager::removeModelInstanceInternal(TileModelInstanceIndex instanceIndex) {
+    
+    TileModelInstanceIndex fromTransformationToRemove = INVALID_TILE_MODEL_INSTANCE_INDEX;
 
     onDirtyModelInstance(instanceIndex);
 
@@ -904,28 +1034,66 @@ void InstancedStaticModelManager::removeModelInstanceInternal(ui32 instanceIndex
         SpatialInstanceDataMap& backTileContainerModels = it2->second;
         auto&& backRef = backTileContainerModels.find(owner.tileIndex);
         assert(backRef != backTileContainerModels.end());
-        backRef->second.mInstanceIndex = instanceIndex;
-
+        backRef->second = instanceIndex;
     }
-    else {
+    else if (std::holds_alternative<StaticModelInstanceID>(backSource)) {
         // Loose model
         const StaticModelInstanceID backInstanceID = std::get<StaticModelInstanceID>(backSource);
         auto&& backRef = mLooseStaticModelInstances.find(backInstanceID);
         assert(backRef != mLooseStaticModelInstances.end());
         backRef->second = instanceIndex;
     }
+    // Else, back is untracked (std::monostate) so do nothing
+
     mInstanceSources[instanceIndex] = backSource;
     mInstanceSources.pop_back();
 
     mInstanceScales[instanceIndex] = mInstanceScales.back();
     mInstanceScales.pop_back();
 
-    if (mInstanceTransitionData[instanceIndex].isActive()) {
-        assert(mNumActiveLodTransitions);
-        --mNumActiveLodTransitions;
+    InstanceCrossfadeData& crossfadeData = mInstanceCrossfadeData[instanceIndex];
+    if (crossfadeData.isActive()) {
+        // If we are crossfading as a transformation, make sure to remove the other instance
+        if (crossfadeData.mTransformationDataIndex != INVALID_TRANSFORMATION_DATA_INDEX) [[unlikely]] {
+            TransformationData& transformationData = mTransformationData[crossfadeData.mTransformationDataIndex];
+            // The "to" index is the authoritative index, so we remove the "from" index
+            if (transformationData.isFrom == false) {
+                fromTransformationToRemove = transformationData.fromIndex;
+            }
+            assert(mNumActiveTransformationTransitions);
+            --mNumActiveTransformationTransitions;
+        }
+        else {
+            assert(mNumActiveLodTransitions);
+            --mNumActiveLodTransitions;
+        }
     }
-    mInstanceTransitionData[instanceIndex] = mInstanceTransitionData.back();
-    mInstanceTransitionData.pop_back();
+
+    // If the back is transforming
+    if (mInstanceCrossfadeData.back().mTransformationDataIndex != INVALID_TRANSFORMATION_DATA_INDEX) {
+        InstanceCrossfadeData& backCrossfadeData = mInstanceCrossfadeData.back();
+        const TileModelInstanceIndex backIndex = mInstanceCrossfadeData.size() - 1;
+        assert(backCrossfadeData.isActive());
+        TransformationData& backTransformationData = mTransformationData[backCrossfadeData.mTransformationDataIndex];
+        // (and it isn't the one we just deleted), we need to update the indices pointing to it
+        if (backTransformationData.fromIndex != instanceIndex && backTransformationData.toIndex != instanceIndex) {
+            // One of these will be the same as backTransformationData
+            const TransformationDataIndex fromDataIndex = mInstanceCrossfadeData[backTransformationData.fromIndex].mTransformationDataIndex;
+            const TransformationDataIndex toDataIndex = mInstanceCrossfadeData[backTransformationData.toIndex].mTransformationDataIndex;
+            if (backTransformationData.fromIndex == backIndex) {
+                mTransformationData[fromDataIndex].fromIndex = instanceIndex;
+                mTransformationData[toDataIndex].fromIndex = instanceIndex;
+            }
+            else {
+                assert(backTransformationData.toIndex == backIndex);
+                mTransformationData[fromDataIndex].toIndex = instanceIndex;
+                mTransformationData[toDataIndex].toIndex = instanceIndex;
+            }
+        }
+    }
+
+    crossfadeData = mInstanceCrossfadeData.back();
+    mInstanceCrossfadeData.pop_back();
 
     // Replace this instance with back instance
     mInstanceTransforms[instanceIndex] = std::move(mInstanceTransforms.back());
@@ -941,9 +1109,14 @@ void InstancedStaticModelManager::removeModelInstanceInternal(ui32 instanceIndex
     decrementDrawCommandsCount(mInstanceDrawData[instanceIndex].key);
     mInstanceDrawData[instanceIndex] = mInstanceDrawData.back();
     mInstanceDrawData.pop_back();
+
+    // If we removed an in progress transforming tile, we must also remove the source
+    if (fromTransformationToRemove != INVALID_TILE_MODEL_INSTANCE_INDEX) [[unlikely]] {
+        removeModelInstanceInternal(fromTransformationToRemove);
+    }
 }
 
-void InstancedStaticModelManager::addTileInstanceInternal(
+TileModelInstanceIndex InstancedStaticModelManager::addTileInstanceInternal(
     const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex, TileDamageDataPtr damageData, f32 scale
 ) {
 
@@ -958,7 +1131,7 @@ void InstancedStaticModelManager::addTileInstanceInternal(
     const VariantIndexData variantData = modelRepo.getVariantArrayIndexDataForModel(modelDef.getID());
 
     mInstanceScales.emplace_back(scale);
-    mInstanceTransitionData.emplace_back();
+    mInstanceCrossfadeData.emplace_back();
 
     newGpuData.variantIndex = variantData.offset + (InstanceVariantIndexType)variantIndex * variantData.stride;
     if (damageData) {
@@ -970,29 +1143,25 @@ void InstancedStaticModelManager::addTileInstanceInternal(
         newGpuData.damageModelIndex = 0;
     }
     mInstanceSources.emplace_back(ModelInstanceContainerOwner{ containerId, tileIndex });
-    SpatialInstanceDataMap& tileContainerModels = mTileContainerTrackedModels[containerId];
 
+    SpatialInstanceDataMap& tileContainerModels = mTileContainerTrackedModels[containerId];
     assert(tileContainerModels.find(tileIndex) == tileContainerModels.end());
-    tileContainerModels[tileIndex] = { (ui32)instanceIndex };
+    tileContainerModels.emplace(tileIndex, instanceIndex);
 
     mInstanceDrawData.emplace_back(modelRepo.getDrawDataSpanKeyForModel(modelDef.getID()), modelDef.getID());
     newGpuData.submeshDataIndex = mInstanceDrawData.back().key.startIndex;
     incrementDrawCommandsCount(mInstanceDrawData.back().key);
-
-}
-
-void InstancedStaticModelManager::removeTileInstanceInternal(TileModelInstance& instance) {
-    removeModelInstanceInternal(instance.mInstanceIndex);
+    return instanceIndex;
 }
 
 void InstancedStaticModelManager::onTileInstanceDamageChanged(TileContainerID containerId, TileIndex tileIndex, const TileDamageData& damageData) {
 
-    TileModelInstance* instance = getTileInstanceAtPosition(LiteTileHandle{ containerId, tileIndex });
-    assert(instance);
+    TileModelInstanceIndex instance = getTileInstanceIndexAtPosition(LiteTileHandle{ containerId, tileIndex });
+    assert(instance != INVALID_TILE_MODEL_INSTANCE_INDEX);
 
     const bool isUndamaged = damageData.getShellDamageZones() == TileDamageData().getShellDamageZones();
 
-    ui32& damageModelIndex = mInstanceGpuData[instance->mInstanceIndex].damageModelIndex;
+    ui32& damageModelIndex = mInstanceGpuData[instance].damageModelIndex;
     if (damageModelIndex != 0) {
         if (isUndamaged) {
             removeDamageModelInternal(damageModelIndex);
@@ -1027,7 +1196,7 @@ void InstancedStaticModelManager::onTileInstanceDamageChanged(TileContainerID co
     // Update damage index buffer
     glNamedBufferSubData(
         mInstanceDataVbo,
-        instance->mInstanceIndex * sizeof(InstanceGpuData) + offsetof(InstanceGpuData, damageModelIndex),
+        instance * sizeof(InstanceGpuData) + offsetof(InstanceGpuData, damageModelIndex),
         sizeof(ui32),
         &damageModelIndex
     );
@@ -1067,7 +1236,7 @@ void InstancedStaticModelManager::addLooseInstanceInternal(
     mInstanceSources.emplace_back(instanceId);
 
     mInstanceScales.emplace_back(scale);
-    mInstanceTransitionData.emplace_back();
+    mInstanceCrossfadeData.emplace_back();
 
     // Store instance lookup
     mLooseStaticModelInstances.emplace(std::make_pair(instanceId, (ui32)instanceIndex));
@@ -1112,12 +1281,12 @@ void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec) {
             it = mAnimatedTileInstances.erase(it);
         }
         else {
-            TileModelInstance* instance = getTileInstanceAtPosition(it->first);
-            if (!instance) {
+            TileModelInstanceIndex instance = getTileInstanceIndexAtPosition(it->first);
+            if (instance == INVALID_TILE_MODEL_INSTANCE_INDEX) {
                 it = mAnimatedTileInstances.erase(it);
                 continue;
             }
-            const f32m4& baseTransform = mInstanceTransforms[instance->mInstanceIndex];
+            const f32m4& baseTransform = mInstanceTransforms[instance];
 
             f32m4 newTransform;
             switch (animation.animType) {
@@ -1143,7 +1312,7 @@ void InstancedStaticModelManager::updateAnimatedModels(f32 elapsedSec) {
             // Override transform on gpu
             glNamedBufferSubData(
                 mTransformsVbo,
-                instance->mInstanceIndex * sizeof(f32m4),
+                instance * sizeof(f32m4),
                 sizeof(f32m4),
                 &newTransform[0][0]
             );
@@ -1202,7 +1371,7 @@ void InstancedStaticModelManager::decrementDrawCommandsCount(ModelBatchSubmeshDr
     }
 }
 
-void InstancedStaticModelManager::onDirtyModelInstance(ui32 instanceIndex) {
+void InstancedStaticModelManager::onDirtyModelInstance(TileModelInstanceIndex instanceIndex) {
     if (instanceIndex < mFirstDirtyInstance) {
         mFirstDirtyInstance = instanceIndex;
     }

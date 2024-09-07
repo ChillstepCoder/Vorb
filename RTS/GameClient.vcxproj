@@ -435,7 +435,6 @@
     <ClCompile Include="src\rendering\model\ModelHighlightRenderer.cpp" />
     <ClCompile Include="src\rendering\model\skeletal\AnimTransitionConditionDef.cpp" />
     <ClCompile Include="src\rendering\model\skeletal\SkeletalAnimator.cpp" />
-    <ClCompile Include="src\rendering\model\StaticModelRendererBatchData.cpp" />
     <ClCompile Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.cpp" />
     <ClCompile Include="src\rendering\particle\CpuParticleEmitter.cpp" />
     <ClCompile Include="src\rendering\particle\CPUParticleEmitterModule.cpp" />
@@ -993,7 +992,6 @@
     <ClInclude Include="src\rendering\model\skeletal\SkeletalAnimationSampleContext.h" />
     <ClInclude Include="src\rendering\model\skeletal\SkeletalAnimator.h" />
     <ClInclude Include="src\rendering\model\StaticModelInstance.h" />
-    <ClInclude Include="src\rendering\model\StaticModelRendererBatchData.h" />
     <ClInclude Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.h" />
     <ClInclude Include="src\rendering\particle\CpuParticleEmitter.h" />
     <ClInclude Include="src\rendering\particle\CPUParticleEmitterModule.h" />
@@ -1087,6 +1085,7 @@
     <ClInclude Include="src\tile\SimTileReservation.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
     <ClInclude Include="src\tile\TileDamageData.h" />
+    <ClInclude Include="src\tile\TileTransformationDef.h" />
     <ClInclude Include="src\tile\TileType.h" />
     <ClInclude Include="src\tile\TileTypeDataVariant.h" />
     <ClInclude Include="src\ui\debugging\GameplayDebugger.h" />

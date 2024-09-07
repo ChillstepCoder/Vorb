@@ -612,9 +612,6 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\rendering\model\StaticModelRendererBatchData.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\generation\ChunkGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -2204,9 +2201,6 @@
     <ClInclude Include="src\rendering\model\InstancedStaticModelManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\model\StaticModelRendererBatchData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\generation\ChunkGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -3150,6 +3144,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\particle\CpuParticleEmitterRenderList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tile\TileTransformationDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

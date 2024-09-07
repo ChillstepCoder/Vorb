@@ -485,8 +485,8 @@ void BuildingGrid::onBuildingFinishedLoad(Building& building) {
     GameThreadTasks::getInstance().addGenericTask([this, &building]() {
 
         TileContainerEvent loadFinishedEvent;
-        loadFinishedEvent.containerId = loadFinishedEvent.container->getId();
         loadFinishedEvent.container = building.getTileContainer();
+        loadFinishedEvent.containerId = loadFinishedEvent.container->getId();
         mWorld.getTileContainerRepository().dispatchLoadFinished(loadFinishedEvent);
 
         building.mState = BuildingState::ACTIVE;

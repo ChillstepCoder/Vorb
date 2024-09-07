@@ -31,6 +31,8 @@ InstancedStaticModelRenderer::InstancedStaticModelRenderer() {
 
     mStandardShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("standard_model"));
     mShadowMapperShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("shadow_mapper_instd"));
+    // TODO: USE
+    //mCutoutShadowMapperShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("shadow_mapper_cutout"));
     mSmudgeShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("smudge_model"));
     mWaterShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("water_model"));
 
@@ -185,8 +187,7 @@ void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelMan
     checkGlError("InstancedStaticModelRenderer::renderModelPass");
 }
 
-void InstancedStaticModelRenderer::renderModelShadows(const InstancedStaticModelManager& modelManager, const ShadowPassShaderData& shaderData, const Camera3D& camera)
-{
+void InstancedStaticModelRenderer::renderModelShadows(const InstancedStaticModelManager& modelManager, const ShadowPassShaderData& shaderData, const Camera3D& camera) {
     ASSERT_RENDER_THREAD();
 
     if (!mShaderAssets.areAllAssetsLoaded()) {

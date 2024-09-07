@@ -1,8 +1,9 @@
 #pragma once
 
-#include "rendering/model/StaticModelInstance.h"
-#include "rendering/model/StaticModelRendererBatchData.h"
 #include "rendering/model/MaterialRenderPassType.h"
+
+#include "tile/TileDamageData.h"
+#include "tile/TileTransformationDef.h"
 
 #include "definitions/ModelDef.h"
 
@@ -14,12 +15,51 @@ class InstancedStaticModelGatherer;
 class ModelRepository;
 class MaterialShaderDef;
 class ModelImpostorManager;
-
+class GLDrawCommandBuffer;
+class Mesh;
+struct ModelBatchSubmeshDrawData;
 DECL_VG(class GLProgram);
 
-// Allows us to look up the specific model at a position for a tile container
-typedef std::map<TileIndex, TileModelInstance> SpatialInstanceDataMap;
+struct ModelInstanceContainerOwner {
+    TileContainerID containerId;
+    TileIndex tileIndex;
+};
 
+typedef std::variant<ModelInstanceContainerOwner, StaticModelInstanceID, std::monostate> ModelInstanceOwnerVariant;
+
+enum class StaticModelAnimationTypes : ui8 {
+    HitWiggle,
+    COUNT
+};
+
+constexpr f32 STATIC_MODEL_ANIM_DURATIONS_SEC[e_count(StaticModelAnimationTypes)] = {
+    1.0f,
+};
+static_assert(e_count(StaticModelAnimationTypes) == 1);
+
+// Index into the transforms array
+using TileModelInstanceIndex = ui32;
+constexpr TileModelInstanceIndex INVALID_TILE_MODEL_INSTANCE_INDEX = std::numeric_limits<TileModelInstanceIndex>::max();
+
+using TransformationDataIndex = ui16;
+constexpr TransformationDataIndex INVALID_TRANSFORMATION_DATA_INDEX = std::numeric_limits<TransformationDataIndex>::max();
+
+struct StaticMeshAnimation {
+    f32 currentTimeSec;
+    StaticModelAnimationTypes animType;
+    f32v2 direction;
+};
+
+struct alignas(8) ModelDamageZoneGpuData {
+    TileDamageZonesArray damageZones = {};
+    f32v2 bottom = f32v2(0.0f);
+    f32v2 top = f32v2(0.0f, 4.0f);
+    f32v2 radii = f32v2(1.0f, 1.0f);
+};
+static_assert(sizeof(ModelDamageZoneGpuData) == 56, "Size mismatch with gpu");
+
+// Allows us to look up the specific model at a position for a tile container
+typedef UnorderedFlatMap<TileIndex, TileModelInstanceIndex> SpatialInstanceDataMap;
 
 struct PendingModelInstance {
     TileContainerID containerId;
@@ -51,7 +91,7 @@ public:
         TileContainerID containerId, TileIndex tileIndex, ModelID modelId, f32v3 position, f32 rotation, ui8 variantIndex, TileDamageDataPtr damageData, f32 scale
     );
     void removeTileInstanceAtPosition(TileContainerID containerId, TileIndex tileIndex);
-    TileModelInstance* getTileInstanceAtPosition(LiteTileHandle tileHandle);
+    TileModelInstanceIndex getTileInstanceIndexAtPosition(LiteTileHandle tileHandle);
     bool hasTileInstanceAtPosition(LiteTileHandle tileHandle, ModelID modelId);
     void addTileInstancesFromGatherer(InstancedStaticModelGatherer& gatherer);
     void removeTileInstancesFromContainer(TileContainerID containerId);
@@ -72,12 +112,11 @@ private:
     void init();
     void updatePendingLooseModelInstances();
 
-    void removeModelInstanceInternal(ui32 instanceIndex);
+    void removeModelInstanceInternal(TileModelInstanceIndex instanceIndex);
 
-    void addTileInstanceInternal(
+    TileModelInstanceIndex addTileInstanceInternal(
         const ModelDef& modelDef, TileContainerID containerId, TileIndex tileIndex, const f32m4& transform, ui8 variantIndex, TileDamageDataPtr damageData, f32 scale
     );
-    void removeTileInstanceInternal(TileModelInstance& instance);
 
     void onTileInstanceDamageChanged(TileContainerID containerId, TileIndex tileIndex, const TileDamageData& damageData);
 
@@ -94,7 +133,7 @@ private:
     void incrementDrawCommandsCount(ModelBatchSubmeshDrawDataSpanKey drawDataKey);
     void decrementDrawCommandsCount(ModelBatchSubmeshDrawDataSpanKey drawDataKey);
 
-    void onDirtyModelInstance(ui32 instanceIndex);
+    void onDirtyModelInstance(TileModelInstanceIndex instanceIndex);
 
     struct InstanceDrawData {
         InstanceDrawData() = default;
@@ -109,14 +148,22 @@ private:
         ui32 damageModelIndex;
     };
 
-    struct InstanceTransitionData {
+    struct TransformationData {
+        TileModelInstanceIndex fromIndex;
+        TileModelInstanceIndex toIndex;
+        TileTransformationType type;
+        bool isFrom; // If true, we are the fromIndex
+    };
+
+    struct InstanceCrossfadeData {
         bool isActive() { return mCrossfade != 0.0f; }
 
         f32 mCrossfade = 0.0f; // 0 = not transitioning, positive = crossfade in, negative = crossfade out
         MeshLODLevel mCurrentLOD = MeshLODLevel::INVALID;
         MeshLODLevel mTargetLOD = MeshLODLevel::INVALID;
+        TransformationDataIndex mTransformationDataIndex = INVALID_TRANSFORMATION_DATA_INDEX;
     };
-    static_assert(sizeof(InstanceTransitionData) == 8, "Keep small");
+    static_assert(sizeof(InstanceCrossfadeData) == 8, "Keep small");
 
     // Instance SOA data
     std::vector<f32m4> mInstanceTransforms;
@@ -124,7 +171,7 @@ private:
     std::vector<ModelInstanceOwnerVariant> mInstanceSources;
     std::vector<InstanceDrawData> mInstanceDrawData;
     std::vector<f32> mInstanceScales; // Only used for billboards
-    std::vector<InstanceTransitionData> mInstanceTransitionData;
+    std::vector<InstanceCrossfadeData> mInstanceCrossfadeData;
 
     // Damage
     std::vector<ModelDamageZoneGpuData> mModelDamageZonesGpuData; // 0 index is default no damage
@@ -133,6 +180,7 @@ private:
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommands[e_count(MaterialRenderPassType)];
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsCrossfade[e_count(MaterialRenderPassType)];
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsShadows[e_count(MaterialRenderPassType)];
+    std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsTransformations[e_count(MaterialRenderPassType)];
     ui32 mDrawCommandsCount[e_count(MaterialRenderPassType)] = {};
     ui32 mDrawCommandsShadowsCount[e_count(MaterialRenderPassType)] = {};
 
@@ -145,7 +193,10 @@ private:
     ui32 mLastDirtyInstance = 0;
     // Crossfade Transitions
     std::unique_ptr<GpuStreamingDataBuffer> mCrossfadeBuffers[e_count(MaterialRenderPassType)];
+    std::unique_ptr<GpuStreamingDataBuffer> mTransformationAlphaBuffers[e_count(MaterialRenderPassType)];
+    std::vector<TransformationData> mTransformationData;
     i32 mNumActiveLodTransitions = 0;
+    i32 mNumActiveTransformationTransitions = 0;
 
     // Loose instances
     std::atomic<StaticModelInstanceID> mNextLooseInstanceID = 0;
@@ -153,6 +204,7 @@ private:
 
     // Animated instances
     FlatMap<LiteTileHandle, StaticMeshAnimation> mAnimatedTileInstances;
+    FlatMap<LiteTileHandle, TransformationDataIndex> mTransformingTileInstances;
 
     std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerTrackedModels;
     GLBuffer mGpuCullingUniformBuffer;
