@@ -998,6 +998,7 @@
     <ClInclude Include="src\rendering\particle\CPUParticleEmitterOperation.h" />
     <ClInclude Include="src\rendering\particle\CpuParticleEmitterRenderList.h" />
     <ClInclude Include="src\rendering\particle\CPUParticleSystem.h" />
+    <ClInclude Include="src\rendering\particle\ParticleEmitterVariableName.h" />
     <ClInclude Include="src\rendering\particle\ParticleEnumTypes.h" />
     <ClInclude Include="src\rendering\particle\ParticleSystemInputs.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />

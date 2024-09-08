@@ -1,9 +1,9 @@
 #pragma once
 
 #include "ParticleEnumTypes.h"
-#include "CPUParticleEmitterOperation.h"
 
 #include "serialization/YmlSerializable.h"
+#include "rendering/particle/ParticleEmitterVariableName.h"
 
 class ArbitraryObjectArray;
 
@@ -28,7 +28,7 @@ public:
     virtual constexpr const char* const getName() const = 0;
     virtual std::unique_ptr<CPUParticleEmitterModule> clone() const = 0;
 
-    bool areAllRequiredComponentsPresent(BitFlags<ParticleComponentType> componentsToCheck) {
+    bool areAllRequiredComponentsPresent(BitFlags<ParticleComponentType> componentsToCheck) const {
         return (mRequiredComponents.getBits() & componentsToCheck.getBits()) == mRequiredComponents.getBits();
     }
 
@@ -38,6 +38,10 @@ public:
 protected:
     CPUParticleEmitterModuleMethod mMethod;
     BitFlags<ParticleComponentType> mRequiredComponents;
+    std::vector<ParticleEmitterVariableNameUInt> mUIntVariables;
+    std::vector<ParticleEmitterVariableNameFloat> mFloatVariables;
+    std::vector<ParticleEmitterVariableNameVec2> mVec2Variables;
+    std::vector<ParticleEmitterVariableNameVec3> mVec3Variables;
 
     // TODO: Based on https://docs.unrealengine.com/5.1/en-US/script-editor-reference-for-niagara-effects-in-unreal-engine/
     // TODO: Provided dependencies

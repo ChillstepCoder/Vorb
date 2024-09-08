@@ -1,5 +1,6 @@
 #pragma once
 #include "CPUParticleEmitterModule.h"
+#include "rendering/particle/CPUParticleEmitterOperation.h"
 
 #include "util/ArbitraryObjectArray.h"
 

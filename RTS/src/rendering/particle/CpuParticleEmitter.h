@@ -5,9 +5,8 @@
 #include "CPUParticleEmitterModule.h"
 #include "ParticleEnumTypes.h"
 
-#include "rendering/particle/CpuParticleEmitterRenderList.h"
 #include "rendering/particle/ParticleSystemInputs.h"
-
+#include "rendering/particle/ParticleEmitterVariableName.h"
 
 class CPUParticleSystem;
 class MaterialShaderDef;
@@ -28,6 +27,8 @@ static_assert(e_cast(ParticleComponentType::TERM) == 65);
 struct CPUParticlesData {
     // We cannot point these to the GpuStreamingDataBuffer stores because we need coherent info from the previous frame
     // So we will memcopy every frame into the streaming buffers
+    // 
+    // Components
     std::unique_ptr<f32v3[]> mPositions; // If position.x == FLT_MAX, then particle is inactive
     std::unique_ptr<f32v2[]> mRotations;
     std::unique_ptr<f32v3[]> mVelocities;
@@ -37,6 +38,18 @@ struct CPUParticlesData {
     std::unique_ptr<f32[]> mLifetimes;
     std::unique_ptr<f32[]> mLifespans;
     std::unique_ptr<ui32[]> mMaterials;
+
+    // Variables
+    FlatMap<ParticleEmitterVariableNameUInt, std::unique_ptr<ui32[]>> mUIntVariables;
+    FlatMap<ParticleEmitterVariableNameFloat, std::unique_ptr<f32[]>> mFloatVariables;
+    FlatMap<ParticleEmitterVariableNameVec2, std::unique_ptr<f32v2[]>> mVec2Variables;
+    FlatMap<ParticleEmitterVariableNameVec3, std::unique_ptr<f32v3[]>> mVec3Variables;
+
+    // Optional streaming buffers to push to GPU
+    FlatMap<ParticleEmitterVariableNameUInt, std::unique_ptr<GpuStreamingDataBuffer>> mUIntVariableBuffers;
+    FlatMap<ParticleEmitterVariableNameFloat, std::unique_ptr<GpuStreamingDataBuffer>> mFloatVariableBuffers;
+    FlatMap<ParticleEmitterVariableNameVec2, std::unique_ptr<GpuStreamingDataBuffer>> mVec2VariableBuffers;
+    FlatMap<ParticleEmitterVariableNameVec3, std::unique_ptr<GpuStreamingDataBuffer>> mVec3VariableBuffers;
 };
 static_assert(e_cast(ParticleComponentType::TERM) == 65);
 
@@ -185,6 +198,7 @@ protected:
 
     // Determines which data streams we will use
     BitFlags<ParticleComponentType> mComponents;
+    std::vector<ParticleEmitterVariableNameVec3> mVec3Variables;
 };
 
 // Helper utility that binds depth and blend states

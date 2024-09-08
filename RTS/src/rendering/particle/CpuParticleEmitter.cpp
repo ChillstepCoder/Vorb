@@ -529,6 +529,21 @@ void CpuParticleEmitter::allocateParticleData()
         mGpuData.mMaterialsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(ui32));
     }
 
+
+    // Add all variable data
+    for (auto& uintVar : mParticleData.mUIntVariables) {
+        uintVar.second = std::make_unique_for_overwrite<ui32[]>(mMaxParticles);
+    }
+    for (auto& floatVar : mParticleData.mFloatVariables) {
+        floatVar.second = std::make_unique_for_overwrite<f32[]>(mMaxParticles);
+    }
+    for (auto& vec2Var : mParticleData.mVec2Variables) {
+        vec2Var.second = std::make_unique_for_overwrite<f32v2[]>(mMaxParticles);
+    }
+    for (auto& vec3Var : mParticleData.mVec3Variables) {
+        vec3Var.second = std::make_unique_for_overwrite<f32v3[]>(mMaxParticles);
+    }
+
     static_assert(e_cast(ParticleComponentType::TERM) == 65);
 }
 

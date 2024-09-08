@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/particle/CpuParticleEmitter.h"
+#include "rendering/particle/CpuParticleEmitterRenderList.h"
 
 class MaterialShaderDef;
 class ParticleSystemDef;
