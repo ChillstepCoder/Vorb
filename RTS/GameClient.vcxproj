@@ -320,7 +320,6 @@
     <ClCompile Include="src\extern\imgui-node-editor\utilities\builders.cpp" />
     <ClCompile Include="src\extern\imgui-node-editor\utilities\drawing.cpp" />
     <ClCompile Include="src\extern\imgui-node-editor\utilities\widgets.cpp" />
-    <ClCompile Include="src\extern\ImGuiFileDialog\ImGuiFileDialog.cpp" />
     <ClCompile Include="src\faction\CliFactionManager.cpp" />
     <ClCompile Include="src\faction\HostFactionManager.cpp" />
     <ClCompile Include="src\faction\IFactionManager.cpp" />
@@ -821,8 +820,6 @@
     <ClInclude Include="src\extern\imgui-node-editor\imgui_extra_math.h" />
     <ClInclude Include="src\extern\imgui-node-editor\imgui_node_editor.h" />
     <ClInclude Include="src\extern\imgui-node-editor\imgui_node_editor_internal.h" />
-    <ClInclude Include="src\extern\ImGuiFileDialog\ImGuiFileDialog.h" />
-    <ClInclude Include="src\extern\ImGuiFileDialog\ImGuiFileDialogConfig.h" />
     <ClInclude Include="src\faction\CliFactionManager.h" />
     <ClInclude Include="src\faction\Faction.h" />
     <ClInclude Include="src\faction\HostFactionManager.h" />

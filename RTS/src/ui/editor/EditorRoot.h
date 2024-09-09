@@ -39,6 +39,9 @@ public:
 
     // Returns false if there is no valid editor
     bool tryOpenAssetForEdit(AssetDescriptor desc);
+
+    void onEditorOpen();
+    void onEditorClose();
 private:
     void openBiomeForEdit();
     void setActiveCenterPanel(IEditorViewportPanel* newCenterPanel);

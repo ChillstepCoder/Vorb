@@ -4,12 +4,9 @@
 #include <Vorb/graphics/GBuffer.h>
 #include <Vorb/graphics/DepthState.h>
 #include <Vorb/graphics/BlendState.h>
-#include "input/InputDispatcher.h"
 
-#include <glm/gtx/rotate_vector.hpp>
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 
@@ -17,7 +14,6 @@
 #include "resources/CubemapRepository.h"
 #include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialRenderer.h"
-#include "resources/TextureRepository.h"
 #include "rendering/MaterialUtils.h"
 #include "rendering/Skybox.h"
 #include "rendering/mesh/Mesh.h"
@@ -39,6 +35,21 @@ IEditorViewportPanel::IEditorViewportPanel() {
 
 IEditorViewportPanel::~IEditorViewportPanel() {
     glDeleteVertexArrays(1, &mGridVao);
+}
+
+void IEditorViewportPanel::bindSaveEvent() {
+    assert(!mSaveEventHandle);
+    mSaveEventHandle = vui::InputDispatcher::key.addKeyDownListener([this](const vui::KeyEvent& e) {
+        if (e.keyCode == VKEY_S && e.mod.ctrl) {
+            onSavePressed();
+        }
+    });
+}
+
+void IEditorViewportPanel::unbindSaveEvent() {
+    if (mSaveEventHandle) {
+        vui::InputDispatcher::key.removeKeyDownListener(mSaveEventHandle);
+    }
 }
 
 void IEditorViewportPanel::renderCenterPanel(i32AABB2* outImageRect) {
@@ -315,13 +326,13 @@ void IEditorViewportPanel::updateCamera(f32 aspectRatio) {
     ImGui::ResetMouseDragDelta(ImGuiMouseButton_Right);
 
     // Controls
-    mCameraPositioner->movement_.forward_ = vui::InputDispatcher::key.isKeyPressed(VKEY_W);
-    mCameraPositioner->movement_.backward_ = vui::InputDispatcher::key.isKeyPressed(VKEY_S);
-    mCameraPositioner->movement_.left_ = vui::InputDispatcher::key.isKeyPressed(VKEY_A);
-    mCameraPositioner->movement_.right_ = vui::InputDispatcher::key.isKeyPressed(VKEY_D);
-    mCameraPositioner->movement_.up_ = vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE);
-    mCameraPositioner->movement_.down_ = vui::InputDispatcher::key.isKeyPressed(VKEY_LALT);
-    mCameraPositioner->movement_.fastSpeed_ = vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT);
+    mCameraPositioner->movement_.forward_ = vui::InputDispatcher::key.isKeyDown(VKEY_W);
+    mCameraPositioner->movement_.backward_ = vui::InputDispatcher::key.isKeyDown(VKEY_S);
+    mCameraPositioner->movement_.left_ = vui::InputDispatcher::key.isKeyDown(VKEY_A);
+    mCameraPositioner->movement_.right_ = vui::InputDispatcher::key.isKeyDown(VKEY_D);
+    mCameraPositioner->movement_.up_ = vui::InputDispatcher::key.isKeyDown(VKEY_SPACE);
+    mCameraPositioner->movement_.down_ = vui::InputDispatcher::key.isKeyDown(VKEY_LALT);
+    mCameraPositioner->movement_.fastSpeed_ = vui::InputDispatcher::key.isKeyDown(VKEY_LSHIFT);
 
     // TODO: Deltatime
     mCameraPositioner->update(1.0f / 60.0f, f32v2(ImGui::GetMousePos().x / ImGui::GetWindowWidth(), ImGui::GetMousePos().y / ImGui::GetWindowHeight()), ImGui::IsMouseDown(ImGuiMouseButton_Right), aspectRatio, mCameraSpeed);

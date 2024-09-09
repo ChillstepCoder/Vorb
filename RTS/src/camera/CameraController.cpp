@@ -110,28 +110,28 @@ void CameraController::setCameraDirection(const f32v3& dir) {
 void CameraController::updateCameraFreeLookMode(f32 frameAlpha, f32 deltaTime) {
 
     f32 cameraSpeed = 0.1f * deltaTime;
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_LSHIFT)) {
         cameraSpeed *= 35.0f;
     }
 
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_W)) {
         mCamera.offsetPosition(mCamera.getFrontVector() * cameraSpeed);
     }
-    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_S)) {
+    else if (vui::InputDispatcher::key.isKeyDown(VKEY_S)) {
         mCamera.offsetPosition(-mCamera.getFrontVector() * cameraSpeed);
     }
 
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_A)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_A)) {
         mCamera.offsetPosition(-mCamera.getRightVector() * cameraSpeed);
     }
-    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_D)) {
+    else if (vui::InputDispatcher::key.isKeyDown(VKEY_D)) {
         mCamera.offsetPosition(mCamera.getRightVector() * cameraSpeed);
     }
 
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_SPACE)) {
         mCamera.offsetPosition(mCamera.getUpVector() * cameraSpeed);
     }
-    else if (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL)) {
+    else if (vui::InputDispatcher::key.isKeyDown(VKEY_LCTRL)) {
         mCamera.offsetPosition(-mCamera.getUpVector() * cameraSpeed);
     }
 }
@@ -168,7 +168,7 @@ void CameraController::updateCameraMMOMode(f32 frameAlpha, const f32v3& ownerEnt
         mCamera.setPosition(camPos + mCamera.getRightVector() * sDebugOptions.mCameraShoulderOffset);
     //}
 
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_ESCAPE)) {
         mIsMouseHidden = false;
     }
 
@@ -205,7 +205,7 @@ void CameraController::updateCameraFirstPersonMode(f32 frameAlpha, const f32v3& 
     const f32v3 followTargetPos = ownerEntityPos;
     mCamera.setPosition(followTargetPos + f32v3(0.0f, 0.0f, sDebugOptions.mCameraZHeight));
 
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_ESCAPE)) {
         mIsMouseHidden = false;
     }
 

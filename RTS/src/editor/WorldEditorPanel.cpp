@@ -58,7 +58,7 @@ WorldEditorPanel::WorldEditorPanel() {
         }
         else if (event.keyCode == VKEY_LEFT) {
             if (mCurrentBrushSettings) mCurrentBrushSettings->brushSize = glm::max(mCurrentBrushSettings->brushSize - 0.2f, MIN_BRUSH_SIZE);
-        }
+        }/*
         else if (event.keyCode == VKEY_1) {
             setEditMode(WorldEditorEditMode::TERRAIN);
         }
@@ -79,7 +79,7 @@ WorldEditorPanel::WorldEditorPanel() {
         }
         else if (event.keyCode == VKEY_7) {
             setEditMode(WorldEditorEditMode::ROAD);
-        }
+        }*/
         static_assert((int)WorldEditorEditMode::COUNT == 7);
        
     });

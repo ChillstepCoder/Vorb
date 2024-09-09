@@ -46,7 +46,7 @@ void EditorWorldInterfaceController::update()
 
     static bool wasMPressed = false;
     static bool wasOPressed = false;
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_Y)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_Y)) {
         // TODO: ITEMFactory
         GameThreadTasks::getInstance().addGenericTask([this]() {
             ItemID id = Random::getCachedRandom() % 2 ? ItemRepository::get().getAssetID(CStrToken("wood_log")) : ItemRepository::get().getAssetID(CStrToken("wood_log_birch"));
@@ -56,7 +56,7 @@ void EditorWorldInterfaceController::update()
             sDebugOptions.mCities = !sDebugOptions.mCities;
         });
     }
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_O)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_O)) {
         if (!wasOPressed) {
             GameThreadTasks::getInstance().addGenericTask([this]() {
                 ParticleSystemInputs inputs;
@@ -72,7 +72,7 @@ void EditorWorldInterfaceController::update()
     else {
         wasOPressed = false;
     }
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_M)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_M)) {
         // Test item container
         if (!wasMPressed) {
 
@@ -143,7 +143,7 @@ void EditorWorldInterfaceController::updateTilePicking() {
         if (hitResult.didHit()) {
 
             // TMP REMOVE
-            if (vui::InputDispatcher::key.isKeyPressed(VKEY_I)) {
+            if (vui::InputDispatcher::key.isKeyDown(VKEY_I)) {
                 AM::DebugRenderer::drawWireQuad(hitResult.mPosition + f32v3(0.0f, 0.0f, 0.5f), f32v2(0.3f), color4(1.0f, 0.0f, 0.0f, 1.0f), 100);
                 ParticleSystemInputs inputs;
                 mWorld->getEffectContext().playParticleEffectAtPoint(EffectAssetRef(CStrToken("hitfx")), hitResult.mPosition + f32v3(0.0f, 0.0f, 0.5f), inputs, BitFlags<EffectCreateFlags>());
@@ -239,7 +239,16 @@ void EditorWorldInterfaceController::initEvents() {
         else if (event.keyCode == VKEY_F1 && event.mod.lShift && (event.mod.lAlt || event.mod.lCtrl)) {
             UIContext::getInstance().toggleGameplayDebugger();
         }
-        
+        else if (event.keyCode == VKEY_5) {
+            sDebugOptions.mShowEditor = !sDebugOptions.mShowEditor;
+            // Notify panels that we are losing or gaining context
+            if (sDebugOptions.mShowEditor) {
+                UIContext::getInstance().onEditorOpen();
+            }
+            else {
+                UIContext::getInstance().onEditorClose();
+            }
+        }
     });
 
     vui::InputDispatcher::mouse.addButtonDownListener(mMouseListeners, [this](const vui::MouseButtonEvent& event) {
@@ -271,7 +280,7 @@ void EditorWorldInterfaceController::initEvents() {
         const f32v2 screenPos(event.x, event.y);
 
         if (event.button == vui::MouseButton::LEFT) {
-            if (vui::InputDispatcher::key.isKeyPressed(VKEY_T)) {
+            if (vui::InputDispatcher::key.isKeyDown(VKEY_T)) {
                 // Teleport
                 GameThreadTasks::getInstance().addCameraPickTeleportTask(*mWorld, mCameraController->getOwnedCamera().getPosition(), mMousePickRay);
             }

@@ -224,6 +224,18 @@ bool UIContext::shouldPauseGameRendering() const {
     return sDebugOptions.mShowEditor && mEditorRoot && mEditorRoot->hasActiveCenterPanel();
 }
 
+void UIContext::onEditorOpen() {
+    if (mEditorRoot) {
+        mEditorRoot->onEditorOpen();
+    }
+}
+
+void UIContext::onEditorClose() {
+    if (mEditorRoot) {
+        mEditorRoot->onEditorClose();
+    }
+}
+
 void UIContext::renderReticle() {
     if (!mReticleShader->isLoaded() || !mReticleTexture->isLoaded()) {
         return;

@@ -67,20 +67,6 @@ EditorRoot::EditorRoot() {
     vui::InputDispatcher::key.registerKeyListeners(mKeyListeners);
     vui::InputDispatcher::window.registerWindowListeners(mWindowListeners);
 
-    vui::InputDispatcher::key.addKeyDownListener(mKeyListeners, [this](const vui::KeyEvent& event) {
-        if (event.keyCode == VKEY_5) {
-            sDebugOptions.mShowEditor = !sDebugOptions.mShowEditor;
-            // Notify panels that we are losing or gaining context
-            if (mActiveCenterPanel) {
-                if (sDebugOptions.mShowEditor) {
-                    mActiveCenterPanel->onEnter();
-                }
-                else {
-                    mActiveCenterPanel->onExit();
-                }
-            }
-        }
-    });
     vui::InputDispatcher::window.addResizeListener(mWindowListeners, [this](const vui::WindowResizeEvent& event) {
         LOG_DEBUG("Resize event {} {}", event.w, event.h);
     });
@@ -274,6 +260,14 @@ bool EditorRoot::tryOpenAssetForEdit(AssetDescriptor desc)
     setActiveCenterPanel(it->second.get());
     ContentBrowserPanel::Get().navigateTo(ResourceManager::get().getAssetMetadata(desc).mFilePath.getStdPath());
     return true;
+}
+
+void EditorRoot::onEditorOpen() {
+    if (mActiveCenterPanel) mActiveCenterPanel->onEnter();
+}
+
+void EditorRoot::onEditorClose() {
+    if (mActiveCenterPanel) mActiveCenterPanel->onExit();
 }
 
 void EditorRoot::setActiveCenterPanel(IEditorViewportPanel* newCenterPanel)

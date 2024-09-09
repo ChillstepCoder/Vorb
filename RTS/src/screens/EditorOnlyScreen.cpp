@@ -50,19 +50,23 @@ void EditorOnlyScreen::onEntry(const vui::GameTime& gameTime) {
     if (!UIContext::hasInstance()) {
         UIContext::initInstance(f32v2(m_app->getWindow().getWidth(), m_app->getWindow().getHeight()), static_cast<SDL_Window*>(m_app->getWindow().getHandle()));
     }
+    sDebugOptions.mShowEditor = true;
+    UIContext::getInstance().onEditorOpen();
 }
 
 void EditorOnlyScreen::onExit(const vui::GameTime& gameTime) {
-
+    sDebugOptions.mShowEditor = false;
+    // Notify panels that we are losing or gaining context
+    UIContext::getInstance().onEditorClose();
 }
 
 void EditorOnlyScreen::update(const vui::GameTime& gameTime) {
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_ESCAPE)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_ESCAPE)) {
         m_state = vorb::ui::ScreenState::CHANGE_PREVIOUS;
     }
 
     static bool wasReloadPressed = false;
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_R) && vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_R) && vui::InputDispatcher::key.isKeyDown(VKEY_LSHIFT)) {
         if (!wasReloadPressed) {
             Services::ResourceManager::ref().reloadMaterials();
             wasReloadPressed = true;

@@ -813,16 +813,16 @@ void FishingMinigame::updatePlayerPosition(f32 elapsedSec) {
     const FishingMinigameFishData& minigameData = mFishDef.mMinigameData;
 
     f32v2 inputDir(0.0f);
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_W) || vui::InputDispatcher::key.isKeyPressed(VKEY_UP)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_W) || vui::InputDispatcher::key.isKeyDown(VKEY_UP)) {
         inputDir.y = -1.0f;
     }
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_S) || vui::InputDispatcher::key.isKeyPressed(VKEY_DOWN)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_S) || vui::InputDispatcher::key.isKeyDown(VKEY_DOWN)) {
         inputDir.y = 1.0f;
     }
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_A) || vui::InputDispatcher::key.isKeyPressed(VKEY_LEFT)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_A) || vui::InputDispatcher::key.isKeyDown(VKEY_LEFT)) {
         inputDir.x = -1.0f;
     }
-    if (vui::InputDispatcher::key.isKeyPressed(VKEY_D) || vui::InputDispatcher::key.isKeyPressed(VKEY_RIGHT)) {
+    if (vui::InputDispatcher::key.isKeyDown(VKEY_D) || vui::InputDispatcher::key.isKeyDown(VKEY_RIGHT)) {
         inputDir.x = 1.0f;
     }
     if (inputDir != f32v2(0.0f)) {

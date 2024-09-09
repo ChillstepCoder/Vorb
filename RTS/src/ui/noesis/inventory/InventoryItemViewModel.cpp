@@ -18,7 +18,7 @@ InventoryItemViewModel::InventoryItemViewModel(LocText itemName, ItemStack stack
     setIconFromAsset(icon);
 
     mPickupCommand = Noesis::MakePtr<NoesisApp::DelegateCommand>([this](BaseComponent* param) {
-        if (!vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) && !vui::InputDispatcher::key.isKeyPressed(VKEY_RCTRL)) {
+        if (!vui::InputDispatcher::key.isKeyDown(VKEY_LCTRL) && !vui::InputDispatcher::key.isKeyDown(VKEY_RCTRL)) {
             mPickupEvent(this, Noesis::EventArgs::Empty);
         }
     });

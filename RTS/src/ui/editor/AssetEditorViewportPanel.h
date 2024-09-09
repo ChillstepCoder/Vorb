@@ -64,13 +64,19 @@ public:
     virtual void postCenterPanelRender(const i32AABB2& imageRect) { UNUSED(imageRect); };
       
     virtual void updateAndRenderSaveButton() {
+        // Handle save hotkey
         if (ImGui::Button("Save")) {
-            IAssetRepository<T>& repo = IAssetRepository<T>::getInstance();
-            if (!repo.saveAsset(mAssetData->getID())) {
-                panic("Failed to save asset {}", repo.getAssetFilePath(mAssetData->getID()).getCString());
-            }
+            onSavePressed();
         }
     }
+
+    void onSavePressed() override {
+        IAssetRepository<T>& repo = IAssetRepository<T>::getInstance();
+        if (!repo.saveAsset(mAssetData->getID())) {
+            panic("Failed to save asset {}", repo.getAssetFilePath(mAssetData->getID()).getCString());
+        }
+    }
+
 protected:
 
     AssetHandlePtr<T> mAssetHandle;

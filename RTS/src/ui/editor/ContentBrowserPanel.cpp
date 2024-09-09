@@ -1179,7 +1179,7 @@ void ContentBrowserPanel::RenderDeleteDialogue()
 		}
 
 		ImguiUtil::ShiftCursorX(((contentRegionWidth - (buttonWidth * 2.0f)) / 2.0f) - ImGui::GetStyle().ItemSpacing.x);
-		if (ImGui::Button("Yes", ImVec2(buttonWidth, 0.0f)) || (rightButtonHovered && vui::InputDispatcher::key.isKeyPressed(VKEY_KP_ENTER)))
+		if (ImGui::Button("Yes", ImVec2(buttonWidth, 0.0f)) || (rightButtonHovered && vui::InputDispatcher::key.isKeyDown(VKEY_KP_ENTER)))
 		{
 			s_IsDeletingItems = true;
 
@@ -1232,7 +1232,7 @@ void ContentBrowserPanel::RenderDeleteDialogue()
 		ImGui::SameLine();
 
 		ImGui::SetItemDefaultFocus();
-		if (ImGui::Button("No", ImVec2(buttonWidth, 0.0f)) || (leftButtonHovered && vui::InputDispatcher::key.isKeyPressed(VKEY_KP_ENTER)))
+		if (ImGui::Button("No", ImVec2(buttonWidth, 0.0f)) || (leftButtonHovered && vui::InputDispatcher::key.isKeyDown(VKEY_KP_ENTER)))
 			ImGui::CloseCurrentPopup();
 
 		ImGui::EndPopup();

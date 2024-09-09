@@ -27,7 +27,7 @@ bool vui::KeyboardEventManager::hasFocus() const {
     return std::atomic_load(&m_focus) != 0;
 }
 
-bool vui::KeyboardEventManager::isKeyPressed(VirtualKey k) const {
+bool vui::KeyboardEventManager::isKeyDown(VirtualKey k) const {
     return m_state[k];
 }
 

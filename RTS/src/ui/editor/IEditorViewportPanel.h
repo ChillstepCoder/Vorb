@@ -1,5 +1,7 @@
 #pragma once
 
+#include "input/InputDispatcher.h"
+
 DECL_VG(class GBuffer);
 
 class SimpleCamera;
@@ -48,8 +50,8 @@ public:
     virtual bool hasBottomControls() const { return false; }
     virtual void updateAndRenderBottomControls() {  }
 
-    virtual void onEnter() { mDidJustEnter = true; onEnterInternal(); }
-    virtual void onExit() { mDidJustEnter = false; }
+    virtual void onEnter() { mDidJustEnter = true; bindSaveEvent(); onEnterInternal(); }
+    virtual void onExit() { mDidJustEnter = false; unbindSaveEvent(); onExitInternal(); }
 
     f32v3 getCameraPosition() const;
     f32v3 getCameraDirection() const;
@@ -57,11 +59,16 @@ public:
     f32v3 getCameraUp() const;
 
 protected:
+    void bindSaveEvent();
+    void unbindSaveEvent();
+
     virtual void renderCenterPanel(i32AABB2* outImageRect);
     virtual void clearFramebuffers();
     virtual void renderSkybox();
     virtual void renderCenterPanelImage(i32AABB2* outImageRect, VGTexture displayTexture);
     virtual void onEnterInternal() {}
+    virtual void onExitInternal() {}
+    virtual void onSavePressed() {}
     void updateFramebufferAndLazyInit(const i32v2& framebufferDims);
 
     // Virtual API
@@ -143,5 +150,8 @@ protected:
     // Config
     bool mShowDrawModeDropdown = true;
     f32v4 mClearColor = f32v4(0.3f, 0.3f, 0.3f, 1.0f);
+
+    // Save handle
+    vui::KeyEventDispatcher::Handle mSaveEventHandle;
 };
 

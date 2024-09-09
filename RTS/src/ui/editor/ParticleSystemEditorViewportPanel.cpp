@@ -1,12 +1,8 @@
 #include "stdafx.h"
 #include "ParticleSystemEditorViewportPanel.h"
 
-#include "resources/ResourceManager.h"
 #include "rendering/RenderContext.h"
-#include "rendering/MaterialShaderRepository.h"
 #include "resources/MaterialRepository.h"
-#include "resources/TextureRepository.h"
-#include "rendering/MaterialRenderer.h"
 #include "resources/ParticleSystemRepository.h"
 
 #include "rendering/particle/CPUParticleSystem.h"
@@ -19,10 +15,6 @@
 #include "ui/editor/ImguiAssetThumbnails.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
-
-
-#include <extern/ImGuiFileDialog/ImGuiFileDialog.h>
 
 const nString SAVE_DIALOG_NAME = "SaveFileDialog";
 
@@ -150,17 +142,8 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
             );
         }
         ImGui::SliderFloat("Lifetime", &mAssetData->mLifetimeSec, 0.0f, 60.0f);
-        if (ImGui::Button("Save")) {
-            ParticleSystemRepository& repo = ParticleSystemRepository::get();
-            if (repo.getAssetFilePath(mAssetData->getID()).isNull()) {
-                ImGuiFileDialog::Instance()->OpenDialog(SAVE_DIALOG_NAME, "Save As", ".psys", "./data/particle/" + mAssetData->getName().toString(), 1, nullptr, ImGuiFileDialogFlags_Modal);
-            }
-            else {
-                if (!repo.saveAsset(mAssetData->getID())) {
-                    panic("FAILED TO SAVE PARTICLE SYSTEM {}", repo.getAssetFilePath(mAssetData->getID()).getCString());
-                }
-            }
-        }
+
+        updateAndRenderSaveButton();
         ImGui::SameLine();
         if (ImGui::Button("Delete")) {
             mConfirmDeletePopup = std::make_unique<ImguiUtil::ConfirmDeletePopup>(mAssetData->getName().toString(), (void*)mAssetData, (int)PartcileSystemPopupAssetType::ParticleSystem);
@@ -552,18 +535,6 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
             duplicateGlobalEmitter(mDuplicateObjectPopup->getResultName());
             mDuplicateObjectPopup.reset();
         }
-    } else if (ImGuiFileDialog::Instance()->Display(SAVE_DIALOG_NAME, ImGuiWindowFlags_NoCollapse, ImVec2(200.0f, 150.0f))) {
-        if (ImGuiFileDialog::Instance()->IsOk())
-        {
-            std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-            std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
-            ParticleSystemRepository::get().changeAssetFilePath(mAssetData->getID(), vio::Path(filePathName));
-            if (!ParticleSystemRepository::get().saveAsset(mAssetData->getID())) {
-                panic("FAILED TO SAVE PARTICLE SYSTEM {}", filePathName);
-            }
-        }
-
-        ImGuiFileDialog::Instance()->Close();
     }
 }
 

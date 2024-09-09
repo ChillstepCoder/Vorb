@@ -83,20 +83,20 @@ void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComp
 
     PlayerInputs inputs;
     if (playerControlCmp.mInputLockCount == 0) {
-        inputs.jump = vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE);
-        inputs.sprint = vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT);
-        inputs.walk = vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL);
-        inputs.castFishingRod = vui::InputDispatcher::key.isKeyPressed(VKEY_G);
+        inputs.jump = vui::InputDispatcher::key.isKeyDown(VKEY_SPACE);
+        inputs.sprint = vui::InputDispatcher::key.isKeyDown(VKEY_LSHIFT);
+        inputs.walk = vui::InputDispatcher::key.isKeyDown(VKEY_LCTRL);
+        inputs.castFishingRod = vui::InputDispatcher::key.isKeyDown(VKEY_G);
         inputs.primaryAction = vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT);
-        inputs.forward = vui::InputDispatcher::key.isKeyPressed(VKEY_W);
-        inputs.left = vui::InputDispatcher::key.isKeyPressed(VKEY_A);
-        inputs.right = vui::InputDispatcher::key.isKeyPressed(VKEY_D);
-        inputs.back = vui::InputDispatcher::key.isKeyPressed(VKEY_S);
-        inputs.interact = vui::InputDispatcher::key.isKeyPressed(VKEY_E);
-        inputs.stow = vui::InputDispatcher::key.isKeyPressed(VKEY_R);
+        inputs.forward = vui::InputDispatcher::key.isKeyDown(VKEY_W);
+        inputs.left = vui::InputDispatcher::key.isKeyDown(VKEY_A);
+        inputs.right = vui::InputDispatcher::key.isKeyDown(VKEY_D);
+        inputs.back = vui::InputDispatcher::key.isKeyDown(VKEY_S);
+        inputs.interact = vui::InputDispatcher::key.isKeyDown(VKEY_E);
+        inputs.stow = vui::InputDispatcher::key.isKeyDown(VKEY_R);
 
         // Inventory toggle
-        if (vui::InputDispatcher::key.isKeyPressed(VKEY_I)) {
+        if (vui::InputDispatcher::key.isKeyDown(VKEY_I)) {
             if (!playerControlCmp.mPlayerControlFlags.isBitSet(PlayerControlFlags::InventoryKeyHeld)) {
                 UIContext::getInstance().toggleGameUIPanel(GameUIPanel::Inventory);
                 playerControlCmp.mPlayerControlFlags.setBit(PlayerControlFlags::InventoryKeyHeld);

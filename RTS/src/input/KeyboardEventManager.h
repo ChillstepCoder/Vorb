@@ -107,7 +107,7 @@ namespace vorb {
             i32 getNumPresses(VirtualKey k) const;
             bool hasFocus() const;
 
-            bool isKeyPressed(VirtualKey k) const;
+            bool isKeyDown(VirtualKey k) const;
             
             // Listeners 
             EVENT_LISTENER_FUNCS_VOID(KeyFocus, FocusGained, KEY_FOCUS_EVENT_TYPE::FocusGained);

@@ -58,6 +58,9 @@ public:
     GameplayDebugger& getGameplayDebugger() const { return *mGameplayDebugger; }
     NoesisGuiContext& getNoesisGuiContext() const { return *mNoesisGuiContext; }
 
+    void onEditorOpen();
+    void onEditorClose();
+
     EVENT_LISTENER_FUNCS(UIContext, EditorWorldSet, UIContextEventType::EditorWorldSet, const UIContextEvent&);
 private:
     void renderReticle();
