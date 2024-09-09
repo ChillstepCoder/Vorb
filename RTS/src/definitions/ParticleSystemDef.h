@@ -44,6 +44,11 @@ public:
 
     ParticleEmitterModuleContainer mModules;
 
+    std::vector<ParticleEmitterVariableNameUInt> mUIntVariables;
+    std::vector<ParticleEmitterVariableNameFloat> mFloatVariables;
+    std::vector<ParticleEmitterVariableNameVec2> mVec2Variables;
+    std::vector<ParticleEmitterVariableNameVec3> mVec3Variables;
+
     MaterialShaderAssetRef mShaderRef;
     StrToken mEmitterName;
     f32v2 mDefaultScale = f32v2(0.1f);

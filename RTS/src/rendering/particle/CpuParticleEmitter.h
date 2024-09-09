@@ -39,6 +39,7 @@ struct CPUParticlesData {
     std::unique_ptr<f32[]> mLifespans;
     std::unique_ptr<ui32[]> mMaterials;
 
+    // TODO: Vector is likely faster for small data set, profile
     // Variables
     FlatMap<ParticleEmitterVariableNameUInt, std::unique_ptr<ui32[]>> mUIntVariables;
     FlatMap<ParticleEmitterVariableNameFloat, std::unique_ptr<f32[]>> mFloatVariables;
@@ -76,53 +77,69 @@ public:
     ParticleID tryAddParticle(f32v3 position);
     void removeParticle(ParticleID id);
     // Mutators
-    void setParticlePosition(ParticleID id, f32v3 position);
-    void setParticleScale(ParticleID id, f32v2 scale);
-    void multiplyParticleScale(ParticleID id, f32v2 scale);
-    void setParticleVelocity(ParticleID id, f32v3 velocity);
-    void addParticleVelocity(ParticleID id, f32v3 velocity);
-    void multiplyParticleVelocity(ParticleID id, f32v3 scale);
-    void setParticleColor(ParticleID id, color4 color);
-    void setParticleHDRColor(ParticleID id, f32v4 color);
-    void setParticleMaterial(ParticleID id, MaterialID material);
-    void setParticleRotation(ParticleID id, f32v2 rollPitch);
-    void setParticleLifespan(ParticleID id, f32 lifespan);
+    void setParticlePosition(ParticleID id, f32v3 position) noexcept;
+    void setParticleScale(ParticleID id, f32v2 scale) noexcept;
+    void multiplyParticleScale(ParticleID id, f32v2 scale) noexcept;
+    void setParticleVelocity(ParticleID id, f32v3 velocity) noexcept;
+    void addParticleVelocity(ParticleID id, f32v3 velocity) noexcept;
+    void multiplyParticleVelocity(ParticleID id, f32v3 scale) noexcept;
+    void setParticleColor(ParticleID id, color4 color) noexcept;
+    void setParticleHDRColor(ParticleID id, f32v4 color) noexcept;
+    void setParticleMaterial(ParticleID id, MaterialID material) noexcept;
+    void setParticleRotation(ParticleID id, f32v2 rollPitch) noexcept;
+    void setParticleLifespan(ParticleID id, f32 lifespan) noexcept;
     // Accessors
-    f32v3 getParticlePosition(ParticleID id) const { return mParticleData.mPositions[id]; }
-    f32v2 getParticleScale(ParticleID id) const { return mParticleData.mScales[id]; }
-    f32v3 getParticleVelocity(ParticleID id) const { return mParticleData.mVelocities[id]; }
-    color4 getParticleColor(ParticleID id) const { return mParticleData.mColors[id]; }
-    f32v4 getParticleHDRColor(ParticleID id) const { return mParticleData.mHDRColors[id]; }
-    f32v2 getParticleRotation(ParticleID id) const { return mParticleData.mRotations[id]; }
-    f32 getParticleNormalizedLifetime(ParticleID id) const;
-    MaterialID getParticleMaterial(ParticleID id) const { return mParticleData.mMaterials[id]; }
+    f32v3 getParticlePosition(ParticleID id) const noexcept { return mParticleData.mPositions[id]; }
+    f32v2 getParticleScale(ParticleID id) const noexcept { return mParticleData.mScales[id]; }
+    f32v3 getParticleVelocity(ParticleID id) const noexcept { return mParticleData.mVelocities[id]; }
+    color4 getParticleColor(ParticleID id) const noexcept { return mParticleData.mColors[id]; }
+    f32v4 getParticleHDRColor(ParticleID id) const noexcept { return mParticleData.mHDRColors[id]; }
+    f32v2 getParticleRotation(ParticleID id) const noexcept { return mParticleData.mRotations[id]; }
+    f32 getParticleNormalizedLifetime(ParticleID id) const noexcept;
+    MaterialID getParticleMaterial(ParticleID id) const noexcept { return mParticleData.mMaterials[id]; }
     CPUParticlesData& getParticleData() { return mParticleData; }
+
+    // Variables
+    uint getUIntVariable(ParticleEmitterVariableNameUInt name, ParticleID id) const;
+    f32 getFloatVariable(ParticleEmitterVariableNameFloat name, ParticleID id) const;
+    f32v2 getVec2Variable(ParticleEmitterVariableNameVec2 name, ParticleID id) const;
+    f32v3 getVec3Variable(ParticleEmitterVariableNameVec3 name, ParticleID id) const;
+
+    void setUIntVariable(ParticleEmitterVariableNameUInt name, ParticleID id, uint value);
+    void setFloatVariable(ParticleEmitterVariableNameFloat name, ParticleID id, f32 value);
+    void setVec2Variable(ParticleEmitterVariableNameVec2 name, ParticleID id, f32v2 value);
+    void setVec3Variable(ParticleEmitterVariableNameVec3 name, ParticleID id, f32v3 value);
+
+    bool hasUIntVariable(ParticleEmitterVariableNameUInt name) const;
+    bool hasFloatVariable(ParticleEmitterVariableNameFloat name) const;
+    bool hasVec2Variable(ParticleEmitterVariableNameVec2 name) const;
+    bool hasVec3Variable(ParticleEmitterVariableNameVec3 name) const;
 
     // Inputs
     const ParticleSystemInputs& getInputs() const { return *mInputs; }
 
     // Global state
-    void setGlobalParticleScale(f32v2 scale) { mGlobalParticleScale = scale; }
-    f32v2 getGlobalParticleScale() const { return mGlobalParticleScale; }
-    void setGlobalParticleColor(color4 color) { mGlobalParticleColor = color; }
-    color4 getGlobalParticleColor() const { return mGlobalParticleColor; }
-    void setGlobalMaterialID(MaterialID materialID);
-    MaterialID getGlobalMaterialID() const { return mGlobalMaterialID; }
-    void setGlobalParticleLifespan(f32 lifespan) { mGlobalParticleLifespan = lifespan; }
-    f32 getGlobalParticleLifespan() const { return mGlobalParticleLifespan; }
+    void setGlobalParticleScale(f32v2 scale) noexcept { mGlobalParticleScale = scale; }
+    f32v2 getGlobalParticleScale() const noexcept { return mGlobalParticleScale; }
+    void setGlobalParticleColor(color4 color) noexcept { mGlobalParticleColor = color; }
+    color4 getGlobalParticleColor() const noexcept { return mGlobalParticleColor; }
+    void setGlobalMaterialID(MaterialID materialID) noexcept;
+    MaterialID getGlobalMaterialID() const noexcept { return mGlobalMaterialID; }
+    void setGlobalParticleLifespan(f32 lifespan) noexcept { mGlobalParticleLifespan = lifespan; }
+    f32 getGlobalParticleLifespan() const noexcept { return mGlobalParticleLifespan; }
 
-    int getFirstActiveParticle() const { return mFirstActiveParticle; }
-    int getLastActiveParticle() const { return mLastActiveParticle; }
-    int getNumActiveParticles() const { return mNumActiveParticles; }
-    int getFragmentation() const { return mNumActiveParticles ? ((mLastActiveParticle - mFirstActiveParticle) / mNumActiveParticles) : 0; }
+    int getFirstActiveParticle() const noexcept { return mFirstActiveParticle; }
+    int getLastActiveParticle() const noexcept { return mLastActiveParticle; }
+    int getNumActiveParticles() const noexcept { return mNumActiveParticles; }
+    int getFragmentation() const noexcept { return mNumActiveParticles ? ((mLastActiveParticle - mFirstActiveParticle) / mNumActiveParticles) : 0; }
 
-    f32 getTotalElapsedSec() const { return mTotalElapsedSec; }
-    bool isLooping() const { return mLooping; }
+    f32 getTotalElapsedSec() const noexcept { return mTotalElapsedSec; }
+    bool isLooping() const noexcept { return mLooping; }
 
-    AssetID getShaderID() const { return mShaderID; }
+    AssetID getShaderID() const noexcept { return mShaderID; }
 
-    void setBlendMode(ParticleBlendMode blendMode) { mBlendMode = blendMode; }
-    ParticleBlendMode getBlendMode() { return mBlendMode; }
+    void setBlendMode(ParticleBlendMode blendMode) noexcept { mBlendMode = blendMode; }
+    ParticleBlendMode getBlendMode() const noexcept { return mBlendMode; }
 
     // Modules
     template <typename T> requires std::derived_from<T, CPUParticleEmitterModule>

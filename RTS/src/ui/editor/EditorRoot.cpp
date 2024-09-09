@@ -154,8 +154,8 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
 
             // we now dock our windows into the docking node we made above
             // TODO: Manually managing this list is not ideal
-            ImGui::DockBuilderDockWindow("Primary Controls", dockIdLeft);
-            ImGui::DockBuilderDockWindow("Secondary Controls", dockIdRight);
+            ImGui::DockBuilderDockWindow("Primary Controls", dockIdRight);
+            ImGui::DockBuilderDockWindow("Secondary Controls", dockIdLeft);
             ImGui::DockBuilderDockWindow("Content Browser", dockIdDown);
             ImGui::DockBuilderDockWindow("Bottom Controls", dockIdDown);
             ImGui::DockBuilderDockWindow("Blendspace1D Controls", dockIdDown);
@@ -181,7 +181,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
             ImGui::SetNextWindowSize(ImVec2(defaultPanelWidth, dims.y), cond);
             // ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus)
             //ImGui::Begin("pl", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar/* | ImGuiWindowFlags_NoMove*/);
-            ImGui::Begin("Primary Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus);
+            ImGui::Begin("Secondary Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus);
             leftPanelWidth = ImGui::GetCurrentWindowRead()->Size.x;
 
             static f32 ySize1 = ImGui::GetContentRegionAvail().y * 0.5f;
@@ -206,7 +206,7 @@ void EditorRoot::updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsed
         { // Right Panel
             //ImGui::SetNextWindowPos(ImVec2(dims.x - defaultPanelWidth, 0.0f), cond);
             ImGui::SetNextWindowSize(ImVec2(defaultPanelWidth, dims.y), cond);
-            ImGui::Begin("Secondary Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus);
+            ImGui::Begin("Primary Controls", nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus);
             rightPanelWidth = ImGui::GetCurrentWindowRead()->Size.x;
 
             AssetSelectPanelResult result;

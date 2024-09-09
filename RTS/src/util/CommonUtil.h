@@ -176,3 +176,11 @@ inline DTileIndex structureTileXYToDTileIndex(ui32v2 tileXY, DTileIndex structur
 // We dont use a flat_multimap as insert/erase performance is terrible for those
 // TODO: Test google btree implementation?
 typedef std::multimap<i32 /*distSqInt*/, i32v2> SortedIntCoordDistanceSqMap;
+
+// Returns the element in the map, asserting in debug mode if it isnt there
+template<typename Map>
+__forceinline auto& assert_at(const Map& m, const typename Map::key_type& key) {
+    auto it = m.find(key);
+    assert(it != m.end() && "Key not found in map");
+    return it->second;
+}

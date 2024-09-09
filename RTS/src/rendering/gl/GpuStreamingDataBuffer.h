@@ -39,5 +39,8 @@ private:
     ui32 mMaxElements;
     ui32 mElementSize;
     ui32 mTotalBytesLastFlush = 0;
+    ui32 mFrameSizebytes = 0;
     GLsync mFence[3] = { 0 };
+
+    inline static ui32 REQUIRED_ALIGNMENT = 32;
 };

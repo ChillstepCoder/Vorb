@@ -36,7 +36,7 @@ saveNested(writer, name3, YML_SAVE_LAMBDA(mModuleData.var3)); \
 endMap(writer);
 
 // Helper
-bool updateAndRenderVariable(CPUParticleEmitterVariable& variable, const char* const label) {
+bool updateAndRenderVariable(CPUParticleEmitterParameter& variable, const char* const label) {
     bool changed = variable.updateAndRenderTweaker(label);
     // Separator after operations
     if (variable.mOperation) {
@@ -453,6 +453,202 @@ bool CPUPEM_SetScale::loadFromYml(ryml::ConstNodeRef node) {
 
 void CPUPEM_SetScale::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mScale, "scale"sv);
+}
+#pragma endregion
+
+
+// ====================================================================================================
+// CPUPEM_SetUIntVar
+// ====================================================================================================
+#pragma region CPUPEM_SetUIntVar
+
+CPUPEM_SetUIntVar::CPUPEM_SetUIntVar() {
+    refresh();
+}
+
+void CPUPEM_SetUIntVar::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        //MODULE_DATA->mVariable.evaluate(emitter, particleID); // TODO: Can we skip evaluate for variable names? Are there any operations that can output?
+        MODULE_DATA->mValue.evaluate(emitter, particleID);
+        emitter.setUIntVariable(std::get<ParticleEmitterVariableNameUInt>(MODULE_DATA->mVariable.mVarData), particleID, std::get<ui32>(MODULE_DATA->mValue.mVarData));
+    };
+}
+
+bool CPUPEM_SetUIntVar::updateAndRenderEditorControls() {
+    bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var");
+    changed |= updateAndRenderVariable(mModuleData.mValue, "Value");
+    return changed;
+}
+
+bool CPUPEM_SetUIntVar::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mVariable, "name"sv);
+    LOAD_VAR(mValue, "value"sv);
+    return true;
+}
+
+void CPUPEM_SetUIntVar::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mVariable, "name"sv);
+    SAVE_VAR(mValue, "value"sv);
+}
+
+bool CPUPEM_SetUIntVar::compatableWithEmitter(const CpuParticleEmitter& emitter) const {
+    ParticleEmitterVariableNameUInt varName = std::get<ParticleEmitterVariableNameUInt>(mModuleData.mVariable.mVarData);
+    if (varName == ParticleEmitterVariableNameUInt::INVALID) return false;
+    return emitter.hasUIntVariable(varName);
+}
+
+void CPUPEM_SetUIntVar::addRequiredUIntVariables(FlatSet<ParticleEmitterVariableNameUInt>& uintVariables) const {
+    ParticleEmitterVariableNameUInt varName = std::get<ParticleEmitterVariableNameUInt>(mModuleData.mVariable.mVarData);
+    if (varName != ParticleEmitterVariableNameUInt::INVALID) {
+        uintVariables.insert(varName);
+    }
+}
+
+#pragma endregion
+
+
+// ====================================================================================================
+// CPUPEM_SetFloatVar
+// ====================================================================================================
+#pragma region CPUPEM_SetFloatVar
+CPUPEM_SetFloatVar::CPUPEM_SetFloatVar() {
+    refresh();
+}
+
+void CPUPEM_SetFloatVar::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        //MODULE_DATA->mVariable.evaluate(emitter, particleID); // TODO: Can we skip evaluate for variable names? Are there any operations that can output?
+        MODULE_DATA->mValue.evaluate(emitter, particleID);
+        emitter.setFloatVariable(std::get<ParticleEmitterVariableNameFloat>(MODULE_DATA->mVariable.mVarData), particleID, std::get<f32>(MODULE_DATA->mValue.mVarData));
+    };
+}
+
+bool CPUPEM_SetFloatVar::updateAndRenderEditorControls() {
+    bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var");
+    changed |= updateAndRenderVariable(mModuleData.mValue, "Value");
+    return changed;
+}
+
+bool CPUPEM_SetFloatVar::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mVariable, "name"sv);
+    LOAD_VAR(mValue, "value"sv);
+    return true;
+}
+
+void CPUPEM_SetFloatVar::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mVariable, "name"sv);
+    SAVE_VAR(mValue, "value"sv);
+}
+
+bool CPUPEM_SetFloatVar::compatableWithEmitter(const CpuParticleEmitter& emitter) const {
+    ParticleEmitterVariableNameFloat varName = std::get<ParticleEmitterVariableNameFloat>(mModuleData.mVariable.mVarData);
+    if (varName == ParticleEmitterVariableNameFloat::INVALID) return false;
+    return emitter.hasFloatVariable(varName);
+}
+
+void CPUPEM_SetFloatVar::addRequiredFloatVariables(FlatSet<ParticleEmitterVariableNameFloat>& floatVariables) const {
+    ParticleEmitterVariableNameFloat varName = std::get<ParticleEmitterVariableNameFloat>(mModuleData.mVariable.mVarData);
+    if (varName != ParticleEmitterVariableNameFloat::INVALID) {
+        floatVariables.insert(varName);
+    }
+}
+#pragma endregion
+
+
+// ====================================================================================================
+// CPUPEM_SetVec2Var
+// ====================================================================================================
+#pragma region CPUPEM_SetVec2Var
+
+CPUPEM_SetVec2Var::CPUPEM_SetVec2Var() {
+    refresh();
+}
+
+void CPUPEM_SetVec2Var::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        //MODULE_DATA->mVariable.evaluate(emitter, particleID); // TODO: Can we skip evaluate for variable names? Are there any operations that can output?
+        MODULE_DATA->mValue.evaluate(emitter, particleID);
+        emitter.setVec2Variable(std::get<ParticleEmitterVariableNameVec2>(MODULE_DATA->mVariable.mVarData), particleID, std::get<f32v2>(MODULE_DATA->mValue.mVarData));
+    };
+}
+
+bool CPUPEM_SetVec2Var::updateAndRenderEditorControls() {
+    bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var");
+    changed |= updateAndRenderVariable(mModuleData.mValue, "Value");
+    return changed;
+}
+
+bool CPUPEM_SetVec2Var::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mVariable, "name"sv);
+    LOAD_VAR(mValue, "value"sv);
+    return true;
+}
+
+void CPUPEM_SetVec2Var::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mVariable, "name"sv);
+    SAVE_VAR(mValue, "value"sv);
+}
+
+bool CPUPEM_SetVec2Var::compatableWithEmitter(const CpuParticleEmitter& emitter) const {
+    ParticleEmitterVariableNameVec2 varName = std::get<ParticleEmitterVariableNameVec2>(mModuleData.mVariable.mVarData);
+    if (varName == ParticleEmitterVariableNameVec2::INVALID) return false;
+    return emitter.hasVec2Variable(varName);
+}
+
+void CPUPEM_SetVec2Var::addRequiredVec2Variables(FlatSet<ParticleEmitterVariableNameVec2>& floatVariables) const {
+    ParticleEmitterVariableNameVec2 varName = std::get<ParticleEmitterVariableNameVec2>(mModuleData.mVariable.mVarData);
+    if (varName != ParticleEmitterVariableNameVec2::INVALID) {
+        floatVariables.insert(varName);
+    }
+}
+#pragma endregion
+
+
+// ====================================================================================================
+// CPUPEM_SetVec3Var
+// ====================================================================================================
+#pragma region CPUPEM_SetVec3Var
+
+CPUPEM_SetVec3Var::CPUPEM_SetVec3Var() {
+    refresh();
+}
+
+void CPUPEM_SetVec3Var::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        //MODULE_DATA->mVariable.evaluate(emitter, particleID); // TODO: Can we skip evaluate for variable names? Are there any operations that can output?
+        MODULE_DATA->mValue.evaluate(emitter, particleID);
+        emitter.setVec3Variable(std::get<ParticleEmitterVariableNameVec3>(MODULE_DATA->mVariable.mVarData), particleID, std::get<f32v3>(MODULE_DATA->mValue.mVarData));
+    };
+}
+
+bool CPUPEM_SetVec3Var::updateAndRenderEditorControls() {
+    bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var");
+    changed |= updateAndRenderVariable(mModuleData.mValue, "Value");
+    return changed;
+}
+
+bool CPUPEM_SetVec3Var::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mVariable, "name"sv);
+    LOAD_VAR(mValue, "value"sv);
+    return true;
+}
+
+void CPUPEM_SetVec3Var::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mVariable, "name"sv);
+    SAVE_VAR(mValue, "value"sv);
+}
+
+bool CPUPEM_SetVec3Var::compatableWithEmitter(const CpuParticleEmitter& emitter) const {
+    ParticleEmitterVariableNameVec3 varName = std::get<ParticleEmitterVariableNameVec3>(mModuleData.mVariable.mVarData);
+    if (varName == ParticleEmitterVariableNameVec3::INVALID) return false;
+    return emitter.hasVec3Variable(varName);
+}
+
+void CPUPEM_SetVec3Var::addRequiredVec3Variables(FlatSet<ParticleEmitterVariableNameVec3>& floatVariables) const {
+    ParticleEmitterVariableNameVec3 varName = std::get<ParticleEmitterVariableNameVec3>(mModuleData.mVariable.mVarData);
+    if (varName != ParticleEmitterVariableNameVec3::INVALID) {
+        floatVariables.insert(varName);
+    }
 }
 #pragma endregion
 

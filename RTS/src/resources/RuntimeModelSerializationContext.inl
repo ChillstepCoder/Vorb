@@ -108,6 +108,7 @@ public:
             // Render Pass
             ui8 renderPass;
             s.value1b(renderPass);
+
             submeshData.renderPass = static_cast<MaterialRenderPassType>(renderPass);
             // LOD data
             s.object(meshData.mLodData);

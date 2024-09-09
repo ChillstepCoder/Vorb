@@ -4,31 +4,38 @@ class CPUParticleEmitterOperation;
 class CpuParticleEmitter;
 
 #include "rendering/particle/ParticleEnumTypes.h"
+#include "rendering/particle/ParticleEmitterVariableName.h"
 
 #include "serialization/YmlSerializable.h"
 
 #include "util/RandomPointFromShape.h"
 
-enum class CPUparticleEmitterVariableVariantType : ui8{
+enum class CPUParticleEmitterParameterVariantType : ui8{
     color4,
     f32v4,
     f32v3,
     f32v2,
     f32,
     ui32,
+    namedUInt,
+    namedFloat,
+    namedVec2,
+    namedVec3,
     COUNT
 };
-typedef std::variant<color4, f32v4, f32v3, f32v2, f32, ui32> CPUParticleEmitterVariantData;
-static_assert(e_count(CPUparticleEmitterVariableVariantType) == 6);
+typedef std::variant<
+    color4, f32v4, f32v3, f32v2, f32, ui32, ParticleEmitterVariableNameUInt, ParticleEmitterVariableNameFloat, ParticleEmitterVariableNameVec2, ParticleEmitterVariableNameVec3
+> CPUParticleEmitterVariantData;
+static_assert(e_count(CPUParticleEmitterParameterVariantType) == 10);
 
-class CPUParticleEmitterVariable {
+class CPUParticleEmitterParameter {
 public:
-    CPUParticleEmitterVariable() = default;
-    CPUParticleEmitterVariable(CPUParticleEmitterVariantData data) : mVarData(data) {}
-    CPUParticleEmitterVariable(std::unique_ptr<CPUParticleEmitterOperation> operation, CPUParticleEmitterVariantData data) : mOperation(std::move(operation)), mVarData(data) {}
-    CPUParticleEmitterVariable(const CPUParticleEmitterVariable& other);
+    CPUParticleEmitterParameter() = default;
+    CPUParticleEmitterParameter(CPUParticleEmitterVariantData data) : mVarData(data) {}
+    CPUParticleEmitterParameter(std::unique_ptr<CPUParticleEmitterOperation> operation, CPUParticleEmitterVariantData data) : mOperation(std::move(operation)), mVarData(data) {}
+    CPUParticleEmitterParameter(const CPUParticleEmitterParameter& other);
 
-    VORB_MOVABLE(CPUParticleEmitterVariable);
+    VORB_MOVABLE(CPUParticleEmitterParameter);
 
     void evaluate(CpuParticleEmitter& emitter, ParticleID id);
     bool updateAndRenderTweaker(const char*const label);
@@ -53,7 +60,7 @@ YML_READ_DEF(CPUParticleEmitterVariantData) {
 #define E_VAR CPUParticleEmitterVariantData
 
 // TODO: test perf vs virtual func
-//typedef void(*CPUParticleEmitterOperationMethod)(class CpuParticleEmitter& emitter, int particleID, CPUParticleEmitterVariable* p0, CPUParticleEmitterVariable* p1);
+//typedef void(*CPUParticleEmitterOperationMethod)(class CpuParticleEmitter& emitter, int particleID, CPUParticleEmitterParameter* p0, CPUParticleEmitterParameter* p1);
 
 class CPUParticleEmitterOperation : public YmlSerializable {
 public:
@@ -61,7 +68,7 @@ public:
 
     virtual constexpr const char* const getDisplayName() const = 0;
     virtual color4 getDisplayColor() const = 0;
-    virtual CPUparticleEmitterVariableVariantType getOutputType() const = 0;
+    virtual CPUParticleEmitterParameterVariantType getOutputType() const = 0;
     virtual std::unique_ptr<CPUParticleEmitterOperation> clone() const = 0;
     virtual BitFlags<ParticleComponentType> getRequiredComponents() const { return {}; }
 
@@ -69,14 +76,14 @@ public:
     virtual bool updateAndRenderExtraPreControls() { return false; }
     virtual bool updateAndRenderExtraPostControls() { return false; }
 
-    virtual void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) = 0;
+    virtual void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) = 0;
 
     virtual bool loadFromYml(ryml::ConstNodeRef node) override;
     virtual const char* const getParamName(size_t paramIndex) const = 0;
     virtual size_t getParamIndex(const char* const paramName) const { assert(false); return UINT32_MAX; };
 
 protected:
-    std::vector<CPUParticleEmitterVariable> mParams;
+    std::vector<CPUParticleEmitterParameter> mParams;
 
     inline void evaluateParams(CpuParticleEmitter& emitter, ParticleID id) {
         for (auto&& p : mParams) {
@@ -91,7 +98,7 @@ protected:
 #define OPERATION_PARAMS(TYPE, ...) \
 public: \
     TYPE() { \
-        mParams = std::move(std::vector<CPUParticleEmitterVariable>{ __VA_ARGS__ }); \
+        mParams = std::move(std::vector<CPUParticleEmitterParameter>{ __VA_ARGS__ }); \
     }
 
 // Usage: "paramName1", "paramName2", ...
@@ -130,14 +137,14 @@ public: \
     constexpr const char* const getYmlName() const override { return YML_NAME; } \
     color4 getDisplayColor() const override { return DISP_COLOR; } \
     std::unique_ptr<CPUParticleEmitterOperation> clone() const override { return std::make_unique<NAME>(*this); } \
-    CPUparticleEmitterVariableVariantType getOutputType() const override { return CPUparticleEmitterVariableVariantType::OUTPUT_TYPE; }
+    CPUParticleEmitterParameterVariantType getOutputType() const override { return CPUParticleEmitterParameterVariantType::OUTPUT_TYPE; }
 
 #define DEFINE_CPUPEO_BINARY(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1, TYPE2, OP) \
 class NAME : public CPUParticleEmitterOperation { \
     OPERATION_PARAMS(NAME, E_VAR(TYPE1(0)), E_VAR(TYPE2(0))) \
     OPERATION_PARAM_NAMES("p0", "p1") \
     DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1) \
-     void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override { \
+     void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) override { \
        evaluateParams(emitter, id); \
        output->mVarData = std::get<TYPE1>(mParams[0].mVarData) OP std::get<TYPE2>(mParams[1].mVarData); \
     } \
@@ -149,7 +156,7 @@ class NAME : public CPUParticleEmitterOperation { \
     OPERATION_PARAMS(NAME, E_VAR(TYPE1(0))) \
     OPERATION_PARAM_NAMES("v") \
     DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, TYPE1) \
-    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override { \
+    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) override { \
        evaluateParams(emitter, id); \
        output->mVarData = -std::get<TYPE1>(mParams[0].mVarData); \
     } \
@@ -161,18 +168,28 @@ class NAME : public CPUParticleEmitterOperation { \
     OPERATION_PARAMS(NAME, E_VAR(TYPE1(0))) \
     OPERATION_PARAM_NAMES("v") \
     DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, CONVERT) \
-    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override { \
+    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) override { \
        evaluateParams(emitter, id); \
        output->mVarData = CONVERT(std::get<TYPE1>(mParams[0].mVarData)); \
     } \
 }; \
 REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 
-#define DEFINE_CPUPEO_QUERY_DECL(NAME, DISP_NAME, YML_NAME, DISP_COLOR, OUTPUT_TYPE, ...) \
+#define DEFINE_CPUPEO_QUERY_COMPONENT_DECL(NAME, DISP_NAME, YML_NAME, DISP_COLOR, OUTPUT_TYPE, ...) \
 class NAME : public CPUParticleEmitterOperation { \
     OPERATION_NO_PARAMS() \
     DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, OUTPUT_TYPE) \
-    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override; \
+    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) override; \
+    __VA_ARGS__ \
+}; \
+REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
+
+#define DEFINE_CPUPEO_QUERY_VARIABLE_DECL(NAME, DISP_NAME, YML_NAME, DISP_COLOR, OUTPUT_TYPE, VARTYPE, ...) \
+class NAME : public CPUParticleEmitterOperation { \
+    OPERATION_PARAMS(NAME, E_VAR(VARTYPE(0))) \
+    OPERATION_PARAM_NAMES("name") \
+    DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, OUTPUT_TYPE) \
+    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) override; \
     __VA_ARGS__ \
 }; \
 REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
@@ -181,7 +198,7 @@ REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 #define DEFINE_CPUPEO_CUSTOM_DECL(NAME, DISP_NAME, YML_NAME, DISP_COLOR, OUTPUT_TYPE, ...) \
 class NAME : public CPUParticleEmitterOperation { \
     DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, OUTPUT_TYPE) \
-    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) override; \
+    void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) override; \
     __VA_ARGS__ \
 }; \
 REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
@@ -191,7 +208,8 @@ REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 #define COLOR_QUERY color4(0.5f, 0.7f, 0.3f, 1.0f)
 #define COLOR_CURVE color4(0.3f, 0.7f, 0.7f, 1.0f)
 #define COLOR_COMPLEX color4(1.0f, 0.3f, 0.3f, 1.0f)
-#define COLOR_INPUT color4(0.0f, 0.85f, 0.0f, 1.0f)
+#define COLOR_INPUT color4(0.65f, 0.85f, 0.65f, 1.0f)
+#define COLOR_VARIABLE color4(0.0f, 0.85f, 0.0f, 1.0f)
 
 DEFINE_CPUPEO_BINARY(CPUPEO_AddVec2, "Add Vec2", "add_vec2", COLOR_STANDARD, f32v2, f32v2, +)
 DEFINE_CPUPEO_BINARY(CPUPEO_SubVec2, "Subtract Vec2", "sub_vec2", COLOR_STANDARD, f32v2, f32v2, -)
@@ -217,24 +235,30 @@ DEFINE_CPUPEO_CONVERT(CPUPEO_ConvertFloatToVec2, "Float To Vec2", "f32_to_vec2",
 DEFINE_CPUPEO_CONVERT(CPUPEO_ConvertFloatToUInt, "Float To UInt", "f32_to_uint", COLOR_CONVERT, f32, ui32)
 DEFINE_CPUPEO_CONVERT(CPUPEO_ConvertUIntToFloat, "UInt To Float", "uint_to_f32", COLOR_CONVERT, f32, ui32)
 
-DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryPosition, "Particle Position", "p_pos", COLOR_QUERY, f32v3)
-DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryVelocity, "Particle Velocity", "p_vel", COLOR_QUERY, f32v3,
+DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_QueryPosition, "Particle Position", "p_pos", COLOR_QUERY, f32v3)
+DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_QueryVelocity, "Particle Velocity", "p_vel", COLOR_QUERY, f32v3,
     BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Velocity; }
 )
-DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QuerySpeed, "Particle Speed", "p_vel", COLOR_QUERY, f32,
+DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_QuerySpeed, "Particle Speed", "p_vel", COLOR_QUERY, f32,
     BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Velocity; }
 )
-DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryScale, "Particle Scale", "p_scale", COLOR_QUERY, f32v2,
+DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_QueryScale, "Particle Scale", "p_scale", COLOR_QUERY, f32v2,
     BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Scale; }
 )
-DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryRotation, "Particle Rotation", "p_rot", COLOR_QUERY, f32,
+DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_QueryRotation, "Particle Rotation", "p_rot", COLOR_QUERY, f32,
     BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Rotation; }
 )
-DEFINE_CPUPEO_QUERY_DECL(CPUPEO_QueryNormalizedLifetime, "Particle Normalized Lifetime", "p_norm_life", COLOR_QUERY, f32)
+DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_QueryNormalizedLifetime, "Particle Normalized Lifetime", "p_norm_life", COLOR_QUERY, f32)
 
 // Inputs
-DEFINE_CPUPEO_QUERY_DECL(CPUPEO_InputImpactDirection, "(In) Impact Direction", "i_idir", COLOR_INPUT, f32v3)
-DEFINE_CPUPEO_QUERY_DECL(CPUPEO_InputImpactSurfaceNormal, "(In) Impact Surface Normal", "i_inorm", COLOR_INPUT, f32v3)
+DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_InputImpactDirection, "(In) Impact Direction", "i_idir", COLOR_INPUT, f32v3)
+DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_InputImpactSurfaceNormal, "(In) Impact Surface Normal", "i_inorm", COLOR_INPUT, f32v3)
+
+// Varible queries
+DEFINE_CPUPEO_QUERY_VARIABLE_DECL(CPUPEO_UIntVariable, "Get Named UInt", "v_uint", COLOR_VARIABLE, ui32, ParticleEmitterVariableNameUInt)
+DEFINE_CPUPEO_QUERY_VARIABLE_DECL(CPUPEO_FloatVariable, "Get Named Float", "v_float", COLOR_VARIABLE, f32, ParticleEmitterVariableNameFloat)
+DEFINE_CPUPEO_QUERY_VARIABLE_DECL(CPUPEO_Vec2Variable, "Get Named Vec2", "v_vec2", COLOR_VARIABLE, f32v2, ParticleEmitterVariableNameVec2)
+DEFINE_CPUPEO_QUERY_VARIABLE_DECL(CPUPEO_Vec3Variable, "Get Named Vec3", "v_vec3", COLOR_VARIABLE, f32v3, ParticleEmitterVariableNameVec3)
 
 
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomFloatInRange, "Random Float In Range", "rand_float", COLOR_STANDARD, f32,
@@ -248,7 +272,7 @@ DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomFloatInRange, "Random Float In Range", "r
 )
 
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_ColorCurve, "Color Curve", "color_curve", COLOR_CURVE, color4,
-    OPERATION_PARAMS(CPUPEO_ColorCurve, CPUParticleEmitterVariable(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
+    OPERATION_PARAMS(CPUPEO_ColorCurve, CPUParticleEmitterParameter(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
     OPERATION_PARAM_NAMES("norm_input")
     virtual bool updateAndRenderExtraPostControls() override;
     bool loadFromYml(ryml::ConstNodeRef node) override;
@@ -258,7 +282,7 @@ DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_ColorCurve, "Color Curve", "color_curve", COLOR
 )
 
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_HdrColorCurve, "HDR Color Curve", "hdr_curve", COLOR_CURVE, f32v4,
-    OPERATION_PARAMS(CPUPEO_HdrColorCurve, CPUParticleEmitterVariable(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
+    OPERATION_PARAMS(CPUPEO_HdrColorCurve, CPUParticleEmitterParameter(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
     OPERATION_PARAM_NAMES("norm_input")
     virtual bool updateAndRenderExtraPostControls() override;
     bool loadFromYml(ryml::ConstNodeRef node) override;
@@ -268,7 +292,7 @@ protected:
 )
 
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_FloatCurve, "Float Curve", "float_curve", COLOR_CURVE, f32,
-    OPERATION_PARAMS(CPUPEO_FloatCurve, CPUParticleEmitterVariable(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
+    OPERATION_PARAMS(CPUPEO_FloatCurve, CPUParticleEmitterParameter(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
     OPERATION_PARAM_NAMES("norm_input")
     virtual bool updateAndRenderExtraPostControls() override;
     bool loadFromYml(ryml::ConstNodeRef node) override;

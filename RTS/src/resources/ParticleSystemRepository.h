@@ -21,6 +21,7 @@ class ParticleSystemRepository : public IAssetRepository<ParticleSystemDef> {
 private:
     void saveParticleEmitter(ryml::NodeRef& node, const ParticleEmitterDef& particleEmitter);
     bool loadParticleEmitter(ryml::ConstNodeRef node, ParticleEmitterDef& particleEmitter);
+    void fixupLoadedAsset(AssetID assetId) override;
 
     MaterialID mDefaultMaterial = INVALID_MATERIAL_ID;
     AssetHandlePtr<MaterialDef> mDefaultMaterialHandle;

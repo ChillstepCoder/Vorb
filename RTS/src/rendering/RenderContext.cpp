@@ -156,8 +156,6 @@ void APIENTRY glDebugOutput(GLenum source,
     if (!IsRunningUnderNsight()) {
         __debugbreak();
     }
-    //panic(ss.str()); //  Dont want to crash on program link errors
-    //assert(false);
 }
 
 RenderContext* RenderContext::sInstance = nullptr;

@@ -1,10 +1,21 @@
 #include "stdafx.h"
 #include "GpuStreamingDataBuffer.h"
 
+static bool sDidInitAlignment = false;
+
 GpuStreamingDataBuffer::GpuStreamingDataBuffer(ui32 maxElements, ui32 elementSize) :
     mMaxElements(maxElements),
     mElementSize(elementSize) {
+    ASSERT_RENDER_THREAD();
+
     assert(mMaxElements > 0 && mElementSize > 0);
+
+    if (!sDidInitAlignment) {
+        GLint required;
+        glGetIntegerv(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT, (GLint*)&required);
+        REQUIRED_ALIGNMENT = (ui32)required;
+        sDidInitAlignment = true;
+    }
 
     initBuffer();
 }
@@ -16,7 +27,12 @@ GpuStreamingDataBuffer::~GpuStreamingDataBuffer() {
 
 void GpuStreamingDataBuffer::setMaxElements(ui32 maxElements) {
     mMaxElements = maxElements;
-    const size_t bufferSize = mMaxElements * mElementSize * 3;
+    mFrameSizebytes = mMaxElements * mElementSize;
+    const ui32 offsetFromAligned = mFrameSizebytes % REQUIRED_ALIGNMENT;
+    if (offsetFromAligned != 0) {
+        mFrameSizebytes += REQUIRED_ALIGNMENT - (offsetFromAligned);
+    }
+    const size_t bufferSize = mFrameSizebytes * 3;
 
     glUnmapNamedBuffer(mBufferObject);
     glDeleteBuffers(1, &mBufferObject);
@@ -34,14 +50,14 @@ void* GpuStreamingDataBuffer::frameBeginAndGetDataForUpdate() {
         mFence[mFrameIndex] = 0;
     }
 
-    const int bufferOffsetBytes = mFrameIndex * mElementSize * mMaxElements;
+    const int bufferOffsetBytes = mFrameIndex * mFrameSizebytes;
     return (void*)&((ui8*)mMappedBuffer)[bufferOffsetBytes];
 }
 
 void GpuStreamingDataBuffer::flushDataAndIncrementFrame(ui32 elementCount) {
     assert(elementCount <= mMaxElements);
     elementCount = glm::min(elementCount, mMaxElements);
-    mByteOffsetLastFlush = mFrameIndex * mElementSize * mMaxElements;
+    mByteOffsetLastFlush = mFrameIndex * mFrameSizebytes;
     mTotalBytesLastFlush = elementCount * mElementSize;
     glFlushMappedNamedBufferRange(mBufferObject, mByteOffsetLastFlush, mTotalBytesLastFlush);
 
@@ -76,8 +92,15 @@ bool GpuStreamingDataBuffer::reallocateFuzzedIfNeeded(
 void GpuStreamingDataBuffer::initBuffer()
 {
     ASSERT_RENDER_THREAD();
-    const size_t bufferSize = mMaxElements * mElementSize * 3;
 
+    // Allocate buffer and add padding bytes if not multiple of REQUIRED_ALIGNMENT
+    mFrameSizebytes = mMaxElements * mElementSize;
+    const ui32 offsetFromAligned = mFrameSizebytes % REQUIRED_ALIGNMENT;
+    if (offsetFromAligned != 0) {
+        mFrameSizebytes += REQUIRED_ALIGNMENT - (offsetFromAligned);
+    }
+
+    const size_t bufferSize = mFrameSizebytes * 3;
     glCreateBuffers(1, &mBufferObject);
     glNamedBufferStorage(mBufferObject, bufferSize, NULL, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT);
     mMappedBuffer = glMapNamedBufferRange(mBufferObject, 0, bufferSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);

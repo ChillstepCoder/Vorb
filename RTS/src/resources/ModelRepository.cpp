@@ -548,6 +548,8 @@ void ModelRepository::loadModelDataInternal(ModelDef& def, StrToken modelName, c
                         def.mSubmeshData.resize(submeshId + 1);
                     }
                     def.mSubmeshData[submeshId].name = subMesh.mName;
+                    def.mSubmeshData[submeshId].renderPass = subMesh.mRenderPassType;
+
                 }
             }
 

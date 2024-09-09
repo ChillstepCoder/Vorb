@@ -39,11 +39,15 @@ namespace fs = std::filesystem;
 /* Boost Containers                                                     */
 /************************************************************************/
 #include <boost/container/flat_map.hpp>
+#include <boost/container/flat_set.hpp>
 #include <boost/unordered/unordered_flat_map.hpp>
 #include <boost/unordered/unordered_flat_set.hpp>
 
 template <class Key, class Value, class Compare = std::less<Key>>
 using FlatMap = boost::container::flat_map<Key, Value, Compare>;
+
+template <class Key, class Compare = std::less<Key>>
+using FlatSet = boost::container::flat_set<Key, Compare>;
 
 template <class Key, class Value, class Hasher = boost::hash<Key>, class KeyEqual = std::equal_to<Key>, class Allocator = std::allocator<std::pair<const Key, Value>>>
 using UnorderedFlatMap = boost::unordered_flat_map<Key, Value, Hasher, KeyEqual, Allocator>;

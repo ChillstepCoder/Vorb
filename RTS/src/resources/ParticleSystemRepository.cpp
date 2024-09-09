@@ -198,6 +198,55 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
     return true;
 }
 
+void ParticleSystemRepository::fixupLoadedAsset(AssetID assetId) {
+    ParticleSystemDef& newDef = *mAssets[assetId];
+
+    FlatSet<ParticleEmitterVariableNameUInt> uintVars;
+    FlatSet<ParticleEmitterVariableNameFloat> floatVars;
+    FlatSet<ParticleEmitterVariableNameVec2> vec2Vars;
+    FlatSet<ParticleEmitterVariableNameVec3> vec3Vars;
+
+    for (auto& emitter : newDef.mEmitters) {
+        emitter.mUIntVariables.clear();
+        emitter.mFloatVariables.clear();
+        emitter.mVec2Variables.clear();
+        emitter.mVec3Variables.clear();
+
+        uintVars.clear();
+        floatVars.clear();
+        vec2Vars.clear();
+        vec3Vars.clear();
+
+        // Track all needed variables
+        for (auto& module : emitter.mModules.mEmitterUpdate) {
+            module->addRequiredUIntVariables(uintVars);
+            module->addRequiredFloatVariables(floatVars);
+            module->addRequiredVec2Variables(vec2Vars);
+            module->addRequiredVec3Variables(vec3Vars);
+        }
+
+        for (auto& module : emitter.mModules.mParticleInit) {
+            module->addRequiredUIntVariables(uintVars);
+            module->addRequiredFloatVariables(floatVars);
+            module->addRequiredVec2Variables(vec2Vars);
+            module->addRequiredVec3Variables(vec3Vars);
+        }
+
+        for (auto& module : emitter.mModules.mParticleUpdate) {
+            module->addRequiredUIntVariables(uintVars);
+            module->addRequiredFloatVariables(floatVars);
+            module->addRequiredVec2Variables(vec2Vars);
+            module->addRequiredVec3Variables(vec3Vars);
+        }
+
+        // Copy the variables
+        emitter.mUIntVariables.insert(emitter.mUIntVariables.end(), uintVars.begin(), uintVars.end());
+        emitter.mFloatVariables.insert(emitter.mFloatVariables.end(), floatVars.begin(), floatVars.end());
+        emitter.mVec2Variables.insert(emitter.mVec2Variables.end(), vec2Vars.begin(), vec2Vars.end());
+        emitter.mVec3Variables.insert(emitter.mVec3Variables.end(), vec3Vars.begin(), vec3Vars.end());
+    }
+}
+
 AssetLoadFunc ParticleSystemRepository::getAssetLoadFunc() {
     return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr) {
 
@@ -221,11 +270,13 @@ AssetLoadFunc ParticleSystemRepository::getAssetLoadFunc() {
         }
 
         if (newDef.getDependencies()->areAllAssetsLoaded()) {
+            fixupLoadedAsset(assetID);
             return true;
         }
         else {
             // Make sure we load all dependencies (Shaders)
             assetLoader.requestAssetLoadWithDependencies(nullptr, [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
+                fixupLoadedAsset(assetID);
                 return true;
             }, assetID,
                 assetDataPtr,

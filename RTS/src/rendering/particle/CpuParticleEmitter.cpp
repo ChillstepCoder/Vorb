@@ -63,6 +63,8 @@ CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def, ParticleSy
     mInputs(inputs),
     mMaterialAssetHandles(std::make_unique<AssetHandleBundle>())
 {
+    // TODO: some of this information could be cached in the definition to make for faster setup
+
     assert(inputs);
     mMaxParticles = def.mMaxParticles;
     mGlobalParticleScale = def.mDefaultScale;
@@ -83,19 +85,43 @@ CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def, ParticleSy
         def.mModules.mParticleUpdate.size();
     mEmitterModuleMethods.reserve(totalModuleCount);
 
+    // Initialize variables
+    mParticleData.mUIntVariables.reserve(def.mUIntVariables.size());
+    for (auto uintVar : def.mUIntVariables) {
+        mParticleData.mUIntVariables.emplace(uintVar, std::move(std::make_unique_for_overwrite<ui32[]>(mMaxParticles)));
+    }
+    mParticleData.mFloatVariables.reserve(def.mFloatVariables.size());
+    for (auto floatVar : def.mFloatVariables) {
+        mParticleData.mFloatVariables.emplace(floatVar, std::move(std::make_unique_for_overwrite<f32[]>(mMaxParticles)));
+    }
+    mParticleData.mVec2Variables.reserve(def.mVec2Variables.size());
+    for (auto vec2Var : def.mVec2Variables) {
+        mParticleData.mVec2Variables.emplace(vec2Var, std::move(std::make_unique_for_overwrite<f32v2[]>(mMaxParticles)));
+    }
+    mParticleData.mVec3Variables.reserve(def.mVec3Variables.size());
+    for (auto vec3Var : def.mVec3Variables) {
+        mParticleData.mVec3Variables.emplace(vec3Var, std::move(std::make_unique_for_overwrite<f32v3[]>(mMaxParticles)));
+    }
+
     for (auto&& module : def.mModules.mEmitterUpdate) {
-        addEmitterUpdateModule(*module);
-        mComponents |= module->getRequiredComponents();
+        if (module->compatableWithEmitter(*this)) [[likely]] {
+            addEmitterUpdateModule(*module);
+            mComponents |= module->getRequiredComponents();
+        }
     }
 
     for (auto&& module : def.mModules.mParticleInit) {
-        addParticleInitModule(*module);
-        mComponents |= module->getRequiredComponents();
+        if (module->compatableWithEmitter(*this)) [[likely]] {
+            addParticleInitModule(*module);
+            mComponents |= module->getRequiredComponents();
+        }
     }
 
     for (auto&& module : def.mModules.mParticleUpdate) {
-        addParticleUpdateModule(*module);
-        mComponents |= module->getRequiredComponents();
+        if (module->compatableWithEmitter(*this)) [[likely]] {
+            addParticleUpdateModule(*module);
+            mComponents |= module->getRequiredComponents();
+        }
     }
 
     allocateParticleData();
@@ -383,46 +409,46 @@ void CpuParticleEmitter::removeParticle(ParticleID id) {
     mFreeParticleIDs.emplace_back(id);
 }
 
-void CpuParticleEmitter::setParticlePosition(ParticleID id, f32v3 position) {
+void CpuParticleEmitter::setParticlePosition(ParticleID id, f32v3 position) noexcept {
     mParticleData.mPositions[id] = position;
 }
 
-void CpuParticleEmitter::setParticleScale(ParticleID id, f32v2 scale) {
+void CpuParticleEmitter::setParticleScale(ParticleID id, f32v2 scale) noexcept {
     assert(mComponents.isBitSet(ParticleComponentType::Scale));
     mParticleData.mScales[id] = scale;
 }
 
-void CpuParticleEmitter::multiplyParticleScale(ParticleID id, f32v2 scale) {
+void CpuParticleEmitter::multiplyParticleScale(ParticleID id, f32v2 scale) noexcept {
     assert(mComponents.isBitSet(ParticleComponentType::Scale));
     mParticleData.mScales[id] *= scale;
 }
 
-void CpuParticleEmitter::setParticleVelocity(ParticleID id, f32v3 velocity) {
+void CpuParticleEmitter::setParticleVelocity(ParticleID id, f32v3 velocity) noexcept {
     assert(mComponents.isBitSet(ParticleComponentType::Velocity));
     mParticleData.mVelocities[id] = velocity;
 }
 
-void CpuParticleEmitter::addParticleVelocity(ParticleID id, f32v3 velocity) {
+void CpuParticleEmitter::addParticleVelocity(ParticleID id, f32v3 velocity) noexcept {
     assert(mComponents.isBitSet(ParticleComponentType::Velocity));
     mParticleData.mVelocities[id] += velocity;
 }
 
-void CpuParticleEmitter::multiplyParticleVelocity(ParticleID id, f32v3 scale) {
+void CpuParticleEmitter::multiplyParticleVelocity(ParticleID id, f32v3 scale) noexcept {
     assert(mComponents.isBitSet(ParticleComponentType::Velocity));
     mParticleData.mVelocities[id] *= scale;
 }
 
-void CpuParticleEmitter::setParticleColor(ParticleID id, color4 color) {
+void CpuParticleEmitter::setParticleColor(ParticleID id, color4 color) noexcept {
     assert(mComponents.isBitSet(ParticleComponentType::Color));
     mParticleData.mColors[id] = color;
 }
 
-void CpuParticleEmitter::setParticleHDRColor(ParticleID id, f32v4 color) {
+void CpuParticleEmitter::setParticleHDRColor(ParticleID id, f32v4 color) noexcept {
     assert(mComponents.isBitSet(ParticleComponentType::HDRColor));
     mParticleData.mHDRColors[id] = color;
 }
 
-void CpuParticleEmitter::setParticleMaterial(ParticleID id, MaterialID material) {
+void CpuParticleEmitter::setParticleMaterial(ParticleID id, MaterialID material) noexcept {
     assert(mComponents.isBitSet(ParticleComponentType::MaterialID));
     mParticleData.mMaterials[id] = (ui32)material;
     // TODO: can we preload these instead of doing it here?
@@ -432,25 +458,73 @@ void CpuParticleEmitter::setParticleMaterial(ParticleID id, MaterialID material)
     }
 }
 
-void CpuParticleEmitter::setParticleRotation(ParticleID id, f32v2 rollPitch) {
+void CpuParticleEmitter::setParticleRotation(ParticleID id, f32v2 rollPitch) noexcept {
     assert(mComponents.isBitSet(ParticleComponentType::Rotation));
     mParticleData.mRotations[id].x = rollPitch.x;
     mParticleData.mRotations[id].y = rollPitch.y;
 }
 
-void CpuParticleEmitter::setParticleLifespan(ParticleID id, f32 lifespan) {
+void CpuParticleEmitter::setParticleLifespan(ParticleID id, f32 lifespan) noexcept {
     assert(mComponents.isBitSet(ParticleComponentType::Lifespan));
     mParticleData.mLifespans[id] = lifespan;
 }
 
-f32 CpuParticleEmitter::getParticleNormalizedLifetime(ParticleID id) const {
+f32 CpuParticleEmitter::getParticleNormalizedLifetime(ParticleID id) const noexcept {
     if (mParticleData.mLifespans) {
         return glm::min(mParticleData.mLifetimes[id] / mParticleData.mLifespans[id], 1.0f);
     }
     return glm::min(mParticleData.mLifetimes[id] / mGlobalParticleLifespan, 1.0f);
 }
 
-void CpuParticleEmitter::setGlobalMaterialID(MaterialID materialID)
+uint CpuParticleEmitter::getUIntVariable(ParticleEmitterVariableNameUInt name, ParticleID id) const {
+    return assert_at(mParticleData.mUIntVariables, name)[id];
+}
+
+f32 CpuParticleEmitter::getFloatVariable(ParticleEmitterVariableNameFloat name, ParticleID id) const {
+    return assert_at(mParticleData.mFloatVariables, name)[id];
+}
+
+f32v2 CpuParticleEmitter::getVec2Variable(ParticleEmitterVariableNameVec2 name, ParticleID id) const {
+    return assert_at(mParticleData.mVec2Variables, name)[id];
+}
+
+f32v3 CpuParticleEmitter::getVec3Variable(ParticleEmitterVariableNameVec3 name, ParticleID id) const {
+    return assert_at(mParticleData.mVec3Variables, name)[id];
+}
+
+void CpuParticleEmitter::setUIntVariable(ParticleEmitterVariableNameUInt name, ParticleID id, uint value) {
+    assert_at(mParticleData.mUIntVariables, name)[id] = value;
+}
+
+void CpuParticleEmitter::setFloatVariable(ParticleEmitterVariableNameFloat name, ParticleID id, f32 value) {
+    assert_at(mParticleData.mFloatVariables, name)[id] = value;
+}
+
+void CpuParticleEmitter::setVec2Variable(ParticleEmitterVariableNameVec2 name, ParticleID id, f32v2 value) {
+    assert_at(mParticleData.mVec2Variables, name)[id] = value;
+}
+
+void CpuParticleEmitter::setVec3Variable(ParticleEmitterVariableNameVec3 name, ParticleID id, f32v3 value) {
+    assert_at(mParticleData.mVec3Variables, name)[id] = value;
+}
+
+bool CpuParticleEmitter::hasUIntVariable(ParticleEmitterVariableNameUInt name) const {
+    return mParticleData.mUIntVariables.find(name) != mParticleData.mUIntVariables.end();
+}
+
+bool CpuParticleEmitter::hasFloatVariable(ParticleEmitterVariableNameFloat name) const {
+    return mParticleData.mFloatVariables.find(name) != mParticleData.mFloatVariables.end();
+}
+
+bool CpuParticleEmitter::hasVec2Variable(ParticleEmitterVariableNameVec2 name) const {
+    return mParticleData.mVec2Variables.find(name) != mParticleData.mVec2Variables.end();
+}
+
+bool CpuParticleEmitter::hasVec3Variable(ParticleEmitterVariableNameVec3 name) const {
+    return mParticleData.mVec3Variables.find(name) != mParticleData.mVec3Variables.end();
+}
+
+void CpuParticleEmitter::setGlobalMaterialID(MaterialID materialID) noexcept
 {
     mGlobalMaterialID = materialID;
     if (mGlobalMaterialID != INVALID_MATERIAL_ID) {
@@ -529,20 +603,6 @@ void CpuParticleEmitter::allocateParticleData()
         mGpuData.mMaterialsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(ui32));
     }
 
-
-    // Add all variable data
-    for (auto& uintVar : mParticleData.mUIntVariables) {
-        uintVar.second = std::make_unique_for_overwrite<ui32[]>(mMaxParticles);
-    }
-    for (auto& floatVar : mParticleData.mFloatVariables) {
-        floatVar.second = std::make_unique_for_overwrite<f32[]>(mMaxParticles);
-    }
-    for (auto& vec2Var : mParticleData.mVec2Variables) {
-        vec2Var.second = std::make_unique_for_overwrite<f32v2[]>(mMaxParticles);
-    }
-    for (auto& vec3Var : mParticleData.mVec3Variables) {
-        vec3Var.second = std::make_unique_for_overwrite<f32v3[]>(mMaxParticles);
-    }
 
     static_assert(e_cast(ParticleComponentType::TERM) == 65);
 }

@@ -14,20 +14,20 @@
 
 #include "ui/editor/EditorCurve.hpp"
 
-CPUParticleEmitterVariable::CPUParticleEmitterVariable(const CPUParticleEmitterVariable& other) : mVarData(other.mVarData) {
+CPUParticleEmitterParameter::CPUParticleEmitterParameter(const CPUParticleEmitterParameter& other) : mVarData(other.mVarData) {
     if (other.mOperation) {
         mOperation = other.mOperation->clone();
     }
 }
 
-void CPUParticleEmitterVariable::evaluate(CpuParticleEmitter& emitter, ParticleID id) {
+void CPUParticleEmitterParameter::evaluate(CpuParticleEmitter& emitter, ParticleID id) {
     // Constants do not evaluate
     if (mOperation) {
         mOperation->execute(emitter, id, this);
     }
 }
 
-bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) {
+bool CPUParticleEmitterParameter::updateAndRenderTweaker(const char*const label) {
     ImGui::PushID((int)this);
     const ImVec2 contentAvail = ImGui::GetContentRegionAvail();
     const float itemWidth = glm::max(contentAvail.x - 150, 10.0f);
@@ -82,7 +82,26 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
             }
             color = color4((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f), (ui8)roundf(colorf[3] * 255.0f));
         }
-        static_assert(e_count(CPUparticleEmitterVariableVariantType) == 6);
+         else if (std::holds_alternative<ParticleEmitterVariableNameUInt>(mVarData)) {
+             ParticleEmitterVariableNameUInt& name = std::get<ParticleEmitterVariableNameUInt>(mVarData);
+             changed |= ImguiUtil::EnumCombo("Var", name);
+         }
+         else if (std::holds_alternative<ParticleEmitterVariableNameFloat>(mVarData)) {
+            ParticleEmitterVariableNameFloat& name = std::get<ParticleEmitterVariableNameFloat>(mVarData);
+            changed |= ImguiUtil::EnumCombo("Var", name);
+         }
+         else if (std::holds_alternative<ParticleEmitterVariableNameVec2>(mVarData)) {
+            ParticleEmitterVariableNameVec2& name = std::get<ParticleEmitterVariableNameVec2>(mVarData);
+            changed |= ImguiUtil::EnumCombo("Var", name);
+         }
+         else if (std::holds_alternative<ParticleEmitterVariableNameVec3>(mVarData)) {
+            ParticleEmitterVariableNameVec3& name = std::get<ParticleEmitterVariableNameVec3>(mVarData);
+            changed |= ImguiUtil::EnumCombo("Var", name);
+         }
+        else {
+            assert(false);
+        }
+        static_assert(e_count(CPUParticleEmitterParameterVariantType) == 10);
     }
 
     auto displayOperationsSelectorCombo = [&]() -> const CPUParticleEmitterOperation* {
@@ -92,28 +111,40 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
             const std::unique_ptr< CPUParticleEmitterOperation>& operation = iter.second;
             bool matches = false;
             switch (operation->getOutputType()) {
-                case CPUparticleEmitterVariableVariantType::color4:
+                case CPUParticleEmitterParameterVariantType::color4:
                     matches = std::holds_alternative<color4>(mVarData);
                     break;
-                case CPUparticleEmitterVariableVariantType::f32v4:
+                case CPUParticleEmitterParameterVariantType::f32v4:
                     matches = std::holds_alternative<f32v4>(mVarData);
                     break;
-                case CPUparticleEmitterVariableVariantType::f32v3:
+                case CPUParticleEmitterParameterVariantType::f32v3:
                     matches = std::holds_alternative<f32v3>(mVarData);
                     break;
-                case CPUparticleEmitterVariableVariantType::f32v2:
+                case CPUParticleEmitterParameterVariantType::f32v2:
                     matches = std::holds_alternative<f32v2>(mVarData);
                     break;
-                case CPUparticleEmitterVariableVariantType::f32:
+                case CPUParticleEmitterParameterVariantType::f32:
                     matches = std::holds_alternative<f32>(mVarData);
                     break;
-                case CPUparticleEmitterVariableVariantType::ui32:
+                case CPUParticleEmitterParameterVariantType::ui32:
                     matches = std::holds_alternative<ui32>(mVarData);
+                    break;
+                case CPUParticleEmitterParameterVariantType::namedUInt:
+                    matches = std::holds_alternative<ParticleEmitterVariableNameUInt>(mVarData);
+                    break;
+                case CPUParticleEmitterParameterVariantType::namedFloat:
+                    matches = std::holds_alternative<ParticleEmitterVariableNameFloat>(mVarData);
+                    break;
+                case CPUParticleEmitterParameterVariantType::namedVec2:
+                    matches = std::holds_alternative<ParticleEmitterVariableNameVec2>(mVarData);
+                    break;
+                case CPUParticleEmitterParameterVariantType::namedVec3:
+                    matches = std::holds_alternative<ParticleEmitterVariableNameVec3>(mVarData);
                     break;
                 default:
                     assert(false);
             }
-            static_assert(e_count(CPUparticleEmitterVariableVariantType) == 6);
+            static_assert(e_count(CPUParticleEmitterParameterVariantType) == 10);
             if (matches) {
                 operationsList.emplace_back(operation.get());
             }
@@ -155,7 +186,7 @@ bool CPUParticleEmitterVariable::updateAndRenderTweaker(const char*const label) 
     return changed;
 }
 
-bool CPUParticleEmitterVariable::loadFromYml(ryml::ConstNodeRef node, std::string_view name) {
+bool CPUParticleEmitterParameter::loadFromYml(ryml::ConstNodeRef node, std::string_view name) {
     ryml::ConstNodeRef thisNode = node[c4::to_csubstr(name)];
     if (!thisNode.valid()) {
         return false;
@@ -173,7 +204,7 @@ bool CPUParticleEmitterVariable::loadFromYml(ryml::ConstNodeRef node, std::strin
     return true;
 }
 
-void CPUParticleEmitterVariable::saveYmlData(ryml::NodeRef node, std::string_view name) const {
+void CPUParticleEmitterParameter::saveYmlData(ryml::NodeRef node, std::string_view name) const {
     YmlSerializable::saveWithLambda(node, name, [this](ryml::NodeRef node) {
         if (mOperation) {
             node |= ryml::MAP;
@@ -220,39 +251,55 @@ void CPUParticleEmitterOperation::saveYmlData(ryml::NodeRef node) const {
     }
 }
 
-void CPUPEO_QueryPosition::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_QueryPosition::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     output->mVarData = emitter.getParticlePosition(id);
 }
 
-void CPUPEO_QueryVelocity::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_QueryVelocity::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     output->mVarData = emitter.getParticleVelocity(id);
 }
 
-void CPUPEO_QuerySpeed::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_QuerySpeed::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     output->mVarData = glm::length(emitter.getParticleVelocity(id));
 }
 
-void CPUPEO_QueryScale::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_QueryScale::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     output->mVarData = emitter.getParticleScale(id);
 }
 
-void CPUPEO_QueryRotation::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_QueryRotation::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     output->mVarData = emitter.getParticleRotation(id);
 }
 
-void CPUPEO_QueryNormalizedLifetime::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_QueryNormalizedLifetime::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     output->mVarData = emitter.getParticleNormalizedLifetime(id);
 }
 
-void CPUPEO_InputImpactDirection::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_InputImpactDirection::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     output->mVarData = emitter.getInputs().mInputImpactDirection;
 }
 
-void CPUPEO_InputImpactSurfaceNormal::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_InputImpactSurfaceNormal::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     output->mVarData = emitter.getInputs().mInputImpactSurfaceNormal;
 }
 
-void CPUPEO_RandomFloatInRange::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_UIntVariable::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
+    output->mVarData = emitter.getUIntVariable(std::get<ParticleEmitterVariableNameUInt>(mParams[0].mVarData), id);
+}
+
+void CPUPEO_FloatVariable::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
+    output->mVarData = emitter.getFloatVariable(std::get<ParticleEmitterVariableNameFloat>(mParams[0].mVarData), id);
+}
+
+void CPUPEO_Vec2Variable::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
+    output->mVarData = emitter.getVec2Variable(std::get<ParticleEmitterVariableNameVec2>(mParams[0].mVarData), id);
+}
+
+void CPUPEO_Vec3Variable::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
+    output->mVarData = emitter.getVec3Variable(std::get<ParticleEmitterVariableNameVec3>(mParams[0].mVarData), id);
+}
+
+void CPUPEO_RandomFloatInRange::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     evaluateParams(emitter, id);
     const f32 p0 = std::get<f32>(mParams[0].mVarData);
     const f32 p1 = std::get<f32>(mParams[1].mVarData);
@@ -271,7 +318,7 @@ void CPUPEO_RandomFloatInRange::saveYmlData(ryml::NodeRef node) const {
     node["seed_by_p"] << mSeedByParticleID;
 }
 
-void CPUPEO_ColorCurve::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_ColorCurve::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     evaluateParams(emitter, id);
     f32 normalizedValue = glm::clamp(std::get<f32>(mParams[0].mVarData), 0.0f, 1.0f);
     output->mVarData = EditorUtil::evaluateCurve<color4>(mKeys, normalizedValue);
@@ -321,7 +368,7 @@ void CPUPEO_ColorCurve::saveYmlData(ryml::NodeRef node) const {
 }
 
 
-void CPUPEO_HdrColorCurve::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_HdrColorCurve::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     evaluateParams(emitter, id);
     f32 normalizedValue = glm::clamp(std::get<f32>(mParams[0].mVarData), 0.0f, 1.0f);
     output->mVarData = EditorUtil::evaluateCurve<f32v4>(mKeys, normalizedValue);
@@ -368,7 +415,7 @@ void CPUPEO_HdrColorCurve::saveYmlData(ryml::NodeRef node) const {
 }
 
 
-void CPUPEO_FloatCurve::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_FloatCurve::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     evaluateParams(emitter, id);
     f32 normalizedValue = glm::clamp(std::get<f32>(mParams[0].mVarData), 0.0f, 1.0f);
     output->mVarData = EditorUtil::evaluateCurve<f32>(mKeys, normalizedValue);
@@ -388,7 +435,7 @@ void CPUPEO_FloatCurve::saveYmlData(ryml::NodeRef node) const {
     node["keys"] << mKeys;
 }
 
-void CPUPEO_NormalizeVec3::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_NormalizeVec3::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     evaluateParams(emitter, id);
     const f32v3 v = std::get<f32v3>(mParams[0].mVarData);
     if (v != f32v3(0.0f)) [[likely]] {
@@ -399,7 +446,7 @@ void CPUPEO_NormalizeVec3::execute(CpuParticleEmitter& emitter, ParticleID id, C
     }
 }
 
-void CPUPEO_RandomPointInShape::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_RandomPointInShape::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     evaluateParams(emitter, id);
 
     switch (mShapeType) {
@@ -466,10 +513,10 @@ void CPUPEO_RandomPointInShape::saveYmlData(ryml::NodeRef node) const {
 void CPUPEO_RandomPointInShape::onShapeTypeUpdated() {
     switch (mShapeType) {
         case QueryPointFromShapeType::Sphere:
-            mParams = std::vector<CPUParticleEmitterVariable>{ CPUParticleEmitterVariantData(f32(1.0f)) };
+            mParams = std::vector<CPUParticleEmitterParameter>{ CPUParticleEmitterVariantData(f32(1.0f)) };
             break;
         case QueryPointFromShapeType::Box:
-            mParams = std::vector<CPUParticleEmitterVariable>{ CPUParticleEmitterVariantData(f32v3(1.0f)) };
+            mParams = std::vector<CPUParticleEmitterParameter>{ CPUParticleEmitterVariantData(f32v3(1.0f)) };
             break;
         default:
             assert(false);
@@ -478,35 +525,35 @@ void CPUPEO_RandomPointInShape::onShapeTypeUpdated() {
     static_assert(e_count(QueryPointFromShapeType) == 2);
 }
 
-void CPUPEO_ClampFloat::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_ClampFloat::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     evaluateParams(emitter, id);
     const f32 val = std::get<f32>(mParams[0].mVarData);
     const f32v2 range = std::get<f32v2>(mParams[1].mVarData);
     output->mVarData = glm::clamp(val, range.x, range.y);
 }
 
-void CPUPEO_ClampVec2::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_ClampVec2::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     evaluateParams(emitter, id);
     const f32v2 val = std::get<f32v2>(mParams[0].mVarData);
     const f32v2 range = std::get<f32v2>(mParams[1].mVarData);
     output->mVarData = glm::clamp(val, range.x, range.y);
 }
 
-void CPUPEO_ClampVec3::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_ClampVec3::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     evaluateParams(emitter, id);
     const f32v3 val = std::get<f32v3>(mParams[0].mVarData);
     const f32v2 range = std::get<f32v2>(mParams[1].mVarData);
     output->mVarData = glm::clamp(val, range.x, range.y);
 }
 
-void CPUPEO_MakeVec2::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_MakeVec2::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     evaluateParams(emitter, id);
     const f32 x = std::get<f32>(mParams[0].mVarData);
     const f32 y = std::get<f32>(mParams[1].mVarData);
     output->mVarData = f32v2(x, y);
 }
 
-void CPUPEO_MakeVec3::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterVariable* output) {
+void CPUPEO_MakeVec3::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     evaluateParams(emitter, id);
     const f32 x = std::get<f32>(mParams[0].mVarData);
     const f32 y = std::get<f32>(mParams[1].mVarData);
