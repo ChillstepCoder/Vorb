@@ -4,7 +4,6 @@
 #include "CpuParticleEmitter.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
 
 #include "math/Random.h"
@@ -36,8 +35,8 @@ saveNested(writer, name3, YML_SAVE_LAMBDA(mModuleData.var3)); \
 endMap(writer);
 
 // Helper
-bool updateAndRenderVariable(CPUParticleEmitterParameter& variable, const char* const label) {
-    bool changed = variable.updateAndRenderTweaker(label);
+bool updateAndRenderVariable(CPUParticleEmitterParameter& variable, const char* const label, const ParticleEmitterDef& parentEmitter) {
+    bool changed = variable.updateAndRenderTweaker(label, parentEmitter);
     // Separator after operations
     if (variable.mOperation) {
         ImGui::Separator();
@@ -69,10 +68,10 @@ void CPUPEM_SpawnBurst::refresh() {
     };
 }
 
-bool CPUPEM_SpawnBurst::updateAndRenderEditorControls() {
+bool CPUPEM_SpawnBurst::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
     bool changed = false;
-    changed |= updateAndRenderVariable(mModuleData.mDelay, "Delay Sec");
-    changed |= updateAndRenderVariable(mModuleData.mSpawnCount, "Spawn Count");
+    changed |= updateAndRenderVariable(mModuleData.mDelay, "Delay Sec", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mSpawnCount, "Spawn Count", parentEmitter);
     return changed;
 }
 
@@ -117,11 +116,11 @@ void CPUPEM_SpawnRate::refresh() {
     };
 }
 
-bool CPUPEM_SpawnRate::updateAndRenderEditorControls() {
+bool CPUPEM_SpawnRate::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
     bool changed = false;
-    changed |= updateAndRenderVariable(mModuleData.mEmitRateSec, "Spawn Rate Sec");
-    changed |= updateAndRenderVariable(mModuleData.mInitialDelay, "Initial Delay Sec");
-    changed |= updateAndRenderVariable(mModuleData.mSpawnCount, "Spawn Count");
+    changed |= updateAndRenderVariable(mModuleData.mEmitRateSec, "Spawn Rate Sec", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mInitialDelay, "Initial Delay Sec", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mSpawnCount, "Spawn Count", parentEmitter);
     return changed;
 }
 
@@ -178,11 +177,11 @@ void CPUPEM_RingBurst::refresh() {
     };
 }
 
-bool CPUPEM_RingBurst::updateAndRenderEditorControls() {
+bool CPUPEM_RingBurst::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
     bool changed = false;
-    changed |= updateAndRenderVariable(mModuleData.mSpeedRange, "Speed");
-    changed |= updateAndRenderVariable(mModuleData.mMaxAngleFromRingRad, "Max Angle From Ring");
-    changed |= updateAndRenderVariable(mModuleData.mRingNormal, "Ring Normal");
+    changed |= updateAndRenderVariable(mModuleData.mSpeedRange, "Speed", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mMaxAngleFromRingRad, "Max Angle From Ring", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mRingNormal, "Ring Normal", parentEmitter);
     return changed;
 }
 
@@ -249,11 +248,11 @@ void CPUPEM_ConeBurst::refresh() {
     };
 }
 
-bool CPUPEM_ConeBurst::updateAndRenderEditorControls() {
+bool CPUPEM_ConeBurst::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
     bool changed = false;
-    changed |= updateAndRenderVariable(mModuleData.mSpeedRange, "Speed");
-    changed |= updateAndRenderVariable(mModuleData.mAngleRange, "Angle Range");
-    changed |= updateAndRenderVariable(mModuleData.mDirection, "Direction");
+    changed |= updateAndRenderVariable(mModuleData.mSpeedRange, "Speed", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mAngleRange, "Angle Range", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mDirection, "Direction", parentEmitter);
     return changed;
 }
 
@@ -287,8 +286,8 @@ void CPUPEM_SetPosition::refresh() {
     };
 }
 
-bool CPUPEM_SetPosition::updateAndRenderEditorControls() {
-    return updateAndRenderVariable(mModuleData.mPositionVec3, "Position");
+bool CPUPEM_SetPosition::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    return updateAndRenderVariable(mModuleData.mPositionVec3, "Position", parentEmitter);
 }
 
 bool CPUPEM_SetPosition::loadFromYml(ryml::ConstNodeRef node) {
@@ -318,8 +317,8 @@ void CPUPEM_SetVelocity::refresh() {
     };
 }
 
-bool CPUPEM_SetVelocity::updateAndRenderEditorControls() {
-    return updateAndRenderVariable(mModuleData.mVelocityVec3, "Velocity");
+bool CPUPEM_SetVelocity::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    return updateAndRenderVariable(mModuleData.mVelocityVec3, "Velocity", parentEmitter);
 }
 
 bool CPUPEM_SetVelocity::loadFromYml(ryml::ConstNodeRef node) {
@@ -349,8 +348,8 @@ void CPUPEM_SetRotation::refresh() {
     };
 }
 
-bool CPUPEM_SetRotation::updateAndRenderEditorControls() {
-    return updateAndRenderVariable(mModuleData.mRotationVec2, "Rotation");
+bool CPUPEM_SetRotation::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    return updateAndRenderVariable(mModuleData.mRotationVec2, "Rotation", parentEmitter);
 }
 
 bool CPUPEM_SetRotation::loadFromYml(ryml::ConstNodeRef node) {
@@ -380,8 +379,8 @@ void CPUPEM_SetColor::refresh() {
     };
 }
 
-bool CPUPEM_SetColor::updateAndRenderEditorControls() {
-    return updateAndRenderVariable(mModuleData.mColor, "Color");
+bool CPUPEM_SetColor::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    return updateAndRenderVariable(mModuleData.mColor, "Color", parentEmitter);
 }
 
 bool CPUPEM_SetColor::loadFromYml(ryml::ConstNodeRef node) {
@@ -411,8 +410,8 @@ void CPUPEM_SetHdrColor::refresh() {
     };
 }
 
-bool CPUPEM_SetHdrColor::updateAndRenderEditorControls() {
-    return updateAndRenderVariable(mModuleData.mColor, "HDR Color");
+bool CPUPEM_SetHdrColor::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    return updateAndRenderVariable(mModuleData.mColor, "HDR Color", parentEmitter);
 }
 
 bool CPUPEM_SetHdrColor::loadFromYml(ryml::ConstNodeRef node) {
@@ -442,8 +441,8 @@ void CPUPEM_SetScale::refresh() {
     };
 }
 
-bool CPUPEM_SetScale::updateAndRenderEditorControls() {
-    return updateAndRenderVariable(mModuleData.mScale, "Scale");
+bool CPUPEM_SetScale::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    return updateAndRenderVariable(mModuleData.mScale, "Scale", parentEmitter);
 }
 
 bool CPUPEM_SetScale::loadFromYml(ryml::ConstNodeRef node) {
@@ -474,9 +473,9 @@ void CPUPEM_SetUIntVar::refresh() {
     };
 }
 
-bool CPUPEM_SetUIntVar::updateAndRenderEditorControls() {
-    bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var");
-    changed |= updateAndRenderVariable(mModuleData.mValue, "Value");
+bool CPUPEM_SetUIntVar::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mValue, "Value", parentEmitter);
     return changed;
 }
 
@@ -523,9 +522,9 @@ void CPUPEM_SetFloatVar::refresh() {
     };
 }
 
-bool CPUPEM_SetFloatVar::updateAndRenderEditorControls() {
-    bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var");
-    changed |= updateAndRenderVariable(mModuleData.mValue, "Value");
+bool CPUPEM_SetFloatVar::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mValue, "Value", parentEmitter);
     return changed;
 }
 
@@ -572,9 +571,9 @@ void CPUPEM_SetVec2Var::refresh() {
     };
 }
 
-bool CPUPEM_SetVec2Var::updateAndRenderEditorControls() {
-    bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var");
-    changed |= updateAndRenderVariable(mModuleData.mValue, "Value");
+bool CPUPEM_SetVec2Var::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mValue, "Value", parentEmitter);
     return changed;
 }
 
@@ -621,9 +620,9 @@ void CPUPEM_SetVec3Var::refresh() {
     };
 }
 
-bool CPUPEM_SetVec3Var::updateAndRenderEditorControls() {
-    bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var");
-    changed |= updateAndRenderVariable(mModuleData.mValue, "Value");
+bool CPUPEM_SetVec3Var::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mValue, "Value", parentEmitter);
     return changed;
 }
 
@@ -669,8 +668,8 @@ void CPUPEM_SetLifespan::refresh() {
     };
 }
 
-bool CPUPEM_SetLifespan::updateAndRenderEditorControls() {
-    return updateAndRenderVariable(mModuleData.mLifespan, "Lifetime");
+bool CPUPEM_SetLifespan::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    return updateAndRenderVariable(mModuleData.mLifespan, "Lifetime", parentEmitter);
 }
 
 bool CPUPEM_SetLifespan::loadFromYml(ryml::ConstNodeRef node) {
@@ -700,8 +699,8 @@ void CPUPEM_MultiplyScale::refresh() {
     };
 }
 
-bool CPUPEM_MultiplyScale::updateAndRenderEditorControls() {
-    return updateAndRenderVariable(mModuleData.mScale, "Scale");
+bool CPUPEM_MultiplyScale::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    return updateAndRenderVariable(mModuleData.mScale, "Scale", parentEmitter);
 }
 
 bool CPUPEM_MultiplyScale::loadFromYml(ryml::ConstNodeRef node) {
@@ -732,8 +731,8 @@ void CPUPEM_MultiplyVelocity::refresh() {
     };
 }
 
-bool CPUPEM_MultiplyVelocity::updateAndRenderEditorControls() {
-    return updateAndRenderVariable(mModuleData.mScale, "Scale");
+bool CPUPEM_MultiplyVelocity::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    return updateAndRenderVariable(mModuleData.mScale, "Scale", parentEmitter);
 }
 
 bool CPUPEM_MultiplyVelocity::loadFromYml(ryml::ConstNodeRef node) {
@@ -764,8 +763,8 @@ void CPUPEM_ApplyForce::refresh() {
     };
 }
 
-bool CPUPEM_ApplyForce::updateAndRenderEditorControls() {
-    return updateAndRenderVariable(mModuleData.mForce, "Force");
+bool CPUPEM_ApplyForce::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    return updateAndRenderVariable(mModuleData.mForce, "Force", parentEmitter);
 }
 
 bool CPUPEM_ApplyForce::loadFromYml(ryml::ConstNodeRef node) {
@@ -797,8 +796,8 @@ void CPUPEM_DragForce::refresh() {
     };
 }
 
-bool CPUPEM_DragForce::updateAndRenderEditorControls() {
-    return updateAndRenderVariable(mModuleData.mDragFactor, "Drag Factor");
+bool CPUPEM_DragForce::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    return updateAndRenderVariable(mModuleData.mDragFactor, "Drag Factor", parentEmitter);
 }
 
 bool CPUPEM_DragForce::loadFromYml(ryml::ConstNodeRef node) {
@@ -834,10 +833,10 @@ void CPUPEM_Turbulence::refresh() {
     };
 }
 
-bool CPUPEM_Turbulence::updateAndRenderEditorControls() {
+bool CPUPEM_Turbulence::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
     bool changed = false;
-    changed |= updateAndRenderVariable(mModuleData.mScaleFactor, "Scale Factor");
-    changed |= updateAndRenderVariable(mModuleData.mDirOffset, "Dir Offset");
+    changed |= updateAndRenderVariable(mModuleData.mScaleFactor, "Scale Factor", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mDirOffset, "Dir Offset", parentEmitter);
     return changed;
 }
 
@@ -882,7 +881,7 @@ void CPUPEM_OrientToVelocity::refresh() {
     };
 }
 
-bool CPUPEM_OrientToVelocity::updateAndRenderEditorControls() {
+bool CPUPEM_OrientToVelocity::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
     bool changed = false;
    
     //  TODO

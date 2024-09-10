@@ -54,7 +54,6 @@ CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunct
     mInputs(inputs),
     mMaterialAssetHandles(std::make_unique<AssetHandleBundle>())
 {
-    assert(mInputs);
     allocateParticleData();
 }
 
@@ -65,7 +64,6 @@ CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def, ParticleSy
 {
     // TODO: some of this information could be cached in the definition to make for faster setup
 
-    assert(inputs);
     mMaxParticles = def.mMaxParticles;
     mGlobalParticleScale = def.mDefaultScale;
     mGlobalParticleColor = def.mDefaultColor;

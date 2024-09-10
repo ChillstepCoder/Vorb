@@ -6,6 +6,7 @@
 #include "rendering/particle/ParticleEmitterVariableName.h"
 
 class ArbitraryObjectArray;
+class ParticleEmitterDef;
 
 typedef void(*CPUParticleEmitterModuleMethod)(class CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec);
 
@@ -23,7 +24,7 @@ public:
 
     virtual void refresh() = 0;
     virtual void addModuleDataToArray(ArbitraryObjectArray& arry) const = 0;
-    virtual bool updateAndRenderEditorControls() = 0;
+    virtual bool updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) = 0;
     virtual BitFlags<ParticleEmitterModuleStage> getStages() const = 0;
     virtual constexpr const char* const getName() const = 0;
     virtual std::unique_ptr<CPUParticleEmitterModule> clone() const = 0;

@@ -6,9 +6,10 @@ class CpuParticleEmitter;
 #include "rendering/particle/ParticleEnumTypes.h"
 #include "rendering/particle/ParticleEmitterVariableName.h"
 
-#include "serialization/YmlSerializable.h"
-
+#include "definitions/ParticleEmitterDef.h"
 #include "util/RandomPointFromShape.h"
+
+#include "serialization/YmlSerializable.h"
 
 enum class CPUParticleEmitterParameterVariantType : ui8{
     color4,
@@ -38,7 +39,7 @@ public:
     VORB_MOVABLE(CPUParticleEmitterParameter);
 
     void evaluate(CpuParticleEmitter& emitter, ParticleID id);
-    bool updateAndRenderTweaker(const char*const label);
+    bool updateAndRenderTweaker(const char*const label, const ParticleEmitterDef& parentEmitter);
     bool loadFromYml(ryml::ConstNodeRef node, std::string_view name);
     void saveYmlData(ryml::NodeRef node, std::string_view name) const;
 
@@ -72,15 +73,20 @@ public:
     virtual std::unique_ptr<CPUParticleEmitterOperation> clone() const = 0;
     virtual BitFlags<ParticleComponentType> getRequiredComponents() const { return {}; }
 
-    virtual bool updateAndRenderControls();
-    virtual bool updateAndRenderExtraPreControls() { return false; }
-    virtual bool updateAndRenderExtraPostControls() { return false; }
+    virtual bool updateAndRenderControls(const ParticleEmitterDef& parentEmitter);
+    virtual bool updateAndRenderExtraPreControls(const ParticleEmitterDef& parentEmitter) { return false; }
+    virtual bool updateAndRenderExtraPostControls(const ParticleEmitterDef& parentEmitter) { return false; }
 
     virtual void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) = 0;
 
     virtual bool loadFromYml(ryml::ConstNodeRef node) override;
     virtual const char* const getParamName(size_t paramIndex) const = 0;
     virtual size_t getParamIndex(const char* const paramName) const { assert(false); return UINT32_MAX; };
+
+    bool canAddToEmitter(const ParticleEmitterDef& emitter) const {
+        const BitFlags<ParticleComponentType> required = getRequiredComponents();
+        return (emitter.mActiveComponents & required) == required;
+    }
 
 protected:
     std::vector<CPUParticleEmitterParameter> mParams;
@@ -264,7 +270,7 @@ DEFINE_CPUPEO_QUERY_VARIABLE_DECL(CPUPEO_Vec3Variable, "Get Named Vec3", "v_vec3
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomFloatInRange, "Random Float In Range", "rand_float", COLOR_STANDARD, f32,
     OPERATION_PARAMS(CPUPEO_RandomFloatInRange, E_VAR(f32(0.f)), E_VAR(f32(1.f)))
     OPERATION_PARAM_NAMES("min", "max")
-    virtual bool updateAndRenderExtraPostControls() override;
+    virtual bool updateAndRenderExtraPostControls(const ParticleEmitterDef& parentEmitter) override;
     bool loadFromYml(ryml::ConstNodeRef node) override;
  protected:
     bool mSeedByParticleID = true;
@@ -274,7 +280,7 @@ DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomFloatInRange, "Random Float In Range", "r
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_ColorCurve, "Color Curve", "color_curve", COLOR_CURVE, color4,
     OPERATION_PARAMS(CPUPEO_ColorCurve, CPUParticleEmitterParameter(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
     OPERATION_PARAM_NAMES("norm_input")
-    virtual bool updateAndRenderExtraPostControls() override;
+    virtual bool updateAndRenderExtraPostControls(const ParticleEmitterDef& parentEmitter) override;
     bool loadFromYml(ryml::ConstNodeRef node) override;
  protected:
     std::vector<std::pair<f32, color4>> mKeys = { {0.f, color4(255, 255, 255, 255)}, {1.f, color4(255, 255, 255, 255)} };
@@ -284,7 +290,7 @@ DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_ColorCurve, "Color Curve", "color_curve", COLOR
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_HdrColorCurve, "HDR Color Curve", "hdr_curve", COLOR_CURVE, f32v4,
     OPERATION_PARAMS(CPUPEO_HdrColorCurve, CPUParticleEmitterParameter(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
     OPERATION_PARAM_NAMES("norm_input")
-    virtual bool updateAndRenderExtraPostControls() override;
+    virtual bool updateAndRenderExtraPostControls(const ParticleEmitterDef& parentEmitter) override;
     bool loadFromYml(ryml::ConstNodeRef node) override;
 protected:
     std::vector<std::pair<f32, f32v4>> mKeys = { {0.f, f32v4(1.0f)}, {1.f, f32v4(1.0f)} };
@@ -294,7 +300,7 @@ protected:
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_FloatCurve, "Float Curve", "float_curve", COLOR_CURVE, f32,
     OPERATION_PARAMS(CPUPEO_FloatCurve, CPUParticleEmitterParameter(std::make_unique<CPUPEO_QueryNormalizedLifetime>(), f32(0.f)))
     OPERATION_PARAM_NAMES("norm_input")
-    virtual bool updateAndRenderExtraPostControls() override;
+    virtual bool updateAndRenderExtraPostControls(const ParticleEmitterDef& parentEmitter) override;
     bool loadFromYml(ryml::ConstNodeRef node) override;
 protected:
     std::vector<std::pair<f32, f32>> mKeys = { {0.f, f32(0.0f)}, {1.f, f32(1.0f)} };
@@ -310,7 +316,7 @@ DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomPointInShape, "Random Point In Shape", "r
     OPERATION_PARAMS(CPUPEO_RandomPointInShape, E_VAR(f32(1.0f)))
 public:
     const char* const getParamName(size_t paramIndex) const override;
-    virtual bool updateAndRenderExtraPreControls() override;
+    virtual bool updateAndRenderExtraPreControls(const ParticleEmitterDef& parentEmitter) override;
     bool loadFromYml(ryml::ConstNodeRef node) override;
 protected:
     void saveYmlData(ryml::NodeRef node) const override;

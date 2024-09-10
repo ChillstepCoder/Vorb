@@ -21,7 +21,6 @@
 
 #include <imgui.h>
 #include <imgui_internal.h>
-#include "ui/ImguiUtil.hpp"
 
 
 // Panel splitter https://github.com/ocornut/imgui/issues/319

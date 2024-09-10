@@ -2,17 +2,12 @@
 #include "ParticleSystemRepository.h"
 
 #include <fstream>
-#include <Vorb/io/IOManager.h>
 
 #include "resources/EffectRepository.h"
-#include "rendering/particle/BuiltinCPUParticleEmitterModules.h"
 
-#include "resources/ResourceManager.h"
 #include "resources/MaterialRepository.h"
-#include "rendering/MaterialShaderRepository.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
 const vio::Path PARTICLE_SYSTEM_PATH = "data/particle";
 
@@ -216,13 +211,15 @@ void ParticleSystemRepository::fixupLoadedAsset(AssetID assetId) {
         floatVars.clear();
         vec2Vars.clear();
         vec3Vars.clear();
+        emitter.mActiveComponents.clearBits();
 
-        // Track all needed variables
+        // Track all needed variables and components
         for (auto& module : emitter.mModules.mEmitterUpdate) {
             module->addRequiredUIntVariables(uintVars);
             module->addRequiredFloatVariables(floatVars);
             module->addRequiredVec2Variables(vec2Vars);
             module->addRequiredVec3Variables(vec3Vars);
+            emitter.mActiveComponents |= module->getRequiredComponents();
         }
 
         for (auto& module : emitter.mModules.mParticleInit) {
@@ -230,6 +227,7 @@ void ParticleSystemRepository::fixupLoadedAsset(AssetID assetId) {
             module->addRequiredFloatVariables(floatVars);
             module->addRequiredVec2Variables(vec2Vars);
             module->addRequiredVec3Variables(vec3Vars);
+            emitter.mActiveComponents |= module->getRequiredComponents();
         }
 
         for (auto& module : emitter.mModules.mParticleUpdate) {
@@ -237,6 +235,7 @@ void ParticleSystemRepository::fixupLoadedAsset(AssetID assetId) {
             module->addRequiredFloatVariables(floatVars);
             module->addRequiredVec2Variables(vec2Vars);
             module->addRequiredVec3Variables(vec3Vars);
+            emitter.mActiveComponents |= module->getRequiredComponents();
         }
 
         // Copy the variables

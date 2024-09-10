@@ -11,7 +11,6 @@
 #include "editor/EditorResources.h"
 #include "ui/editor/Selection/EditorSelectionManager.h"
 
-//  TODO: Try ImguiInternal.h
 #include <imgui.h>
 #include <imgui_internal.h>
 

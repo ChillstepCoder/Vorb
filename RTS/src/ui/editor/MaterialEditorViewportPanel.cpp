@@ -2,19 +2,9 @@
 #include "MaterialEditorViewportPanel.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
-
-#include <Vorb/graphics/GBuffer.h>
-#include <Vorb/graphics/DepthState.h>
-
-#include "resources/MaterialRepository.h"
 #include "rendering/MaterialShaderRepository.h"
-#include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialUtils.h"
 #include "rendering/mesh/MeshDrawer.h"
-
-#include "camera/SimpleCamera.h"
 
 MaterialEditorViewportPanel::MaterialEditorViewportPanel()
 {

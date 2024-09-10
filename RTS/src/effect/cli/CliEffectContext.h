@@ -12,19 +12,21 @@ class CPUParticleSystem;
 class PendingEffectInstanceData {
 public:
     PendingEffectInstanceData() = default;
-    PendingEffectInstanceData(f32v3 position, ParticleSystemInputs inputs, BitFlags<EffectCreateFlags> flags) :
+    PendingEffectInstanceData(f32v3 position, ParticleSystemInputsPtr inputs, BitFlags<EffectCreateFlags> flags) :
         position(position),
         inputs(inputs),
         flags(flags) {}
 
+    VORB_NON_COPYABLE_BUT_MOVABLE(PendingEffectInstanceData);
+
     f32v3 position;
-    ParticleSystemInputs inputs;
+    ParticleSystemInputsPtr inputs;
     BitFlags<EffectCreateFlags> flags;
 };
 
 class EffectInstance {
 public:
-    EffectInstance(const EffectDef* effectDef, const ParticleSystemDef* systemDef, f32v3 position, const ParticleSystemInputs& inputs);
+    EffectInstance(const EffectDef* effectDef, const ParticleSystemDef* systemDef, f32v3 position, ParticleSystemInputsPtr inputs);
     ~EffectInstance();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(EffectInstance);
@@ -48,7 +50,7 @@ public:
     void playParticleEffectAtPoint(
         EffectAssetRef effectName,
         f32v3 point,
-        ParticleSystemInputs inputs,
+        ParticleSystemInputsPtr inputs,
         BitFlags<EffectCreateFlags> flags
     ) override;
 

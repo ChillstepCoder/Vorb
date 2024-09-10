@@ -18,8 +18,8 @@ public:
     // Inputs
     f32v3 getPosition() const { return mRootPosition; }
     void setPosition(f32v3 position) { mRootPosition = position; }
-    void setInputs(ParticleSystemInputs inputs) {
-        mInputs = inputs;
+    void setInputs(ParticleSystemInputsPtr inputs) {
+        mInputs = std::move(inputs);
     }
 
     VORB_NON_COPYABLE(CPUParticleSystem);
@@ -47,7 +47,7 @@ public:
 private:
     std::vector<CpuParticleEmitterPtr> mEmitters;
     AssetID mSystemDefID = INVALID_ASSET_ID;
-    ParticleSystemInputs mInputs;
+    ParticleSystemInputsPtr mInputs;
     f32v3 mRootPosition = f32v3(0.0f);
     f32 mLifetimeRemaining = 0.0f;
 };

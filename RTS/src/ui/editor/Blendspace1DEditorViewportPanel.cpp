@@ -12,8 +12,6 @@
 
 #include <imgui/imgui_internal.h>
 
-#include <time.h>
-
 namespace ImGui
 {
     template<int steps>

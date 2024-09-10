@@ -1,8 +1,7 @@
 #include "stdafx.h"
 #include "HostEffectContext.h"
 
-void HostEffectContext::playParticleEffectAtPoint(EffectAssetRef effectName, f32v3 point, ParticleSystemInputs inputs, BitFlags<EffectCreateFlags> flags) {
-    mCliContext.playParticleEffectAtPoint(effectName, point, inputs, flags);
+void HostEffectContext::playParticleEffectAtPoint(EffectAssetRef effectName, f32v3 point, ParticleSystemInputsPtr inputs, BitFlags<EffectCreateFlags> flags) {
 
     // TODO: Replicate to other clients
     //if (flags.isBitSet(EffectCreateFlags::REPLICATE) && GameServer::exists()) {
@@ -12,4 +11,6 @@ void HostEffectContext::playParticleEffectAtPoint(EffectAssetRef effectName, f32
     //    EntityDetailsComponent& detailsCmp = mRegistry.emplace<EntityDetailsComponent>(newEntity);
     //    detailsCmp.mEntityToken = typeToken;
     //}
+
+    mCliContext.playParticleEffectAtPoint(effectName, point, std::move(inputs), flags);
 }

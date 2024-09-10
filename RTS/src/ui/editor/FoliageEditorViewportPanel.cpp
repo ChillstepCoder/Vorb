@@ -1,24 +1,17 @@
 #include "stdafx.h"
 #include "FoliageEditorViewportPanel.h"
 
-
 #include <imgui.h>
-#include <imgui_internal.h>
-
 
 #include <Vorb/graphics/GBuffer.h>
 #include <Vorb/graphics/DepthState.h>
 
 #include "tile/TileGrass.h"
 
-#include "resources/TileGrassRepository.h"
-#include "resources/ResourceManager.h"
-#include "rendering/MaterialShaderRepository.h"
 #include "rendering/renderer/GrassRenderer.h"
 
 #include "rendering/RenderContext.h"
 
-#include "rendering/MaterialRenderer.h"
 #include "rendering/GrassBillboardMesh.h"
 #include "rendering/mesh/mesher/builder/GrassMeshBuilderMethods.h"
 #include "rendering/UboHelpers.h"

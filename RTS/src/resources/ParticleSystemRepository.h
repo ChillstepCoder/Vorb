@@ -2,6 +2,7 @@
 
 #include "resources/IAssetRepository.h"
 #include "definitions/ParticleSystemDef.h"
+#include "rendering/material/MaterialDef.h"
 
 class MaterialRepository;
 

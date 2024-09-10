@@ -59,10 +59,9 @@ void EditorWorldInterfaceController::update()
     if (vui::InputDispatcher::key.isKeyDown(VKEY_O)) {
         if (!wasOPressed) {
             GameThreadTasks::getInstance().addGenericTask([this]() {
-                ParticleSystemInputs inputs;
                 for (int i = 0; i < 50; ++i) {
                     mWorld->getEffectContext().playParticleEffectAtPoint(
-                        EffectAssetRef(CStrToken("snow")), mWorld->getECS().getLocalPlayerPosition(), inputs, BitFlags<EffectCreateFlags>()
+                        EffectAssetRef(CStrToken("snow")), mWorld->getECS().getLocalPlayerPosition(), nullptr, BitFlags<EffectCreateFlags>()
                     );
                 }
             });
@@ -145,8 +144,7 @@ void EditorWorldInterfaceController::updateTilePicking() {
             // TMP REMOVE
             if (vui::InputDispatcher::key.isKeyDown(VKEY_I)) {
                 AM::DebugRenderer::drawWireQuad(hitResult.mPosition + f32v3(0.0f, 0.0f, 0.5f), f32v2(0.3f), color4(1.0f, 0.0f, 0.0f, 1.0f), 100);
-                ParticleSystemInputs inputs;
-                mWorld->getEffectContext().playParticleEffectAtPoint(EffectAssetRef(CStrToken("hitfx")), hitResult.mPosition + f32v3(0.0f, 0.0f, 0.5f), inputs, BitFlags<EffectCreateFlags>());
+                mWorld->getEffectContext().playParticleEffectAtPoint(EffectAssetRef(CStrToken("hitfx")), hitResult.mPosition + f32v3(0.0f, 0.0f, 0.5f), nullptr, BitFlags<EffectCreateFlags>());
                 mRightClickUpPick.reset();
                 return;
             }

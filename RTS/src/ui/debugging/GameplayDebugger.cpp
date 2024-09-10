@@ -16,8 +16,6 @@
 
 #include "options/DebugOptions.h"
 
-#include <imgui/imgui_internal.h>
-
 constexpr ui32 AI_DEBUG_UPDATE_CODE = 2532;
 
 

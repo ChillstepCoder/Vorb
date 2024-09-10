@@ -4,7 +4,7 @@
 #include "tile/TileTransformationDef.h"
 
 // TODO: Do we need rendering here? (MaterialDesc)
-#include "rendering/material/MaterialData.h"
+#include "rendering/material/MaterialDef.h"
 
 #include "item/ItemRollTable.h"
 

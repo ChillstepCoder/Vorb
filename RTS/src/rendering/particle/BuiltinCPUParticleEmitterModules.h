@@ -13,7 +13,7 @@ void addModuleDataToArray(ArbitraryObjectArray& arry) const { \
 #define COMMON_METHODS(ModuleType) \
 public: \
     ModuleType(); \
-    bool updateAndRenderEditorControls() override; \
+    bool updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) override; \
     std::unique_ptr<CPUParticleEmitterModule> clone() const override { return std::make_unique<ModuleType>(*this); };
 
 #define BUILTIN_CPU_PARTICLE_MODULE(ModuleType, Stage, ModuleName, YmlName, ...) \

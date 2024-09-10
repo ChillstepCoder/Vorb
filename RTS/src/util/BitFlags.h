@@ -27,6 +27,24 @@ public:
         return *this;
     }
 
+    BitFlags<T>& operator&=(const BitFlags<T>& other) noexcept {
+        mBits &= other.mBits;
+        return *this;
+    }
+
+    BitFlags<T>& operator&=(const T other) noexcept {
+        mBits &= e_cast(other);
+        return *this;
+    }
+
+    BitFlags<T> operator|(const BitFlags<T>& other) const noexcept {
+        return BitFlags<T>(mBits | other.mBits);
+    }
+
+    BitFlags<T> operator&(const BitFlags<T>& other) const noexcept {
+        return BitFlags<T>(mBits & other.mBits);
+    }
+
     auto operator<=>(const BitFlags<T>&) const = default;
 
     operator typename std::underlying_type<T>::type& () noexcept {

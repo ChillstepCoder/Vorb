@@ -7,7 +7,6 @@
 #include "ui/editor/ImguiColors.h"
 #include "resources/asset/AssetMetadata.h"
 #include "editor/EditorResources.h"
-#include "ui/imgui_controls/EnumCombo.h"
 
 namespace ImguiUtil {
 

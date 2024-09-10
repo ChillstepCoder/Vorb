@@ -294,9 +294,9 @@ void CombatContext::hitTile(LiteTileHandle liteHandle, const SkillDef& skillDef,
     );
 
     if (skillDef.mHitEffect.isValid()) {
-        ParticleSystemInputs inputs;
-        inputs.mInputImpactDirection = impactDir;
-        inputs.mInputImpactSurfaceNormal = impactNormal;
-        mWorld.getEffectContext().playParticleEffectAtPoint(skillDef.mHitEffect, impactPosition, inputs, BitFlags<EffectCreateFlags>());
+        ParticleSystemInputsPtr inputs = std::make_unique<ParticleSystemInputs>();
+        inputs->setVec3Input(ParticleSystemInputNameVec3::ImpactDirection, impactDir);
+        inputs->setVec3Input(ParticleSystemInputNameVec3::ImpactSurfaceNormal, impactNormal);
+        mWorld.getEffectContext().playParticleEffectAtPoint(skillDef.mHitEffect, impactPosition, std::move(inputs), BitFlags<EffectCreateFlags>());
     }
 }

@@ -8,10 +8,10 @@
 
 #include "camera/Camera3D.h"
 
-EffectInstance::EffectInstance(const EffectDef* effectDef, const ParticleSystemDef* systemDef, f32v3 position, const ParticleSystemInputs& inputs) : mEffectDef(effectDef) {
+EffectInstance::EffectInstance(const EffectDef* effectDef, const ParticleSystemDef* systemDef, f32v3 position, ParticleSystemInputsPtr inputs) : mEffectDef(effectDef) {
     assert(systemDef); // TODO: Allow effects with no particle system?
     mSystem = std::make_unique<CPUParticleSystem>(*systemDef, position);
-    mSystem->setInputs(inputs);
+    mSystem->setInputs(std::move(inputs));
 }
 EffectInstance::~EffectInstance() = default;
 
@@ -100,31 +100,30 @@ void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
     }
 }
 
-void CliEffectContext::playParticleEffectAtPoint(EffectAssetRef effectName, f32v3 point, ParticleSystemInputs inputs, BitFlags<EffectCreateFlags> flags) {
+void CliEffectContext::playParticleEffectAtPoint(EffectAssetRef effectName, f32v3 point, ParticleSystemInputsPtr inputs, BitFlags<EffectCreateFlags> flags) {
     if (IS_RENDER_THREAD()) {
         AssetHandlePtr<EffectDef> effectHandle = effectName.getAssetHandle<EffectDef>();
         if (const EffectDef* effectDef = effectHandle->tryGetLoadedAsset()) {
             addEffectInstance(
                 effectHandle->getAssetID(),
-                EffectInstance(effectDef, effectDef->getLoadedParticleSystemDef(), point, inputs)
+                EffectInstance(effectDef, effectDef->getLoadedParticleSystemDef(), point, std::move(inputs))
             );
         }
         else {
-            auto&& it = mPendingAssetLoadEffects.find(effectName);
+            auto it = mPendingAssetLoadEffects.find(effectName);
             if (it != mPendingAssetLoadEffects.end()) {
-                it->second.mPendingInstances.emplace_back(PendingEffectInstanceData(point, inputs, flags));
+                it->second.mPendingInstances.emplace_back(point, std::move(inputs), flags);
             }
             else {
-                mPendingAssetLoadEffects.insert(std::make_pair(effectName, PendingEffectData{
-                    .mEffectHandle = std::move(effectHandle),
-                    .mPendingInstances =
-                        std::vector<PendingEffectInstanceData>{PendingEffectInstanceData(point, inputs, flags)}
+                auto newIt = mPendingAssetLoadEffects.insert(std::make_pair(effectName, PendingEffectData{
+                    .mEffectHandle = std::move(effectHandle)
                     })
-                );
+                ).first;
+                newIt->second.mPendingInstances.emplace_back(point, std::move(inputs), flags);
             }
         }
     } else {
-        mRenderThreadQueue.enqueue(std::make_pair(effectName, PendingEffectInstanceData(point, inputs, flags)));
+        mRenderThreadQueue.enqueue(std::make_pair(effectName, PendingEffectInstanceData(point, std::move(inputs), flags)));
     }
 }
 

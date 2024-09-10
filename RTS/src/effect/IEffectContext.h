@@ -20,7 +20,7 @@ public:
     virtual void playParticleEffectAtPoint(
         EffectAssetRef effectName,
         f32v3 point,
-        ParticleSystemInputs inputs,
+        ParticleSystemInputsPtr inputs,
         BitFlags<EffectCreateFlags> flags
     ) = 0;
 

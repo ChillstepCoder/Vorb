@@ -17,7 +17,6 @@
 #include "rendering/MaterialShaderRepository.h"
 #include "resources/TextureRepository.h"
 
-
 #include <Vorb/graphics/FullscreenTriangleVAO.h>
 #include <Vorb/graphics/BlendState.h>
 
@@ -28,7 +27,6 @@
 #include "screens/ScreenState.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
 UIContext* UIContext::sInstance = nullptr;
 

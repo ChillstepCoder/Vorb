@@ -7,7 +7,6 @@
 #include "options/LightingOptions.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
 
 void MaterialUtils::uploadLightingUniforms(const MaterialShaderDef& material) {

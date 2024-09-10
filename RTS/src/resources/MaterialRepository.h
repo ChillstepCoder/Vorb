@@ -1,7 +1,7 @@
 #pragma once
 
 #include "resources/IAssetRepository.h"
-#include "rendering/material/MaterialData.h"
+#include "rendering/material/MaterialDef.h"
 #include "rendering/texture/GLTexture.h"
 
 DECL_VIO(class IOManager);

@@ -2,7 +2,7 @@
 
 #include "definitions/TileGrassDef.h"
 
-#include "rendering/material/MaterialData.h"
+#include "rendering/material/MaterialDef.h"
 
 #include "resources/IAssetRepository.h"
 

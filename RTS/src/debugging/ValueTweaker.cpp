@@ -2,7 +2,6 @@
 #include "ValueTweaker.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
 
 enum class TweakerEntryType {

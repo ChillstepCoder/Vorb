@@ -22,7 +22,7 @@ CPUParticleSystem::CPUParticleSystem(const ParticleSystemDef& def, f32v3 positio
     mSystemDefID = def.getID();
     mEmitters.reserve(def.mEmitters.size());
     for (auto&& emitterDef : def.mEmitters) {
-        mEmitters.emplace_back(std::make_unique<CpuParticleEmitter>(emitterDef, &mInputs));
+        mEmitters.emplace_back(std::make_unique<CpuParticleEmitter>(emitterDef, mInputs.get()));
     }
 }
 
@@ -94,7 +94,7 @@ bool CPUParticleSystem::updateAndRenderEditor(f32 elapsedSec, const f32m4& VP, c
 }
 
 CpuParticleEmitter& CPUParticleSystem::addEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, f32 particleLifespanSec /*= FLT_MAX*/, f32 emitterLifespanSec /*= FLT_MAX*/) {
-    mEmitters.emplace_back(std::make_unique<CpuParticleEmitter>(updateFunction, maxParticles, components, shader, &mInputs, emitterLifespanSec))->setGlobalParticleLifespan(particleLifespanSec);
+    mEmitters.emplace_back(std::make_unique<CpuParticleEmitter>(updateFunction, maxParticles, components, shader, mInputs.get(), emitterLifespanSec))->setGlobalParticleLifespan(particleLifespanSec);
     return *mEmitters.back();
 }
 

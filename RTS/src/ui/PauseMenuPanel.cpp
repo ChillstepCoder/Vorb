@@ -3,9 +3,6 @@
 
 #include "ui/ImguiUtil.hpp"
 
-#include <imgui_internal.h>
-
-
 #include "ui/GameWindow.h"
 // TODO: Util
 const ImVec2 buttonSize(200, 50);

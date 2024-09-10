@@ -6,8 +6,6 @@
 #include "ecs/component/CharacterDetailsComponent.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
-
 
 #include "ui/GameWindow.h"
 

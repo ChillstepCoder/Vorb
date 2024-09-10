@@ -1,33 +1,22 @@
 #include "stdafx.h"
 #include "DebugTweakerPanel.h"
 
-#include "generation/WorldGenerationData.h"
-#include "editor/ImguiViews.hpp"
-
 #include "debugging/VisualLogger.h"
 
 #include "world/World.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
 #include "time/TimeOfDayManager.h"
 
 #include "rendering/GLExtensions.h"
 #include "rendering/MaterialUtils.h"
-#include "rendering/CharacterRenderer.h"
-#include "rendering/renderer/WorldRenderer.h"
-#include "rendering/RenderContext.h"
 
 #include "weather/WeatherManager.h"
-
-#include "resources/ModelRepository.h"
 
 #include "options/LightingOptions.h"
 #include "options/DebugOptions.h"
 
-#include "definitions/ModelDef.h"
-#include "definitions/AnimMachineDef.h"
 #include "ecs/IFullECS.h"
 
 #include "debugging/ValueTweaker.h"

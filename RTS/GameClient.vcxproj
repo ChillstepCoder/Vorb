@@ -732,6 +732,7 @@
     <ClInclude Include="src\definitions\EntityDef.h" />
     <ClInclude Include="src\definitions\FishDef.h" />
     <ClInclude Include="src\definitions\ModelDef.h" />
+    <ClInclude Include="src\definitions\ParticleEmitterDef.h" />
     <ClInclude Include="src\definitions\ParticleSystemDef.h" />
     <ClInclude Include="src\definitions\rendering\Blendspace1DDef.h" />
     <ClInclude Include="src\definitions\rendering\CubemapDef.h" />
@@ -938,7 +939,7 @@
     <ClInclude Include="src\rendering\MaterialRenderer.h" />
     <ClInclude Include="src\rendering\MaterialUtils.h" />
     <ClInclude Include="src\rendering\material\BrdfLUT.h" />
-    <ClInclude Include="src\rendering\material\MaterialData.h" />
+    <ClInclude Include="src\rendering\material\MaterialDef.h" />
     <ClInclude Include="src\rendering\mesh\AxisAlignedQuadMesh.h" />
     <ClInclude Include="src\rendering\mesh\GrassBillboardMeshRenderData.h" />
     <ClInclude Include="src\rendering\mesh\LineMesh.h" />

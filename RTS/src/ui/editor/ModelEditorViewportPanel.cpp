@@ -2,29 +2,16 @@
 #include "ModelEditorViewportPanel.h"
 
 #include "definitions/ModelDef.h"
-#include "definitions/RigDef.h"
 
 #include "resources/ModelRepository.h"
 #include "rendering/MaterialShaderRepository.h"
 #include "rendering/MaterialRenderer.h"
-#include "rendering/MaterialUtils.h"
-#include "rendering/Mesh/MeshDrawer.h"
-#include "rendering/post_process/ShadowDetail.h"
 #include "rendering/mesh/LineMesh.h"
 #include "rendering/model/skeletal/SkeletalAnimator.h"
-#include "rendering/mesh/Vertex.h"
-
-#include "resources/AnimationRepository.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
-#include "ui/ImguiUtil.hpp"
 #include "ui/imgui_controls/ObjectVector.h"
 #include "ui/editor/CollisionEditor.h"
-
-#include <Vorb/graphics/GBuffer.h>
-#include <Vorb/graphics/DepthState.h>
-#include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 #include "camera/SimpleCamera.h"
 

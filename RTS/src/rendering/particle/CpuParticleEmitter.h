@@ -98,6 +98,7 @@ public:
     f32 getParticleNormalizedLifetime(ParticleID id) const noexcept;
     MaterialID getParticleMaterial(ParticleID id) const noexcept { return mParticleData.mMaterials[id]; }
     CPUParticlesData& getParticleData() { return mParticleData; }
+    BitFlags<ParticleComponentType> getComponents() const noexcept { return mComponents; }
 
     // Variables
     uint getUIntVariable(ParticleEmitterVariableNameUInt name, ParticleID id) const;
@@ -116,7 +117,7 @@ public:
     bool hasVec3Variable(ParticleEmitterVariableNameVec3 name) const;
 
     // Inputs
-    const ParticleSystemInputs& getInputs() const { return *mInputs; }
+    const ParticleSystemInputs* getInputs() const { return mInputs; }
 
     // Global state
     void setGlobalParticleScale(f32v2 scale) noexcept { mGlobalParticleScale = scale; }
@@ -170,6 +171,7 @@ public:
 
     void emitParticles(ui32v2 countRange);
     void emitParticles(int count);
+
 protected:
     void allocateParticleData();
     void onNewParticleAdded(ParticleID id);

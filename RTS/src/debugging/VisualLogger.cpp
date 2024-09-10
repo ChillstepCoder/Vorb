@@ -9,13 +9,11 @@
 #include "rendering/mesh/MeshDrawer.h"
 #include "rendering/MaterialShaderDef.h"
 
-#include "resources/ResourceManager.h"
 
 #include "debugging/DebugMesh.h"
 #include "options/DebugOptions.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
 
 #include <Vorb/graphics/GLProgram.h>

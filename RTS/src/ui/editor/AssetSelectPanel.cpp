@@ -2,14 +2,6 @@
 #include "AssetSelectPanel.h"
 
 #include "resources/ResourceManager.h"
-#include "resources/ModelRepository.h"
-#include "resources/MaterialRepository.h"
-#include "resources/TileGrassRepository.h"
-#include "resources/FishRepository.h"
-#include "rendering/MaterialShaderRepository.h"
-#include "rendering/MaterialRenderer.h"
-#include "resources/TileRepository.h"
-#include "resources/ParticleSystemRepository.h"
 
 #include "ui/ImguiUtil.hpp"
 #include "ui/editor/ImguiAssetThumbnails.h"
@@ -17,12 +9,7 @@
 #include "ui/editor/EditorRoot.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
-#include <Vorb/graphics/DepthState.h>
-#include <Vorb/graphics/GBuffer.h>
-
-#include <Vorb/graphics/FullscreenTriangleVAO.h>
 
 static const f32v2 THUMBNAIL_SIZE = f32v2(50.0f);
 static std::unique_ptr<ImguiUtil::AssetSelectorPopup> sVariantAssetSelectorPopup;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
 namespace ImguiUtil {
     template <typename T, bool ALLOW_DUPLICATE = false>

@@ -10,9 +10,6 @@
 #include "resources/ResourceManager.h"
 #include "resources/IAssetRepository.h"
 
-#include "rendering/material/MaterialData.h"
-#include "definitions/AssetDefinitions.h"
-
 #include "resources/asset/LiteAssetRef.h"
 
 static const f32v2 THUMBNAIL_SIZE = f32v2(50.0f);

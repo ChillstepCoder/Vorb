@@ -451,7 +451,8 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySiz
         ImGui::Text("Module: %s", mSelectedModule->getName());
         ImGui::Separator();
 
-        if (mSelectedModule->updateAndRenderEditorControls()) {
+        assert(mSelectedEmitter);
+        if (mSelectedModule->updateAndRenderEditorControls(*mSelectedEmitter)) {
             ParticleSystemRepository::get().onAssetChangedByEditor(mAssetData->getID());
             createPreviewSystem();
         }

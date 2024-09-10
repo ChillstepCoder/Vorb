@@ -3,14 +3,8 @@
 
 #include "CpuParticleEmitter.h"
 
-#include "Resources/ResourceManager.h"
-#include "Resources/ParticleSystemRepository.h"
-
 #include "math/Random.h"
-
 #include <imgui.h>
-#include <imgui_internal.h>
-
 
 #include "ui/editor/EditorCurve.hpp"
 
@@ -27,7 +21,7 @@ void CPUParticleEmitterParameter::evaluate(CpuParticleEmitter& emitter, Particle
     }
 }
 
-bool CPUParticleEmitterParameter::updateAndRenderTweaker(const char*const label) {
+bool CPUParticleEmitterParameter::updateAndRenderTweaker(const char*const label, const ParticleEmitterDef& parentEmitter) {
     ImGui::PushID((int)this);
     const ImVec2 contentAvail = ImGui::GetContentRegionAvail();
     const float itemWidth = glm::max(contentAvail.x - 150, 10.0f);
@@ -49,7 +43,7 @@ bool CPUParticleEmitterParameter::updateAndRenderTweaker(const char*const label)
         else {
             constexpr f32 INDENT_WIDTH = 25.0f;
             ImGui::Indent(INDENT_WIDTH);
-            changed |= mOperation->updateAndRenderControls();
+            changed |= mOperation->updateAndRenderControls(parentEmitter);
             ImGui::Unindent(INDENT_WIDTH);
         }
     }
@@ -158,12 +152,20 @@ bool CPUParticleEmitterParameter::updateAndRenderTweaker(const char*const label)
 
         for (auto&& op : operationsList) {
             const color4 color = op->getDisplayColor();
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a / 255.f));
-            if (ImGui::Button(op->getDisplayName(), ImVec2(300.f, 0.f))) {
+            if (op->canAddToEmitter(parentEmitter)) {
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(color.r / 255.f, color.g / 255.f, color.b / 255.f, color.a / 255.f));
+                if (ImGui::Button(op->getDisplayName(), ImVec2(300.f, 0.f))) {
+                    ImGui::PopStyleColor(1);
+                    return op;
+                }
                 ImGui::PopStyleColor(1);
-                return op;
             }
-            ImGui::PopStyleColor(1);
+            else {
+                ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(50.0f / 255.f, 50.0f / 255.f, 50.0f / 255.f, color.a / 255.f));
+                ImGui::Button(op->getDisplayName(), ImVec2(300.f, 0.f));
+                ImGui::SetItemTooltip("Missing required components");
+                ImGui::PopStyleColor(1);
+            }
         }
 
         return nullptr;
@@ -216,18 +218,18 @@ void CPUParticleEmitterParameter::saveYmlData(ryml::NodeRef node, std::string_vi
     });
 }
 
-bool CPUParticleEmitterOperation::updateAndRenderControls() {
+bool CPUParticleEmitterOperation::updateAndRenderControls(const ParticleEmitterDef& parentEmitter) {
     ImVec2 frameMin = ImGui::GetCursorScreenPos(); // Top left of frame
     ImGui::BeginGroup();
     ImGui::Text(getDisplayName());
 
     bool changed = false;
 
-    changed |= updateAndRenderExtraPreControls();
+    changed |= updateAndRenderExtraPreControls(parentEmitter);
     for (size_t i = 0; i < mParams.size(); ++i) {
-        changed |= mParams[i].updateAndRenderTweaker(getParamName(i));
+        changed |= mParams[i].updateAndRenderTweaker(getParamName(i), parentEmitter);
     }
-    changed |= updateAndRenderExtraPostControls();
+    changed |= updateAndRenderExtraPostControls(parentEmitter);
    
     ImGui::EndGroup();
     ImVec2 frameMax = ImGui::GetItemRectMax(); // Bottom right of frame
@@ -276,11 +278,21 @@ void CPUPEO_QueryNormalizedLifetime::execute(CpuParticleEmitter& emitter, Partic
 }
 
 void CPUPEO_InputImpactDirection::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
-    output->mVarData = emitter.getInputs().mInputImpactDirection;
+    if (emitter.getInputs()) [[likely]] {
+        output->mVarData = emitter.getInputs()->getVec3Input(ParticleSystemInputNameVec3::ImpactDirection, f32v3(0.0f, 0.0f, 1.0f));
+    }
+    else {
+        output->mVarData = f32v3(0.0f, 0.0f, 1.0f);
+    }
 }
 
 void CPUPEO_InputImpactSurfaceNormal::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
-    output->mVarData = emitter.getInputs().mInputImpactSurfaceNormal;
+    if (emitter.getInputs()) [[likely]] {
+        output->mVarData = emitter.getInputs()->getVec3Input(ParticleSystemInputNameVec3::ImpactSurfaceNormal, f32v3(0.0f, 1.0f, 0.0f));
+    }
+    else {
+        output->mVarData = f32v3(0.0f, 1.0f, 0.0f);
+    }
 }
 
 void CPUPEO_UIntVariable::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
@@ -305,7 +317,7 @@ void CPUPEO_RandomFloatInRange::execute(CpuParticleEmitter& emitter, ParticleID 
     const f32 p1 = std::get<f32>(mParams[1].mVarData);
     output->mVarData = (f32)lerp(p0, p1, mSeedByParticleID ? Random::getCachedRandomfSpecific((ui32)id) : Random::getCachedRandomf());
 }
-bool CPUPEO_RandomFloatInRange::updateAndRenderExtraPostControls() {
+bool CPUPEO_RandomFloatInRange::updateAndRenderExtraPostControls(const ParticleEmitterDef& parentEmitter) {
     return ImGui::Checkbox("Seed By Particle ID", &mSeedByParticleID);
 }
 bool CPUPEO_RandomFloatInRange::loadFromYml(ryml::ConstNodeRef node) {
@@ -323,7 +335,7 @@ void CPUPEO_ColorCurve::execute(CpuParticleEmitter& emitter, ParticleID id, CPUP
     f32 normalizedValue = glm::clamp(std::get<f32>(mParams[0].mVarData), 0.0f, 1.0f);
     output->mVarData = EditorUtil::evaluateCurve<color4>(mKeys, normalizedValue);
 }
-bool CPUPEO_ColorCurve::updateAndRenderExtraPostControls() {
+bool CPUPEO_ColorCurve::updateAndRenderExtraPostControls(const ParticleEmitterDef& parentEmitter) {
     return EditorUtil::updateAndRenderCurve<color4>(mKeys, [](color4& val) {
         f32v4 color = val.toVec4();
         bool changed = ImGui::ColorEdit4("Color Edit", &color.x);
@@ -373,7 +385,7 @@ void CPUPEO_HdrColorCurve::execute(CpuParticleEmitter& emitter, ParticleID id, C
     f32 normalizedValue = glm::clamp(std::get<f32>(mParams[0].mVarData), 0.0f, 1.0f);
     output->mVarData = EditorUtil::evaluateCurve<f32v4>(mKeys, normalizedValue);
 }
-bool CPUPEO_HdrColorCurve::updateAndRenderExtraPostControls() {
+bool CPUPEO_HdrColorCurve::updateAndRenderExtraPostControls(const ParticleEmitterDef& parentEmitter) {
     return EditorUtil::updateAndRenderCurve<f32v4>(mKeys, [](f32v4& val) {
         return ImGui::ColorEdit4("Color Edit", &val.x, ImGuiColorEditFlags_HDR);
     });
@@ -420,7 +432,7 @@ void CPUPEO_FloatCurve::execute(CpuParticleEmitter& emitter, ParticleID id, CPUP
     f32 normalizedValue = glm::clamp(std::get<f32>(mParams[0].mVarData), 0.0f, 1.0f);
     output->mVarData = EditorUtil::evaluateCurve<f32>(mKeys, normalizedValue);
 }
-bool CPUPEO_FloatCurve::updateAndRenderExtraPostControls() {
+bool CPUPEO_FloatCurve::updateAndRenderExtraPostControls(const ParticleEmitterDef& parentEmitter) {
     return EditorUtil::updateAndRenderCurve<f32>(mKeys, [](f32& val) {
         return ImGui::InputFloat("Value", &val);
     });
@@ -481,7 +493,7 @@ const char* const CPUPEO_RandomPointInShape::getParamName(size_t paramIndex) con
     }
     static_assert(e_count(QueryPointFromShapeType) == 2);
 }
-bool CPUPEO_RandomPointInShape::updateAndRenderExtraPreControls() {
+bool CPUPEO_RandomPointInShape::updateAndRenderExtraPreControls(const ParticleEmitterDef& parentEmitter) {
     bool changed = false;
     
     static constexpr const char* shapeNames[e_count(QueryPointFromShapeType)] = {

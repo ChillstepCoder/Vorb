@@ -2,7 +2,7 @@
 
 #include "rendering/mesh/VertexType.h"
 #include "rendering/mesh/MeshSkeletonData.h"
-#include "rendering/material/MaterialData.h"
+#include "rendering/material/MaterialDef.h"
 
 // Not intended to be uploaded to GPU except for editor render
 struct alignas(16) RawMeshVertex {

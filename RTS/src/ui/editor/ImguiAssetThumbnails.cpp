@@ -2,12 +2,12 @@
 #include "ImguiAssetThumbnails.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
 #include "definitions/AssetDefinitions.h"
 
 #include "Resources/TextureRepository.h"
 #include "Resources/MaterialRepository.h"
+#include "rendering/MaterialShaderDef.h"
 
 
 std::function<void(AssetID, f32v2)> ImguiAssetThumbnails::getThumbnailFunction(AssetType assetType) {

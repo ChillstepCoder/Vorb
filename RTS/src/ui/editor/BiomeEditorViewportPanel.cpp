@@ -2,7 +2,6 @@
 #include "BiomeEditorViewportPanel.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
 #include "input/InputDispatcher.h"
 
@@ -15,15 +14,11 @@
 #include "resources/BiomeRepository.h"
 
 #include "ui/imgui_controls/ObjectVector.h"
-#include "ui/imgui_controls/EnumCombo.h"
 
 #include "world/World.h"
 #include "world/WorldDestroyer.h"
-#include "world/Chunk.h"
 #include "world/host/HostWorldData.h"
 #include "rendering/renderer/WorldRenderer.h"
-#include "rendering/renderstate/GameRenderStateManager.h"
-#include "rendering/RenderThreadTasks.h"
 
 #include "rendering/RenderContext.h"
 

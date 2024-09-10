@@ -3,7 +3,7 @@
 #include "AssetEditorViewportPanel.h"
 #include "rendering/mesh/PrimitiveShapeMeshes.h"
 
-#include "rendering/material/MaterialData.h"
+#include "rendering/material/MaterialDef.h"
 
 class MaterialEditorViewportPanel : public AssetEditorViewportPanel<MaterialDef>
 {

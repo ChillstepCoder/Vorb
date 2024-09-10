@@ -4,16 +4,10 @@
 #include "ui/minigame/FishingMinigame.h"
 
 #include "rendering/RenderContext.h"
-#include "rendering/mesh/MeshDrawer.h"
 #include "resources/ModelRepository.h"
-#include "resources/FishRepository.h"
 #include "rendering/MaterialShaderRepository.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
-
-
-#include "ui/GameWindow.h"
 
 FishingEditorViewportPanel::FishingEditorViewportPanel() : AssetEditorViewportPanel<FishDef>() {
     mShader = MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model_pbr"));

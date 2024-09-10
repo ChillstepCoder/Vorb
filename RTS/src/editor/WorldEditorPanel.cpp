@@ -7,7 +7,6 @@
 #include "world/Chunk.h"
 #include "world/IChunkGrid.h"
 #include "world/road/TerrainSurfaceGrid.h"
-#include "rendering/ChunkGrassQuadtree.h"
 #include "options/DebugOptions.h"
 #include "debugging/DebugRenderer.h"
 
@@ -30,7 +29,6 @@
 #include "math/Random.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
 #include "physics/PhysicsWorld.h"
 #include "physics/PhysicsBroadPhaseLayerFilters.h"

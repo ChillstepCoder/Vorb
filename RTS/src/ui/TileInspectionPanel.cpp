@@ -10,7 +10,6 @@
 #include "debugging/DebugRenderer.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 
 #include "building/building.h"
 

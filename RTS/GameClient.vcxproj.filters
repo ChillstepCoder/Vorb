@@ -2006,7 +2006,7 @@
     <ClInclude Include="src\rendering\gl\GLObjects.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\rendering\material\MaterialData.h">
+    <ClInclude Include="src\rendering\material\MaterialDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\resources\MaterialRepository.h">
@@ -3141,6 +3141,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\particle\ParticleEmitterVariableName.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\ParticleEmitterDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

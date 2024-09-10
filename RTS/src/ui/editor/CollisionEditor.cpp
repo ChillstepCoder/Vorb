@@ -2,7 +2,6 @@
 #include "CollisionEditor.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 #include "ui/ImguiUtil.hpp"
 #include "ui/imgui_controls/ObjectVector.h"
 #include "ui/imgui_controls/EnumCombo.h"

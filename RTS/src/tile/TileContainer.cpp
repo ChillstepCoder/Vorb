@@ -504,7 +504,7 @@ bool TileContainer::adjustTileHealth(TileIndex index, int healthAdjust, f32v3 im
         // Optional VFX
         const TileDef& tileDef = TileRepository::get().getLoadedOrUnloadedAsset(tileId);
         if (tileDef.destroyEffectRef.isValid()) {
-            mWorld.getEffectContext().playParticleEffectAtPoint(tileDef.destroyEffectRef, impactPosition, ParticleSystemInputs(), BitFlags<EffectCreateFlags>());
+            mWorld.getEffectContext().playParticleEffectAtPoint(tileDef.destroyEffectRef, impactPosition, nullptr, BitFlags<EffectCreateFlags>());
         }
        
         const f32v3 worldPos = getTileCenterWorldPosition(index);
