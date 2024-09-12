@@ -23,8 +23,12 @@ inline constexpr uint32_t Pack_INT_2_10_10_10_REV(const f32v3& vec3) {
 }
 
 constexpr f32 UV_MAX_RANGE = 8.0f; //[-8, 8]
-inline i16v2 PackUVs(const f32v2& uvs) {
+inline i16v2 PackUVs(const f32v2 uvs) {
     return i16v2(std::nearbyint((uvs.x / UV_MAX_RANGE) * INT16_MAX), std::nearbyint((uvs.y / UV_MAX_RANGE) * INT16_MAX));
+}
+
+inline f32v2 UnpackUVs(const i16v2 packedUvs) {
+    return f32v2((packedUvs.x / (f32)INT16_MAX) * UV_MAX_RANGE, (packedUvs.y / (f32)INT16_MAX) * UV_MAX_RANGE);
 }
 
 // https://www.khronos.org/opengl/wiki/Vertex_Specification_Best_Practices

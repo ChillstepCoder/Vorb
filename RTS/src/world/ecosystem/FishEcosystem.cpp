@@ -386,7 +386,7 @@ bool FishEcosystem::updateFish(entt::registry& registry, entt::entity entity, co
     // Clamp pitch on surface
     if (ai.mAIState == FishAIState::PeckBobber && position.mPosition.z >= -MAX_FISH_DISTANCE_FROM_SURFACE - FISH_COLLIDE_RADIUS) {
         const f32 lerpAlpha = glm::min(position.mPosition.z - (-MAX_FISH_DISTANCE_FROM_SURFACE - FISH_COLLIDE_RADIUS), 1.0f);
-        const f32 maxPitch = lerp(M_PI_2F, M_PI_4F * 0.5f, lerpAlpha);
+        const f32 maxPitch = util::lerp(M_PI_2F, M_PI_4F * 0.5f, lerpAlpha);
         if (yawPitch.mPitch > maxPitch) {
             yawPitch.mPitch = MathUtil::lerpWithDeltaTime(yawPitch.mPitch, maxPitch, 0.99f, mElapsedSec);
         }

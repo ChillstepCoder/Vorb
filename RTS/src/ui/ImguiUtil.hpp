@@ -63,8 +63,8 @@ namespace ImguiUtil {
                 }
             }
         }
-        void setFilter(const std::vector<nString>& filters) {
-            mFilterNames = filters;
+        void setFilter(std::vector<nString> filters) {
+            mFilterNames = std::move(filters);
             for (auto&& filter : mFilterNames) {
                 std::transform(filter.begin(), filter.end(), filter.begin(),
                     [](unsigned char c) { return std::tolower(c); });
@@ -99,6 +99,58 @@ namespace ImguiUtil {
         nString assetName;
         void* assetPtr;
         int assetType;
+    };
+
+    template <typename T>
+    class EnumSelectorPopup : public PopupFilterInterface {
+    public:
+        EnumSelectorPopup(const char* id, const char* label, std::function<bool(T)> filter = nullptr) : id(id), label(label), filter(filter) {
+            ImGui::OpenPopup(id);
+            std::vector<nString> filters;
+            const auto& nameMap = getGlobalEnumNameMap<T>();
+            for (auto str : nameMap) {
+                filters.push_back(nString(str.second));
+            }
+            setFilter(std::move(filters));
+        }
+        virtual ~EnumSelectorPopup() {
+            ImGui::CloseCurrentPopup();
+        }
+        // Return true when closed
+        bool updateAndRender() {
+            if (ImGui::BeginPopupModal(id, nullptr)) {
+                ImGui::Text(label);
+                ImGui::SameLine();
+                if (ImGui::Button("Cancel")) {
+                    ImGui::EndPopup();
+                    return true;
+                }
+                updateAndRenderFilter();
+                const auto& nameMap = getGlobalEnumNameMap<T>();
+                bool changed = false;
+                int i = 0;
+                for (auto it = nameMap.begin(); it != nameMap.end(); ++it, ++i) {
+                    if (mFilterStatus[i] && (!filter || filter(it->first))) {
+                        if (ImGui::Button(it->second.data())) {
+                            result = it->first;
+                            ImGui::EndPopup();
+                            return true;
+                        }
+                    }
+                }
+                ImGui::EndPopup();
+                return false;
+            }
+            return true;
+        }
+        T getResult() const {
+            return result;
+        }
+    protected:
+        std::function<bool(T)> filter;
+        const char* id;
+        const char* label;
+        T result = T::COUNT;
     };
 
     class ConfirmDeletePopup : public AssetPopup {

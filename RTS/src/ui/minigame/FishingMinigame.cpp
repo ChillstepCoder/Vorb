@@ -414,7 +414,7 @@ void FishingMinigame::initPlayerParticles() {
 
                     // Color becomes warmer away from fish
                     const f32 pushColorIntensity = linearPushAlpha * glm::clamp(velocity.y * -0.05f, 0.0f, 1.0f);
-                    particleData.mColors[i] = lerp(baseColor, color::White, pushColorIntensity);
+                    particleData.mColors[i] = util::lerp(baseColor, color::White, pushColorIntensity);
 
                     // Scale shrinks away from fish
                     scale = f32v2(baseScale + linearPushAlpha * 0.5f);
@@ -756,7 +756,7 @@ void FishingMinigame::updateFishPosition(f32 elapsedSec) {
             addDebugFloater("JERK", getTextScreenPosition(mFishPosition, mCurrentScreenResolution), color::White);
             mLastJerkTime = currentTime;
             mFishVelocity += getRandomDirectionVector() * minigameData.mJerkIntensity;
-            mCurrentJerkCooldown = lerp(Random::xorshf96f(), minigameData.mJerkCooldownVarianceSec.x, minigameData.mJerkCooldownVarianceSec.y);
+            mCurrentJerkCooldown = util::lerp(Random::xorshf96f(), minigameData.mJerkCooldownVarianceSec.x, minigameData.mJerkCooldownVarianceSec.y);
         }
     }
 

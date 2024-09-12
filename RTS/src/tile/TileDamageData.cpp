@@ -43,7 +43,7 @@ i32 TileDamageData::applyDamageStrike(f32v2 strikeNormal, f32 strikeRelativeZ, i
     auto applyDamageToSlice = [&](int slice, float weight) -> i32v2 {
         const ui8 currentShellDamage = mShellDamageZones[slice];
         const f32 currentSliceDamageRatio = currentShellDamage / 255.0f;
-        const f32 currentResistance = lerp(tileResistance.outer, tileResistance.inner, powf(currentSliceDamageRatio, tileResistance.blendExponent));
+        const f32 currentResistance = util::lerp(tileResistance.outer, tileResistance.inner, powf(currentSliceDamageRatio, tileResistance.blendExponent));
         const f32 healthDamage = glm::max(baseStrikeDamage * weight - currentResistance, 0.0f);
         const f32 shellDamage = healthDamage * tileResistance.shellDegradeMultiplier;
 

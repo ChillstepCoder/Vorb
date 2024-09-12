@@ -247,6 +247,10 @@ namespace YmlSerializer {
     }
 }
 
+
+#define YML_WRITE_DECL(...) extern void write(c4::yml::NodeRef* n, __VA_ARGS__ const& o)
+#define YML_READ_DECL(...) extern bool read(c4::yml::ConstNodeRef const& n, __VA_ARGS__* target)
+
 #define YML_WRITE_DEF(...) inline void write(c4::yml::NodeRef* n, __VA_ARGS__ const& o)
 #define YML_READ_DEF(...) inline bool read(c4::yml::ConstNodeRef const& n, __VA_ARGS__* target)
 

@@ -1,0 +1,49 @@
+emitters:
+  - defaultemitter:
+      scale: [0.2,0.2]
+      color: [150,0,0,255]
+      max_particles: 3000
+      lifetime: 10
+      p_lifespan: 3
+      looping: 1
+      blend: additive
+      mat: dot_texture_06
+      shader: particle_transform
+      e_update:
+        - spawn_burst:
+            delay: 0
+            spawn_count: 3000
+      p_init:
+        - mesh_rep_src:
+            scale: 4
+            scale_clmp: [0.5,2]
+        - mesh_rep_tgt:
+            scale: 4
+            scale_clmp: [1,2]
+            find_close: 15
+        - set_position:
+            pos:
+              v_vec3:
+                name: MeshSourcePos
+        - set_scale:
+            scale:
+              f32_to_vec2:
+                v:
+                  v_float:
+                    name: MeshSourceScale
+      p_update:
+        - set_position:
+            pos:
+              lerp_vec3:
+                source:
+                  v_vec3:
+                    name: MeshSourcePos
+                target:
+                  v_vec3:
+                    name: MeshTargetPos
+                alpha:
+                  p_norm_life: {}
+lifetime: 10.17
+inputs:
+  - MeshSource: tree_pine
+  - MeshTarget: tree_pine_c

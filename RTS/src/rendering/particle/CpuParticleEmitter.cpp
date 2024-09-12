@@ -45,7 +45,14 @@ void bindStateForParticleBlendMode(ParticleBlendMode blendMode) {
     }
 }
 
-CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, ParticleSystemInputs* inputs, f32 lifetime /*= FLT_MAX*/) :
+CpuParticleEmitter::CpuParticleEmitter(
+    const ParticleUpdateFunction& updateFunction,
+    ui32 maxParticles,
+    BitFlags<ParticleComponentType> components,
+    const MaterialShaderDef& shader,
+    const ParticleSystemInputs* inputs,
+    f32 lifetime /*= FLT_MAX*/
+) :
     mShaderID(shader.getID()),
     mNativeUpdateFunction(updateFunction),
     mMaxParticles(maxParticles),
@@ -57,9 +64,14 @@ CpuParticleEmitter::CpuParticleEmitter(const ParticleUpdateFunction& updateFunct
     allocateParticleData();
 }
 
-CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def, ParticleSystemInputs* inputs) :
+CpuParticleEmitter::CpuParticleEmitter(
+    const ParticleEmitterDef& def,
+    const ParticleSystemInputs* inputs,
+    const ParticleSystemUserParameterMap* userParameters
+) :
     mShaderID(def.mShaderRef.getAssetID()),
     mInputs(inputs),
+    mUserParameters(userParameters),
     mMaterialAssetHandles(std::make_unique<AssetHandleBundle>())
 {
     // TODO: some of this information could be cached in the definition to make for faster setup
@@ -68,7 +80,7 @@ CpuParticleEmitter::CpuParticleEmitter(const ParticleEmitterDef& def, ParticleSy
     mGlobalParticleScale = def.mDefaultScale;
     mGlobalParticleColor = def.mDefaultColor;
     mGlobalParticleLifespan = def.mDefaultParticleLifespanSec;
-    mGlobalMaterialID = def.mDefaultMaterialID;
+    mGlobalMaterialID = def.mMaterialRef.getAssetID();
     if (mGlobalMaterialID != INVALID_MATERIAL_ID) {
         mContainedMaterials.insert(mGlobalMaterialID);
         mMaterialAssetHandles->addAssetHandle(MaterialRepository::get().getAssetHandle(mGlobalMaterialID));
@@ -555,6 +567,18 @@ void CpuParticleEmitter::emitParticles(int count) {
             onNewParticleAdded(mNumActiveParticles);
         }
     }
+}
+
+void CpuParticleEmitter::setAsEditorPreviewEmitter() {
+    // Editor emitter can have invalid by default and we dont want to crash while editing
+    mParticleData.mUIntVariables[ParticleEmitterVariableNameUInt::INVALID] = std::make_unique_for_overwrite<ui32[]>(mMaxParticles);
+    memset(mParticleData.mUIntVariables[ParticleEmitterVariableNameUInt::INVALID].get(), 0, sizeof(ui32) * mMaxParticles);
+    mParticleData.mFloatVariables[ParticleEmitterVariableNameFloat::INVALID] = std::make_unique_for_overwrite<f32[]>(mMaxParticles);
+    memset(mParticleData.mFloatVariables[ParticleEmitterVariableNameFloat::INVALID].get(), 0, sizeof(f32) * mMaxParticles);
+    mParticleData.mVec2Variables[ParticleEmitterVariableNameVec2::INVALID] = std::make_unique_for_overwrite<f32v2[]>(mMaxParticles);
+    memset(mParticleData.mVec2Variables[ParticleEmitterVariableNameVec2::INVALID].get(), 0, sizeof(f32v2) * mMaxParticles);
+    mParticleData.mVec3Variables[ParticleEmitterVariableNameVec3::INVALID] = std::make_unique_for_overwrite<f32v3[]>(mMaxParticles);
+    memset(mParticleData.mVec3Variables[ParticleEmitterVariableNameVec3::INVALID].get(), 0, sizeof(f32v3) * mMaxParticles);
 }
 
 void CpuParticleEmitter::allocateParticleData()

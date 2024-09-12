@@ -209,6 +209,8 @@ bool NoesisGuiContext::processInput(SDL_Event* e) {
             // Unrecognized event
             break;
     }
+
+    return false;
 }
 
 void NoesisGuiContext::updateAndRender() {

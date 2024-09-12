@@ -44,7 +44,7 @@ AmbientOcclusionPostProcess::AmbientOcclusionPostProcess(const ui32v2& gbufferDi
         sample = glm::normalize(sample);
         sample *= randomFloats(generator);
         float scale = (float)i / 64.0;
-        scale = lerp(0.1f, 1.0f, scale * scale);
+        scale = util::lerp(0.1f, 1.0f, scale * scale);
         sample *= scale;
         mSsaoKernel.push_back(sample);
     }

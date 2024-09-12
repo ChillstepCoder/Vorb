@@ -10,8 +10,7 @@
 
 EffectInstance::EffectInstance(const EffectDef* effectDef, const ParticleSystemDef* systemDef, f32v3 position, ParticleSystemInputsPtr inputs) : mEffectDef(effectDef) {
     assert(systemDef); // TODO: Allow effects with no particle system?
-    mSystem = std::make_unique<CPUParticleSystem>(*systemDef, position);
-    mSystem->setInputs(std::move(inputs));
+    mSystem = std::make_unique<CPUParticleSystem>(*systemDef, position, std::move(inputs));
 }
 EffectInstance::~EffectInstance() = default;
 

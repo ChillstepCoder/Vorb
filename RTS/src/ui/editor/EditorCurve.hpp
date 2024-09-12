@@ -41,7 +41,7 @@ namespace EditorUtil {
         }
         else {
             const f32 lerpValue = (alpha - keys[leftIndex].first) / diff;
-            return lerp(keys[leftIndex].second, keys[rightIndex].second, lerpValue);
+            return util::lerp(keys[leftIndex].second, keys[rightIndex].second, lerpValue);
         }
     }
 

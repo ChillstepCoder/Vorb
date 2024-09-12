@@ -16,9 +16,9 @@
 
 //------------------------------------------------------------------------------
 namespace ed   = ax::NodeEditor;
-namespace util = ax::NodeEditor::Utilities;
+namespace axutil = ax::NodeEditor::Utilities;
 
-util::BlueprintNodeBuilder::BlueprintNodeBuilder(ImTextureID texture, int textureWidth, int textureHeight):
+axutil::BlueprintNodeBuilder::BlueprintNodeBuilder(ImTextureID texture, int textureWidth, int textureHeight):
     HeaderTextureId(texture),
     HeaderTextureWidth(textureWidth),
     HeaderTextureHeight(textureHeight),
@@ -28,7 +28,7 @@ util::BlueprintNodeBuilder::BlueprintNodeBuilder(ImTextureID texture, int textur
 {
 }
 
-void util::BlueprintNodeBuilder::Begin(ed::NodeId id)
+void axutil::BlueprintNodeBuilder::Begin(ed::NodeId id)
 {
     HasHeader  = false;
     HeaderMin = HeaderMax = ImVec2();
@@ -43,7 +43,7 @@ void util::BlueprintNodeBuilder::Begin(ed::NodeId id)
     SetStage(Stage::Begin);
 }
 
-void util::BlueprintNodeBuilder::End()
+void axutil::BlueprintNodeBuilder::End()
 {
     SetStage(Stage::End);
 
@@ -93,18 +93,18 @@ void util::BlueprintNodeBuilder::End()
     SetStage(Stage::Invalid);
 }
 
-void util::BlueprintNodeBuilder::Header(const ImVec4& color)
+void axutil::BlueprintNodeBuilder::Header(const ImVec4& color)
 {
     HeaderColor = ImColor(color);
     SetStage(Stage::Header);
 }
 
-void util::BlueprintNodeBuilder::EndHeader()
+void axutil::BlueprintNodeBuilder::EndHeader()
 {
     SetStage(Stage::Content);
 }
 
-void util::BlueprintNodeBuilder::Input(ed::PinId id)
+void axutil::BlueprintNodeBuilder::Input(ed::PinId id)
 {
     if (CurrentStage == Stage::Begin)
         SetStage(Stage::Content);
@@ -121,14 +121,14 @@ void util::BlueprintNodeBuilder::Input(ed::PinId id)
     ImGui::BeginHorizontal(id.AsPointer());
 }
 
-void util::BlueprintNodeBuilder::EndInput()
+void axutil::BlueprintNodeBuilder::EndInput()
 {
     ImGui::EndHorizontal();
 
     EndPin();
 }
 
-void util::BlueprintNodeBuilder::Middle()
+void axutil::BlueprintNodeBuilder::Middle()
 {
     if (CurrentStage == Stage::Begin)
         SetStage(Stage::Content);
@@ -136,7 +136,7 @@ void util::BlueprintNodeBuilder::Middle()
     SetStage(Stage::Middle);
 }
 
-void util::BlueprintNodeBuilder::Output(ed::PinId id)
+void axutil::BlueprintNodeBuilder::Output(ed::PinId id)
 {
     if (CurrentStage == Stage::Begin)
         SetStage(Stage::Content);
@@ -153,14 +153,14 @@ void util::BlueprintNodeBuilder::Output(ed::PinId id)
     ImGui::BeginHorizontal(id.AsPointer());
 }
 
-void util::BlueprintNodeBuilder::EndOutput()
+void axutil::BlueprintNodeBuilder::EndOutput()
 {
     ImGui::EndHorizontal();
 
     EndPin();
 }
 
-bool util::BlueprintNodeBuilder::SetStage(Stage stage)
+bool axutil::BlueprintNodeBuilder::SetStage(Stage stage)
 {
     if (stage == CurrentStage)
         return false;
@@ -297,12 +297,12 @@ bool util::BlueprintNodeBuilder::SetStage(Stage stage)
     return true;
 }
 
-void util::BlueprintNodeBuilder::Pin(ed::PinId id, ed::PinKind kind)
+void axutil::BlueprintNodeBuilder::Pin(ed::PinId id, ed::PinKind kind)
 {
     ed::BeginPin(id, kind);
 }
 
-void util::BlueprintNodeBuilder::EndPin()
+void axutil::BlueprintNodeBuilder::EndPin()
 {
     ed::EndPin();
 

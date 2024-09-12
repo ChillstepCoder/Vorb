@@ -24,7 +24,7 @@ void ThreadUtilizationTimer::beginFrame() {
 
         // Soft average so it doesn't jump around so much
         const f32 prevFrameTimeMS = mCurrentFrameTimeMS;
-        mCurrentFrameTimeMS = lerp(prevFrameTimeMS, f32((f64)frameTimeNS / NS_PER_MS), AVG_LERP_TIME);
+        mCurrentFrameTimeMS = util::lerp(prevFrameTimeMS, f32((f64)frameTimeNS / NS_PER_MS), AVG_LERP_TIME);
 
         mThreadUtilizationPercentRollingAverage[mRollingAverageIndex] = f32v2(sleepElapsedNS / NS_PER_MS, totalElapsedNS / NS_PER_MS);
     }

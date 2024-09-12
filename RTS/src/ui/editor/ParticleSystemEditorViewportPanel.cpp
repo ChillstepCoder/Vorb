@@ -4,8 +4,10 @@
 #include "rendering/RenderContext.h"
 #include "resources/MaterialRepository.h"
 #include "resources/ParticleSystemRepository.h"
+#include "resources/ModelRepository.h"
 
 #include "rendering/particle/CPUParticleSystem.h"
+#include "rendering/MaterialShaderRepository.h"
 
 #include "camera/SimpleCamera.h"
 #include "camera/Camera3D.h"
@@ -13,6 +15,10 @@
 #include "ui/UIContext.h"
 #include "ui/ImguiUtil.hpp"
 #include "ui/editor/ImguiAssetThumbnails.h"
+
+#include <Vorb/io/FileOps.h>
+
+#include "definitions/ModelDef.h"
 
 #include <imgui.h>
 
@@ -76,6 +82,11 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
         if (mShowEmitters.size() == mPreviewSystem->getNumEmitters()) {
             mNumParticles = mPreviewSystem->getNumParticles();
         }
+
+        if (!mSelectedEmitter && mAssetData->mEmitters.size()) {
+            unselect();
+            mSelectedEmitter = &mAssetData->mEmitters[0];
+        }
     }
     else {
         mNumParticles = 0;
@@ -112,8 +123,8 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 mAssetData->setName(StrToken((const char*)mTextInputBuffer));
                 ParticleEmitterDef& defaultEmitter = mAssetData->mEmitters.emplace_back();
                 defaultEmitter.mEmitterName = CStrToken("default_emitter");
-                defaultEmitter.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
-                defaultEmitter.mShaderRef = CStrToken("particle_bb_3d");
+                defaultEmitter.mMaterialRef = ParticleSystemRepository::get().getDefaultMaterialID();
+                defaultEmitter.mShaderRef = CStrToken("particle_3d");
 
                 unselect();
                 mSelectedEmitter = &defaultEmitter;
@@ -165,8 +176,8 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
                 ImGui::CloseCurrentPopup();
                 ParticleEmitterDef& newEmitterDef = mAssetData->mEmitters.emplace_back();
                 newEmitterDef.mEmitterName = StrToken(mTextInputBuffer);
-                newEmitterDef.mDefaultMaterialID = ParticleSystemRepository::get().getDefaultMaterialID();
-                newEmitterDef.mShaderRef = CStrToken("particle_bb_3d");
+                newEmitterDef.mMaterialRef = ParticleSystemRepository::get().getDefaultMaterialID();
+                newEmitterDef.mShaderRef = CStrToken("particle_3d");
 
                 unselect();
                 mSelectedEmitter = &newEmitterDef;
@@ -248,6 +259,77 @@ void ParticleSystemEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize
             );
         }
 
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        if (mAssetData) {
+            bool changed = false;
+
+            if (ImGui::CollapsingHeader("Inputs", ImGuiTreeNodeFlags_DefaultOpen)) {
+                if (ImGui::Button("+")) {
+                    mInputSelectorPopup = std::make_unique<ImguiUtil::EnumSelectorPopup<ParticleSystemInputName>>("InputSelector", "Select Input", [&](ParticleSystemInputName v) {
+                        return v != ParticleSystemInputName::INVALID && !mAssetData->mDefaultInputs->inputMap.contains(v);
+                    });
+                }
+                for (auto it = mAssetData->mDefaultInputs->inputMap.begin(); it != mAssetData->mDefaultInputs->inputMap.end();) {
+                    ImGui::PushID(e_cast(it->first));
+                    ImGui::Text(ENUM_CSTR(ParticleSystemInputName, it->first));
+                    ImGui::SameLine();
+                    if (uint* v = std::get_if<uint>(&it->second)) {
+                        int iv = *v;
+                        if (ImGui::InputInt("##input", &iv)) {
+                            changed = true;
+                        }
+                        *v = iv;
+                    }
+                    else if (f32* v = std::get_if<f32>(&it->second)) {
+                        if (ImGui::InputFloat("##input", v)) {
+                            changed = true;
+                        }
+                    }
+                    else if (f32v2* v = std::get_if<f32v2>(&it->second)) {
+                        if (ImGui::InputFloat2("##input", &v->x)) {
+                            changed = true;
+                        }
+                    }
+                    else if (f32v3* v = std::get_if<f32v3>(&it->second)) {
+                        if (ImGui::InputFloat3("##input", &v->x)) {
+                            changed = true;
+                        }
+                    }
+                    else if (ParticleSystemMeshInput* v = std::get_if<ParticleSystemMeshInput>(&it->second)) {
+                        ModelAssetRef modelRef = v->mModelDef ? ModelAssetRef(v->mModelDef->getID()) : ModelAssetRef();
+                        if (ImguiUtil::updateAndRenderAssetReference("Model", modelRef, (ui64)it->first, AssetType::Model)) {
+                            changed = true;
+                            v->mModelDef = modelRef.isValid() ? &ModelRepository::get().getLoadedOrUnloadedAsset(modelRef.getAssetID()) : nullptr;
+                        }
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("X")) {
+                        it = mAssetData->mDefaultInputs->inputMap.erase(it);
+                        changed = true;
+                    }
+                    else {
+                        ++it;
+                    }
+                    ImGui::PopID();
+                }
+            }
+
+            ImGui::Spacing();
+
+            if (ImGui::CollapsingHeader("User Params", ImGuiTreeNodeFlags_DefaultOpen)) {
+                if (ImGui::Button("+")) {
+
+                }
+            }
+
+            if (changed) {
+                ParticleSystemRepository::get().onAssetChangedByEditor(mAssetData->getID());
+                createPreviewSystem();
+            }
+        }
+
         // Popups are opened in this panel
         updatePopups();
     }
@@ -325,8 +407,7 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
                         mSelectedModuleVector = nullptr;
                     }
                     it = modules.erase(it);
-                    // Refresh
-                    createPreviewSystem();
+                    changed = true;
                     didDelete = true;
                 }
                 ImGui::SameLine();
@@ -402,23 +483,15 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
         changed |= ImGui::SliderFloat("Emitter Lifetime Sec", &mSelectedEmitter->mLifetimeSec, 0.01f, 50.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
         changed |= ImGui::SliderFloat("Particle Lifespan Sec", &mSelectedEmitter->mDefaultParticleLifespanSec, 0.01f, 50.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
        
-        if (ImGui::Button("Material")) {
-            mAssetSelectorPopup = std::make_unique<ImguiUtil::AssetSelectorPopup>(MaterialRepository::get().getAssetRegistry());
-            mAssetSelectorPopup->setThumbnailFunc(ImguiAssetThumbnails::getThumbnailFunction<MaterialDef>(), f32v2(50.0f));
+        if (ImguiUtil::updateAndRenderAssetReference(nullptr, mSelectedEmitter->mMaterialRef, AssetType::Material)) {
+            changed = true;
         }
-        if (mAssetSelectorPopup) {
-            if (mAssetSelectorPopup->updateAndRender(UIContext::getWindowDims().y * 0.9f)) {
-                assert(mSelectedEmitter);
-                mSelectedEmitter->mDefaultMaterialName = mAssetSelectorPopup->getResult().mName;
-                mSelectedEmitter->mDefaultMaterialID = mAssetSelectorPopup->getResult().getId();
-                mAssetSelectorPopup.reset();
-                changed = true;
-            }
+        if (ImguiUtil::updateAndRenderAssetReference(nullptr, mSelectedEmitter->mShaderRef, AssetType::MaterialShader, [](AssetID id) {
+            vio::Path path = MaterialShaderRepository::get().getAssetFilePath(id);
+            return vio::containsSubpath(path, "particle");
+        })) {
+            changed = true;
         }
-
-        ImGui::SameLine();
-        ImGui::Text(mSelectedEmitter->mDefaultMaterialID != INVALID_MATERIAL_ID ? MaterialRepository::get().getAssetName(mSelectedEmitter->mDefaultMaterialID).toString().c_str() : "NONE");
-        ImguiAssetThumbnails::getThumbnailFunction<MaterialDef>()(mSelectedEmitter->mDefaultMaterialID, f32v2(60.0f));
 
         changed |= ImGui::Checkbox("Looping", &mSelectedEmitter->mLooping);
         changed |= ImguiUtil::EnumCombo("Blend Mode", mSelectedEmitter->mBlendMode);
@@ -502,7 +575,8 @@ void ParticleSystemEditorViewportPanel::renderMesh() {
 void ParticleSystemEditorViewportPanel::createPreviewSystem() {
     if (!mAssetData) return;
     mCurrentTime = 0.0f;
-    mPreviewSystem = std::make_unique<CPUParticleSystem>(*mAssetData, f32v3(0.0f));
+    mPreviewSystem = std::make_unique<CPUParticleSystem>(*mAssetData, f32v3(0.0f), mAssetData->mDefaultInputs);
+    mPreviewSystem->setAsEditorPreviewSystem();
 }
 
 void ParticleSystemEditorViewportPanel::updatePopups() {
@@ -537,6 +611,17 @@ void ParticleSystemEditorViewportPanel::updatePopups() {
             mDuplicateObjectPopup.reset();
         }
     }
+    else if (mInputSelectorPopup) {
+        if (mInputSelectorPopup->updateAndRender()) {
+            const ParticleSystemInputName input = mInputSelectorPopup->getResult();
+            if (input != ParticleSystemInputName::COUNT) {
+                mAssetData->mDefaultInputs->addDefaultInput(input);
+                ParticleSystemRepository::get().onAssetChangedByEditor(mAssetData->getID());
+                createPreviewSystem();
+            }
+            mInputSelectorPopup.reset();
+        }
+    }
 }
 
 void ParticleSystemEditorViewportPanel::openDuplicateEmitterPopup() {
@@ -555,6 +640,7 @@ void ParticleSystemEditorViewportPanel::duplicateGlobalEmitter(const nString& em
                 mAssetData->mEmitters.emplace_back(emitter);
                 unselect();
                 mSelectedEmitter = &mAssetData->mEmitters.back();
+                ParticleSystemRepository::get().onAssetChangedByEditor(mAssetData->getID());
                 createPreviewSystem();
                 return true;
             }

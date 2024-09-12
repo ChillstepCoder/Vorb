@@ -9,7 +9,7 @@
 
 #include "resources/TextureRepository.h"
 
-namespace util = ax::NodeEditor::Utilities;
+namespace axutil = ax::NodeEditor::Utilities;
 
 static inline ImRect ImGui_GetItemRect()
 {
@@ -183,7 +183,7 @@ void NodeGraph::updateAndRender()
     {
         auto cursorTopLeft = ImGui::GetCursorScreenPos();
 
-        util::BlueprintNodeBuilder builder((ImTextureID)headerBackground.gpuTexture.getHandle(), headerBackground.gpuTexture.getDims().x, headerBackground.gpuTexture.getDims().y);
+        axutil::BlueprintNodeBuilder builder((ImTextureID)headerBackground.gpuTexture.getHandle(), headerBackground.gpuTexture.getDims().x, headerBackground.gpuTexture.getDims().y);
 
         // Blueprint and Simple nodes
         for (auto& node : m_Nodes)

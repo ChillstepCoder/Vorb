@@ -182,7 +182,7 @@ void TextMeshBuilder::addString(std::string_view str, const f32v3& rootPosition,
             f32v2 dims = font.mGlyphs[g.gi].size * glyphScale;
             f32v4 uvRect = font.mGlyphs[g.gi].uvRect;
             // Clip the glyphs with clipRect
-            computeClipping(clipRect, position, dims, uvRect);
+            util::computeClipping(clipRect, position, dims, uvRect);
             // Don't draw the glyph if its too small after clipping
             if (dims.x > 0.0f && dims.y > 0.0f) {
                 // Add glyph

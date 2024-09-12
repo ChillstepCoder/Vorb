@@ -1335,6 +1335,9 @@
     <ClCompile Include="src\rendering\model\ModelImpostorRenderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\rendering\particle\ParticleSystemInputs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -3144,6 +3147,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\definitions\ParticleEmitterDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\rendering\particle\ParticleSystemUserParameters.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\UniformTriangleSampler3D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

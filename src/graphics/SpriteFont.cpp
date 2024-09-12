@@ -391,7 +391,7 @@ void vg::SpriteFont::draw(SpriteBatch* batch, const cString s, const f32v2& posi
             f32v2 size = m_glyphs[g.gi].size * scaling;
             f32v4 uvRect = m_glyphs[g.gi].uvRect;
             // Clip the glyphs with clipRect
-            computeClipping(clipRect, position, size, uvRect);
+            util::computeClipping(clipRect, position, size, uvRect);
             // Don't draw the glyph if its too small after clipping
             if (size.x > 0.0f && size.y > 0.0f) {
                 batch->draw(m_texID, &uvRect, position, size, tint, depth);

@@ -15,6 +15,7 @@ namespace ImguiUtil {
     class ConfirmDeletePopup;
     class CustomSelectorPopup;
     class AssetSelectorPopup;
+    template <typename T> class EnumSelectorPopup;
 }
 
 enum class EditorViewportDrawMode {

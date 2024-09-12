@@ -77,20 +77,28 @@ bool CPUParticleEmitterParameter::updateAndRenderTweaker(const char*const label,
             color = color4((ui8)roundf(colorf[0] * 255.0f), (ui8)roundf(colorf[1] * 255.0f), (ui8)roundf(colorf[2] * 255.0f), (ui8)roundf(colorf[3] * 255.0f));
         }
          else if (std::holds_alternative<ParticleEmitterVariableNameUInt>(mVarData)) {
-             ParticleEmitterVariableNameUInt& name = std::get<ParticleEmitterVariableNameUInt>(mVarData);
-             changed |= ImguiUtil::EnumCombo("Var", name);
+            ParticleEmitterVariableNameUInt& name = std::get<ParticleEmitterVariableNameUInt>(mVarData);
+            changed |= ImguiUtil::EnumCombo<ParticleEmitterVariableNameUInt>("Var", name, [&](ParticleEmitterVariableNameUInt v) {
+                return std::find(parentEmitter.mUIntVariables.begin(), parentEmitter.mUIntVariables.end(), v) != parentEmitter.mUIntVariables.end();
+            });
          }
          else if (std::holds_alternative<ParticleEmitterVariableNameFloat>(mVarData)) {
             ParticleEmitterVariableNameFloat& name = std::get<ParticleEmitterVariableNameFloat>(mVarData);
-            changed |= ImguiUtil::EnumCombo("Var", name);
+            changed |= ImguiUtil::EnumCombo<ParticleEmitterVariableNameFloat>("Var", name, [&](ParticleEmitterVariableNameFloat v) {
+                return std::find(parentEmitter.mFloatVariables.begin(), parentEmitter.mFloatVariables.end(), v) != parentEmitter.mFloatVariables.end();
+            });
          }
          else if (std::holds_alternative<ParticleEmitterVariableNameVec2>(mVarData)) {
             ParticleEmitterVariableNameVec2& name = std::get<ParticleEmitterVariableNameVec2>(mVarData);
-            changed |= ImguiUtil::EnumCombo("Var", name);
+            changed |= ImguiUtil::EnumCombo<ParticleEmitterVariableNameVec2>("Var", name, [&](ParticleEmitterVariableNameVec2 v) {
+                return std::find(parentEmitter.mVec2Variables.begin(), parentEmitter.mVec2Variables.end(), v) != parentEmitter.mVec2Variables.end();
+            });
          }
          else if (std::holds_alternative<ParticleEmitterVariableNameVec3>(mVarData)) {
             ParticleEmitterVariableNameVec3& name = std::get<ParticleEmitterVariableNameVec3>(mVarData);
-            changed |= ImguiUtil::EnumCombo("Var", name);
+            changed |= ImguiUtil::EnumCombo<ParticleEmitterVariableNameVec3>("Var", name, [&](ParticleEmitterVariableNameVec3 v) {
+                return std::find(parentEmitter.mVec3Variables.begin(), parentEmitter.mVec3Variables.end(), v) != parentEmitter.mVec3Variables.end();
+            });
          }
         else {
             assert(false);
@@ -189,7 +197,11 @@ bool CPUParticleEmitterParameter::updateAndRenderTweaker(const char*const label,
 }
 
 bool CPUParticleEmitterParameter::loadFromYml(ryml::ConstNodeRef node, std::string_view name) {
-    ryml::ConstNodeRef thisNode = node[c4::to_csubstr(name)];
+    c4::csubstr cname = c4::to_csubstr(name);
+    if (!node.has_child(cname)) {
+        return false;
+    }
+    ryml::ConstNodeRef thisNode = node[cname];
     if (!thisNode.valid()) {
         return false;
     }
@@ -279,7 +291,7 @@ void CPUPEO_QueryNormalizedLifetime::execute(CpuParticleEmitter& emitter, Partic
 
 void CPUPEO_InputImpactDirection::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     if (emitter.getInputs()) [[likely]] {
-        output->mVarData = emitter.getInputs()->getVec3Input(ParticleSystemInputNameVec3::ImpactDirection, f32v3(0.0f, 0.0f, 1.0f));
+        output->mVarData = emitter.getInputs()->getVec3Input(ParticleSystemInputName::Vec3ImpactDirection, f32v3(0.0f, 0.0f, 1.0f));
     }
     else {
         output->mVarData = f32v3(0.0f, 0.0f, 1.0f);
@@ -288,7 +300,7 @@ void CPUPEO_InputImpactDirection::execute(CpuParticleEmitter& emitter, ParticleI
 
 void CPUPEO_InputImpactSurfaceNormal::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     if (emitter.getInputs()) [[likely]] {
-        output->mVarData = emitter.getInputs()->getVec3Input(ParticleSystemInputNameVec3::ImpactSurfaceNormal, f32v3(0.0f, 1.0f, 0.0f));
+        output->mVarData = emitter.getInputs()->getVec3Input(ParticleSystemInputName::Vec3ImpactSurfaceNormal, f32v3(0.0f, 1.0f, 0.0f));
     }
     else {
         output->mVarData = f32v3(0.0f, 1.0f, 0.0f);
@@ -315,7 +327,7 @@ void CPUPEO_RandomFloatInRange::execute(CpuParticleEmitter& emitter, ParticleID 
     evaluateParams(emitter, id);
     const f32 p0 = std::get<f32>(mParams[0].mVarData);
     const f32 p1 = std::get<f32>(mParams[1].mVarData);
-    output->mVarData = (f32)lerp(p0, p1, mSeedByParticleID ? Random::getCachedRandomfSpecific((ui32)id) : Random::getCachedRandomf());
+    output->mVarData = (f32)util::lerp(p0, p1, mSeedByParticleID ? Random::getCachedRandomfSpecific((ui32)id) : Random::getCachedRandomf());
 }
 bool CPUPEO_RandomFloatInRange::updateAndRenderExtraPostControls(const ParticleEmitterDef& parentEmitter) {
     return ImGui::Checkbox("Seed By Particle ID", &mSeedByParticleID);
@@ -571,4 +583,19 @@ void CPUPEO_MakeVec3::execute(CpuParticleEmitter& emitter, ParticleID id, CPUPar
     const f32 y = std::get<f32>(mParams[1].mVarData);
     const f32 z = std::get<f32>(mParams[2].mVarData);
     output->mVarData = f32v3(x, y, z);
+}
+
+void CPUPEO_LerpFloat::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
+    evaluateParams(emitter, id);
+    output->mVarData = util::lerp(std::get<f32>(mParams[0].mVarData), std::get<f32>(mParams[1].mVarData), std::get<f32>(mParams[2].mVarData));
+}
+
+void CPUPEO_LerpVec2::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
+    evaluateParams(emitter, id);
+    output->mVarData = util::lerp(std::get<f32v2>(mParams[0].mVarData), std::get<f32v2>(mParams[1].mVarData), std::get<f32>(mParams[2].mVarData));
+}
+
+void CPUPEO_LerpVec3::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
+    evaluateParams(emitter, id);
+    output->mVarData = util::lerp(std::get<f32v3>(mParams[0].mVarData), std::get<f32v3>(mParams[1].mVarData), std::get<f32>(mParams[2].mVarData));
 }

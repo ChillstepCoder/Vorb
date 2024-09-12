@@ -1,70 +1,72 @@
 #pragma once
 
-enum class ParticleSystemInputNameUInt : ui8 {
-    COUNT
-};
+// MAINTAIN TYPE ORDERING
+enum class ParticleSystemInputName : ui8 {
+    INVALID = 0,
 
-enum class ParticleSystemInputNameFloat : ui8 {
-    COUNT
-};
+    UINT_END,
+    UINT_TERM = UINT_END - 1,
 
-enum class ParticleSystemInputNameVec2: ui8 {
-    COUNT
-};
+    FLOAT_END,
+    FLOAT_TERM = FLOAT_END - 1,
 
-enum class ParticleSystemInputNameVec3 : ui8 {
-    ImpactDirection,
-    ImpactSurfaceNormal,
+    VEC2_END,
+    VEC2_TERM = VEC2_END - 1,
+
+    Vec3ImpactDirection,
+    Vec3ImpactSurfaceNormal,
+
+    VEC3_END,
+    VEC3_TERM = VEC3_END - 1,
+
+    MeshSource,
+    MeshTarget,
+
+    MESH_END,
+    MESH_TERM = MESH_END - 1,
+
     COUNT
 };
+SERIALIZABLE_ENUM_SAME_NAME(ParticleSystemInputName,
+    ENUM_FIELD_SIMPLE(ParticleSystemInputName, INVALID),
+    ENUM_FIELD_SIMPLE(ParticleSystemInputName, Vec3ImpactDirection),
+    ENUM_FIELD_SIMPLE(ParticleSystemInputName, Vec3ImpactSurfaceNormal),
+    ENUM_FIELD_SIMPLE(ParticleSystemInputName, MeshSource),
+    ENUM_FIELD_SIMPLE(ParticleSystemInputName, MeshTarget)
+);
+
+class ModelDef;
+struct ParticleSystemMeshInput {
+    const ModelDef* mModelDef = nullptr;
+};
+YML_WRITE_DECL(ParticleSystemMeshInput);
+YML_READ_DECL(ParticleSystemMeshInput);
+
+using ParticleSystemInput = std::variant<ui32, f32, f32v2, f32v3, ParticleSystemMeshInput>;
+YML_WRITE_DECL(ParticleSystemInput);
+YML_READ_DECL(ParticleSystemInput);
 
 struct ParticleSystemInputs {
-    void setUIntInput(ParticleSystemInputNameUInt name, ui32 value) {
-        mUIntInputs[name] = value;
-    }
-    void setFloatInput(ParticleSystemInputNameFloat name, f32 value) {
-        mFloatInputs[name] = value;
-    }
-    void setVec2Input(ParticleSystemInputNameVec2 name, f32v2 value) {
-        mVec2Inputs[name] = value;
-    }
-    void setVec3Input(ParticleSystemInputNameVec3 name, f32v3 value) {
-        mVec3Inputs[name] = value;
-    }
+    void setUIntInput(ParticleSystemInputName name, ui32 value);
+    void setFloatInput(ParticleSystemInputName name, f32 value);
+    void setVec2Input(ParticleSystemInputName name, f32v2 value);
+    void setVec3Input(ParticleSystemInputName name, f32v3 value);
+    void setMeshInput(ParticleSystemInputName name, ParticleSystemMeshInput value);
+    void setInput(ParticleSystemInputName name, ParticleSystemInput input);
 
-    ui32 getUIntInput(ParticleSystemInputNameUInt name, ui32 defaultIfNotFound = 0) const {
-        auto it = mUIntInputs.find(name);
-        if (it != mUIntInputs.end()) [[likely]] return it->second;
-        return defaultIfNotFound;
-    }
+    void addDefaultInput(ParticleSystemInputName name);
 
-    f32 getFloatInput(ParticleSystemInputNameFloat name, f32 defaultIfNotFound = 0.0f) const {
-        auto it = mFloatInputs.find(name);
-        if (it != mFloatInputs.end()) [[likely]] return it->second;
-        return defaultIfNotFound;
-    }
+    ui32 getUIntInput(ParticleSystemInputName name, ui32 defaultIfNotFound = 0) const;
+    f32 getFloatInput(ParticleSystemInputName name, f32 defaultIfNotFound = 0.0f) const;
+    f32v2 getVec2Input(ParticleSystemInputName name, f32v2 defaultIfNotFound = f32v2(0.0f)) const;
+    f32v3 getVec3Input(ParticleSystemInputName name, f32v3 defaultIfNotFound = f32v3(0.0f)) const;
+    ParticleSystemMeshInput getMeshInput(ParticleSystemInputName name, ParticleSystemMeshInput defaultIfNotFound = ParticleSystemMeshInput()) const;
 
-    f32v2 getVec2Input(ParticleSystemInputNameVec2 name, f32v2 defaultIfNotFound = f32v2(0.0f)) const {
-        auto it = mVec2Inputs.find(name);
-        if (it != mVec2Inputs.end()) [[likely]] return it->second;
-        return defaultIfNotFound;
-    }
+    void readYmlNode(const ryml::ConstNodeRef& node, ParticleSystemInputName name);
 
-    f32v3 getVec3Input(ParticleSystemInputNameVec3 name, f32v3 defaultIfNotFound = f32v3(0.0f)) const {
-        auto it = mVec3Inputs.find(name);
-        if (it != mVec3Inputs.end()) [[likely]] return it->second;
-        return defaultIfNotFound;
-    }
-
-    // TODO: Profile against plain ole vectors for small N
-    UnorderedFlatMap<ParticleSystemInputNameUInt, ui32> mUIntInputs;
-    UnorderedFlatMap<ParticleSystemInputNameFloat, f32> mFloatInputs;
-    UnorderedFlatMap<ParticleSystemInputNameVec2, f32v2> mVec2Inputs;
-    UnorderedFlatMap<ParticleSystemInputNameVec3, f32v3> mVec3Inputs;
-
-    f32v3 mInputImpactDirection = f32v3(0.0f, 0.0f, 1.0f);
-    f32v3 mInputImpactSurfaceNormal = f32v3(0.0f, 1.0f, 0.0f);
-
+    // TODO: Profile against plain vectors for small N
+    FlatMap<ParticleSystemInputName, ParticleSystemInput> inputMap;
 };
 
 using ParticleSystemInputsPtr = std::shared_ptr<ParticleSystemInputs>;
+using ConstParticleSystemInputsPtr = std::shared_ptr<const ParticleSystemInputs>;

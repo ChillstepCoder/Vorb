@@ -8,7 +8,7 @@ emitters:
       looping: 1
       blend: alpha
       mat: tree_particle_02
-      shader: particle_bb_3d
+      shader: particle_3d
       e_update:
         - spawn_burst:
             delay: 0

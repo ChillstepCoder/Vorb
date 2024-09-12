@@ -439,6 +439,7 @@
     <ClCompile Include="src\rendering\particle\CPUParticleEmitterModule.cpp" />
     <ClCompile Include="src\rendering\particle\CPUParticleEmitterOperation.cpp" />
     <ClCompile Include="src\rendering\particle\CPUParticleSystem.cpp" />
+    <ClCompile Include="src\rendering\particle\ParticleSystemInputs.cpp" />
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\ShadowDetail.cpp" />
@@ -999,6 +1000,7 @@
     <ClInclude Include="src\rendering\particle\ParticleEmitterVariableName.h" />
     <ClInclude Include="src\rendering\particle\ParticleEnumTypes.h" />
     <ClInclude Include="src\rendering\particle\ParticleSystemInputs.h" />
+    <ClInclude Include="src\rendering\particle\ParticleSystemUserParameters.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\ShadowDetail.h" />
@@ -1209,6 +1211,7 @@
     <ClInclude Include="src\util\TinyThreadsafeVector.hpp" />
     <ClInclude Include="src\util\Tweener.h" />
     <ClInclude Include="src\util\TypeHash.h" />
+    <ClInclude Include="src\util\UniformTriangleSampler3D.h" />
     <ClInclude Include="src\util\Utils.h" />
     <ClInclude Include="src\util\UniqueId64.h" />
     <ClInclude Include="src\util\Winding.h" />

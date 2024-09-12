@@ -3,6 +3,7 @@
 
 #include "resources/IAssetRepository.h"
 #include "definitions/ParticleSystemDef.h"
+#include "rendering/particle/ParticleSystemInputs.h"
 
 class ParticleEmitterDef;
 class CPUParticleEmitterModule;
@@ -49,7 +50,7 @@ private:
     std::unique_ptr<ImguiUtil::RenameAssetPopup> mRenamePopup;
     std::unique_ptr<ImguiUtil::ConfirmDeletePopup> mConfirmDeletePopup;
     std::unique_ptr<ImguiUtil::CustomSelectorPopup> mDuplicateObjectPopup;
-    std::unique_ptr<ImguiUtil::AssetSelectorPopup> mAssetSelectorPopup;
+    std::unique_ptr<ImguiUtil::EnumSelectorPopup<ParticleSystemInputName>> mInputSelectorPopup;
 
     std::unique_ptr<CPUParticleSystem> mPreviewSystem;
     f32 mTimelineEnd = 3.0f;

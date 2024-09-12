@@ -187,7 +187,7 @@ namespace MathUtil {
     template <typename T>
     inline T lerpWithDeltaTime(T a, T b, float lerpAlpha, float elapsedSec) {
         const float fraction = 1.0f - pow(1.0f - lerpAlpha, elapsedSec);
-        return lerp(a, b, fraction);
+        return util::lerp(a, b, fraction);
     }
 
     template <typename T, typename A>

@@ -7,7 +7,7 @@ emitters:
       p_lifespan: 3
       looping: 1
       blend: additive
-      shader: particle_bb_3d
+      shader: particle_3d
       e_update:
         - spawn_burst:
             delay: 0

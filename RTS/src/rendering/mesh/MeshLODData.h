@@ -14,6 +14,10 @@ struct MeshLODData {
     ui32 mLODStarts[e_cast(MeshLODLevel::COUNT)] = {}; // Index buffer start for each LOD level
     ui32 mTotalIndexCount = 0;
 
+    ui32 getHighestLODIndexCount() const {
+        return mLODStarts[1];
+    }
+
     MeshLODDrawInfo getDrawInfoForLOD(MeshLODLevel lod) const {
         assert(lod != MeshLODLevel::COUNT && "Invalid LOD level");
         const ui32 start = mLODStarts[e_cast(lod)];

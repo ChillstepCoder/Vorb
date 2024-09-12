@@ -53,6 +53,20 @@ bool ParticleSystemRepository::saveAsset(AssetID id) {
         saveParticleEmitter(newNode, emitter);
     }
 
+    // Lifetime
+    ryml::NodeRef lifetimeNode = root.append_child() << ryml::key("lifetime");
+    lifetimeNode << particleSystem.mLifetimeSec;
+
+    // Inputs
+    ryml::NodeRef inputsNode = root.append_child() << ryml::key("inputs");
+    inputsNode |= ryml::SEQ;
+    for (auto it = particleSystem.mDefaultInputs->inputMap.begin(); it != particleSystem.mDefaultInputs->inputMap.end(); ++it) {
+        ryml::NodeRef newNode = inputsNode.append_child();
+        newNode |= ryml::MAP;
+        ryml::NodeRef innerNode = newNode[c4::to_csubstr(ENUM_CSTR(ParticleSystemInputName, it->first))];
+        innerNode << it->second;
+    }
+
     std::stringstream ss;
     ss << tree;
     nString str = ss.str();
@@ -103,8 +117,8 @@ void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const Pa
     innerNode[EMITTER_PARTICLE_LIFESPAN_KEY] << particleEmitter.mDefaultParticleLifespanSec;
     innerNode[EMITTER_LOOPING_KEY] << particleEmitter.mLooping;
     innerNode[EMITTER_BLEND_KEY] << particleEmitter.mBlendMode;
-    if (particleEmitter.mDefaultMaterialName.isValid()) {
-        innerNode[EMITTER_MATERIAL_KEY] << particleEmitter.mDefaultMaterialName;
+    if (particleEmitter.mMaterialRef.isValid()) {
+        innerNode[EMITTER_MATERIAL_KEY] << particleEmitter.mMaterialRef;
     }
     innerNode[EMITTER_SHADER_KEY] << particleEmitter.mShaderRef;
 
@@ -142,8 +156,8 @@ void ParticleSystemRepository::saveParticleEmitter(ryml::NodeRef& node, const Pa
 bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, ParticleEmitterDef& particleEmitter) {
 
     // Defaults
-    particleEmitter.mDefaultMaterialID = getDefaultMaterialID();
-    particleEmitter.mShaderRef = CStrToken("particle_bb_3d");
+    particleEmitter.mMaterialRef = getDefaultMaterialID();
+    particleEmitter.mShaderRef = CStrToken("particle_3d");
     
     // Deserialize config
     yml::tryReadValue(node, EMITTER_SCALE_KEY, particleEmitter.mDefaultScale);
@@ -153,9 +167,7 @@ bool ParticleSystemRepository::loadParticleEmitter(ryml::ConstNodeRef node, Part
     yml::tryReadValue(node, EMITTER_PARTICLE_LIFESPAN_KEY, particleEmitter.mDefaultParticleLifespanSec);
     yml::tryReadValue(node, EMITTER_LOOPING_KEY, particleEmitter.mLooping);
     yml::tryReadValue(node, EMITTER_BLEND_KEY, particleEmitter.mBlendMode);
-    if (yml::tryReadValue(node, EMITTER_MATERIAL_KEY, particleEmitter.mDefaultMaterialName)) {
-        particleEmitter.mDefaultMaterialID = MaterialRepository::get().getAssetID(particleEmitter.mDefaultMaterialName);
-    }
+    yml::tryReadValue(node, EMITTER_MATERIAL_KEY, particleEmitter.mMaterialRef);
     yml::tryReadValue(node, EMITTER_SHADER_KEY, particleEmitter.mShaderRef);
 
     { // Emitter Update
@@ -264,8 +276,30 @@ AssetLoadFunc ParticleSystemRepository::getAssetLoadFunc() {
             if (!loadParticleEmitter(innerNode, newEmitter)) {
                 panic("Failed to load particle emitter {} {}", filePath.getFileNameNoExtension(), filePath.getString());
             }
+
             assert(newEmitter.mShaderRef.isValid());
             newDef.addDependency(newEmitter.mShaderRef.getAssetHandleBase());
+        }
+
+        if (tree.rootref().has_child("lifetime")) {
+            tree.rootref()["lifetime"] >> newDef.mLifetimeSec;
+        }
+
+        if (tree.rootref().has_child("inputs")) {
+            ryml::ConstNodeRef inputsNode = tree.rootref()["inputs"];
+            for (ryml::ConstNodeRef seqNode : inputsNode.children()) {
+
+                ryml::ConstNodeRef innerNode = seqNode.first_child();
+                const auto& enumMap = getGlobalEnumNameMap<ParticleSystemInputName>();
+                for (auto& [key, value] : enumMap) {
+                    const c4::csubstr nodeKey = innerNode.key();
+                    const c4::csubstr vstr = c4::csubstr(value.data(), value.length());
+                    if (nodeKey == vstr) {
+                        newDef.mDefaultInputs->readYmlNode(innerNode, key);
+                        break;
+                    }
+                }
+            }
         }
 
         if (newDef.getDependencies()->areAllAssetsLoaded()) {

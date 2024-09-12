@@ -3,10 +3,12 @@
 
 #include "CpuParticleEmitter.h"
 
+#include "definitions/ModelDef.h"
+#include "rendering/mesh/Vertex.h"
+
 #include <imgui.h>
+#include "util/UniformTriangleSampler3D.h"
 
-
-#include "math/Random.h"
 
 #define MODULE_DATA static_cast<ModuleData*>(data)
 
@@ -496,10 +498,10 @@ bool CPUPEM_SetUIntVar::compatableWithEmitter(const CpuParticleEmitter& emitter)
     return emitter.hasUIntVariable(varName);
 }
 
-void CPUPEM_SetUIntVar::addRequiredUIntVariables(FlatSet<ParticleEmitterVariableNameUInt>& uintVariables) const {
+void CPUPEM_SetUIntVar::addRequiredUIntVariables(FlatSet<ParticleEmitterVariableNameUInt>& variables) const {
     ParticleEmitterVariableNameUInt varName = std::get<ParticleEmitterVariableNameUInt>(mModuleData.mVariable.mVarData);
     if (varName != ParticleEmitterVariableNameUInt::INVALID) {
-        uintVariables.insert(varName);
+        variables.insert(varName);
     }
 }
 
@@ -545,10 +547,10 @@ bool CPUPEM_SetFloatVar::compatableWithEmitter(const CpuParticleEmitter& emitter
     return emitter.hasFloatVariable(varName);
 }
 
-void CPUPEM_SetFloatVar::addRequiredFloatVariables(FlatSet<ParticleEmitterVariableNameFloat>& floatVariables) const {
+void CPUPEM_SetFloatVar::addRequiredFloatVariables(FlatSet<ParticleEmitterVariableNameFloat>& variables) const {
     ParticleEmitterVariableNameFloat varName = std::get<ParticleEmitterVariableNameFloat>(mModuleData.mVariable.mVarData);
     if (varName != ParticleEmitterVariableNameFloat::INVALID) {
-        floatVariables.insert(varName);
+        variables.insert(varName);
     }
 }
 #pragma endregion
@@ -594,10 +596,10 @@ bool CPUPEM_SetVec2Var::compatableWithEmitter(const CpuParticleEmitter& emitter)
     return emitter.hasVec2Variable(varName);
 }
 
-void CPUPEM_SetVec2Var::addRequiredVec2Variables(FlatSet<ParticleEmitterVariableNameVec2>& floatVariables) const {
+void CPUPEM_SetVec2Var::addRequiredVec2Variables(FlatSet<ParticleEmitterVariableNameVec2>& variables) const {
     ParticleEmitterVariableNameVec2 varName = std::get<ParticleEmitterVariableNameVec2>(mModuleData.mVariable.mVarData);
     if (varName != ParticleEmitterVariableNameVec2::INVALID) {
-        floatVariables.insert(varName);
+        variables.insert(varName);
     }
 }
 #pragma endregion
@@ -883,7 +885,6 @@ void CPUPEM_OrientToVelocity::refresh() {
 
 bool CPUPEM_OrientToVelocity::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
     bool changed = false;
-   
     //  TODO
     return changed;
 }
@@ -898,4 +899,201 @@ void CPUPEM_OrientToVelocity::saveYmlData(ryml::NodeRef node) const {
   //  SAVE_VAR(mScaleFactor, "scale_fac"sv);
   //  SAVE_VAR(mDirOffset, "dir_off"sv);
 }
+#pragma endregion
+
+
+ui16v3 getRandomTriangleIndices(const ModelDef& modelDef, const MeshCpuData** outMeshData) {
+    const f32 randomWeight = Random::getCachedRandomf();
+    const i32 randomMeshIndex = modelDef.getRandomSubmeshIndex(randomWeight);
+    const MeshCpuData* meshData = &modelDef.mSubmeshCpuData[randomMeshIndex];
+    *outMeshData = meshData;
+    const i32 elementRand = (Random::getCachedRandom() % (meshData->mLodData.getHighestLODIndexCount() / 3)) * 3;
+    assert(meshData->mIndexType == MeshIndexType::USHORT);
+    return ui16v3(reinterpret_cast<ui16*>(meshData->mElementsPtr)[elementRand],
+                  reinterpret_cast<ui16*>(meshData->mElementsPtr)[elementRand + 1],
+                  reinterpret_cast<ui16*>(meshData->mElementsPtr)[elementRand + 2]);
+}
+ 
+// ====================================================================================================
+// CPUPEM_MeshReproductionSource
+// ====================================================================================================
+#pragma region CPUPEM_MeshReproductionSource
+CPUPEM_MeshReproductionSource::CPUPEM_MeshReproductionSource() {
+    refresh();
+}
+
+void CPUPEM_MeshReproductionSource::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        ParticleSystemMeshInput meshInput = emitter.getInputs()->getMeshInput(ParticleSystemInputName::MeshSource);
+        if (meshInput.mModelDef) [[likely]] {
+            const MeshCpuData* meshData = nullptr;
+            const ui16v3 indices = getRandomTriangleIndices(*meshInput.mModelDef, &meshData);
+
+            // Barycentric interpolation via random point in triangle
+            switch (meshData->mVertexType) {
+                case VertexType::STANDARD_MODEL: {
+                    const StandardModelVertex* vertexData = reinterpret_cast<const StandardModelVertex*>(meshData->mVertsPtr);
+                    UniformTriangleSampler3D sampler(vertexData[indices.x].pos, vertexData[indices.y].pos, vertexData[indices.z].pos);
+                    const f32v3 pos = sampler.generatePoint();
+                    const f32v3 baryCoords = sampler.getBarycentricCoords(pos);
+                    const f32v2 uv = baryCoords.x * UnpackUVs(vertexData[indices.x].uvsPacked) + 
+                                     baryCoords.y * UnpackUVs(vertexData[indices.y].uvsPacked) +
+                                     baryCoords.z * UnpackUVs(vertexData[indices.z].uvsPacked);
+
+                    emitter.setVec3Variable(ParticleEmitterVariableNameVec3::MeshSourcePos, particleID, pos);
+                    emitter.setVec2Variable(ParticleEmitterVariableNameVec2::MeshSourceUV, particleID, uv);
+
+                    // Scale based on size of triangle
+                    const f32v2 scaleClamp = std::get<f32v2>(MODULE_DATA->mScaleClamp.mVarData);
+                    const f32 scale = glm::clamp(sampler.getArea(), scaleClamp.x, scaleClamp.y) * std::get<f32>(MODULE_DATA->mScaleMult.mVarData);
+
+                    emitter.setFloatVariable(ParticleEmitterVariableNameFloat::MeshSourceScale, particleID, scale);
+                    break;
+                }
+                case VertexType::SKINNED_MODEL:
+                    // TODO: Sample animation
+                    break;
+            }
+        }
+    };
+}
+
+bool CPUPEM_MeshReproductionSource::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    bool changed = false;
+    ImGui::Text("Using (in) MeshSource");
+    ImGui::Text("   Providing MeshSourcePos");
+    changed |= updateAndRenderVariable(mModuleData.mScaleMult, "Scale Mult", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mScaleClamp, "Scale Clamp", parentEmitter);
+    return changed;
+}
+
+bool CPUPEM_MeshReproductionSource::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mScaleMult, "scale"sv);
+    LOAD_VAR(mScaleClamp, "scale_clmp"sv);
+    return true;
+}
+
+void CPUPEM_MeshReproductionSource::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mScaleMult, "scale"sv);
+    SAVE_VAR(mScaleClamp, "scale_clmp"sv);
+}
+
+void CPUPEM_MeshReproductionSource::addRequiredFloatVariables(FlatSet<ParticleEmitterVariableNameFloat>& variables) const {
+    variables.insert(ParticleEmitterVariableNameFloat::MeshSourceScale);
+}
+
+void CPUPEM_MeshReproductionSource::addRequiredVec2Variables(FlatSet<ParticleEmitterVariableNameVec2>& variables) const {
+    variables.insert(ParticleEmitterVariableNameVec2::MeshSourceUV);
+}
+
+void CPUPEM_MeshReproductionSource::addRequiredVec3Variables(FlatSet<ParticleEmitterVariableNameVec3>& variables) const {
+    variables.insert(ParticleEmitterVariableNameVec3::MeshSourcePos);
+}
+
+#pragma endregion
+
+
+// ====================================================================================================
+// CPUPEM_MeshReproductionTarget
+// ====================================================================================================
+constexpr ui32 MAX_CLOSEST_CHECKS = 20;
+
+#pragma region CPUPEM_MeshReproductionTarget
+CPUPEM_MeshReproductionTarget::CPUPEM_MeshReproductionTarget() {
+    refresh();
+}
+
+void CPUPEM_MeshReproductionTarget::refresh() {
+    mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
+        ParticleSystemMeshInput meshInput = emitter.getInputs()->getMeshInput(ParticleSystemInputName::MeshTarget);
+        if (meshInput.mModelDef) [[likely]] {
+            const f32v3 sourcePos = emitter.getVec3Variable(ParticleEmitterVariableNameVec3::MeshSourcePos, particleID);
+
+            const ui32 numChecks = std::get<ui32>(MODULE_DATA->mFindClosestChecks.mVarData);
+            assert(numChecks);
+
+            // Try to find a close position
+            const MeshCpuData* meshData = nullptr;
+
+            // Barycentric interpolation via random point in triangle
+            if (meshInput.mModelDef->isSkeletalModel()) {
+                assert(false);
+            } else {
+                UniformTriangleSampler3D samplers[MAX_CLOSEST_CHECKS];
+
+                f32 bestDistSQ = FLT_MAX;
+                i32 bestIndex = 0;
+                f32v3 bestPos;
+                ui16v3 bestIndices;
+                const StandardModelVertex* bestVertexData = nullptr;
+                // Share the same random UV to reduce ops
+                const f32v2 randomPointUV = UniformTriangleSampler3D::getRandomUV();
+                for (ui32 i = 0; i < numChecks; ++i) {
+                    const ui16v3 indices = getRandomTriangleIndices(*meshInput.mModelDef, &meshData);
+                    const StandardModelVertex* vertexData = reinterpret_cast<const StandardModelVertex*>(meshData->mVertsPtr);
+                    samplers[i].init(vertexData[indices.x].pos, vertexData[indices.y].pos, vertexData[indices.z].pos);
+                    const f32v3 pos = samplers[i].getPoint(randomPointUV);
+                    const f32 distSq = glm::distance2(sourcePos, pos);
+                    if (distSq < bestDistSQ) {
+                        bestDistSQ = distSq;
+                        bestIndex = i;
+                        bestPos = pos;
+                        bestIndices = indices;
+                        bestVertexData = vertexData;
+                    }
+                }
+
+                const UniformTriangleSampler3D& bestSampler = samplers[bestIndex];
+                const f32v3 baryCoords = bestSampler.getBarycentricCoords(bestPos);
+                const f32v2 uv = baryCoords.x * UnpackUVs(bestVertexData[bestIndices.x].uvsPacked) +
+                                    baryCoords.y * UnpackUVs(bestVertexData[bestIndices.y].uvsPacked) +
+                                    baryCoords.z * UnpackUVs(bestVertexData[bestIndices.z].uvsPacked);
+
+                // Scale based on size of triangle
+                const f32v2 scaleClamp = std::get<f32v2>(MODULE_DATA->mScaleClamp.mVarData);
+                const f32 scale = glm::clamp(bestSampler.getArea(), scaleClamp.x, scaleClamp.y) * std::get<f32>(MODULE_DATA->mScaleMult.mVarData);
+                emitter.setVec3Variable(ParticleEmitterVariableNameVec3::MeshTargetPos, particleID, bestPos);
+                emitter.setVec2Variable(ParticleEmitterVariableNameVec2::MeshTargetUV, particleID, uv);
+                emitter.setFloatVariable(ParticleEmitterVariableNameFloat::MeshTargetScale, particleID, scale);
+            }
+        }
+    };
+}
+
+bool CPUPEM_MeshReproductionTarget::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    bool changed = false;
+    ImGui::Text("Using (in) MeshTarget");
+    ImGui::Text("   Providing MeshTargetPos");
+    changed |= updateAndRenderVariable(mModuleData.mScaleMult, "Scale Mult", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mScaleClamp, "Scale Clamp", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mFindClosestChecks, "Closest Checks", parentEmitter);
+    mModuleData.mFindClosestChecks.mVarData = glm::clamp(std::get<ui32>(mModuleData.mFindClosestChecks.mVarData), 1u, MAX_CLOSEST_CHECKS);
+    return changed;
+}
+
+bool CPUPEM_MeshReproductionTarget::loadFromYml(ryml::ConstNodeRef node) {
+    LOAD_VAR(mScaleMult, "scale"sv);
+    LOAD_VAR(mScaleClamp, "scale_clmp"sv);
+    LOAD_VAR(mFindClosestChecks, "find_close"sv);
+    return true;
+}
+
+void CPUPEM_MeshReproductionTarget::saveYmlData(ryml::NodeRef node) const {
+    SAVE_VAR(mScaleMult, "scale"sv);
+    SAVE_VAR(mScaleClamp, "scale_clmp"sv);
+    SAVE_VAR(mFindClosestChecks, "find_close"sv);
+}
+
+void CPUPEM_MeshReproductionTarget::addRequiredFloatVariables(FlatSet<ParticleEmitterVariableNameFloat>& variables) const {
+    variables.insert(ParticleEmitterVariableNameFloat::MeshTargetScale);
+}
+
+void CPUPEM_MeshReproductionTarget::addRequiredVec2Variables(FlatSet<ParticleEmitterVariableNameVec2>& variables) const {
+    variables.insert(ParticleEmitterVariableNameVec2::MeshTargetUV);
+}
+
+void CPUPEM_MeshReproductionTarget::addRequiredVec3Variables(FlatSet<ParticleEmitterVariableNameVec3>& variables) const {
+    variables.insert(ParticleEmitterVariableNameVec3::MeshTargetPos);
+}
+
 #pragma endregion

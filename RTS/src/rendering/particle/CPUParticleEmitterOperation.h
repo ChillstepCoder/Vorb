@@ -214,8 +214,8 @@ REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);
 #define COLOR_QUERY color4(0.5f, 0.7f, 0.3f, 1.0f)
 #define COLOR_CURVE color4(0.3f, 0.7f, 0.7f, 1.0f)
 #define COLOR_COMPLEX color4(1.0f, 0.3f, 0.3f, 1.0f)
-#define COLOR_INPUT color4(0.65f, 0.85f, 0.65f, 1.0f)
-#define COLOR_VARIABLE color4(0.0f, 0.85f, 0.0f, 1.0f)
+#define COLOR_INPUT color4(0.45f, 0.7f, 0.45f, 1.0f)
+#define COLOR_VARIABLE color4(0.0f, 0.0f, 0.75f, 1.0f)
 
 DEFINE_CPUPEO_BINARY(CPUPEO_AddVec2, "Add Vec2", "add_vec2", COLOR_STANDARD, f32v2, f32v2, +)
 DEFINE_CPUPEO_BINARY(CPUPEO_SubVec2, "Subtract Vec2", "sub_vec2", COLOR_STANDARD, f32v2, f32v2, -)
@@ -242,7 +242,7 @@ DEFINE_CPUPEO_CONVERT(CPUPEO_ConvertFloatToUInt, "Float To UInt", "f32_to_uint",
 DEFINE_CPUPEO_CONVERT(CPUPEO_ConvertUIntToFloat, "UInt To Float", "uint_to_f32", COLOR_CONVERT, f32, ui32)
 
 DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_QueryPosition, "Particle Position", "p_pos", COLOR_QUERY, f32v3)
-DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_QueryVelocity, "Particle Velocity", "p_vel", COLOR_QUERY, f32v3,
+DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_QueryVelocity, "Particle Velocity", "p_spd", COLOR_QUERY, f32v3,
     BitFlags<ParticleComponentType> getRequiredComponents() const override { return ParticleComponentType::Velocity; }
 )
 DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_QuerySpeed, "Particle Speed", "p_vel", COLOR_QUERY, f32,
@@ -261,10 +261,10 @@ DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_InputImpactDirection, "(In) Impact Dir
 DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_InputImpactSurfaceNormal, "(In) Impact Surface Normal", "i_inorm", COLOR_INPUT, f32v3)
 
 // Varible queries
-DEFINE_CPUPEO_QUERY_VARIABLE_DECL(CPUPEO_UIntVariable, "Get Named UInt", "v_uint", COLOR_VARIABLE, ui32, ParticleEmitterVariableNameUInt)
-DEFINE_CPUPEO_QUERY_VARIABLE_DECL(CPUPEO_FloatVariable, "Get Named Float", "v_float", COLOR_VARIABLE, f32, ParticleEmitterVariableNameFloat)
-DEFINE_CPUPEO_QUERY_VARIABLE_DECL(CPUPEO_Vec2Variable, "Get Named Vec2", "v_vec2", COLOR_VARIABLE, f32v2, ParticleEmitterVariableNameVec2)
-DEFINE_CPUPEO_QUERY_VARIABLE_DECL(CPUPEO_Vec3Variable, "Get Named Vec3", "v_vec3", COLOR_VARIABLE, f32v3, ParticleEmitterVariableNameVec3)
+DEFINE_CPUPEO_QUERY_VARIABLE_DECL(CPUPEO_UIntVariable, "Get Module Provided UInt", "v_uint", COLOR_VARIABLE, ui32, ParticleEmitterVariableNameUInt)
+DEFINE_CPUPEO_QUERY_VARIABLE_DECL(CPUPEO_FloatVariable, "Get Module Provided Float", "v_float", COLOR_VARIABLE, f32, ParticleEmitterVariableNameFloat)
+DEFINE_CPUPEO_QUERY_VARIABLE_DECL(CPUPEO_Vec2Variable, "Get Module Provided Vec2", "v_vec2", COLOR_VARIABLE, f32v2, ParticleEmitterVariableNameVec2)
+DEFINE_CPUPEO_QUERY_VARIABLE_DECL(CPUPEO_Vec3Variable, "Get Module Provided Vec3", "v_vec3", COLOR_VARIABLE, f32v3, ParticleEmitterVariableNameVec3)
 
 
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_RandomFloatInRange, "Random Float In Range", "rand_float", COLOR_STANDARD, f32,
@@ -343,6 +343,21 @@ DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_MakeVec2, "Make Vec2", "make_vec2", COLOR_STAND
 DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_MakeVec3, "Make Vec3", "make_vec3", COLOR_STANDARD, f32v3,
     OPERATION_PARAMS(CPUPEO_MakeVec3, E_VAR(f32(0.f)), E_VAR(f32(0.f)), E_VAR(f32(0.f)))
     OPERATION_PARAM_NAMES("x", "y", "z")
+)
+
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_LerpFloat, "Lerp Float", "lerp_float", COLOR_STANDARD, f32,
+    OPERATION_PARAMS(CPUPEO_LerpFloat, E_VAR(f32(0.f)), E_VAR(f32(0.f)), E_VAR(f32(0.f)))
+    OPERATION_PARAM_NAMES("source", "target", "alpha")
+)
+
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_LerpVec2, "Lerp Vec2", "lerp_vec2", COLOR_STANDARD, f32v2,
+    OPERATION_PARAMS(CPUPEO_LerpVec2, E_VAR(f32v2(0.f)), E_VAR(f32v2(0.f)), E_VAR(f32(0.f)))
+    OPERATION_PARAM_NAMES("source", "target", "alpha")
+)
+
+DEFINE_CPUPEO_CUSTOM_DECL(CPUPEO_LerpVec3, "Lerp Vec3", "lerp_vec3", COLOR_STANDARD, f32v3,
+    OPERATION_PARAMS(CPUPEO_LerpVec3, E_VAR(f32v3(0.f)), E_VAR(f32v3(0.f)), E_VAR(f32(0.f)))
+    OPERATION_PARAM_NAMES("source", "target", "alpha")
 )
 
 #undef COLOR_STANDARD

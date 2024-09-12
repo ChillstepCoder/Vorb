@@ -167,7 +167,7 @@ void ResourceManager::loadFiles() {
     {
         // Set default material
         ParticleSystemRepository& repo = ParticleSystemRepository::get();
-        repo.setDefaultMaterialID(MaterialRepository::get().getMaterialId(CStrToken("particle_v0"/*"soft_particle"*/)));
+        repo.setDefaultMaterialID(MaterialRepository::get().getMaterialId(CStrToken("dot_texture_06")));
     }
 
     {

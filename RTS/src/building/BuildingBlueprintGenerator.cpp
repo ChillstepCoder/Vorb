@@ -3,10 +3,6 @@
 #include "BuildingRepository.h"
 #include "BuildingBlueprintGenerationContext.h"
 
-#include "gamethread/GameThreadTasks.h"
-
-#include "city/BuildingBuilder.h"
-
 #include "resources/TileRepository.h"
 #include "item/ItemRepository.h"
 
@@ -360,7 +356,7 @@ void BuildingBlueprintGenerator::addPrivateRoomsToGraph(BuildingBlueprintGenerat
         i32 roomIndex = 0;
         for (roomIndex = 0; roomIndex < context.desc->privateRooms.size(); ++roomIndex) {
             const PossibleRoom& room = context.desc->privateRooms[roomIndex];
-            ui8 roomCount = round(lerp((f32)room.countRange.x, (f32)room.countRange.y, context.sizeAlpha));
+            ui8 roomCount = round(util::lerp((f32)room.countRange.x, (f32)room.countRange.y, context.sizeAlpha));
             countLookup[roomIndex].x = 0;
             countLookup[roomIndex].y = roomCount;
             availablePrivateRooms += roomCount;
@@ -533,7 +529,7 @@ void BuildingBlueprintGenerator::initRooms(BuildingBlueprintGenerationContext& c
         room.id = (RoomNodeID)i;
 
         const RoomDef& desc = roomRepo.getLoadedOrUnloadedAsset(room.roomDefId);
-        room.desiredWidth = (i32)round(lerp((f32)desc.widthRange.x, (f32)desc.widthRange.y, context.sizeAlpha));
+        room.desiredWidth = (i32)round(util::lerp((f32)desc.widthRange.x, (f32)desc.widthRange.y, context.sizeAlpha));
         room.desiredSize = room.desiredWidth * room.desiredWidth; //SQ
     }
 }

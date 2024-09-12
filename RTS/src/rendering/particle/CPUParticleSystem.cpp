@@ -17,12 +17,15 @@ CPUParticleSystem::CPUParticleSystem(const ParticleUpdateFunction& updateFunctio
     addEmitter(updateFunction, maxParticles, components, shader, particleLifespanSec, emitterLifespanSec);
 }
 
-CPUParticleSystem::CPUParticleSystem(const ParticleSystemDef& def, f32v3 position) : mRootPosition(position) {
+CPUParticleSystem::CPUParticleSystem(const ParticleSystemDef& def, f32v3 position, ParticleSystemInputsPtr inputs) : mRootPosition(position), mInputs(std::move(inputs)) {
+    if (mInputs == nullptr) {
+        mInputs = def.mDefaultInputs;
+    }
     mLifetimeRemaining = def.mLifetimeSec;
     mSystemDefID = def.getID();
     mEmitters.reserve(def.mEmitters.size());
     for (auto&& emitterDef : def.mEmitters) {
-        mEmitters.emplace_back(std::make_unique<CpuParticleEmitter>(emitterDef, mInputs.get()));
+        mEmitters.emplace_back(std::make_unique<CpuParticleEmitter>(emitterDef, mInputs.get(), &def.mUserParameters));
     }
 }
 
@@ -129,4 +132,12 @@ int CPUParticleSystem::getFragmentation() const {
         }
     }
     return total;
+}
+
+void CPUParticleSystem::setAsEditorPreviewSystem() const {
+    for (auto&& emitter : mEmitters) {
+        if (emitter) {
+            emitter->setAsEditorPreviewEmitter();
+        }
+    }
 }

@@ -118,12 +118,12 @@ ui8 getRandomRotation(int tileX, int tileY, int bladeX, int bladeY) {
 f32 getRandomOffset(float a, float b, int tileX, int tileY, int bladeX, int bladeY) {
     constexpr f32 BIG_PRIME1 = 7673;
     constexpr f32 BIG_PRIME2 = 7919;
-    return lerp(a, b, Random::getCachedRandomfSpecific(bladeX - BIG_PRIME1 * bladeY - tileX - tileY * BIG_PRIME2));
+    return util::lerp(a, b, Random::getCachedRandomfSpecific(bladeX - BIG_PRIME1 * bladeY - tileX - tileY * BIG_PRIME2));
 }
 
 void addGrass(GrassBillboardMeshBuilder& grassMeshBuilder, const TileGrassDef& grassData, const NoiseFunction& grassNoiseFunction, const f32v3& relativePos, const f32v3& normal, float rnd, float detail, float bladeWidth, float densityMult, int tileX, int tileY, int bladeX, int bladeY) {
    
-    float rsize = lerp(grassData.mHeightVariance.x, grassData.mHeightVariance.y, rnd);
+    float rsize = util::lerp(grassData.mHeightVariance.x, grassData.mHeightVariance.y, rnd);
     const f32 grassNoise = -grassNoiseFunction.compute((f64)relativePos.x, (f64)relativePos.y);
     rsize += -grassNoise * 0.4f;
     rsize *= densityMult;

@@ -182,9 +182,11 @@ void ModelRepository::buildModelBatches() {
         auto& submeshCountArray = mModelSubmeshCountsPerPass[modelId];
         submeshCountArray.fill(0);
 
+        i32 totalIndices = 0;
         for (size_t submeshIndex = 0; submeshIndex < def.mSubmeshData.size(); ++submeshIndex) {
 
             MeshCpuData& cpuData = def.mSubmeshCpuData[submeshIndex];
+            totalIndices += cpuData.mLodData.getHighestLODIndexCount();
             ModelSubmeshData& submeshData = def.mSubmeshData[submeshIndex];
             ModelBatchKey key;
             key.indexType = cpuData.mIndexType;
@@ -239,7 +241,15 @@ void ModelRepository::buildModelBatches() {
                 mAllSubmeshSkeletonData[globalSubmeshIndex] = &def.mSubmeshSkeletonData[submeshIndex];
             }
         }
-       
+
+        // Update random weights for well distributed random poly queries
+        def.mRandomPolyCpuDataWeights.resize(def.mSubmeshCpuData.size());
+        f32 weightAccum = 0.0f;
+        for (size_t submeshIndex = 0; submeshIndex < def.mSubmeshData.size(); ++submeshIndex) {
+            const f32 weight = f32(def.mSubmeshCpuData[submeshIndex].mLodData.getHighestLODIndexCount()) / f32(totalIndices);
+            def.mRandomPolyCpuDataWeights[submeshIndex] = weightAccum + weight;
+            weightAccum += weight;
+        }
     }
 
     // Create all buffer objects and allocate space

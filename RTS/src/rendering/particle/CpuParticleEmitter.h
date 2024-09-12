@@ -7,6 +7,7 @@
 
 #include "rendering/particle/ParticleSystemInputs.h"
 #include "rendering/particle/ParticleEmitterVariableName.h"
+#include "rendering/particle/ParticleSystemUserParameters.h"
 
 class CPUParticleSystem;
 class MaterialShaderDef;
@@ -58,8 +59,8 @@ typedef std::function<void(class CpuParticleEmitter& emitter, CPUParticlesData& 
 
 class CpuParticleEmitter {
 public:
-    CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, ParticleSystemInputs* inputs, f32 lifetime = FLT_MAX);
-    CpuParticleEmitter(const ParticleEmitterDef& def, ParticleSystemInputs* inputs);
+    CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, const ParticleSystemInputs* inputs, f32 lifetime = FLT_MAX);
+    CpuParticleEmitter(const ParticleEmitterDef& def, const ParticleSystemInputs* inputs, const ParticleSystemUserParameterMap* userParameters);
     ~CpuParticleEmitter();
 
     VORB_NON_COPYABLE(CpuParticleEmitter);
@@ -172,6 +173,9 @@ public:
     void emitParticles(ui32v2 countRange);
     void emitParticles(int count);
 
+    // Editor
+    void setAsEditorPreviewEmitter();
+
 protected:
     void allocateParticleData();
     void onNewParticleAdded(ParticleID id);
@@ -205,7 +209,8 @@ protected:
     bool mNeedsFindLastParticle = false;
     ParticleBlendMode mBlendMode = ParticleBlendMode::Additive;
     // Inputs
-    ParticleSystemInputs* mInputs = nullptr;
+    const ParticleSystemInputs* mInputs = nullptr;
+    const ParticleSystemUserParameterMap* mUserParameters = nullptr;
 
     UnorderedFlatSet<MaterialID> mContainedMaterials;
 

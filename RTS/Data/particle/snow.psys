@@ -7,7 +7,7 @@ emitters:
       p_lifespan: 3
       looping: 1
       blend: additive
-      shader: particle_bb_3d
+      shader: particle_3d
       e_update:
         - spawn_rate:
             emit_rate: 0.01
@@ -19,7 +19,7 @@ emitters:
         - set_position:
             pos:
               add_vec3:
-                p0: [-3,0,5]
+                p0: [0,0,5]
                 p1:
                   rnd_point_shape:
                     type: box
@@ -41,3 +41,4 @@ emitters:
         - turbulence:
             scale_fac: [3,3,3]
             dir_off: [0,0,0]
+lifetime: 10.17

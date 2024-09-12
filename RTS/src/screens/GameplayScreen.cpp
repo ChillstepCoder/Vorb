@@ -206,7 +206,7 @@ void GameplayScreen::draw(const vui::GameTime& gameTime) {
         const f32 frameAlpha = 0.0f /*TODO: Framealpha?*/;
 
         // Grab fps
-        sFps = lerp(sFps, m_app->getFps(), 0.85f);
+        sFps = util::lerp(sFps, m_app->getFps(), 0.85f);
         mFps = sFps;
 
         mRenderContext->renderFrame(*mCameraController, frameAlpha, gameTime.elapsedSec);

@@ -46,6 +46,8 @@ public:
     ui32 getNumMeshes() const { return mSubmeshData.size(); }
     f32 getRandomScaleAtPosition(f32v2 position) const;
     f32 getScaleFromFloraAge(ui8 age) const;
+    // Weight should be [0,1]
+    i32 getRandomSubmeshIndex(f32 randomWeight) const;
 
     // TODO: AssetHandle
     const RigDef* mRig = nullptr;
@@ -53,6 +55,8 @@ public:
     std::vector<ModelSubmeshData> mSubmeshData;
     std::vector<MeshSkeletonData> mSubmeshSkeletonData;
     std::vector<MeshCpuData> mSubmeshCpuData;
+    // Adds up to 1, one per meshCpuData, based on index counts, used for getting random poly in entire mesh
+    std::vector<f32> mRandomPolyCpuDataWeights;
     ui32 mTotalSubmeshJointTransformsNeeded = 0;
     StrToken mModelFileName;
     RigAssetRef mRigRef;
