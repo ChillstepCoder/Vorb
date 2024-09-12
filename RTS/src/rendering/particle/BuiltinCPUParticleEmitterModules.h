@@ -108,7 +108,7 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetUIntVar, e_cast(ParticleEmitterModuleStage
     );
 public:
     bool compatableWithEmitter(const CpuParticleEmitter& emitter) const override;
-    void addRequiredUIntVariables(FlatSet<ParticleEmitterVariableNameUInt>& variables) const override;
+    void addRequiredVariables(RequiredEmitterVariables& variables) const override;
 )
 
 BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetFloatVar, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Particle Float Var", "set_float",
@@ -118,7 +118,7 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetFloatVar, e_cast(ParticleEmitterModuleStag
     );
 public:
     bool compatableWithEmitter(const CpuParticleEmitter& emitter) const override;
-    void addRequiredFloatVariables(FlatSet<ParticleEmitterVariableNameFloat>& variables) const override;
+    void addRequiredVariables(RequiredEmitterVariables& variables) const override;
 )
 
 BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetVec2Var, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Particle Vec2 Var", "set_vec2",
@@ -128,7 +128,7 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetVec2Var, e_cast(ParticleEmitterModuleStage
     );
 public:
     bool compatableWithEmitter(const CpuParticleEmitter& emitter) const override;
-    void addRequiredVec2Variables(FlatSet<ParticleEmitterVariableNameVec2>& variables) const override;
+    void addRequiredVariables(RequiredEmitterVariables& variables) const override;
 )
 
 BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetVec3Var, e_cast(ParticleEmitterModuleStage::ParticleInit) | e_cast(ParticleEmitterModuleStage::ParticleUpdate), "Set Particle Vec3 Var", "set_vec3",
@@ -138,7 +138,7 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetVec3Var, e_cast(ParticleEmitterModuleStage
     );
 public:
     bool compatableWithEmitter(const CpuParticleEmitter& emitter) const override;
-    void addRequiredVec3Variables(FlatSet<ParticleEmitterVariableNameVec3>& floatVariables) const override;
+    void addRequiredVariables(RequiredEmitterVariables& floatVariables) const override;
 )
 
 BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SetLifespan, e_cast(ParticleEmitterModuleStage::ParticleInit), "Set Lifespan", "set_life",
@@ -191,9 +191,7 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_MeshReproductionSource, e_cast(ParticleEmitte
         CPUParticleEmitterParameter mScaleMult = CPUParticleEmitterParameter(f32(1.0f));
     );
 public:
-    void addRequiredFloatVariables(FlatSet<ParticleEmitterVariableNameFloat>& variables) const override;
-    void addRequiredVec2Variables(FlatSet<ParticleEmitterVariableNameVec2>& variables) const override;
-    void addRequiredVec3Variables(FlatSet<ParticleEmitterVariableNameVec3>& variables) const override;
+    void addRequiredVariables(RequiredEmitterVariables& variables) const override;
 )
 
 BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_MeshReproductionTarget, e_cast(ParticleEmitterModuleStage::ParticleInit), "Mesh Reproduction Target", "mesh_rep_tgt",
@@ -203,7 +201,5 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_MeshReproductionTarget, e_cast(ParticleEmitte
         CPUParticleEmitterParameter mFindClosestChecks = CPUParticleEmitterParameter(ui32(1));
     );
 public:
-    void addRequiredFloatVariables(FlatSet<ParticleEmitterVariableNameFloat>& variables) const override;
-    void addRequiredVec2Variables(FlatSet<ParticleEmitterVariableNameVec2>& variables) const override;
-    void addRequiredVec3Variables(FlatSet<ParticleEmitterVariableNameVec3>& variables) const override;
+    void addRequiredVariables(RequiredEmitterVariables& variables) const override;
 )

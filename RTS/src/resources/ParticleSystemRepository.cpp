@@ -226,27 +226,20 @@ void ParticleSystemRepository::fixupLoadedAsset(AssetID assetId) {
         emitter.mActiveComponents.clearBits();
 
         // Track all needed variables and components
+        RequiredEmitterVariables reqVars{ uintVars, floatVars, vec2Vars, vec3Vars };
+
         for (auto& module : emitter.mModules.mEmitterUpdate) {
-            module->addRequiredUIntVariables(uintVars);
-            module->addRequiredFloatVariables(floatVars);
-            module->addRequiredVec2Variables(vec2Vars);
-            module->addRequiredVec3Variables(vec3Vars);
+            module->addRequiredVariables(reqVars);
             emitter.mActiveComponents |= module->getRequiredComponents();
         }
 
         for (auto& module : emitter.mModules.mParticleInit) {
-            module->addRequiredUIntVariables(uintVars);
-            module->addRequiredFloatVariables(floatVars);
-            module->addRequiredVec2Variables(vec2Vars);
-            module->addRequiredVec3Variables(vec3Vars);
+            module->addRequiredVariables(reqVars);
             emitter.mActiveComponents |= module->getRequiredComponents();
         }
 
         for (auto& module : emitter.mModules.mParticleUpdate) {
-            module->addRequiredUIntVariables(uintVars);
-            module->addRequiredFloatVariables(floatVars);
-            module->addRequiredVec2Variables(vec2Vars);
-            module->addRequiredVec3Variables(vec3Vars);
+            module->addRequiredVariables(reqVars);
             emitter.mActiveComponents |= module->getRequiredComponents();
         }
 

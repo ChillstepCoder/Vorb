@@ -3,14 +3,16 @@
 
 enum class ParticleEmitterVariableNameUInt : ui8 {
     INVALID,
+    StartMaterial,
     EndMaterial,
     COUNT
 };
 SERIALIZABLE_ENUM_SAME_NAME(ParticleEmitterVariableNameUInt,
     ENUM_FIELD_SIMPLE(ParticleEmitterVariableNameUInt, INVALID),
+    ENUM_FIELD_SIMPLE(ParticleEmitterVariableNameUInt, StartMaterial),
     ENUM_FIELD_SIMPLE(ParticleEmitterVariableNameUInt, EndMaterial)
 );
-static_assert(e_count(ParticleEmitterVariableNameUInt) == 2);
+static_assert(e_count(ParticleEmitterVariableNameUInt) == 3);
 
 enum class ParticleEmitterVariableNameFloat : ui8 {
     INVALID,

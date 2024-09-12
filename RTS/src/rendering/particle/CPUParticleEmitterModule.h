@@ -16,6 +16,13 @@ enum class ParticleEmitterModuleStage : ui8 {
     ParticleUpdate = BIT(2),
 };
 
+struct RequiredEmitterVariables {
+    FlatSet<ParticleEmitterVariableNameUInt>& uintVariables;
+    FlatSet<ParticleEmitterVariableNameFloat>& floatVariables;
+    FlatSet<ParticleEmitterVariableNameVec2>& vec2Variables;
+    FlatSet<ParticleEmitterVariableNameVec3>& vec3Variables;
+};;
+
 class CPUParticleEmitterModule : public YmlSerializable
 {
 public:
@@ -29,10 +36,7 @@ public:
     virtual constexpr const char* const getName() const = 0;
     virtual std::unique_ptr<CPUParticleEmitterModule> clone() const = 0;
     virtual bool compatableWithEmitter(const CpuParticleEmitter& emitter) const { return true; }
-    virtual void addRequiredUIntVariables(FlatSet<ParticleEmitterVariableNameUInt>& uintVariables) const {}
-    virtual void addRequiredFloatVariables(FlatSet<ParticleEmitterVariableNameFloat>& floatVariables) const {}
-    virtual void addRequiredVec2Variables(FlatSet<ParticleEmitterVariableNameVec2>& vec2Variables) const {}
-    virtual void addRequiredVec3Variables(FlatSet<ParticleEmitterVariableNameVec3>& vec3Variables) const {}
+    virtual void addRequiredVariables(RequiredEmitterVariables& variables) const {}
 
     bool areAllRequiredComponentsPresent(BitFlags<ParticleComponentType> componentsToCheck) const {
         return (mRequiredComponents.getBits() & componentsToCheck.getBits()) == mRequiredComponents.getBits();

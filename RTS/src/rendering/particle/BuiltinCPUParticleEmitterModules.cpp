@@ -498,10 +498,10 @@ bool CPUPEM_SetUIntVar::compatableWithEmitter(const CpuParticleEmitter& emitter)
     return emitter.hasUIntVariable(varName);
 }
 
-void CPUPEM_SetUIntVar::addRequiredUIntVariables(FlatSet<ParticleEmitterVariableNameUInt>& variables) const {
+void CPUPEM_SetUIntVar::addRequiredVariables(RequiredEmitterVariables& variables) const {
     ParticleEmitterVariableNameUInt varName = std::get<ParticleEmitterVariableNameUInt>(mModuleData.mVariable.mVarData);
     if (varName != ParticleEmitterVariableNameUInt::INVALID) {
-        variables.insert(varName);
+        variables.uintVariables.insert(varName);
     }
 }
 
@@ -547,10 +547,10 @@ bool CPUPEM_SetFloatVar::compatableWithEmitter(const CpuParticleEmitter& emitter
     return emitter.hasFloatVariable(varName);
 }
 
-void CPUPEM_SetFloatVar::addRequiredFloatVariables(FlatSet<ParticleEmitterVariableNameFloat>& variables) const {
+void CPUPEM_SetFloatVar::addRequiredVariables(RequiredEmitterVariables& variables) const {
     ParticleEmitterVariableNameFloat varName = std::get<ParticleEmitterVariableNameFloat>(mModuleData.mVariable.mVarData);
     if (varName != ParticleEmitterVariableNameFloat::INVALID) {
-        variables.insert(varName);
+        variables.floatVariables.insert(varName);
     }
 }
 #pragma endregion
@@ -596,10 +596,10 @@ bool CPUPEM_SetVec2Var::compatableWithEmitter(const CpuParticleEmitter& emitter)
     return emitter.hasVec2Variable(varName);
 }
 
-void CPUPEM_SetVec2Var::addRequiredVec2Variables(FlatSet<ParticleEmitterVariableNameVec2>& variables) const {
+void CPUPEM_SetVec2Var::addRequiredVariables(RequiredEmitterVariables& variables) const {
     ParticleEmitterVariableNameVec2 varName = std::get<ParticleEmitterVariableNameVec2>(mModuleData.mVariable.mVarData);
     if (varName != ParticleEmitterVariableNameVec2::INVALID) {
-        variables.insert(varName);
+        variables.vec2Variables.insert(varName);
     }
 }
 #pragma endregion
@@ -645,10 +645,10 @@ bool CPUPEM_SetVec3Var::compatableWithEmitter(const CpuParticleEmitter& emitter)
     return emitter.hasVec3Variable(varName);
 }
 
-void CPUPEM_SetVec3Var::addRequiredVec3Variables(FlatSet<ParticleEmitterVariableNameVec3>& floatVariables) const {
+void CPUPEM_SetVec3Var::addRequiredVariables(RequiredEmitterVariables& variables) const {
     ParticleEmitterVariableNameVec3 varName = std::get<ParticleEmitterVariableNameVec3>(mModuleData.mVariable.mVarData);
     if (varName != ParticleEmitterVariableNameVec3::INVALID) {
-        floatVariables.insert(varName);
+        variables.vec3Variables.insert(varName);
     }
 }
 #pragma endregion
@@ -940,6 +940,7 @@ void CPUPEM_MeshReproductionSource::refresh() {
                                      baryCoords.y * UnpackUVs(vertexData[indices.y].uvsPacked) +
                                      baryCoords.z * UnpackUVs(vertexData[indices.z].uvsPacked);
 
+                    emitter.setUIntVariable(ParticleEmitterVariableNameUInt::StartMaterial, particleID, vertexData[indices.x].materialId);
                     emitter.setVec3Variable(ParticleEmitterVariableNameVec3::MeshSourcePos, particleID, pos);
                     emitter.setVec2Variable(ParticleEmitterVariableNameVec2::MeshSourceUV, particleID, uv);
 
@@ -978,16 +979,11 @@ void CPUPEM_MeshReproductionSource::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mScaleClamp, "scale_clmp"sv);
 }
 
-void CPUPEM_MeshReproductionSource::addRequiredFloatVariables(FlatSet<ParticleEmitterVariableNameFloat>& variables) const {
-    variables.insert(ParticleEmitterVariableNameFloat::MeshSourceScale);
-}
-
-void CPUPEM_MeshReproductionSource::addRequiredVec2Variables(FlatSet<ParticleEmitterVariableNameVec2>& variables) const {
-    variables.insert(ParticleEmitterVariableNameVec2::MeshSourceUV);
-}
-
-void CPUPEM_MeshReproductionSource::addRequiredVec3Variables(FlatSet<ParticleEmitterVariableNameVec3>& variables) const {
-    variables.insert(ParticleEmitterVariableNameVec3::MeshSourcePos);
+void CPUPEM_MeshReproductionSource::addRequiredVariables(RequiredEmitterVariables& variables) const {
+    variables.uintVariables.insert(ParticleEmitterVariableNameUInt::StartMaterial);
+    variables.floatVariables.insert(ParticleEmitterVariableNameFloat::MeshSourceScale);
+    variables.vec2Variables.insert(ParticleEmitterVariableNameVec2::MeshSourceUV);
+    variables.vec3Variables.insert(ParticleEmitterVariableNameVec3::MeshSourcePos);
 }
 
 #pragma endregion
@@ -1052,9 +1048,11 @@ void CPUPEM_MeshReproductionTarget::refresh() {
                 // Scale based on size of triangle
                 const f32v2 scaleClamp = std::get<f32v2>(MODULE_DATA->mScaleClamp.mVarData);
                 const f32 scale = glm::clamp(bestSampler.getArea(), scaleClamp.x, scaleClamp.y) * std::get<f32>(MODULE_DATA->mScaleMult.mVarData);
-                emitter.setVec3Variable(ParticleEmitterVariableNameVec3::MeshTargetPos, particleID, bestPos);
-                emitter.setVec2Variable(ParticleEmitterVariableNameVec2::MeshTargetUV, particleID, uv);
+
+                emitter.setUIntVariable(ParticleEmitterVariableNameUInt::StartMaterial, particleID, bestVertexData[bestIndices.x].materialId);
                 emitter.setFloatVariable(ParticleEmitterVariableNameFloat::MeshTargetScale, particleID, scale);
+                emitter.setVec2Variable(ParticleEmitterVariableNameVec2::MeshTargetUV, particleID, uv);
+                emitter.setVec3Variable(ParticleEmitterVariableNameVec3::MeshTargetPos, particleID, bestPos);
             }
         }
     };
@@ -1084,16 +1082,11 @@ void CPUPEM_MeshReproductionTarget::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mFindClosestChecks, "find_close"sv);
 }
 
-void CPUPEM_MeshReproductionTarget::addRequiredFloatVariables(FlatSet<ParticleEmitterVariableNameFloat>& variables) const {
-    variables.insert(ParticleEmitterVariableNameFloat::MeshTargetScale);
-}
-
-void CPUPEM_MeshReproductionTarget::addRequiredVec2Variables(FlatSet<ParticleEmitterVariableNameVec2>& variables) const {
-    variables.insert(ParticleEmitterVariableNameVec2::MeshTargetUV);
-}
-
-void CPUPEM_MeshReproductionTarget::addRequiredVec3Variables(FlatSet<ParticleEmitterVariableNameVec3>& variables) const {
-    variables.insert(ParticleEmitterVariableNameVec3::MeshTargetPos);
+void CPUPEM_MeshReproductionTarget::addRequiredVariables(RequiredEmitterVariables& variables) const {
+    variables.uintVariables.insert(ParticleEmitterVariableNameUInt::EndMaterial);
+    variables.floatVariables.insert(ParticleEmitterVariableNameFloat::MeshTargetScale);
+    variables.vec2Variables.insert(ParticleEmitterVariableNameVec2::MeshTargetUV);
+    variables.vec3Variables.insert(ParticleEmitterVariableNameVec3::MeshTargetPos);
 }
 
 #pragma endregion
