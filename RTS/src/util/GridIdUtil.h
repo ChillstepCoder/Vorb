@@ -5,8 +5,8 @@
 namespace GridIdUtil {
     // Does not bounds check
     inline ui32 getCellIndexFromWorldPos(f32v2 worldPos, ui32 cellWidth, ui32 widthCells) {
-        const ui32 cellX = worldPos.x / cellWidth;
-        const ui32 cellY = worldPos.y / cellWidth;
+        const ui32 cellX = (ui32)worldPos.x / cellWidth;
+        const ui32 cellY = (ui32)worldPos.y / cellWidth;
         return cellY * widthCells + cellX;
     }
     // Does not bounds check

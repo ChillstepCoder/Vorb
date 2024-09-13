@@ -1,16 +1,6 @@
 #pragma once
 
-#include <boost/circular_buffer.hpp>
 #include "world/simulation/ISimTask.h"
-#include "ai/jobs/SimTaskHandle.h"
-#include "ecs/component/SimEntityTypeComponent.h"
-#include "ecs/component/DualComponents.h"
-
-// Shared components between the Simulation Thread ECS and the Render Thread ECS
-#include "ecs/component/DualInventoryComponent.h"
-#include "ecs/component/PersonalityComponent.h"
-#include "ecs/component/DualAttributesComponent.h"
-#include "world/simulation/host/component/CharacterGroupComponents.h"
 
 // If this component exists, the entity is on the simulation layer.
 // Otherwise it is fully simulated

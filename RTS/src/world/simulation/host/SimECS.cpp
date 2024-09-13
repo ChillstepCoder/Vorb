@@ -7,14 +7,14 @@
 #include "world/simulation/host/system/SimAISystem.h"
 #include "world/simulation/host/system/SimSettlementSystem.h"
 #include "world/simulation/host/SimThread.h"
+#include "world/simulation/host/component/CharacterGroupComponents.h"
 #include "ecs/IFullECS.h"
 #include "ecs/component/FullEntityBindingComponent.h"
 #include "gamethread/GameThreadTasks.h"
 #include "world/IChunkGrid.h"
 
+#include "ecs/component/SimEntityTypeComponent.h"
 #include "text/NameManager.h"
-
-#include "math/Random.h"
 
 #include "world/World.h"
 

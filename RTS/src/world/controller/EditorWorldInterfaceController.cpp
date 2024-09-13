@@ -1,12 +1,12 @@
 #include "stdafx.h"
 #include "EditorWorldInterfaceController.h"
 
+#include "tile/TileContainer.h"
 #include "camera/CameraController.h"
 #include "gamethread/GameThreadTasks.h"
 #include "resources/ResourceManager.h"
 #include "item/ItemRepository.h"
 #include "item/ItemStockpile.h"
-#include "item/ItemReservation.h"
 #include "item/ItemStockpileRegistry.h"
 #include "rendering/RenderContext.h"
 #include "world/World.h"
@@ -18,10 +18,8 @@
 #include "effect/IEffectContext.h"
 
 #include "resources/TileRepository.h"
-#include "math/Random.h"
 
 #include <imgui.h>
-#include <SDL.h>
 #include "ui/GameWindow.h"
 
 #include "options/DebugOptions.h"

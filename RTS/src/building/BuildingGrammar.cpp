@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "BuildingGrammar.h"
 
-#include "math/Random.h"
-
 constexpr ui8 STATE_SEPARATOR_CHAR = '|';
 
 void BuildingGrammar::buildFromStrings(const std::vector<nString>& strings) {

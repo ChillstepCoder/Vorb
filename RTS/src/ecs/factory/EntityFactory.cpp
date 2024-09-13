@@ -24,8 +24,6 @@
 
 #include <Jolt/Physics/Character/Character.h>
 
-#include "math/Random.h"
-
 constexpr f32 ITEM_NAMEPLATE_HEIGHT = 0.25f;
 constexpr f32 SACK_NAMEPLATE_HEIGHT = 0.5f;
 

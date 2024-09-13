@@ -42,6 +42,7 @@ namespace fs = std::filesystem;
 #include <boost/container/flat_set.hpp>
 #include <boost/unordered/unordered_flat_map.hpp>
 #include <boost/unordered/unordered_flat_set.hpp>
+#include <boost/circular_buffer.hpp>
 
 template <class Key, class Value, class Compare = std::less<Key>>
 using FlatMap = boost::container::flat_map<Key, Value, Compare>;
@@ -69,6 +70,8 @@ using UnorderedFlatSet = boost::unordered_flat_set<Key, Hasher, KeyEqual, Alloca
 #include <Vorb/colors.h>
 #include <Vorb/Event.hpp>
 #include <Vorb/utils.h>
+
+// Specializations
 
 // TODO: FILE
 #ifndef M_PI
@@ -133,6 +136,8 @@ extern bool IS_SHUTTING_DOWN;
 using BBuffer = std::vector<uint8_t>;
 using BOutputAdapter = bitsery::OutputBufferAdapter<BBuffer>;
 using BInputAdapter = bitsery::InputBufferAdapter<uint8_t*>;
+using BOutputSerializer = bitsery::Serializer<BOutputAdapter>;
+using BInputDeserializer = bitsery::Deserializer<BInputAdapter>;
 
 
 // Usage: s.value2b(myValue) ect...
@@ -147,12 +152,12 @@ private: \
 // Must have BINARY_SERIALIZE(); defined first.
 #define BINARY_SERIALIZE_INPUT() \
   template <> \
-  void serialize<bitsery::Deserializer<BInputAdapter>>(bitsery::Deserializer<BInputAdapter>& s)
+  void serialize(BInputDeserializer& s)
 
 // Must have BINARY_SERIALIZE(); defined first.
 #define BINARY_SERIALIZE_OUTPUT() \
   template <> \
-  void serialize<bitsery::Serializer<BOutputAdapter>>(bitsery::Serializer<BOutputAdapter>& s)
+  void serialize(BOutputSerializer& s)
 
 // ================================ Networking ================================
 #define NET_SERIALIZE_DECL() \
@@ -180,8 +185,13 @@ template <typename Stream> bool netSerialize(Stream& stream);
 #include "util/StrToken.h"
 #include "util/StringUtils.h"
 
+// Random
+#include "math/Random.h"
+
+// Instrumentation
 #include "instrumentation/instrumentor.h"
 
+// Text
 #include "text/LocText.h"
 
 // Const
@@ -258,5 +268,8 @@ using namespace std::literals::string_view_literals;
 
 // Serializable stuff
 #include "tile/TileType.h"
+
+// Assets
+#include "resources/IAssetRepository.h"
 
 #endif // stdafx_h__RTS

@@ -3,14 +3,12 @@
 
 #include "world/simulation/host/component/SimCharacterComponents.h"
 #include "world/simulation/host/component/SimSettlementComponents.h"
-
+#include "world/simulation/host/component/CharacterGroupComponents.h"
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimECS.h"
 #include "world/simulation/host/system/SimSettlementSystem.h"
 #include "world/simulation/host/settlement/SimSettlementCharacterInterface.h"
 #include "world/World.h"
-
-#include "math/Random.h"
 
 #include "options/DebugOptions.h"
 #include "debugging/DebugRenderer.h"

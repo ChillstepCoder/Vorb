@@ -3,11 +3,7 @@
 
 #include "world/World.h"
 #include "world/IChunkGrid.h"
-#include "city/CityQuartermaster.h"
-#include "item/ItemStockpile.h"
-#include "item/ItemStockpileRegistry.h"
-#include "ecs/IFullECS.h"
-#include "ecs/component/CharacterDetailsComponent.h"
+#include "building/Building.h"
 
 #include "gamethread/GameThreadTasks.h"
 

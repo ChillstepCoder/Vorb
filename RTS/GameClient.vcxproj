@@ -428,10 +428,13 @@
     <ClCompile Include="src\rendering\model\InstancedStaticModelGatherer.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp" />
     <ClCompile Include="src\rendering\model\InstancedStaticModelRenderer.cpp" />
+    <ClCompile Include="src\rendering\model\MaterialRenderPassType.cpp" />
+    <ClCompile Include="src\rendering\mesh\MeshConst.cpp" />
     <ClCompile Include="src\rendering\model\ModelBatch.cpp" />
     <ClCompile Include="src\rendering\model\ModelImpostorManager.cpp" />
     <ClCompile Include="src\rendering\model\ModelImpostorRenderer.cpp" />
     <ClCompile Include="src\rendering\model\ModelHighlightRenderer.cpp" />
+    <ClCompile Include="src\rendering\model\ModelSubmeshData.cpp" />
     <ClCompile Include="src\rendering\model\skeletal\AnimTransitionConditionDef.cpp" />
     <ClCompile Include="src\rendering\model\skeletal\SkeletalAnimator.cpp" />
     <ClCompile Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.cpp" />
@@ -506,6 +509,8 @@
     <ClCompile Include="src\tile\SimTileReservation.cpp" />
     <ClCompile Include="src\tile\TileContainerLoader.cpp" />
     <ClCompile Include="src\tile\TileDamageData.cpp" />
+    <ClCompile Include="src\definitions\TileDef.cpp" />
+    <ClCompile Include="src\tile\TileTransformationDef.cpp" />
     <ClCompile Include="src\ui\debugging\GameplayDebugger.cpp" />
     <ClCompile Include="src\ui\debugging\MovementDebugger.cpp" />
     <ClCompile Include="src\ui\debugging\PhysicsDebugger.cpp" />
@@ -577,6 +582,7 @@
     <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\TriggerCollection.cpp" />
     <ClCompile Include="src\ui\ScreenList.cpp" />
     <ClCompile Include="src\util\FixedSizeVector.cpp" />
+    <ClCompile Include="src\util\RollTable.cpp" />
     <ClCompile Include="src\util\TilingVoronoiMap.cpp" />
     <ClCompile Include="src\services\Services.cpp" />
     <ClCompile Include="src\stdafx.cpp">

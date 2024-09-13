@@ -1,15 +1,10 @@
 #pragma once
 
-#include "city/CityConst.h"
-#include "building/building.h"
 #include "crafting/CraftingConst.h"
 
 #include "ai/tasks/IAgentTask.h"
 #include "city/business_jobs/IBusinessJob.h"
-
-#include "tile/TileHandle.h"
-
-#include <boost/circular_buffer.hpp>
+#include "tile/TileHarvestable.h"
 
 
 class City;
@@ -19,7 +14,7 @@ class BuildingBlueprintGenerationContext;
 struct BusinessDef;
 
 typedef std::unique_ptr<IBusinessJob> IBusinessJobPtr;
-typedef boost::circular_buffer<entt::entity> IdleWorkerList;
+//typedef boost::circular_buffer<entt::entity> IdleWorkerList;
 
 // TODO: We are probably leaking IAgentTask here if the agent is destroyed with active
 // tasks, but using the destructor will probably result in us freeing from copies.
@@ -39,7 +34,7 @@ struct BusinessComponent {
     ui32 mDesiredEmployeeCount = 1; // TODO: Tiers?
     ui32 mMaxEmployeeCount = 10;
 
-    IdleWorkerList mIdleWorkers;
+   // IdleWorkerList mIdleWorkers;
     std::vector<IBusinessJobPtr> mActiveJobs;
 
     BusinessDef* mBusinessDef = nullptr;

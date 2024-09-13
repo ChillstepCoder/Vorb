@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "GrassBillboardMesh.h"
 
-#include "math/Random.h"
-
 #include "resources/TileGrassRepository.h"
 
 #include <Vorb/graphics/GLProgram.h>

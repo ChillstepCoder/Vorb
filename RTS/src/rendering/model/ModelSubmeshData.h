@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rendering/mesh/MeshConst.h"
-#include "serialization/BitseryExt.h"
+#include "rendering/model/MaterialRenderPassType.h"
 
 constexpr ui32 MAX_MODEL_VARIANTS = 16;
 
@@ -15,9 +15,7 @@ struct ModelSubmeshData {
         return renderPass != MaterialRenderPassType::Water;
     }
 };
-SERIALIZABLE_IMGUI_CONTROLLED(ModelSubmeshData,
-    make_field(o.windType, "wind"sv)
-);
+SERIALIZABLE_IMGUI_CONTROLLED_DECL(ModelSubmeshData);
 
 // Matches std140 layout
 constexpr ui32 MATERIAL_SLOT_COUNT = 4;
@@ -32,26 +30,9 @@ enum class ModelVariantSelectType : ui8 {
     Random,
     Voronoi
 };
-SERIALIZABLE_ENUM_SAME_NAME(ModelVariantSelectType,
-    ENUM_FIELD_SIMPLE(ModelVariantSelectType, Random),
-    ENUM_FIELD_SIMPLE(ModelVariantSelectType, Voronoi)
-);
+SERIALIZABLE_ENUM_DECL(ModelVariantSelectType);
 
-YML_WRITE_DEF(std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>) {
-    ryml::NodeRef& nr = *n;
-    nr |= ryml::SEQ;
-    nr |= ryml::_WIP_STYLE_FLOW_SL;
-    for (int i = 0; i < MATERIAL_SLOT_COUNT; ++i) {
-        nr.append_child() << o[i];
-    }
-}
-YML_READ_DEF(std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>) {
-    if (n.num_children() > MATERIAL_SLOT_COUNT) return false;
-    int i = 0;
-    for (auto const ch : n)
-        ch >> (*target)[i++];
-    return true;
-}
+SERIALIZABLE_DECL(std::array<MaterialAssetRef, MATERIAL_SLOT_COUNT>);
 
 struct ModelVariantData {
     StrToken displayName = CStrToken("new_variant");

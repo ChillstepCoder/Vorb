@@ -1,7 +1,5 @@
 #pragma once
 
-#include "math/Random.h"
-
 // Based on https://blogs.sas.com/content/iml/2020/10/19/random-points-in-triangle.html but extended to 3D
 class UniformTriangleSampler3D {
 public:

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "item/ItemStack.h"
+#include "ai/jobs/SimTaskHandle.h"
 
 enum class SimHomeState : ui8 {
     Homeless,

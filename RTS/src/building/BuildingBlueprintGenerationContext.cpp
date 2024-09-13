@@ -1,10 +1,7 @@
 #include "stdafx.h"
 #include "BuildingBlueprintGenerationContext.h"
-#include "building/building.h"
 
 #include "resources/TileRepository.h"
-
-#include "math/Random.h"
 
 BuildingBlueprintGenerationContext::BuildingBlueprintGenerationContext(
     const BuildingDef& desc,

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "world/simulation/host/storyteller/IStoryTellerEvent.h"
-#include <boost/circular_buffer.hpp>
 
 // https://www.reddit.com/r/RimWorld/comments/nmx5bi/which_events_are_triggered_by_storytellers/
 struct StoryTellerConfig {

@@ -11,10 +11,7 @@
 
 #include <tinysplinecxx.h>
 
-#include <stack>
 #include <random>
-
-#include "math/Random.h"
 
 RiverGenerationPass::~RiverGenerationPass() {
     if (sync) {

@@ -5,6 +5,13 @@
 
 #include "world/simulation/host/component/SimCharacterComponents.h"
 
+#include "ecs/component/DualComponents.h"
+
+// Shared components between the Simulation Thread ECS and the Render Thread ECS
+#include "ecs/component/DualInventoryComponent.h"
+#include "ecs/component/DualAttributesComponent.h"
+
+
 using DualEntityOperationFunc = std::function<void(entt::registry&, entt::entity, bool/*isGameThread*/)>;
 
 namespace SimEntityOperations {

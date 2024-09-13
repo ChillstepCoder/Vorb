@@ -14,12 +14,7 @@ enum class MeshWindType : ui8 {
     TreeLeaves,
     COUNT
 };
-SERIALIZABLE_ENUM_SAME_NAME(MeshWindType,
-    pair{ MeshWindType::None, "none"sv },
-    pair{ MeshWindType::Grass, "grass"sv },
-    pair{ MeshWindType::TreeTrunk, "tree_trunk"sv },
-    pair{ MeshWindType::TreeLeaves, "tree_leaves"sv }
-);
+SERIALIZABLE_ENUM_DECL(MeshWindType);
 
 enum class MeshLODLevel : ui8 {
     Highest,

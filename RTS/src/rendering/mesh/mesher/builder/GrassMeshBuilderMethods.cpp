@@ -12,8 +12,6 @@
 #include "resources/ResourceManager.h"
 #include "resources/TileGrassRepository.h"
 
-#include "math/Random.h"
-
 constexpr int GRASS_LOD_DETAIL[MAX_GRASS_DETAIL + 1][GRASS_QUADTREE_MAX_LOD] = {
     { 0, 0, 0, 0, 0 }, // 0
     { 0, 1, 1, 1, 1 }, // 1

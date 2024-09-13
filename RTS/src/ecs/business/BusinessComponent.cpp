@@ -33,7 +33,7 @@ constexpr ui32 TASK_LIST_MAX_SIZE = 50;
 
 
 BusinessComponent::BusinessComponent() {
-    mIdleWorkers.set_capacity(IDLE_CAPACITY_INC);
+    //mIdleWorkers.set_capacity(IDLE_CAPACITY_INC);
 }
 
 //IAgentTaskPtr BusinessComponent::aquireTask() {
@@ -54,11 +54,11 @@ BusinessComponent::BusinessComponent() {
 //}
 
 void BusinessComponent::addIdleWorker(entt::entity worker) {
-    if (mIdleWorkers.size() == mIdleWorkers.capacity()) {
-        mIdleWorkers.set_capacity(mIdleWorkers.capacity() + IDLE_CAPACITY_INC);
-    }
-    //std::cout << "ADD IDLE " << mIdleWorkers.size() << " " << mIdleWorkers.capacity() << std::endl;
-    mIdleWorkers.push_back(worker);
+    //if (mIdleWorkers.size() == mIdleWorkers.capacity()) {
+    //    mIdleWorkers.set_capacity(mIdleWorkers.capacity() + IDLE_CAPACITY_INC);
+    //}
+    ////std::cout << "ADD IDLE " << mIdleWorkers.size() << " " << mIdleWorkers.capacity() << std::endl;
+    //mIdleWorkers.push_back(worker);
 }
 
 void BusinessComponent::onWorkerFailTask(entt::entity worker, IAgentTask* task) {
@@ -183,64 +183,64 @@ void updateBusiness(entt::registry& registry, entt::entity entity, BusinessCompo
     //}
     
     // Assign idle workers to active jobs
-    while (cmp.mIdleWorkers.size()) {
-        entt::entity worker = cmp.mIdleWorkers.front();
-        bool didAssign = false;
-        for (auto&& it : cmp.mActiveJobs) {
-            if (IAgentTaskPtr task = it->tryMakeTaskForWorker(registry, worker)) {
-                
-                EmployeeComponent& employeeCmp = registry.get<EmployeeComponent>(worker);
-                employeeCmp.flags &= (~EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE);
+    //while (cmp.mIdleWorkers.size()) {
+    //    entt::entity worker = cmp.mIdleWorkers.front();
+    //    bool didAssign = false;
+    //    for (auto&& it : cmp.mActiveJobs) {
+    //        if (IAgentTaskPtr task = it->tryMakeTaskForWorker(registry, worker)) {
+    //            
+    //            EmployeeComponent& employeeCmp = registry.get<EmployeeComponent>(worker);
+    //            employeeCmp.flags &= (~EmployeeComponentFlags::FLAG_EMPLOYEE_IS_IDLE);
 
-                // TODO: Why shared and not unique?
-                employeeCmp.mCurrentTask = std::move(task);
+    //            // TODO: Why shared and not unique?
+    //            employeeCmp.mCurrentTask = std::move(task);
 
-                cmp.mIdleWorkers.pop_front();
-                didAssign = true;
-                break;
-            }
-        }
-        // Could not assign any more jobs, break
-        // TODO: This might be bad when the task only works for some workers and not others
-        if (!didAssign) {
-            break;
-        }
-    }
+    //            cmp.mIdleWorkers.pop_front();
+    //            didAssign = true;
+    //            break;
+    //        }
+    //    }
+    //    // Could not assign any more jobs, break
+    //    // TODO: This might be bad when the task only works for some workers and not others
+    //    if (!didAssign) {
+    //        break;
+    //    }
+    //}
 
-    BusinessProduceComponent* produceCmp = registry.try_get<BusinessProduceComponent>(entity);
-    if (produceCmp) {
+    //BusinessProduceComponent* produceCmp = registry.try_get<BusinessProduceComponent>(entity);
+    //if (produceCmp) {
 
-    }
+    //}
 
-    // TODO: More performant to iterate each of these as a list?
-    BusinessGatherComponent* gatherCmp = registry.try_get<BusinessGatherComponent>(entity);
-    if (gatherCmp) {
-        updateGatherComponent(registry, *gatherCmp, cmp, ownershipCmp);
-    }
+    //// TODO: More performant to iterate each of these as a list?
+    //BusinessGatherComponent* gatherCmp = registry.try_get<BusinessGatherComponent>(entity);
+    //if (gatherCmp) {
+    //    updateGatherComponent(registry, *gatherCmp, cmp, ownershipCmp);
+    //}
 
-    BusinessBuildComponent* buildCmp = registry.try_get<BusinessBuildComponent>(entity);
-    if (buildCmp) {
-        updateBuildComponent(*buildCmp, cmp, entity);
-    }
+    //BusinessBuildComponent* buildCmp = registry.try_get<BusinessBuildComponent>(entity);
+    //if (buildCmp) {
+    //    updateBuildComponent(*buildCmp, cmp, entity);
+    //}
 
-    BusinessRetailComponent* retailCmp = registry.try_get<BusinessRetailComponent>(entity);
-    if (retailCmp) {
+    //BusinessRetailComponent* retailCmp = registry.try_get<BusinessRetailComponent>(entity);
+    //if (retailCmp) {
 
-    }
+    //}
 
-    // Tick active jobs and remove complete
-    for (size_t i = 0; i < cmp.mActiveJobs.size();) {
-        IBusinessJob& job = *cmp.mActiveJobs[i];
-        // Update jobs and remove complete jobs
-        if (job.tick(registry, entity)) {
-            cmp.mActiveJobs[i] = std::move(cmp.mActiveJobs.back());
-            cmp.mActiveJobs.pop_back();
-            // TODO: onComplete()?
-        }
-        else {
-            ++i;
-        }
-    }
+    //// Tick active jobs and remove complete
+    //for (size_t i = 0; i < cmp.mActiveJobs.size();) {
+    //    IBusinessJob& job = *cmp.mActiveJobs[i];
+    //    // Update jobs and remove complete jobs
+    //    if (job.tick(registry, entity)) {
+    //        cmp.mActiveJobs[i] = std::move(cmp.mActiveJobs.back());
+    //        cmp.mActiveJobs.pop_back();
+    //        // TODO: onComplete()?
+    //    }
+    //    else {
+    //        ++i;
+    //    }
+    //}
 }
 
 void BusinessSystem::update(entt::registry& registry)

@@ -1,26 +1,11 @@
 #pragma once
 
-#include "world/GridID.h"
 #include "CoarseNavGraph.h"
 
 #include "tile/TileHandle.h"
 #include "util/ThreadSafeDirtySet.h"
 
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point.hpp>
-#include <boost/geometry/geometries/box.hpp>
-#include <boost/geometry/index/rtree.hpp>
-#include <boost/container/flat_set.hpp>
-
 #include "tile/TileContainerEvents.h"
-
-#include "terrain/CompressedHeight.h"
-
-namespace bg = boost::geometry;
-namespace bgi = boost::geometry::index;
-
-typedef bg::model::point<i32, 2, bg::cs::cartesian> NavBoxPoint;
-typedef bg::model::box<NavBoxPoint> NavBBox;
 
 class World;
 class Chunk;
@@ -28,10 +13,10 @@ class TileContainer;
 struct TileFineNavData;
 struct CoarseNavNode;
 struct TileWalls;
+struct NavSpatialLookup;
 
 constexpr int MAX_NAV_NODE_COUNT = UINT8_MAX;
 constexpr ui16 INVALID_DJ_NODE_ID = UINT16_MAX;
-
 
 //const ui16v2 NAV_NODE_EDGE_OFFSETS[4] = {
 //    {0, 0}, // DOWN
@@ -163,22 +148,6 @@ struct NavGraphBuildTaskData {
     const TileContainer* container;
 };
 
-struct ContainerNavRegion {
-    NavBBox box;
-    TileContainerID id;
-
-    bool operator==(const ContainerNavRegion& rhs) const {
-        return (id == rhs.id) && (memcmp(&this->box, &rhs.box, sizeof(box)) == 0);
-    }
-};
-// https://stackoverflow.com/questions/64179718/storing-or-accessing-objects-in-boost-r-tree
-template <>
-struct bgi::indexable<ContainerNavRegion>
-{
-    typedef NavBBox result_type;
-    NavBBox operator()(const ContainerNavRegion& c) const { return c.box; }
-};
-
 class TerrainExternalEdges {
 public:
     TerrainExternalEdges() = default;
@@ -196,12 +165,15 @@ private:
     StaticBitArray<CHUNK_SIZE * 4> edgeData; // 8kb
 };
 
+
 // TODO: Lazy navgraph generation?
 class NavWorld
 {
 public:
     NavWorld(World& world);
     ~NavWorld();
+
+    VORB_NON_COPYABLE(NavWorld);
 
     void tickGameThread();
     void updateNavThread();
@@ -251,7 +223,7 @@ private:
     moodycamel::ConcurrentQueue<NavGraphBuildTaskData> mFinishedNavGraphBuildTasks;
     // std::unordered_map for pointer stability
     std::unordered_map<TileContainerID, ContainerNavData> mNavGraphs;
-    bgi::rtree<ContainerNavRegion, bgi::quadratic<16>> mSpatialLookup;
+    std::unique_ptr<NavSpatialLookup> mSpatialLookup;
     mutable FlatMap<LiteTileHandle, TimeStampSec> mReservedHarvestables;
 
     enum class ChunkDependencyFlags : ui8 {

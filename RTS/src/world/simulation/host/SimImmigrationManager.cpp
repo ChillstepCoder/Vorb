@@ -10,8 +10,6 @@
 
 #include "world/simulation/host/system/SimAISystem.h"
 
-#include "math/Random.h"
-
 constexpr ui64 MIN_TIME_BETWEEN_IMMIGRATIONS_MS = 4000;
 
 SimImmigrationManager::SimImmigrationManager(HostSimContext& simContext) :

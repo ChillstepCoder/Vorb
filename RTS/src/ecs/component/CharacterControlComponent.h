@@ -3,9 +3,9 @@
 #include "character/CharacterLocomotionMode.h"
 #include "ecs/component/ComponentDefBase.h"
 
-#include <Jolt/Jolt.h>
-#include <Jolt/Physics/Collision/ObjectLayer.h>
-#include <Jolt/Physics/Character/CharacterBase.h>
+namespace JPH {
+    class CharacterBase;
+}
 
 class World;
 
@@ -64,6 +64,13 @@ enum class CharacterControlComponentFlags : ui8{
 };
 
 struct CharacterControlComponent {
+    CharacterControlComponent();
+    ~CharacterControlComponent();
+    CharacterControlComponent(CharacterControlComponent&&);
+    CharacterControlComponent& operator=(CharacterControlComponent&&);
+
+    VORB_NON_COPYABLE(CharacterControlComponent);
+
     // Is either a player controller or an AI controller based on the flags
     std::unique_ptr<JPH::CharacterBase> mCharacterController;
     f32v2 mMoveDirection = f32v2(0.0f);

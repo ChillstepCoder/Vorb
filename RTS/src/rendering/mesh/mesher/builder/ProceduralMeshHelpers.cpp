@@ -10,8 +10,6 @@
 
 #include <glm/gtx/rotate_vector.hpp>
 
-#include "math/Random.h"
-
 struct WallVertexPermutation {
     f32 outerXOffsets[4]; // SW,SE,NW,NE -1, 0 or 1. Multiply by WALL_HALF_THICKNESS
     bool hasWestCap;

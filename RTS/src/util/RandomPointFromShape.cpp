@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "RandomPointFromShape.h"
 
-#include "math/Random.h"
-
 f32v3 util::queryRandomPointFromSphere(f32 radius, ui32 seed /*= UINT32_MAX*/) {
     if (seed == UINT32_MAX) seed = Random::getCachedRandom();
     f32 theta = 2.f * M_PIF * Random::getCachedRandomfSpecific(seed); // azimuthal angle

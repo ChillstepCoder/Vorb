@@ -9,7 +9,6 @@
 
 #include "ai/jobs/SimTaskHandle.h"
 #include "options/DebugOptions.h"
-#include "math/Random.h"
 
 #include "world/IHeightmapGrid.h"
 

@@ -44,6 +44,19 @@ concept HasUpdateAndRenderImgui = requires(T t, const char* label) {
 //template<typename U>
 //struct is_std_vector<std::vector<U>> : std::true_type {};
 
+#define SERIALIZABLE_ENUM_DECL(Type) \
+    extern template const boost::container::flat_map<Type, std::string_view>& getGlobalEnumNameMap<Type>(); \
+    namespace c4::yml { \
+        namespace impl { \
+            extern void write(c4::yml::NodeRef* n, Type const& v); \
+            extern bool read(c4::yml::ConstNodeRef const& n, Type* v); \
+        } \
+        extern void write(c4::yml::NodeRef* n, Type const& v); \
+        extern bool read(c4::yml::ConstNodeRef const& n, Type* v); \
+    }
+    
+
+
 // Usage: ns::MyType, MyType, pair{EnumName1, "name1"sv}, pair{EnumName2, "name2"sv}, ...
 #define SERIALIZABLE_ENUM(Type, TypeNoNamespace, ...) \
 template<> \
@@ -286,6 +299,16 @@ namespace YmlSerializer {
         YmlSerializer::deserializeYmlFields<Type>(n, __VA_ARGS__); \
         return true; \
     }
+
+#define SERIALIZABLE_DECL(...) \
+    YML_WRITE_DECL(__VA_ARGS__); \
+    YML_READ_DECL(__VA_ARGS__);
+
+#define SERIALIZABLE_IMGUI_CONTROLLED_DECL(...) \
+    YML_WRITE_DECL(__VA_ARGS__); \
+    YML_READ_DECL(__VA_ARGS__); \
+    extern bool updateAndRenderImguiControls(__VA_ARGS__& o);
+
 // Usage: SERIALIZABLE_IMGUI_CONTROLLED(Type, make_field(o.Value1, "value_name1"sv), make_field(o.Value2, ...)
 #define SERIALIZABLE_IMGUI_CONTROLLED(Type, ...) \
     SERIALIZABLE_SIMPLE(Type, __VA_ARGS__) \

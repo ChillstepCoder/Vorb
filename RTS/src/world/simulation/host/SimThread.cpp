@@ -10,8 +10,6 @@
 
 #include "world/simulation/host/component/SimCharacterComponents.h"
 
-#include "math/Random.h"
-
 constexpr int SIM_THREAD_IDLE_SLEEP_MS = 60;
 
 SimThread::SimThread(HostSimContext& simContext, World& world) : mWorld(world), mHostSimContext(simContext)

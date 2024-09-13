@@ -15,8 +15,6 @@
 #include <Vorb/graphics/BlendState.h>
 #include <Vorb/graphics/DepthState.h>
 
-#include "math/Random.h"
-
 // Arbitrary for estimated perf reasons
 constexpr ui32 MAX_PARTICLES = 20000;
 

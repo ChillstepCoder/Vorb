@@ -42,8 +42,6 @@
 
 #include "camera/OrthoCamera.h"
 
-#include "math/Random.h"
-
 // Possible human readable characters to generate a game seed with
 constexpr int RANDOM_SEED_VALUES_COUNT = 95;
 constexpr char RANDOM_SEED_VALUES[RANDOM_SEED_VALUES_COUNT] = {

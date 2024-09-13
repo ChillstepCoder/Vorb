@@ -2,7 +2,6 @@
 #include "PathFinder.h"
 
 #include "world/World.h"
-#include "resources/TileRepository.h"
 #include "NavPath.h"
 #include "world/IHeightmapGrid.h"
 
@@ -12,7 +11,14 @@
 
 #include "debugging/DebugRenderer.h"
 
-#include "building/building.h"
+#include <boost/heap/priority_queue.hpp>
+
+// TODO: Is there a better choice?
+typedef boost::heap::priority_queue<std::pair<f32, CoarseAstarNodeID>, boost::heap::compare<compareCoarseNode>> CoarseOpenList;
+
+struct PathFinderPriorityQueue {
+    CoarseOpenList queue;
+};
 
 constexpr Cartesian CARTESIAN_COARSE_EDGE_WALK_CARTESIAN[4] = {
     Cartesian::EAST, //South
@@ -176,6 +182,10 @@ const i32v2 NODE_CORNER_NEIGHBORS[8] = {
 // TODO: https://gamedev.stackexchange.com/questions/94148/pathfinding-tile-based-navigation-mesh
 
 PathFinder::PathFinder(const NavWorld& navWorld) : mNavWorld(navWorld) {
+    mOpenList = std::make_unique<PathFinderPriorityQueue>();
+}
+
+PathFinder::~PathFinder() {
 
 }
 
@@ -642,8 +652,8 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 go
 
     PreciseTimer timer;
     
-    mOpenList.clear();
-    mOpenList.reserve(MAXIMUM_COARSE_NODES);
+    mOpenList->queue.clear();
+    mOpenList->queue.reserve(MAXIMUM_COARSE_NODES);
     
     const IHeightmapGrid& heightGrid = mNavWorld.getWorld().getHeightmapGrid();
     const CoarseNavGraph& startNavGraph = startNavData->coarseNavGraph;
@@ -681,12 +691,12 @@ bool PathFinder::generateCoarsePathSynchronous(const f32v3 start, const f32v3 go
     mCoarseClosedList.push_back(startNode);
     coarseAstarEdgePropagate(*startNavData, startNode, startHandle, startNavGraph, goalWorldPos, INVALID_COARSE_NODE_PARENT, 0.0f);
     // Do the A*
-    while (mOpenList.size() && mTotalAstarNodes < MAXIMUM_COARSE_NODES - 256) {
-        const auto& topNode = mOpenList.top();
+    while (mOpenList->queue.size() && mTotalAstarNodes < MAXIMUM_COARSE_NODES - 256) {
+        const auto& topNode = mOpenList->queue.top();
         id = topNode.second;
         CoarseAStarNode& astarNode = sCoarseAstarNodes[id];
         
-        mOpenList.pop();
+        mOpenList->queue.pop();
 
         const LiteTileHandle& handle = astarNode.tileHandle;
         const ContainerNavData& navData = mNavWorld.getNavDataForContainer(handle.containerId);
@@ -911,7 +921,7 @@ void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const
                     AM::DebugRenderer::drawLineBetweenPointsThreadSafe(nextPos, tilePos, color4(((int)newAstarNode.g % 255) / 255.0f, ((int)newAstarNode.h % 255) / 255.0f, 0.0f, 0.5f), DEBUG_DURATION);
                 }
                 newAstarNode.parentIndex = parentId;
-                mOpenList.push(std::make_pair(newAstarNode.getScore(), newId));
+                mOpenList->queue.push(std::make_pair(newAstarNode.getScore(), newId));
             }
         }
         else {
@@ -945,7 +955,7 @@ void PathFinder::coarseAstarEdgePropagate(const ContainerNavData& navData, const
                 AM::DebugRenderer::drawLineBetweenPointsThreadSafe(nextPos, tilePos, color4(((int)newAstarNode.g % 255) / 255.0f, ((int)newAstarNode.h % 255) / 255.0f, 1.0f, 0.5f), DEBUG_DURATION);
             }
             newAstarNode.parentIndex = parentId;
-            mOpenList.push(std::make_pair(newAstarNode.getScore(), newId));
+            mOpenList->queue.push(std::make_pair(newAstarNode.getScore(), newId));
         }
     }
 }

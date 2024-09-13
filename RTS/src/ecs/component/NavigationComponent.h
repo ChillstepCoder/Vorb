@@ -1,10 +1,9 @@
 #pragma once
 
-#include "actor/ActorTypes.h"
 #include "pathfinding/PathFinder.h"
 #include "tile/TileHarvestable.h"
-#include "tile/TileHandle.h"
 
+class World;
 struct CharacterControlComponent;
 class TileContainer;
 

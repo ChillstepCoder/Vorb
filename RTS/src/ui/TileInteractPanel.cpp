@@ -5,6 +5,7 @@
 #include "ecs/IFullECS.h"
 #include "ecs/component/CharacterDetailsComponent.h"
 
+#include "tile/TileContainer.h"
 #include <imgui.h>
 
 #include "ui/GameWindow.h"

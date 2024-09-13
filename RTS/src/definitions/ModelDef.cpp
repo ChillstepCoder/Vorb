@@ -1,8 +1,6 @@
 #include "stdafx.h"
 #include "ModelDef.h"
 
-#include "math/Random.h"
-
 f32 ModelDef::getRandomScaleAtPosition(f32v2 position) const {
 
     if (mScaleRange.x == mScaleRange.y) {

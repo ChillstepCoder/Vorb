@@ -1,6 +1,5 @@
 #pragma once
 
-#include "math/Random.h"
 #include "ui/imgui_controls/ObjectVector.h"
 
 // TODO: Population tables (ref caves of qud)
@@ -367,3 +366,7 @@ bool RollTable<T>::updateAndRenderImgui(const char* label)
 
     return changed;
 }
+
+// Compile time improvement
+extern template class RollTableEntry<ItemAssetRef>;
+extern template class RollTable<ItemAssetRef>;

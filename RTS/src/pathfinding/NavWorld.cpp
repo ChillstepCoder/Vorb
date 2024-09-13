@@ -18,6 +18,18 @@
 
 #include "resources/TileRepository.h"
 
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point.hpp>
+#include <boost/geometry/geometries/box.hpp>
+#include <boost/geometry/index/rtree.hpp>
+
+namespace bg = boost::geometry;
+namespace bgi = boost::geometry::index;
+
+typedef bg::model::point<i32, 2, bg::cs::cartesian> NavBoxPoint;
+typedef bg::model::box<NavBoxPoint> NavBBox;
+
+
 constexpr ui32 GRID_WIDTH = SUBCHUNK_WIDTH;
 static_assert(SUBCHUNK_WIDTH == 16);
 
@@ -34,6 +46,25 @@ constexpr f64 RESERVE_DURATION_SEC = 10.0;
 //    return f32v3(pos2d.x, pos2d.y, heightGrid.computeHeightAtPoint(pos2d));
 //}
 
+struct ContainerNavRegion {
+    NavBBox box;
+    TileContainerID id;
+
+    bool operator==(const ContainerNavRegion& rhs) const {
+        return (id == rhs.id) && (memcmp(&this->box, &rhs.box, sizeof(box)) == 0);
+    }
+};
+// https://stackoverflow.com/questions/64179718/storing-or-accessing-objects-in-boost-r-tree
+template <>
+struct bgi::indexable<ContainerNavRegion> {
+    typedef NavBBox result_type;
+    NavBBox operator()(const ContainerNavRegion& c) const { return c.box; }
+};
+
+struct NavSpatialLookup {
+    bgi::rtree<ContainerNavRegion, bgi::quadratic<16>> tree;
+};
+
 boost::container::flat_set<ChunkID> getChunkDependenciesForContainer(IChunkGrid& chunkGrid, const i32v2& pos, const i32v2& dims) {
     boost::container::flat_set<ChunkID> chunkDependencies;
     chunkDependencies.reserve(4);
@@ -49,6 +80,9 @@ boost::container::flat_set<ChunkID> getChunkDependenciesForContainer(IChunkGrid&
 }
 
 NavWorld::NavWorld(World& world) : mWorld(world) {
+
+    mSpatialLookup = std::make_unique<NavSpatialLookup>();
+
     // TODO: This is arbitrary
     mNavGraphs.reserve(100);
     const ui32 totalChunks = mWorld.getChunkGrid().getTotalChunks();
@@ -136,7 +170,7 @@ void NavWorld::updateNavThread()
         }
         else {
             NavBBox newBox(NavBoxPoint(worldPos2D.x, worldPos2D.y), NavBoxPoint(worldPos2D.x + containerData.dims.x, worldPos2D.y + containerData.dims.y));
-            mSpatialLookup.remove(ContainerNavRegion{ newBox, containerData.id });
+            mSpatialLookup->tree.remove(ContainerNavRegion{ newBox, containerData.id });
         }
     }
 
@@ -785,7 +819,7 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
             const i32v2 worldPos2D = spatialGrid.getWorldPos();
             const i32v2 dims2D = spatialGrid.getDims();
             NavBBox newBox(NavBoxPoint(worldPos2D.x, worldPos2D.y), NavBoxPoint(worldPos2D.x + dims2D.x, worldPos2D.y + dims2D.y));
-            mSpatialLookup.insert(ContainerNavRegion{ newBox, taskData.container->getId() });
+            mSpatialLookup->tree.insert(ContainerNavRegion{ newBox, taskData.container->getId() });
         }
     }
     else {
@@ -1400,7 +1434,7 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(i32v3 worldPos, OUT c
     std::vector<ContainerNavRegion> overlappingContainers;
     overlappingContainers.reserve(4);
     // https://valelab4.ucsf.edu/svn/3rdpartypublic/boost-versions/boost_1_55_0/libs/geometry/doc/html/geometry/spatial_indexes/queries.html
-    const size_t overlapCount = mSpatialLookup.query(boost::geometry::index::intersects(NavBoxPoint(worldPos.x, worldPos.y)), std::back_inserter(overlappingContainers));
+    const size_t overlapCount = mSpatialLookup->tree.query(boost::geometry::index::intersects(NavBoxPoint(worldPos.x, worldPos.y)), std::back_inserter(overlappingContainers));
 
     // Find the first structure whos tile is included in this point
     // Structures are AABBs

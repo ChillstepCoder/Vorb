@@ -1,11 +1,8 @@
 #include "stdafx.h"
 #include "CharacterControlComponent.h"
 
-#include "options/DebugOptions.h"
-
 #include "ecs/component/PhysicsComponent.h"
 #include "ecs/component/PositionComponent.h"
-#include "physics/PhysicsConst.h"
 
 #include "options/GlobalMovementSettings.h"
 
@@ -13,6 +10,9 @@
 #include "world/IHeightmapGrid.h"
 #include "ecs/IFullECS.h"
 
+#include <Jolt/Jolt.h>
+#include <Jolt/Physics/Collision/ObjectLayer.h> // Used in CharacterBase
+#include <Jolt/Physics/Character/CharacterBase.h>
 #include <Jolt/Physics/Character/Character.h>
 
 constexpr float JUMP_VELOCITY = 4.0f;
@@ -187,3 +187,8 @@ void CharacterControlSystem::update(World& world, entt::registry& registry, f32 
         updateComponent(world, registry, entity, elapsedSec);
     }
 }
+
+CharacterControlComponent::CharacterControlComponent() = default;
+CharacterControlComponent::~CharacterControlComponent() = default;
+CharacterControlComponent::CharacterControlComponent(CharacterControlComponent&&) = default;
+CharacterControlComponent& CharacterControlComponent::operator=(CharacterControlComponent&&) = default;

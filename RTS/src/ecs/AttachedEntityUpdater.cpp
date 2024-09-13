@@ -4,6 +4,8 @@
 #include "ecs/component/PositionComponent.h"
 #include "world/simulation/host/component/SimCharacterComponents.h"
 
+#include "ecs/component/DualComponents.h"
+
 AttachedEntityUpdater::AttachedEntityUpdater() {
     mOwnerThreadID = std::this_thread::get_id();
 }

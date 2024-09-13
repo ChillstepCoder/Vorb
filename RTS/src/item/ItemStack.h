@@ -15,16 +15,7 @@ enum class InventoryBagType : ui8 {
     Misc,
     COUNT
 };
-SERIALIZABLE_ENUM_SAME_NAME(InventoryBagType,
-    pair{ InventoryBagType::Resources, "resources"sv },
-    pair{ InventoryBagType::Food, "food"sv },
-    pair{ InventoryBagType::Equipment, "equipment"sv },
-    pair{ InventoryBagType::Alchemy, "alchemy"sv },
-    pair{ InventoryBagType::Valuables, "valuables"sv },
-    pair{ InventoryBagType::Misc, "misc"sv }
-);
-static_assert(e_count(InventoryBagType) == 6, "Update def");
-static_assert(e_count(InventoryBagType) <= 8, "Must fit in 3 bits");
+SERIALIZABLE_ENUM_DECL(InventoryBagType);
 
 enum class ItemQuality : ui8 {
     Standard,  // 0
@@ -96,12 +87,7 @@ public:
     }
 
     void init(ItemID id, ui32 count);
-    void init(ItemID id, ui32 count, ItemProperties props) {
-        this->id = id;
-        this->count = count;
-        this->props = props;
-    }
-
+    void init(ItemID id, ui32 count, ItemProperties props);
 
     bool isNull() const { return count == 0; }
     bool isValid() const { return count > 0; }

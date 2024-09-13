@@ -2,9 +2,9 @@
 #include "CliFactionManager.h"
 
 #include "math/Random.h"
-#include "world/World.h"
-
 #include "world/simulation/host/component/SimCharacterComponents.h"
+
+#include "world/World.h"
 
 CliFactionManager::CliFactionManager(World& world) : IFactionManager(world) {
     mRandomGenerator = std::make_unique<RandomGenerator>(world.getSeed() ^ (world.getSeed() << 16));

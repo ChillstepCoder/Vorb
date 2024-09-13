@@ -1,6 +1,7 @@
 #pragma once
 
-#include "world/Chunk.h"
+struct TileRef;
+struct TileHandle;
 
 struct TimedTileInteractComponent {
 

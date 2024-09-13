@@ -4,21 +4,12 @@
 #include "world/World.h"
 #include "world/host/HostWorldData.h"
 #include "world/simulation/host/HostSimContext.h"
-#include "world/simulation/host/SimThread.h"
 #include "generation/WorldGenerationData.h"
-#include "generation/WorldGenerationBlackboard.h"
 
 #include "resources/BiomeRepository.h"
-#include "time/TimeOfDayManager.h"
 
 #include "rendering/MaterialShaderRepository.h"
-#include "math/Random.h"
 
-#include "rendering/mesh/AxisAlignedQuadMesh.h"
-#include "rendering/MaterialShaderRepository.h"
-#include "rendering/MaterialRenderer.h"
-
-#include "camera/OrthoCamera.h"
 
 #include <random>
 

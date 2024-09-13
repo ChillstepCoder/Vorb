@@ -9,7 +9,6 @@ struct ContainerNavData;
 struct LiteTileHandle;
 class NavPath;
 
-#include <boost/heap/priority_queue.hpp>
 
 typedef ui16 CoarseAstarNodeID;
 constexpr ui16 INVALID_COARSE_NODE_PARENT = UINT16_MAX;
@@ -26,8 +25,6 @@ struct compareCoarseNode {
     }
 };
 
-// TODO: Is there a better choice?
-typedef boost::heap::priority_queue<std::pair<f32, CoarseAstarNodeID>, boost::heap::compare<compareCoarseNode>> CoarseOpenList;
 typedef std::vector<const CoarseNavNode*> CoarseClosedList;
 
 // TODO: Memory recycler for path memory
@@ -35,10 +32,14 @@ typedef std::vector<const CoarseNavNode*> CoarseClosedList;
     
 //};
 
+// <boost/heap/priority_queue.hpp> is a slow include due to <algorithm>
+struct PathFinderPriorityQueue;
+
 // TODO: Also support flow path finding for large group movements, such as for moving in formation
 class PathFinder {
 public:
     PathFinder(const NavWorld& navWorld);
+    ~PathFinder();
 
     bool generateFinePathSynchronous(const f32v3 start, const f32v3 goal, f32 targetRadius, OUT NavPath& path);
     bool generateCoarsePathSynchronous(const f32v3 start, const f32v3 goal, f32 targetRadius, OUT NavPath& path);
@@ -50,7 +51,7 @@ private:
     void clearCoarseClosedList();
     void finishCoarsePath(LiteTileHandle startHandle, LiteTileHandle goalHandle, CoarseAstarNodeID lastId, NavPath& path, bool reverse);
 
-    CoarseOpenList mOpenList;
+    std::unique_ptr<PathFinderPriorityQueue> mOpenList;
     CoarseClosedList mCoarseClosedList;
     CoarseAstarNodeID mTotalAstarNodes;
     const NavWorld& mNavWorld;

@@ -3,6 +3,7 @@
 
 #include "gamethread/GameThread.h"
 
+#include "tile/TileContainer.h"
 #include "world/World.h"
 #include "ecs/IFullECS.h"
 #include "physics/StaticPhysicsMeshBuilder.h"
