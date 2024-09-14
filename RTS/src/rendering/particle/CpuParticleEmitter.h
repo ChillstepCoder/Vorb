@@ -12,7 +12,7 @@
 class CPUParticleSystem;
 class MaterialShaderDef;
 class ParticleEmitterDef;
-
+struct ParticleEmitterShaderBinding;
 
 struct CpuParticlesGpuData {
     std::unique_ptr<GpuStreamingDataBuffer> mPositionsBuffer;
@@ -67,7 +67,6 @@ public:
 
     POOLED_ALLOC_DECL();
 
-    // Bind shader before calling this.
     // Returns true once lifetime has expired
     bool update(f32 elapsedSec);
 
@@ -178,7 +177,7 @@ public:
     void setAsEditorPreviewEmitter();
 
 protected:
-    void allocateParticleData();
+    void allocateComponentData();
     void onNewParticleAdded(ParticleID id);
 
     // Updates the whole emitter with custom logic.
@@ -223,5 +222,5 @@ protected:
 
     // Determines which data streams we will use
     BitFlags<ParticleComponentType> mComponents;
-    std::vector<ParticleEmitterVariableNameVec3> mVec3Variables;
+    std::span<const ParticleEmitterShaderBinding> mShaderBindings;
 };

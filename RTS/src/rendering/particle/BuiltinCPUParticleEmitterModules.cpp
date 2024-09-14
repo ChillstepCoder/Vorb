@@ -392,7 +392,6 @@ void CPUPEM_SetRotation::refresh() {
 }
 
 bool CPUPEM_SetRotation::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
-    
     return updateAndRenderVariable(mModuleData.mRotationVec2, "Rotation", parentEmitter);
 }
 
@@ -1038,11 +1037,11 @@ bool CPUPEM_OrientToVelocity::validateParams(const ParticleEmitterDef& def) cons
 #pragma endregion
 
 
-ui16v3 getRandomTriangleIndices(const ModelDef& modelDef, const MeshCpuData** outMeshData) {
+ui16v3 getRandomTriangleIndices(const ModelDef& modelDef, i32* submeshIndex) {
     const f32 randomWeight = Random::getCachedRandomf();
     const i32 randomMeshIndex = modelDef.getRandomSubmeshIndex(randomWeight);
     const MeshCpuData* meshData = &modelDef.mSubmeshCpuData[randomMeshIndex];
-    *outMeshData = meshData;
+    *submeshIndex = randomMeshIndex;
     const i32 elementRand = (Random::getCachedRandom() % (meshData->mLodData.getHighestLODIndexCount() / 3)) * 3;
     assert(meshData->mIndexType == MeshIndexType::USHORT);
     return ui16v3(reinterpret_cast<ui16*>(meshData->mElementsPtr)[elementRand],
@@ -1061,14 +1060,20 @@ CPUPEM_MeshReproductionSource::CPUPEM_MeshReproductionSource() {
 void CPUPEM_MeshReproductionSource::refresh() {
     mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
         ParticleSystemMeshInput meshInput = emitter.getInputs()->getMeshInput(ParticleSystemInputName::MeshSource);
+
         if (meshInput.mModelDef) [[likely]] {
-            const MeshCpuData* meshData = nullptr;
-            const ui16v3 indices = getRandomTriangleIndices(*meshInput.mModelDef, &meshData);
+            // TODO: VARIANTS
+            i32 variantIndex = 0;
+
+            i32 submeshIndex;
+            const ui16v3 indices = getRandomTriangleIndices(*meshInput.mModelDef, &submeshIndex);
+
+            const MeshCpuData& meshData = meshInput.mModelDef->mSubmeshCpuData[submeshIndex];
 
             // Barycentric interpolation via random point in triangle
-            switch (meshData->mVertexType) {
+            switch (meshData.mVertexType) {
                 case VertexType::STANDARD_MODEL: {
-                    const StandardModelVertex* vertexData = reinterpret_cast<const StandardModelVertex*>(meshData->mVertsPtr);
+                    const StandardModelVertex* vertexData = reinterpret_cast<const StandardModelVertex*>(meshData.mVertsPtr);
                     UniformTriangleSampler3D sampler(vertexData[indices.x].pos, vertexData[indices.y].pos, vertexData[indices.z].pos);
                     const f32v3 pos = sampler.generatePoint();
                     const f32v3 baryCoords = sampler.getBarycentricCoords(pos);
@@ -1076,7 +1081,10 @@ void CPUPEM_MeshReproductionSource::refresh() {
                                      baryCoords.y * UnpackUVs(vertexData[indices.y].uvsPacked) +
                                      baryCoords.z * UnpackUVs(vertexData[indices.z].uvsPacked);
 
-                    emitter.setUIntVariable(ParticleEmitterVariableNameUInt::StartMaterial, particleID, vertexData[indices.x].materialId);
+                    const MaterialID materialId = meshInput.mModelDef->getMaterialForSubmesh(
+                        variantIndex, submeshIndex, vertexData[indices.x].materialSlot % MATERIAL_SLOT_COUNT
+                    );
+                    emitter.setUIntVariable(ParticleEmitterVariableNameUInt::StartMaterial, particleID, materialId);
                     emitter.setVec3Variable(ParticleEmitterVariableNameVec3::MeshSourcePos, particleID, pos);
                     emitter.setVec2Variable(ParticleEmitterVariableNameVec2::MeshSourceUV, particleID, uv);
 
@@ -1147,11 +1155,13 @@ void CPUPEM_MeshReproductionTarget::refresh() {
         if (meshInput.mModelDef) [[likely]] {
             const f32v3 sourcePos = emitter.getVec3Variable(ParticleEmitterVariableNameVec3::MeshSourcePos, particleID);
 
+            // Try to find a close position
             const ui32 numChecks = std::get<ui32>(MODULE_DATA->mFindClosestChecks.mVarData);
             assert(numChecks);
 
-            // Try to find a close position
-            const MeshCpuData* meshData = nullptr;
+            i32 submeshIndex;
+            // TODO: VARIANTS
+            i32 variantIndex = 0;
 
             // Barycentric interpolation via random point in triangle
             if (meshInput.mModelDef->isSkeletalModel()) {
@@ -1167,8 +1177,10 @@ void CPUPEM_MeshReproductionTarget::refresh() {
                 // Share the same random UV to reduce ops
                 const f32v2 randomPointUV = UniformTriangleSampler3D::getRandomUV();
                 for (ui32 i = 0; i < numChecks; ++i) {
-                    const ui16v3 indices = getRandomTriangleIndices(*meshInput.mModelDef, &meshData);
-                    const StandardModelVertex* vertexData = reinterpret_cast<const StandardModelVertex*>(meshData->mVertsPtr);
+                    const ui16v3 indices = getRandomTriangleIndices(*meshInput.mModelDef, &submeshIndex);
+
+                    const MeshCpuData& meshData = meshInput.mModelDef->mSubmeshCpuData[submeshIndex];
+                    const StandardModelVertex* vertexData = reinterpret_cast<const StandardModelVertex*>(meshData.mVertsPtr);
                     samplers[i].init(vertexData[indices.x].pos, vertexData[indices.y].pos, vertexData[indices.z].pos);
                     const f32v3 pos = samplers[i].getPoint(randomPointUV);
                     const f32 distSq = glm::distance2(sourcePos, pos);
@@ -1191,7 +1203,10 @@ void CPUPEM_MeshReproductionTarget::refresh() {
                 const f32v2 scaleClamp = std::get<f32v2>(MODULE_DATA->mScaleClamp.mVarData);
                 const f32 scale = glm::clamp(bestSampler.getArea(), scaleClamp.x, scaleClamp.y) * std::get<f32>(MODULE_DATA->mScaleMult.mVarData);
 
-                emitter.setUIntVariable(ParticleEmitterVariableNameUInt::StartMaterial, particleID, bestVertexData[bestIndices.x].materialId);
+                const MaterialID materialId = meshInput.mModelDef->getMaterialForSubmesh(
+                    variantIndex, submeshIndex, bestVertexData[bestIndices.x].materialSlot % MATERIAL_SLOT_COUNT
+                );
+                emitter.setUIntVariable(ParticleEmitterVariableNameUInt::EndMaterial, particleID, materialId);
                 emitter.setFloatVariable(ParticleEmitterVariableNameFloat::MeshTargetScale, particleID, scale);
                 emitter.setVec2Variable(ParticleEmitterVariableNameVec2::MeshTargetUV, particleID, uv);
                 emitter.setVec3Variable(ParticleEmitterVariableNameVec3::MeshTargetPos, particleID, bestPos);

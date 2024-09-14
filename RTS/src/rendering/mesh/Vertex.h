@@ -39,7 +39,7 @@ struct alignas(16) StandardModelVertex {
     i16v2 uvsPacked;
     color4 color;
     union {
-        ui16 materialSlot; // Used by models
+        ui16 materialSlot; // Used by models (Offset by MATERIAL_SLOT_COUNT * submeshIndex)
         ui16 materialId; // Used by procedural mesh builder
     };
     ui8 windInfluence;

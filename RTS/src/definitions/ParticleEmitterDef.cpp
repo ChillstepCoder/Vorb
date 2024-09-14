@@ -19,7 +19,7 @@ YML_READ_DEF(ParticleVariableNameVariant) {
     return false;
 }
 
-SERIALIZABLE_SIMPLE(ParticleEmitterDef::ShaderBinding,
+SERIALIZABLE_SIMPLE(ParticleEmitterShaderBinding,
     make_field(o.mVariableName, "name"),
     make_field(o.mShaderBindingIndex, "index")
 )

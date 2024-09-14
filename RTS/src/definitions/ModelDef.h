@@ -48,6 +48,7 @@ public:
     f32 getScaleFromFloraAge(ui8 age) const;
     // Weight should be [0,1]
     i32 getRandomSubmeshIndex(f32 randomWeight) const;
+    MaterialID getMaterialForSubmesh(i32 variantIndex, i32 submeshIndex, i32 materialSlot) const;
 
     // TODO: AssetHandle
     const RigDef* mRig = nullptr;

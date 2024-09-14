@@ -507,29 +507,30 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
             changed = true;
         }
         ImGui::SeparatorText("Required Shader Inputs");
-        for (const ParticleEmitterDef::ShaderBinding& binding : mSelectedEmitter->mShaderBindings) {
+        for (const ParticleEmitterShaderBinding& binding : mSelectedEmitter->mShaderBindings) {
             std::visit([&](auto arg) {
                 bool hasVariable = false;
-                if constexpr (std::is_same_v<decltype(arg), ParticleEmitterVariableNameUInt>) {
+                using T = std::decay_t<decltype(arg)>;
+                if constexpr (std::is_same_v<T, ParticleEmitterVariableNameUInt>) {
                     hasVariable = std::find(mSelectedEmitter->mUIntVariables.begin(), mSelectedEmitter->mUIntVariables.end(), arg) != mSelectedEmitter->mUIntVariables.end();
                 }
-                else if constexpr (std::is_same_v<decltype(arg), ParticleEmitterVariableNameFloat>) {
+                else if constexpr (std::is_same_v<T, ParticleEmitterVariableNameFloat>) {
                     hasVariable = std::find(mSelectedEmitter->mFloatVariables.begin(), mSelectedEmitter->mFloatVariables.end(), arg) != mSelectedEmitter->mFloatVariables.end();
                 }
-                else if constexpr (std::is_same_v<decltype(arg), ParticleEmitterVariableNameVec2>) {
+                else if constexpr (std::is_same_v<T, ParticleEmitterVariableNameVec2>) {
                     hasVariable = std::find(mSelectedEmitter->mVec2Variables.begin(), mSelectedEmitter->mVec2Variables.end(), arg) != mSelectedEmitter->mVec2Variables.end();
                 }
-                else if constexpr (std::is_same_v<decltype(arg), ParticleEmitterVariableNameVec3>) {
+                else if constexpr (std::is_same_v<T, ParticleEmitterVariableNameVec3>) {
                     hasVariable = std::find(mSelectedEmitter->mVec3Variables.begin(), mSelectedEmitter->mVec3Variables.end(), arg) != mSelectedEmitter->mVec3Variables.end();
                 }
                 static_assert(TOTAL_PARTICLE_EMITTER_VARIABLE_TYPES == 4);
 
                 if (hasVariable) {
-                    ImGui::Text("%u - %s", binding.mShaderBindingIndex, ENUM_CSTR(decltype(arg), arg));
+                    ImGui::Text("%u - %s", binding.mShaderBindingIndex, ENUM_CSTR(T, arg));
                 }
                 else {
                     ImguiUtil::ScopedColor color(ImGuiCol_Text, ImguiColors::Theme::textError);
-                    ImGui::Text("%u - %s (MISSING)", binding.mShaderBindingIndex, ENUM_CSTR(decltype(arg), arg));
+                    ImGui::Text("%u - %s (MISSING)", binding.mShaderBindingIndex, ENUM_CSTR(T, arg));
                 }
             }, binding.mVariableName);
         }

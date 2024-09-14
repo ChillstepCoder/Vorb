@@ -36,7 +36,7 @@ CpuParticleEmitter::CpuParticleEmitter(
     mInputs(inputs),
     mMaterialAssetHandles(std::make_unique<AssetHandleBundle>())
 {
-    allocateParticleData();
+    allocateComponentData();
 }
 
 CpuParticleEmitter::CpuParticleEmitter(
@@ -88,6 +88,28 @@ CpuParticleEmitter::CpuParticleEmitter(
         mParticleData.mVec3Variables.emplace(vec3Var, std::move(std::make_unique_for_overwrite<f32v3[]>(mMaxParticles)));
     }
 
+    // Allocate shader streaming buffer inputs
+    mShaderBindings = std::span<const ParticleEmitterShaderBinding>(def.mShaderBindings.data(), def.mShaderBindings.size());
+    for (ParticleEmitterShaderBinding binding : mShaderBindings) {
+        std::visit([&](auto&& val) {
+            using T = std::decay_t<decltype(val)>;
+            if constexpr (std::is_same_v<T, ParticleEmitterVariableNameUInt>) {
+                mParticleData.mUIntVariableBuffers.emplace(val, std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(ui32)));
+            }
+            else if constexpr (std::is_same_v<T, ParticleEmitterVariableNameFloat>) {
+                mParticleData.mFloatVariableBuffers.emplace(val, std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(f32)));
+            }
+            else if constexpr (std::is_same_v<T, ParticleEmitterVariableNameVec2>) {
+                mParticleData.mVec2VariableBuffers.emplace(val, std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(f32v2)));
+            }
+            else if constexpr (std::is_same_v<T, ParticleEmitterVariableNameVec3>) {
+                // f32v4 as we need to align to 16 bytes
+                mParticleData.mVec3VariableBuffers.emplace(val, std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(f32v4)));
+            }
+        }, binding.mVariableName);
+        static_assert(std::variant_size_v<ParticleVariableNameVariant> == 4);
+    }
+
     for (auto&& module : def.mModules.mEmitterUpdate) {
         if (module->isValid() && module->compatableWithEmitter(*this)) [[likely]] {
             addEmitterUpdateModule(*module);
@@ -109,7 +131,7 @@ CpuParticleEmitter::CpuParticleEmitter(
         }
     }
 
-    allocateParticleData();
+    allocateComponentData();
 }
 
 CpuParticleEmitter::~CpuParticleEmitter() {
@@ -229,16 +251,17 @@ void CpuParticleEmitter::render() {
     const VGUniform unIsUsingMaterial = program.getUniform("unIsUsingMaterial");
     const VGUniform unIsUsingScale = program.getUniform("unIsUsingScale");
     const VGUniform unIsUsingRotation = program.getUniform("unIsUsingRotation");
-    const VGUniform unGlobalColor = program.getUniform("unGlobalColor");
     const VGUniform unGlobalScale = program.getUniform("unGlobalScale");
-    const VGUniform unGlobalMaterial = program.getUniform("unGlobalMaterial");
 
     // Upload globals
-    glUniform4f(unGlobalColor,
-        mGlobalParticleColor.r / 255.0f,
-        mGlobalParticleColor.g / 255.0f,
-        mGlobalParticleColor.b / 255.0f,
-        mGlobalParticleColor.a / 255.0f);
+    if (const VGUniform* unGlobalColor = program.tryGetUniform("unGlobalColor")) {
+        // This is sometimes not active due to fragment shader optimization
+        glUniform4f(*unGlobalColor,
+            mGlobalParticleColor.r / 255.0f,
+            mGlobalParticleColor.g / 255.0f,
+            mGlobalParticleColor.b / 255.0f,
+            mGlobalParticleColor.a / 255.0f);
+    }
     glUniform2fv(unGlobalScale, 1, &mGlobalParticleScale.x);
 
     // Find first and last particles so we ensure we are drawing the minimum number of elements
@@ -270,7 +293,7 @@ void CpuParticleEmitter::render() {
     f32v4* positions = (f32v4*)mGpuData.mPositionsBuffer->frameBeginAndGetDataForUpdate();
     for (ui32 i = 0; i < particlesToRender; ++i) {
         const ui32 particleIndex = mFirstActiveParticle + i;
-        const f32v3& sourcePos = mParticleData.mPositions[particleIndex];
+        const f32v3 sourcePos = mParticleData.mPositions[particleIndex];
         positions[i] = f32v4(sourcePos.x, sourcePos.y, sourcePos.z, 0.0f /*Rotation??*/);
     }
     mGpuData.mPositionsBuffer->flushDataAndIncrementFrame(particlesToRender);
@@ -333,8 +356,46 @@ void CpuParticleEmitter::render() {
         glUniform1ui(unIsUsingMaterial, 1u);
     }
     else {
-        glUniform1ui(unGlobalMaterial, (GLuint)mGlobalMaterialID);
+        if (const VGUniform* unGlobalMaterial = program.tryGetUniform("unGlobalMaterial")) {
+            glUniform1ui(*unGlobalMaterial, (GLuint)mGlobalMaterialID);
+        }
         glUniform1ui(unIsUsingMaterial, 0u);
+    }
+
+    // Variable bindings
+    for (ParticleEmitterShaderBinding binding : mShaderBindings) {
+        std::visit([&](auto&& val) {
+            using T = std::decay_t<decltype(val)>;
+            GpuStreamingDataBuffer* buffer;
+            if constexpr (std::is_same_v<T, ParticleEmitterVariableNameUInt>) {
+                buffer = mParticleData.mUIntVariableBuffers.at(val).get();
+                ui32* data = (ui32*)buffer->frameBeginAndGetDataForUpdate();
+                memcpy(data, &mParticleData.mUIntVariables.at(val)[mFirstActiveParticle], sizeof(ui32) * particlesToRender);
+            }
+            else if constexpr (std::is_same_v<T, ParticleEmitterVariableNameFloat>) {
+                buffer = mParticleData.mFloatVariableBuffers.at(val).get();
+                f32* data = (f32*)buffer->frameBeginAndGetDataForUpdate();
+                memcpy(data, &mParticleData.mFloatVariables.at(val)[mFirstActiveParticle], sizeof(f32) * particlesToRender);
+            }
+            else if constexpr (std::is_same_v<T, ParticleEmitterVariableNameVec2>) {
+                buffer = mParticleData.mVec2VariableBuffers.at(val).get();
+                f32v2* data = (f32v2*)buffer->frameBeginAndGetDataForUpdate();
+                memcpy(data, &mParticleData.mVec2Variables.at(val)[mFirstActiveParticle], sizeof(f32v2) * particlesToRender);
+            }
+            else if constexpr (std::is_same_v<T, ParticleEmitterVariableNameVec3>) {
+                buffer = mParticleData.mVec3VariableBuffers.at(val).get();
+                f32v4* data = (f32v4*)buffer->frameBeginAndGetDataForUpdate();
+                const f32v3* sourceData = &mParticleData.mVec3Variables.at(val)[mFirstActiveParticle];
+                for (ui32 i = 0; i < particlesToRender; ++i) {
+                    const ui32 particleIndex = mFirstActiveParticle + i;
+                    const f32v3 s = sourceData[particleIndex];
+                    data[i] = f32v4(s.x, s.y, s.z, 0.0f /*Rotation??*/);
+                }
+            }
+            buffer->flushDataAndIncrementFrame(particlesToRender);
+            buffer->bindBufferAsSSBO(binding.mShaderBindingIndex);
+        }, binding.mVariableName);
+        static_assert(std::variant_size_v<ParticleVariableNameVariant> == 4);
     }
 
     // Render two triangles per particle with no vertex data
@@ -556,8 +617,7 @@ void CpuParticleEmitter::setAsEditorPreviewEmitter() {
     memset(mParticleData.mVec3Variables[ParticleEmitterVariableNameVec3::INVALID].get(), 0, sizeof(f32v3) * mMaxParticles);
 }
 
-void CpuParticleEmitter::allocateParticleData()
-{
+void CpuParticleEmitter::allocateComponentData() {
     PROFILE_FUNCTION();
     ASSERT_RENDER_THREAD();
     assert(mMaxParticles <= MAX_PARTICLES);
@@ -600,7 +660,6 @@ void CpuParticleEmitter::allocateParticleData()
         mGpuData.mMaterialsBuffer = std::make_unique<GpuStreamingDataBuffer>(mMaxParticles, sizeof(ui32));
     }
 
-
     static_assert(e_cast(ParticleComponentType::TERM) == 65);
 }
 
@@ -612,6 +671,7 @@ void CpuParticleEmitter::onNewParticleAdded(ParticleID id) {
     if (mComponents.isBitSet(ParticleComponentType::Velocity)) {
         mParticleData.mVelocities[id] = f32v3(0.0f);
     }
+    // TODO: I don't think we need to zero all of this, the modules should handle it
     if (mComponents.isBitSet(ParticleComponentType::Scale)) {
         mParticleData.mScales[id] = f32v2(1.0f);
     }

@@ -20,7 +20,10 @@ void CPUParticleEmitterParameter::evaluate(CpuParticleEmitter& emitter, Particle
     }
 }
 
-bool CPUParticleEmitterParameter::updateAndRenderTweaker(const char*const label, const ParticleEmitterDef& parentEmitter) {
+bool CPUParticleEmitterParameter::updateAndRenderTweaker(const char* const label, const ParticleEmitterDef& parentEmitter) {
+    if (!validate(parentEmitter)) [[unlikely]] {
+        ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "INVALID");
+    }
     ImGui::PushID((int)this);
     const ImVec2 contentAvail = ImGui::GetContentRegionAvail();
     const float itemWidth = glm::max(contentAvail.x - 150, 10.0f);
@@ -80,24 +83,40 @@ bool CPUParticleEmitterParameter::updateAndRenderTweaker(const char*const label,
             changed |= ImguiUtil::EnumCombo<ParticleEmitterVariableNameUInt>("Var", name, [&](ParticleEmitterVariableNameUInt v) {
                 return std::find(parentEmitter.mUIntVariables.begin(), parentEmitter.mUIntVariables.end(), v) != parentEmitter.mUIntVariables.end();
             });
+
+            if (std::find(parentEmitter.mUIntVariables.begin(), parentEmitter.mUIntVariables.end(), name) == parentEmitter.mUIntVariables.end()) {
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "MISSING VARIABLE SOURCE");
+            }
          }
          else if (std::holds_alternative<ParticleEmitterVariableNameFloat>(mVarData)) {
             ParticleEmitterVariableNameFloat& name = std::get<ParticleEmitterVariableNameFloat>(mVarData);
             changed |= ImguiUtil::EnumCombo<ParticleEmitterVariableNameFloat>("Var", name, [&](ParticleEmitterVariableNameFloat v) {
                 return std::find(parentEmitter.mFloatVariables.begin(), parentEmitter.mFloatVariables.end(), v) != parentEmitter.mFloatVariables.end();
             });
+
+            if (std::find(parentEmitter.mFloatVariables.begin(), parentEmitter.mFloatVariables.end(), name) == parentEmitter.mFloatVariables.end()) {
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "MISSING VARIABLE SOURCE");
+            }
          }
          else if (std::holds_alternative<ParticleEmitterVariableNameVec2>(mVarData)) {
             ParticleEmitterVariableNameVec2& name = std::get<ParticleEmitterVariableNameVec2>(mVarData);
             changed |= ImguiUtil::EnumCombo<ParticleEmitterVariableNameVec2>("Var", name, [&](ParticleEmitterVariableNameVec2 v) {
                 return std::find(parentEmitter.mVec2Variables.begin(), parentEmitter.mVec2Variables.end(), v) != parentEmitter.mVec2Variables.end();
             });
+
+            if (std::find(parentEmitter.mVec2Variables.begin(), parentEmitter.mVec2Variables.end(), name) == parentEmitter.mVec2Variables.end()) {
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "MISSING VARIABLE SOURCE");
+            }
          }
          else if (std::holds_alternative<ParticleEmitterVariableNameVec3>(mVarData)) {
             ParticleEmitterVariableNameVec3& name = std::get<ParticleEmitterVariableNameVec3>(mVarData);
             changed |= ImguiUtil::EnumCombo<ParticleEmitterVariableNameVec3>("Var", name, [&](ParticleEmitterVariableNameVec3 v) {
                 return std::find(parentEmitter.mVec3Variables.begin(), parentEmitter.mVec3Variables.end(), v) != parentEmitter.mVec3Variables.end();
             });
+
+            if (std::find(parentEmitter.mVec3Variables.begin(), parentEmitter.mVec3Variables.end(), name) == parentEmitter.mVec3Variables.end()) {
+                ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "MISSING VARIABLE SOURCE");
+            }
          }
         else {
             assert(false);

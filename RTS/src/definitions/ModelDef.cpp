@@ -23,3 +23,7 @@ i32 ModelDef::getRandomSubmeshIndex(f32 randomWeight) const {
     }
     return (i32)mRandomPolyCpuDataWeights.size() - 1;
 }
+
+MaterialID ModelDef::getMaterialForSubmesh(i32 variantIndex, i32 submeshIndex, i32 materialSlot) const {
+    return mVariants[variantIndex].submeshMaterials[submeshIndex][materialSlot].getAssetID();
+}
