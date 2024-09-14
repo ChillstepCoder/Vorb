@@ -268,6 +268,8 @@ DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_QueryRotation, "Particle Rotation", "p
 )
 DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_QueryNormalizedLifetime, "Particle Normalized Lifetime", "p_norm_life", COLOR_QUERY, f32)
 
+DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_QueryMaxParticles, "Emitter Max Particles", "max_part", COLOR_QUERY, ui32)
+
 // Inputs
 DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_InputImpactDirection, "(In) Impact Direction", "i_idir", COLOR_INPUT, f32v3)
 DEFINE_CPUPEO_QUERY_COMPONENT_DECL(CPUPEO_InputImpactSurfaceNormal, "(In) Impact Surface Normal", "i_inorm", COLOR_INPUT, f32v3)

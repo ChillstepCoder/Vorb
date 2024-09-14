@@ -1,5 +1,5 @@
 emitters:
-  - defaultemitter:
+  - base:
       scale: [0.2,0.2]
       color: [255,255,255,255]
       max_particles: 3000
@@ -12,7 +12,8 @@ emitters:
       e_update:
         - spawn_burst:
             delay: 0
-            spawn_count: 3000
+            spawn_count:
+              max_part: {}
       p_init:
         - mesh_rep_src:
             scale: 4
@@ -45,28 +46,170 @@ emitters:
                   p_norm_life: {}
         - set_scale:
             scale:
-              lerp_vec2:
-                source:
-                  f32_to_vec2:
-                    v:
-                      v_float:
-                        name: MeshSourceScale
-                target:
-                  f32_to_vec2:
-                    v:
-                      mult_f32:
-                        p0:
+              f32_to_vec2:
+                v:
+                  mult_f32:
+                    p0:
+                      lerp_float:
+                        source:
+                          v_float:
+                            name: MeshSourceScale
+                        target:
                           v_float:
                             name: MeshTargetScale
-                        p1:
-                          float_curve:
-                            norm_input:
-                              p_norm_life: {}
-                            keys:
-                              - [0.697,1]
-                              - [1,0]
+                        alpha:
+                          p_norm_life: {}
+                    p1:
+                      float_curve:
+                        norm_input:
+                          p_norm_life: {}
+                        keys:
+                          - [0,0]
+                          - [0.064,1]
+                          - [0.865,1]
+                          - [1,0]
+  - glow:
+      scale: [2,2]
+      color: [255,255,255,255]
+      max_particles: 500
+      lifetime: 3
+      p_lifespan: 3
+      looping: 1
+      blend: additive
+      mat: dot_texture_06
+      shader: particle_greysc
+      e_update:
+        - spawn_burst:
+            delay: 0
+            spawn_count:
+              max_part: {}
+      p_init:
+        - mesh_rep_src:
+            scale: 2
+            scale_clmp: [0.3,5]
+        - mesh_rep_tgt:
+            scale: 1
+            scale_clmp: [0.1,5]
+            find_close: 12
+        - set_position:
+            pos:
+              v_vec3:
+                name: MeshSourcePos
+      p_update:
+        - set_position:
+            pos:
+              lerp_vec3:
+                source:
+                  v_vec3:
+                    name: MeshSourcePos
+                target:
+                  v_vec3:
+                    name: MeshTargetPos
                 alpha:
                   p_norm_life: {}
+        - set_scale:
+            scale:
+              f32_to_vec2:
+                v:
+                  mult_f32:
+                    p0:
+                      lerp_float:
+                        source:
+                          v_float:
+                            name: MeshSourceScale
+                        target:
+                          v_float:
+                            name: MeshTargetScale
+                        alpha:
+                          p_norm_life: {}
+                    p1:
+                      float_curve:
+                        norm_input:
+                          p_norm_life: {}
+                        keys:
+                          - [0,0]
+                          - [0.156,1]
+                          - [0.833,1]
+                          - [1,0]
+        - set_color:
+            color:
+              color_curve:
+                norm_input:
+                  p_norm_life: {}
+                keys:
+                  - [0,56,255,255,128]
+                  - [1,56,255,255,0]
+  - bigglow:
+      scale: [30,30]
+      color: [255,255,255,255]
+      max_particles: 5
+      lifetime: 3
+      p_lifespan: 3
+      looping: 1
+      blend: additive
+      mat: dot_texture_06
+      shader: particle_greysc
+      e_update:
+        - spawn_burst:
+            delay: 0
+            spawn_count:
+              max_part: {}
+      p_init:
+        - mesh_rep_src:
+            scale: 1
+            scale_clmp: [0.5,1]
+        - mesh_rep_tgt:
+            scale: 1
+            scale_clmp: [0.5,5]
+            find_close: 12
+        - set_position:
+            pos:
+              v_vec3:
+                name: MeshSourcePos
+      p_update:
+        - set_position:
+            pos:
+              lerp_vec3:
+                source:
+                  v_vec3:
+                    name: MeshSourcePos
+                target:
+                  v_vec3:
+                    name: MeshTargetPos
+                alpha:
+                  p_norm_life: {}
+        - set_scale:
+            scale:
+              f32_to_vec2:
+                v:
+                  mult_f32:
+                    p0:
+                      lerp_float:
+                        source:
+                          v_float:
+                            name: MeshSourceScale
+                        target:
+                          v_float:
+                            name: MeshTargetScale
+                        alpha:
+                          p_norm_life: {}
+                    p1:
+                      float_curve:
+                        norm_input:
+                          p_norm_life: {}
+                        keys:
+                          - [0,0]
+                          - [0.156,1]
+                          - [0.833,1]
+                          - [1,0]
+        - set_color:
+            color:
+              color_curve:
+                norm_input:
+                  p_norm_life: {}
+                keys:
+                  - [0,56,255,255,128]
+                  - [1,56,255,255,0]
 lifetime: 10.17
 inputs:
   - MeshSource: tree_pine

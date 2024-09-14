@@ -52,6 +52,8 @@ void ParticleSystemRenderer::renderEmitterEditor(CpuParticleEmitter* emitter, co
     if (!shader) {
         return;
     }
+    bindStateForParticleBlendMode((ParticleBlendMode)emitter->getBlendMode());
+
     VGUniform unRootPos = shader->getUniform("unRootPos");
     MaterialRenderer::bindMaterialShaderForRender(*shader);
     glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &VP[0][0]);

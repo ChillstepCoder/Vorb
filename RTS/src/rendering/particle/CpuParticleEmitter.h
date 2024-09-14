@@ -128,6 +128,7 @@ public:
     MaterialID getGlobalMaterialID() const noexcept { return mGlobalMaterialID; }
     void setGlobalParticleLifespan(f32 lifespan) noexcept { mGlobalParticleLifespan = lifespan; }
     f32 getGlobalParticleLifespan() const noexcept { return mGlobalParticleLifespan; }
+    int getMaxParticles() const noexcept { return mMaxParticles; }
 
     int getFirstActiveParticle() const noexcept { return mFirstActiveParticle; }
     int getLastActiveParticle() const noexcept { return mLastActiveParticle; }

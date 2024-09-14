@@ -35,6 +35,9 @@ void main() {
     // Expects greyscale sprite
     const float spriteAlpha = sampleMaterialAlbedo(mtl, fUV).r * fColor.a;
     
+    
+    // TODO: Profile as a vertex texture fetch instead of fragment
+    
     vec3 sNormal;
     vec4 sColor;
     float sAo;
@@ -53,4 +56,5 @@ void main() {
     oColor.a *= spriteAlpha;
     
     tryDiscardTransparentPixel(oColor.a);
+    oColor.a = 1.0;
 }

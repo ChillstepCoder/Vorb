@@ -314,6 +314,10 @@ void CPUPEO_QueryNormalizedLifetime::execute(CpuParticleEmitter& emitter, Partic
     output->mVarData = emitter.getParticleNormalizedLifetime(id);
 }
 
+void CPUPEO_QueryMaxParticles::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
+    output->mVarData = (ui32)emitter.getMaxParticles();
+}
+
 void CPUPEO_InputImpactDirection::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     if (emitter.getInputs()) [[likely]] {
         output->mVarData = emitter.getInputs()->getVec3Input(ParticleSystemInputName::Vec3ImpactDirection, f32v3(0.0f, 0.0f, 1.0f));

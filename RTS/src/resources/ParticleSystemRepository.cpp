@@ -237,9 +237,7 @@ void ParticleSystemRepository::fixupLoadedAsset(AssetID assetId) {
                 module->addRequiredVariables(reqVars);
 
                 std::span<const std::unique_ptr<CPUParticleEmitterModule>> modulesAbove(moduleVector->data(), i);
-                if (!module->validatePrerequesiteModules(modulesAbove)) {
-                    module->setIsValid(false);
-                }
+                module->setIsValid(module->validatePrerequesiteModules(modulesAbove));
 
                 emitter.mActiveComponents |= module->getRequiredComponents();
                 ++i;
