@@ -42,6 +42,7 @@ public:
     bool updateAndRenderTweaker(const char*const label, const ParticleEmitterDef& parentEmitter);
     bool loadFromYml(ryml::ConstNodeRef node, std::string_view name);
     void saveYmlData(ryml::NodeRef node, std::string_view name) const;
+    bool validate(const ParticleEmitterDef& def) const;
 
     std::unique_ptr<CPUParticleEmitterOperation> mOperation = nullptr;
     CPUParticleEmitterVariantData mVarData;
@@ -83,12 +84,22 @@ public:
     virtual const char* const getParamName(size_t paramIndex) const = 0;
     virtual size_t getParamIndex(const char* const paramName) const { assert(false); return UINT32_MAX; };
 
+    virtual bool validate(const ParticleEmitterDef& def) const { 
+        return validateParamsInternal(def);
+    }
+
     bool canAddToEmitter(const ParticleEmitterDef& emitter) const {
         const BitFlags<ParticleComponentType> required = getRequiredComponents();
         return (emitter.mActiveComponents & required) == required;
     }
 
 protected:
+    bool validateParamsInternal(const ParticleEmitterDef& def) const {
+        for (auto&& p : mParams) {
+            if (!p.validate(def)) return false;
+        }
+        return true;
+    }
     std::vector<CPUParticleEmitterParameter> mParams;
 
     inline void evaluateParams(CpuParticleEmitter& emitter, ParticleID id) {
@@ -196,6 +207,7 @@ class NAME : public CPUParticleEmitterOperation { \
     OPERATION_PARAM_NAMES("name") \
     DEFINE_CPUPEO_COMMON_PARTS(NAME, DISP_NAME, YML_NAME, DISP_COLOR, OUTPUT_TYPE) \
     void execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) override; \
+    bool validate(const ParticleEmitterDef& def) const override; \
     __VA_ARGS__ \
 }; \
 REGISTER_YML_OBJECT(YML_NAME, NAME, CPUParticleEmitterOperation);

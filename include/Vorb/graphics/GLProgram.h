@@ -75,6 +75,7 @@ namespace vorb {
             typedef std::pair<nString, VGAttribute> AttributeBinding; ///< Binds attribute names to locations
             typedef std::map<nString, VGAttribute> AttributeMap; ///< Dictionary of attribute locations by name
             typedef std::map<nString, VGUniform> UniformMap; ///< Dictionary of uniform locations by name
+            typedef std::map<nString, VGBinding> SsboMap;
 
             /// Create and possibly initialize program
             /// @param init: True to call init()
@@ -138,6 +139,8 @@ namespace vorb {
             void initAttributes();
             /// Creates mappings for uniforms
             void initUniforms();
+            // Creates mappings for SSBO bindings
+            void initSsboBindings();
 
             /// Binds fragment shader outputs to color numbers.
             /// @pre program is not yet linked.
@@ -188,6 +191,7 @@ namespace vorb {
             }
 
             const UniformMap& getUniforms() const { return m_uniforms; }
+            const SsboMap& getSsboBindings() const { return m_ssboBindings; }
 
             inline static GLProgramErrorCallbackList onShaderCompilationError; ///< Event signaled during addShader when an error occurs
             inline static GLProgramErrorCallbackList onProgramLinkError; ///< Event signaled during link when an error occurs
@@ -206,6 +210,7 @@ namespace vorb {
             AttributeMap m_attributes; ///< Dictionary of attributes
             UniformMap m_uniforms; ///< Dictionary of uniforms
             AttributeSemBinding m_semanticBinding; ///< Dictionary of attributes for semantics
+            SsboMap m_ssboBindings; //< binding indices for named SSBOs
 
             static VGProgram m_programInUse; ///< The current program in use
         };

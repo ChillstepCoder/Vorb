@@ -45,6 +45,7 @@ void vg::GLProgram::dispose() {
     AttributeMap().swap(m_attributes);
     UniformMap().swap(m_uniforms);
     AttributeSemBinding().swap(m_semanticBinding);
+    SsboMap().swap(m_ssboBindings);
 }
 
 bool vg::GLProgram::addShader(const ShaderSource& data) {
@@ -316,6 +317,37 @@ void vg::GLProgram::initUniforms() {
         }
     }
 }
+
+void vg::GLProgram::initSsboBindings() {
+    if (!isLinked()) return;
+
+    // Get the number of active SSBOs
+    GLint ssboCount = 0;
+    glGetProgramInterfaceiv(m_id, GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, &ssboCount);
+
+    // Properties to query
+    GLenum properties[] = { GL_NAME_LENGTH, GL_BUFFER_BINDING };
+
+    for (GLint i = 0; i < ssboCount; ++i) {
+
+        // Get the SSBO binding point
+        struct {
+            GLint nameLength = 0;
+            GLint binding = -1;
+        } queryData;
+
+        glGetProgramResourceiv(m_id, GL_SHADER_STORAGE_BLOCK, i, 2, properties, 2, nullptr, &queryData.nameLength);
+
+        // Retrieve the SSBO name
+        nString nameData;
+        nameData.resize(queryData.nameLength);
+        glGetProgramResourceName(m_id, GL_SHADER_STORAGE_BLOCK, i, queryData.nameLength + 1, nullptr, nameData.data());
+
+        assert(queryData.binding != -1);
+        m_ssboBindings[nameData] = queryData.binding;
+    }
+}
+
 
 void vg::GLProgram::bindFragDataLocation(ui32 colorNumber, const char* name) {
     glBindAttribLocation(m_id, colorNumber, name);

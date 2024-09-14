@@ -3,6 +3,8 @@
 
 #include <fstream>
 
+#include "rendering/MaterialShaderDef.h"
+
 #include "resources/EffectRepository.h"
 
 #include "resources/MaterialRepository.h"
@@ -228,19 +230,20 @@ void ParticleSystemRepository::fixupLoadedAsset(AssetID assetId) {
         // Track all needed variables and components
         RequiredEmitterVariables reqVars{ uintVars, floatVars, vec2Vars, vec3Vars };
 
-        for (auto& module : emitter.mModules.mEmitterUpdate) {
-            module->addRequiredVariables(reqVars);
-            emitter.mActiveComponents |= module->getRequiredComponents();
-        }
+        // Add required variables, validate modules, and add required components
+        for (auto moduleVector : { &emitter.mModules.mEmitterUpdate, &emitter.mModules.mParticleInit, &emitter.mModules.mParticleUpdate }) {
+            int i = 0;
+            for (auto& module : *moduleVector) {
+                module->addRequiredVariables(reqVars);
 
-        for (auto& module : emitter.mModules.mParticleInit) {
-            module->addRequiredVariables(reqVars);
-            emitter.mActiveComponents |= module->getRequiredComponents();
-        }
+                std::span<const std::unique_ptr<CPUParticleEmitterModule>> modulesAbove(moduleVector->data(), i);
+                if (!module->validatePrerequesiteModules(modulesAbove)) {
+                    module->setIsValid(false);
+                }
 
-        for (auto& module : emitter.mModules.mParticleUpdate) {
-            module->addRequiredVariables(reqVars);
-            emitter.mActiveComponents |= module->getRequiredComponents();
+                emitter.mActiveComponents |= module->getRequiredComponents();
+                ++i;
+            }
         }
 
         // Copy the variables
@@ -248,6 +251,28 @@ void ParticleSystemRepository::fixupLoadedAsset(AssetID assetId) {
         emitter.mFloatVariables.insert(emitter.mFloatVariables.end(), floatVars.begin(), floatVars.end());
         emitter.mVec2Variables.insert(emitter.mVec2Variables.end(), vec2Vars.begin(), vec2Vars.end());
         emitter.mVec3Variables.insert(emitter.mVec3Variables.end(), vec3Vars.begin(), vec3Vars.end());
+
+        // Validate params after we have full state
+        for (auto moduleVector : { &emitter.mModules.mEmitterUpdate, &emitter.mModules.mParticleInit, &emitter.mModules.mParticleUpdate }) {
+            for (auto& module : *moduleVector) {
+                if (!module->validateParams(emitter)) {
+                    module->setIsValid(false);
+                }
+            }
+        }
+
+        assert(emitter.mShaderRef.isLoaded());
+
+        // Add shader bindings
+        emitter.mShaderBindings.clear();
+        const MaterialShaderDef& shaderDef = emitter.mShaderRef.getLoadedAsset<MaterialShaderDef>();
+        const vg::GLProgram::SsboMap& bindings = shaderDef.mProgram.getSsboBindings();
+        for (const auto& [name, index] : bindings) {
+            ParticleVariableNameVariant variant;
+            if (tryReadAnyEnumFromTupleIntoVariant<ParticleEmitterVariableEnums>(name, variant)) {
+                emitter.mShaderBindings.emplace_back(variant, index);
+            }
+        }
     }
 }
 

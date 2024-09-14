@@ -20,29 +20,6 @@ constexpr ui32 MAX_PARTICLES = 20000;
 
 POOLED_ALLOC_DEF_NOT_THREADSAFE(CpuParticleEmitter, 64, ASSERT_RENDER_THREAD());
 
-void bindStateForParticleBlendMode(ParticleBlendMode blendMode) {
-
-    // TODO: Switch to using RenderDevice
-    switch (blendMode) {
-        case ParticleBlendMode::Opaque:
-            vg::DepthState::FULL.set();
-            vg::sBlendStates.REPLACE.set();
-            break;
-        case ParticleBlendMode::Alpha:
-            vg::DepthState::READ.set();
-            vg::sBlendStates.ALPHA.set();
-            break;
-        case ParticleBlendMode::Additive:
-            vg::DepthState::READ.set();
-            vg::sBlendStates.ADDITIVE.set();
-            break;
-        case ParticleBlendMode::Subtractive:
-            vg::DepthState::READ.set();
-            vg::sBlendStates.SUBTRACTIVE.set();
-            break;
-    }
-}
-
 CpuParticleEmitter::CpuParticleEmitter(
     const ParticleUpdateFunction& updateFunction,
     ui32 maxParticles,
@@ -112,21 +89,21 @@ CpuParticleEmitter::CpuParticleEmitter(
     }
 
     for (auto&& module : def.mModules.mEmitterUpdate) {
-        if (module->compatableWithEmitter(*this)) [[likely]] {
+        if (module->isValid() && module->compatableWithEmitter(*this)) [[likely]] {
             addEmitterUpdateModule(*module);
             mComponents |= module->getRequiredComponents();
         }
     }
 
     for (auto&& module : def.mModules.mParticleInit) {
-        if (module->compatableWithEmitter(*this)) [[likely]] {
+        if (module->isValid() && module->compatableWithEmitter(*this)) [[likely]] {
             addParticleInitModule(*module);
             mComponents |= module->getRequiredComponents();
         }
     }
 
     for (auto&& module : def.mModules.mParticleUpdate) {
-        if (module->compatableWithEmitter(*this)) [[likely]] {
+        if (module->isValid() && module->compatableWithEmitter(*this)) [[likely]] {
             addParticleUpdateModule(*module);
             mComponents |= module->getRequiredComponents();
         }

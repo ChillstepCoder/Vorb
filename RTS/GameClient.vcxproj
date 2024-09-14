@@ -263,6 +263,7 @@
     <ClCompile Include="src\definitions\AnimMachineDef.cpp" />
     <ClCompile Include="src\definitions\EffectDef.cpp" />
     <ClCompile Include="src\definitions\ModelDef.cpp" />
+    <ClCompile Include="src\definitions\ParticleEmitterDef.cpp" />
     <ClCompile Include="src\definitions\rendering\CubemapDef.cpp" />
     <ClCompile Include="src\definitions\RigDef.cpp" />
     <ClCompile Include="src\definitions\SkillDef.cpp" />
@@ -442,7 +443,9 @@
     <ClCompile Include="src\rendering\particle\CPUParticleEmitterModule.cpp" />
     <ClCompile Include="src\rendering\particle\CPUParticleEmitterOperation.cpp" />
     <ClCompile Include="src\rendering\particle\CPUParticleSystem.cpp" />
+    <ClCompile Include="src\rendering\particle\ParticleEnumTypes.cpp" />
     <ClCompile Include="src\rendering\particle\ParticleSystemInputs.cpp" />
+    <ClCompile Include="src\rendering\particle\ParticleSystemRenderer.cpp" />
     <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />
     <ClCompile Include="src\rendering\post_process\ShadowDetail.cpp" />
@@ -1006,6 +1009,7 @@
     <ClInclude Include="src\rendering\particle\ParticleEmitterVariableName.h" />
     <ClInclude Include="src\rendering\particle\ParticleEnumTypes.h" />
     <ClInclude Include="src\rendering\particle\ParticleSystemInputs.h" />
+    <ClInclude Include="src\rendering\particle\ParticleSystemRenderer.h" />
     <ClInclude Include="src\rendering\particle\ParticleSystemUserParameters.h" />
     <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
     <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />

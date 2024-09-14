@@ -1,9 +1,9 @@
 emitters:
   - defaultemitter:
       scale: [0.2,0.2]
-      color: [150,0,0,255]
+      color: [255,255,255,255]
       max_particles: 3000
-      lifetime: 10
+      lifetime: 3
       p_lifespan: 3
       looping: 1
       blend: opaque

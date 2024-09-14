@@ -17,6 +17,7 @@ uniform uint unIsUsingRotation = 0;
 out vec2 fUV;
 flat out uint fParticleMaterial;
 flat out vec4 fColor;
+flat out uint fParticleId;
 
 const vec2 pos[4] = vec2[4](
 	vec2(-0.5, -0.5),
@@ -29,32 +30,32 @@ const int indices[6] = int[6](
 	0, 1, 2, 2, 3, 0
 );
 
-layout(std430, binding = 4) readonly buffer ParticlePosition
+layout(std430, binding = 4) readonly restrict buffer ParticlePosition
 {
     vec3 ParticlePositions[];
 };
 
-layout(std430, binding = 5) readonly buffer ParticleScale
+layout(std430, binding = 5) readonly restrict buffer ParticleScale
 {
     vec2 ParticleScales[];
 };
 
-layout(std430, binding = 6) readonly buffer ParticleColor
+layout(std430, binding = 6) readonly restrict buffer ParticleColor
 {
     uint ParticleColors[];
 };
 
-layout(std430, binding = 7) readonly buffer ParticleHDRColor
+layout(std430, binding = 7) readonly restrict buffer ParticleHDRColor
 {
     vec4 ParticleHDRColors[];
 };
 
-layout(std430, binding = 8) readonly buffer ParticleMaterial
+layout(std430, binding = 8) readonly restrict buffer ParticleMaterial
 {
     uint ParticleMaterials[];
 };
 
-layout(std430, binding = 11) readonly buffer ParticleXYOrient
+layout(std430, binding = 9) readonly restrict buffer ParticleXYOrient
 {
     vec2 ParticleXYOrients[];
 };
@@ -124,6 +125,7 @@ mat3 createTransformMatrix(float pitch, float roll) {
 
 void main() {
     const uint particleId = gl_VertexID / 6;
+    fParticleId = particleId;
 
     const int idx = indices[gl_VertexID % 6];
 	vec2 offset = pos[idx];

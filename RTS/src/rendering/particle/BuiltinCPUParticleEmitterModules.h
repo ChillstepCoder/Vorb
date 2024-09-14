@@ -27,6 +27,7 @@ class ModuleType : public CPUParticleEmitterModule { \
     constexpr const char* const getYmlName() const override { return YmlName; } \
     bool loadFromYml(ryml::ConstNodeRef node) override; \
     void saveYmlData(ryml::NodeRef node) const override; \
+    bool validateParams(const ParticleEmitterDef& def) const override; \
 private: \
    __VA_ARGS__ \
 }; \
@@ -202,4 +203,5 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_MeshReproductionTarget, e_cast(ParticleEmitte
     );
 public:
     void addRequiredVariables(RequiredEmitterVariables& variables) const override;
+    bool validatePrerequesiteModules(std::span<const std::unique_ptr<CPUParticleEmitterModule>> modulesAbove) const override;
 )

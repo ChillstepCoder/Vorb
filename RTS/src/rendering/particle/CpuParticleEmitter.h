@@ -134,6 +134,7 @@ public:
     int getLastActiveParticle() const noexcept { return mLastActiveParticle; }
     int getNumActiveParticles() const noexcept { return mNumActiveParticles; }
     int getFragmentation() const noexcept { return mNumActiveParticles ? ((mLastActiveParticle - mFirstActiveParticle) / mNumActiveParticles) : 0; }
+    f32 getNormalizedLifetime() const noexcept { return mLifetimeSec ? glm::min(mTotalElapsedSec / mLifetimeSec, 1.0f) : 0.0f; }
 
     f32 getTotalElapsedSec() const noexcept { return mTotalElapsedSec; }
     bool isLooping() const noexcept { return mLooping; }
@@ -224,6 +225,3 @@ protected:
     BitFlags<ParticleComponentType> mComponents;
     std::vector<ParticleEmitterVariableNameVec3> mVec3Variables;
 };
-
-// Helper utility that binds depth and blend states
-extern void bindStateForParticleBlendMode(ParticleBlendMode blendMode);

@@ -48,8 +48,9 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
         program.dispose();
         return m_nilProgram;
     }
-    // Set uniforms
+
     program.initUniforms();
+    program.initSsboBindings();
 
     return program;
 }
@@ -101,8 +102,9 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
         program.dispose();
         return m_nilProgram;
     }
-    // Set uniforms
+
     program.initUniforms();
+    program.initSsboBindings();
 
     return program;
 }
@@ -169,8 +171,9 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
         program.dispose();
         return m_nilProgram;
     }
-    // Set uniforms
+
     program.initUniforms();
+    program.initSsboBindings();
 
     return program;
 }
@@ -250,8 +253,10 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
         program.dispose();
         return m_nilProgram;
     }
-    // Set uniforms
+
     program.initUniforms();
+    program.initSsboBindings();
+
     return program;
 }
 

@@ -3,6 +3,10 @@
 
 #include "resources/ResourceManager.h"
 
+bool LiteAssetRefBase::isLoadedInternal(AssetType type) const {
+    return isValid() && ResourceManager::get().getAssetRepository(type).isAssetLoaded(mId);
+}
+
 StrToken LiteAssetRefBase::getAssetNameInternal(AssetType type) const {
     if (!isValid()) [[unlikely]] {
         return StrToken();

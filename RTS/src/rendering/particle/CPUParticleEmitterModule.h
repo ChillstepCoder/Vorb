@@ -38,9 +38,18 @@ public:
     virtual bool compatableWithEmitter(const CpuParticleEmitter& emitter) const { return true; }
     virtual void addRequiredVariables(RequiredEmitterVariables& variables) const {}
 
+    // Return true if all our params are valid
+    virtual bool validateParams(const ParticleEmitterDef& def) const { return true; }
+    // Return true if we have everything we need before this module
+    virtual bool validatePrerequesiteModules(std::span<const std::unique_ptr<CPUParticleEmitterModule>> modulesAbove) const { UNUSED(modulesAbove); return true; }
+
     bool areAllRequiredComponentsPresent(BitFlags<ParticleComponentType> componentsToCheck) const {
         return (mRequiredComponents.getBits() & componentsToCheck.getBits()) == mRequiredComponents.getBits();
     }
+
+    // If not valid, will not be used
+    bool isValid() const { return mIsValid; }
+    void setIsValid(bool isValid) { mIsValid = isValid; }
 
     CPUParticleEmitterModuleMethod getMethod() const { return mMethod; }
     BitFlags<ParticleComponentType> getRequiredComponents() const { return mRequiredComponents; }
@@ -48,6 +57,7 @@ public:
 protected:
     CPUParticleEmitterModuleMethod mMethod;
     BitFlags<ParticleComponentType> mRequiredComponents;
+    bool mIsValid = true;
 
     // TODO: Based on https://docs.unrealengine.com/5.1/en-US/script-editor-reference-for-niagara-effects-in-unreal-engine/
     // TODO: Provided dependencies

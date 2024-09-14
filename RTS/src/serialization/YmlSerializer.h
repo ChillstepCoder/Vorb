@@ -347,6 +347,7 @@ YML_READ_DEF(color4) {
     return true;
 }
 
+
 // Custom types
 namespace c4 {
     namespace yml {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "rendering/particle/ParticleEnumTypes.h"
+
 class CpuParticleEmitter;
 
 struct EmitterRenderData {

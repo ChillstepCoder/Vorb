@@ -395,9 +395,19 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
                     SELECTED_BUTTON(ImGui::Button(module->getName(), ImVec2(moduleButtonWidth, size)));
                 }
                 else {
-                    if (ImGui::Button(module->getName(), ImVec2(moduleButtonWidth, size))) {
-                        mSelectedModule = module.get();
-                        mSelectedModuleVector = &modules;
+                    if (module->isValid()) {
+                        if (ImGui::Button(module->getName(), ImVec2(moduleButtonWidth, size))) {
+                            mSelectedModule = module.get();
+                            mSelectedModuleVector = &modules;
+                        }
+                    }
+                    else {
+                        ImguiUtil::ScopedColor color(ImGuiCol_Button, ImguiColors::Theme::error);
+                        if (ImGui::Button(module->getName(), ImVec2(moduleButtonWidth, size))) {
+                            mSelectedModule = module.get();
+                            mSelectedModuleVector = &modules;
+                        }
+                        ImGui::SetItemTooltip("Module is invalid due to missing prerequisites");
                     }
                 }
                 ImGui::SameLine();
@@ -482,19 +492,47 @@ bool ParticleSystemEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySi
 
         changed |= ImGui::SliderFloat("Emitter Lifetime Sec", &mSelectedEmitter->mLifetimeSec, 0.01f, 50.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
         changed |= ImGui::SliderFloat("Particle Lifespan Sec", &mSelectedEmitter->mDefaultParticleLifespanSec, 0.01f, 50.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+
+        changed |= ImGui::Checkbox("Looping", &mSelectedEmitter->mLooping);
+        changed |= ImguiUtil::EnumCombo("Blend Mode", mSelectedEmitter->mBlendMode);
        
         if (ImguiUtil::updateAndRenderAssetReference(nullptr, mSelectedEmitter->mMaterialRef, AssetType::Material)) {
             changed = true;
         }
+
         if (ImguiUtil::updateAndRenderAssetReference(nullptr, mSelectedEmitter->mShaderRef, AssetType::MaterialShader, [](AssetID id) {
             vio::Path path = MaterialShaderRepository::get().getAssetFilePath(id);
             return vio::containsSubpath(path, "particle");
         })) {
             changed = true;
         }
+        ImGui::SeparatorText("Required Shader Inputs");
+        for (const ParticleEmitterDef::ShaderBinding& binding : mSelectedEmitter->mShaderBindings) {
+            std::visit([&](auto arg) {
+                bool hasVariable = false;
+                if constexpr (std::is_same_v<decltype(arg), ParticleEmitterVariableNameUInt>) {
+                    hasVariable = std::find(mSelectedEmitter->mUIntVariables.begin(), mSelectedEmitter->mUIntVariables.end(), arg) != mSelectedEmitter->mUIntVariables.end();
+                }
+                else if constexpr (std::is_same_v<decltype(arg), ParticleEmitterVariableNameFloat>) {
+                    hasVariable = std::find(mSelectedEmitter->mFloatVariables.begin(), mSelectedEmitter->mFloatVariables.end(), arg) != mSelectedEmitter->mFloatVariables.end();
+                }
+                else if constexpr (std::is_same_v<decltype(arg), ParticleEmitterVariableNameVec2>) {
+                    hasVariable = std::find(mSelectedEmitter->mVec2Variables.begin(), mSelectedEmitter->mVec2Variables.end(), arg) != mSelectedEmitter->mVec2Variables.end();
+                }
+                else if constexpr (std::is_same_v<decltype(arg), ParticleEmitterVariableNameVec3>) {
+                    hasVariable = std::find(mSelectedEmitter->mVec3Variables.begin(), mSelectedEmitter->mVec3Variables.end(), arg) != mSelectedEmitter->mVec3Variables.end();
+                }
+                static_assert(TOTAL_PARTICLE_EMITTER_VARIABLE_TYPES == 4);
 
-        changed |= ImGui::Checkbox("Looping", &mSelectedEmitter->mLooping);
-        changed |= ImguiUtil::EnumCombo("Blend Mode", mSelectedEmitter->mBlendMode);
+                if (hasVariable) {
+                    ImGui::Text("%u - %s", binding.mShaderBindingIndex, ENUM_CSTR(decltype(arg), arg));
+                }
+                else {
+                    ImguiUtil::ScopedColor color(ImGuiCol_Text, ImguiColors::Theme::textError);
+                    ImGui::Text("%u - %s (MISSING)", binding.mShaderBindingIndex, ENUM_CSTR(decltype(arg), arg));
+                }
+            }, binding.mVariableName);
+        }
 
     }
     if (changed) {

@@ -15,6 +15,8 @@ public:
     }
 
 protected:
+
+    bool isLoadedInternal(AssetType type) const;
     StrToken getAssetNameInternal(AssetType type) const;
     void setAssetNameInternal(StrToken name, AssetType type);
     bool updateAndRenderImguiInternal(const char* label, AssetType type, AssetFilterFunc filterFunc);
@@ -44,6 +46,10 @@ public:
     AssetDescriptor getAssetDescriptor() const { return AssetDescriptor{ .id = mId, .assetType = assetType, }; }
     AssetHandleBasePtr getAssetHandleBase() const { return getAssetHandleBaseInternal(assetType); }
     
+    bool isLoaded() const {
+        return isLoadedInternal(assetType);
+    }
+
     template<typename AssetClass>
     AssetHandlePtr<AssetClass> getAssetHandle() const {
         assert(AssetClass::ASSET_TYPE == assetType);

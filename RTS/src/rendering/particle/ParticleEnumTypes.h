@@ -21,9 +21,4 @@ enum class ParticleBlendMode {
     Subtractive,
     COUNT
 };
-SERIALIZABLE_ENUM_SAME_NAME(ParticleBlendMode,
-    pair{ ParticleBlendMode::Opaque, "opaque"sv },
-    pair{ ParticleBlendMode::Alpha, "alpha"sv },
-    pair{ ParticleBlendMode::Additive, "additive"sv },
-    pair{ ParticleBlendMode::Subtractive, "subtractive"sv }
-);
+SERIALIZABLE_ENUM_DECL(ParticleBlendMode);

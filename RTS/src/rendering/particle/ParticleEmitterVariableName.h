@@ -56,3 +56,13 @@ SERIALIZABLE_ENUM_SAME_NAME(ParticleEmitterVariableNameVec3,
     ENUM_FIELD_SIMPLE(ParticleEmitterVariableNameVec3, MeshTargetNormal)
 );
 static_assert(e_count(ParticleEmitterVariableNameVec3) == 5);
+
+// If adding a new variable type, update this
+using ParticleEmitterVariableEnums = std::tuple<
+    ParticleEmitterVariableNameUInt,
+    ParticleEmitterVariableNameFloat,
+    ParticleEmitterVariableNameVec2,
+    ParticleEmitterVariableNameVec3
+>;
+
+constexpr ui32 TOTAL_PARTICLE_EMITTER_VARIABLE_TYPES = (ui32)std::tuple_size<ParticleEmitterVariableEnums>::value;

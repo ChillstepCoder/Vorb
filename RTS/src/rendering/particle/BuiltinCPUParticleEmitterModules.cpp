@@ -18,6 +18,9 @@ mModuleData.var.saveYmlData(node, name)
 #define LOAD_VAR(var, name) \
 mModuleData.var.loadFromYml(node, name)
 
+#define VALIDATE_PARAM(var) \
+if (!mModuleData.var.validate(def)) return false;
+
 #define SAVE_ONE_VAR(var1, name1) \
 beginMap(writer); \
 saveNested(writer, name1, YML_SAVE_LAMBDA(mModuleData.var1));\
@@ -71,6 +74,7 @@ void CPUPEM_SpawnBurst::refresh() {
 }
 
 bool CPUPEM_SpawnBurst::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+   
     bool changed = false;
     changed |= updateAndRenderVariable(mModuleData.mDelay, "Delay Sec", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mSpawnCount, "Spawn Count", parentEmitter);
@@ -87,6 +91,12 @@ void CPUPEM_SpawnBurst::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mDelay, "delay"sv);
     SAVE_VAR(mSpawnCount, "spawn_count"sv);
 }
+
+bool CPUPEM_SpawnBurst::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mDelay);
+    VALIDATE_PARAM(mSpawnCount);
+    return true;
+}
 #pragma endregion
 
 
@@ -99,7 +109,6 @@ CPUPEM_SpawnRate::CPUPEM_SpawnRate() {
 }
 
 void CPUPEM_SpawnRate::refresh() {
-    
     mMethod = [](CpuParticleEmitter& emitter, int particleID, void* data, f32 elapsedSec) {
         ModuleData* moduleData = MODULE_DATA;
 
@@ -137,6 +146,13 @@ void CPUPEM_SpawnRate::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mEmitRateSec, "emit_rate"sv);
     SAVE_VAR(mInitialDelay, "initial_delay"sv);
     SAVE_VAR(mSpawnCount, "spawn_count"sv);
+}
+
+bool CPUPEM_SpawnRate::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mEmitRateSec);
+    VALIDATE_PARAM(mInitialDelay);
+    VALIDATE_PARAM(mSpawnCount);
+    return true;
 }
 #pragma endregion
 
@@ -198,6 +214,13 @@ void CPUPEM_RingBurst::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mSpeedRange, "speed_range"sv);
     SAVE_VAR(mMaxAngleFromRingRad, "max_angle"sv);
     SAVE_VAR(mRingNormal, "ring_normal"sv);
+}
+
+bool CPUPEM_RingBurst::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mSpeedRange);
+    VALIDATE_PARAM(mMaxAngleFromRingRad);
+    VALIDATE_PARAM(mRingNormal);
+    return true;
 }
 #pragma endregion
 
@@ -270,6 +293,13 @@ void CPUPEM_ConeBurst::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mAngleRange, "angle_range"sv);
     SAVE_VAR(mDirection, "dir"sv);
 }
+
+bool CPUPEM_ConeBurst::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mSpeedRange);
+    VALIDATE_PARAM(mAngleRange);
+    VALIDATE_PARAM(mDirection);
+    return true;
+}
 #pragma endregion
 
 
@@ -289,6 +319,7 @@ void CPUPEM_SetPosition::refresh() {
 }
 
 bool CPUPEM_SetPosition::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     return updateAndRenderVariable(mModuleData.mPositionVec3, "Position", parentEmitter);
 }
 
@@ -299,6 +330,11 @@ bool CPUPEM_SetPosition::loadFromYml(ryml::ConstNodeRef node) {
 
 void CPUPEM_SetPosition::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mPositionVec3, "pos"sv);
+}
+
+bool CPUPEM_SetPosition::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mPositionVec3);
+    return true;
 }
 #pragma endregion
 
@@ -331,6 +367,11 @@ bool CPUPEM_SetVelocity::loadFromYml(ryml::ConstNodeRef node) {
 void CPUPEM_SetVelocity::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mVelocityVec3, "vel"sv);
 }
+
+bool CPUPEM_SetVelocity::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mVelocityVec3);
+    return true;
+}
 #pragma endregion
 
 
@@ -351,6 +392,7 @@ void CPUPEM_SetRotation::refresh() {
 }
 
 bool CPUPEM_SetRotation::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     return updateAndRenderVariable(mModuleData.mRotationVec2, "Rotation", parentEmitter);
 }
 
@@ -361,6 +403,11 @@ bool CPUPEM_SetRotation::loadFromYml(ryml::ConstNodeRef node) {
 
 void CPUPEM_SetRotation::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mRotationVec2, "rot"sv);
+}
+
+bool CPUPEM_SetRotation::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mRotationVec2);
+    return true;
 }
 #pragma endregion
 
@@ -382,6 +429,7 @@ void CPUPEM_SetColor::refresh() {
 }
 
 bool CPUPEM_SetColor::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     return updateAndRenderVariable(mModuleData.mColor, "Color", parentEmitter);
 }
 
@@ -392,6 +440,11 @@ bool CPUPEM_SetColor::loadFromYml(ryml::ConstNodeRef node) {
 
 void CPUPEM_SetColor::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mColor, "color"sv);
+}
+
+bool CPUPEM_SetColor::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mColor);
+    return true;
 }
 #pragma endregion
 
@@ -413,6 +466,7 @@ void CPUPEM_SetHdrColor::refresh() {
 }
 
 bool CPUPEM_SetHdrColor::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     return updateAndRenderVariable(mModuleData.mColor, "HDR Color", parentEmitter);
 }
 
@@ -423,6 +477,11 @@ bool CPUPEM_SetHdrColor::loadFromYml(ryml::ConstNodeRef node) {
 
 void CPUPEM_SetHdrColor::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mColor, "color"sv);
+}
+
+bool CPUPEM_SetHdrColor::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mColor);
+    return true;
 }
 #pragma endregion
 
@@ -444,6 +503,7 @@ void CPUPEM_SetScale::refresh() {
 }
 
 bool CPUPEM_SetScale::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     return updateAndRenderVariable(mModuleData.mScale, "Scale", parentEmitter);
 }
 
@@ -454,6 +514,11 @@ bool CPUPEM_SetScale::loadFromYml(ryml::ConstNodeRef node) {
 
 void CPUPEM_SetScale::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mScale, "scale"sv);
+}
+
+bool CPUPEM_SetScale::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mScale);
+    return true;
 }
 #pragma endregion
 
@@ -476,6 +541,7 @@ void CPUPEM_SetUIntVar::refresh() {
 }
 
 bool CPUPEM_SetUIntVar::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mValue, "Value", parentEmitter);
     return changed;
@@ -505,6 +571,11 @@ void CPUPEM_SetUIntVar::addRequiredVariables(RequiredEmitterVariables& variables
     }
 }
 
+bool CPUPEM_SetUIntVar::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mVariable);
+    VALIDATE_PARAM(mValue);
+    return true;
+}
 #pragma endregion
 
 
@@ -525,6 +596,7 @@ void CPUPEM_SetFloatVar::refresh() {
 }
 
 bool CPUPEM_SetFloatVar::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mValue, "Value", parentEmitter);
     return changed;
@@ -553,6 +625,12 @@ void CPUPEM_SetFloatVar::addRequiredVariables(RequiredEmitterVariables& variable
         variables.floatVariables.insert(varName);
     }
 }
+
+bool CPUPEM_SetFloatVar::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mVariable);
+    VALIDATE_PARAM(mValue);
+    return true;
+}
 #pragma endregion
 
 
@@ -574,6 +652,7 @@ void CPUPEM_SetVec2Var::refresh() {
 }
 
 bool CPUPEM_SetVec2Var::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mValue, "Value", parentEmitter);
     return changed;
@@ -602,6 +681,12 @@ void CPUPEM_SetVec2Var::addRequiredVariables(RequiredEmitterVariables& variables
         variables.vec2Variables.insert(varName);
     }
 }
+
+bool CPUPEM_SetVec2Var::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mVariable);
+    VALIDATE_PARAM(mValue);
+    return true;
+}
 #pragma endregion
 
 
@@ -623,6 +708,7 @@ void CPUPEM_SetVec3Var::refresh() {
 }
 
 bool CPUPEM_SetVec3Var::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     bool changed = updateAndRenderVariable(mModuleData.mVariable, "Var", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mValue, "Value", parentEmitter);
     return changed;
@@ -651,6 +737,12 @@ void CPUPEM_SetVec3Var::addRequiredVariables(RequiredEmitterVariables& variables
         variables.vec3Variables.insert(varName);
     }
 }
+
+bool CPUPEM_SetVec3Var::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mVariable);
+    VALIDATE_PARAM(mValue);
+    return true;
+}
 #pragma endregion
 
 
@@ -671,6 +763,7 @@ void CPUPEM_SetLifespan::refresh() {
 }
 
 bool CPUPEM_SetLifespan::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     return updateAndRenderVariable(mModuleData.mLifespan, "Lifetime", parentEmitter);
 }
 
@@ -681,6 +774,11 @@ bool CPUPEM_SetLifespan::loadFromYml(ryml::ConstNodeRef node) {
 
 void CPUPEM_SetLifespan::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mLifespan, "life"sv);
+}
+
+bool CPUPEM_SetLifespan::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mLifespan);
+    return true;
 }
 #pragma endregion
 
@@ -702,6 +800,7 @@ void CPUPEM_MultiplyScale::refresh() {
 }
 
 bool CPUPEM_MultiplyScale::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     return updateAndRenderVariable(mModuleData.mScale, "Scale", parentEmitter);
 }
 
@@ -712,6 +811,11 @@ bool CPUPEM_MultiplyScale::loadFromYml(ryml::ConstNodeRef node) {
 
 void CPUPEM_MultiplyScale::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mScale, "scale"sv);
+}
+
+bool CPUPEM_MultiplyScale::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mScale);
+    return true;
 }
 #pragma endregion
 
@@ -734,6 +838,7 @@ void CPUPEM_MultiplyVelocity::refresh() {
 }
 
 bool CPUPEM_MultiplyVelocity::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     return updateAndRenderVariable(mModuleData.mScale, "Scale", parentEmitter);
 }
 
@@ -744,6 +849,11 @@ bool CPUPEM_MultiplyVelocity::loadFromYml(ryml::ConstNodeRef node) {
 
 void CPUPEM_MultiplyVelocity::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mScale, "scale"sv);
+}
+
+bool CPUPEM_MultiplyVelocity::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mScale);
+    return true;
 }
 #pragma endregion
 
@@ -766,6 +876,7 @@ void CPUPEM_ApplyForce::refresh() {
 }
 
 bool CPUPEM_ApplyForce::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     return updateAndRenderVariable(mModuleData.mForce, "Force", parentEmitter);
 }
 
@@ -776,6 +887,11 @@ bool CPUPEM_ApplyForce::loadFromYml(ryml::ConstNodeRef node) {
 
 void CPUPEM_ApplyForce::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mForce, "force"sv);
+}
+
+bool CPUPEM_ApplyForce::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mForce);
+    return true;
 }
 #pragma endregion
 
@@ -799,6 +915,7 @@ void CPUPEM_DragForce::refresh() {
 }
 
 bool CPUPEM_DragForce::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     return updateAndRenderVariable(mModuleData.mDragFactor, "Drag Factor", parentEmitter);
 }
 
@@ -809,6 +926,11 @@ bool CPUPEM_DragForce::loadFromYml(ryml::ConstNodeRef node) {
 
 void CPUPEM_DragForce::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mDragFactor, "drag"sv);
+}
+
+bool CPUPEM_DragForce::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mDragFactor);
+    return true;
 }
 #pragma endregion
 
@@ -836,6 +958,7 @@ void CPUPEM_Turbulence::refresh() {
 }
 
 bool CPUPEM_Turbulence::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     bool changed = false;
     changed |= updateAndRenderVariable(mModuleData.mScaleFactor, "Scale Factor", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mDirOffset, "Dir Offset", parentEmitter);
@@ -851,6 +974,12 @@ bool CPUPEM_Turbulence::loadFromYml(ryml::ConstNodeRef node) {
 void CPUPEM_Turbulence::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mScaleFactor, "scale_fac"sv);
     SAVE_VAR(mDirOffset, "dir_off"sv);
+}
+
+bool CPUPEM_Turbulence::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mScaleFactor);
+    VALIDATE_PARAM(mDirOffset);
+    return true;
 }
 #pragma endregion
 
@@ -884,6 +1013,7 @@ void CPUPEM_OrientToVelocity::refresh() {
 }
 
 bool CPUPEM_OrientToVelocity::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     bool changed = false;
     //  TODO
     return changed;
@@ -898,6 +1028,12 @@ bool CPUPEM_OrientToVelocity::loadFromYml(ryml::ConstNodeRef node) {
 void CPUPEM_OrientToVelocity::saveYmlData(ryml::NodeRef node) const {
   //  SAVE_VAR(mScaleFactor, "scale_fac"sv);
   //  SAVE_VAR(mDirOffset, "dir_off"sv);
+}
+
+bool CPUPEM_OrientToVelocity::validateParams(const ParticleEmitterDef& def) const {
+    //VALIDATE_PARAM(mScaleFactor);
+    //VALIDATE_PARAM(mDirOffset);
+    return true;
 }
 #pragma endregion
 
@@ -960,6 +1096,7 @@ void CPUPEM_MeshReproductionSource::refresh() {
 }
 
 bool CPUPEM_MeshReproductionSource::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     bool changed = false;
     ImGui::Text("Using (in) MeshSource");
     ImGui::Text("   Providing MeshSourcePos");
@@ -986,6 +1123,11 @@ void CPUPEM_MeshReproductionSource::addRequiredVariables(RequiredEmitterVariable
     variables.vec3Variables.insert(ParticleEmitterVariableNameVec3::MeshSourcePos);
 }
 
+bool CPUPEM_MeshReproductionSource::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mScaleMult);
+    VALIDATE_PARAM(mScaleClamp);
+    return true;
+}
 #pragma endregion
 
 
@@ -1059,6 +1201,7 @@ void CPUPEM_MeshReproductionTarget::refresh() {
 }
 
 bool CPUPEM_MeshReproductionTarget::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
+    
     bool changed = false;
     ImGui::Text("Using (in) MeshTarget");
     ImGui::Text("   Providing MeshTargetPos");
@@ -1089,4 +1232,19 @@ void CPUPEM_MeshReproductionTarget::addRequiredVariables(RequiredEmitterVariable
     variables.vec3Variables.insert(ParticleEmitterVariableNameVec3::MeshTargetPos);
 }
 
+bool CPUPEM_MeshReproductionTarget::validatePrerequesiteModules(std::span<const std::unique_ptr<CPUParticleEmitterModule>> modulesAbove) const {
+    for (const auto& module : modulesAbove) {
+        if (dynamic_cast<const CPUPEM_MeshReproductionSource*>(module.get()) && module->isValid()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool CPUPEM_MeshReproductionTarget::validateParams(const ParticleEmitterDef& def) const {
+    VALIDATE_PARAM(mScaleMult);
+    VALIDATE_PARAM(mScaleClamp);
+    VALIDATE_PARAM(mFindClosestChecks);
+    return true;
+}
 #pragma endregion

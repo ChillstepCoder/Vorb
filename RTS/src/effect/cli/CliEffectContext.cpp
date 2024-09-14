@@ -3,8 +3,7 @@
 
 #include "resources/EffectRepository.h"
 #include "rendering/particle/CPUParticleSystem.h"
-#include "rendering/MaterialShaderRepository.h"
-#include "rendering/MaterialRenderer.h"
+#include "rendering/particle/ParticleSystemRenderer.h"
 
 #include "camera/Camera3D.h"
 
@@ -69,34 +68,8 @@ void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
             }
         }
     }
-    {
-        PROFILE_SCOPE("Render Effects");
-        glDisable(GL_CULL_FACE);
-        for (int blendMode = 0; blendMode < e_count(ParticleBlendMode); ++blendMode) {
-            FlatMap<AssetID /*materialShader*/, std::vector<EmitterRenderData>>& emitters = mEmitterRenderList[blendMode];
-            if (emitters.empty()) {
-                continue;
-            }
-            bindStateForParticleBlendMode((ParticleBlendMode)blendMode);
 
-            static_assert(e_count(ParticleBlendMode) == 4, "Update switch statement for new ParticleBlendMode enum values");
-            for (auto& [shaderID, emitterList] : emitters) {
-                const MaterialShaderDef* shader = MaterialShaderRepository::get().tryGetLoadedAsset(shaderID);
-                if (!shader) {
-                    continue;
-                }
-                VGUniform unRootPos = shader->getUniform("unRootPos");
-                MaterialRenderer::bindMaterialShaderForRender(*shader);
-                glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &camera.getVPMatrix()[0][0]);
-                for (auto& renderData : emitterList) {
-                    glUniform3fv(unRootPos, 1, (const GLfloat*)renderData.rootPosition);
-                    renderData.emitter->render();
-                }
-            }
-
-            emitters.clear();
-        }
-    }
+    ParticleSystemRenderer::renderEmitters(mEmitterRenderList, camera);
 }
 
 void CliEffectContext::playParticleEffectAtPoint(EffectAssetRef effectName, f32v3 point, ParticleSystemInputsPtr inputs, BitFlags<EffectCreateFlags> flags) {

@@ -5,6 +5,7 @@
 #include "rendering/MaterialShaderRepository.h"
 
 #include "rendering/MaterialRenderer.h"
+#include "rendering/particle/ParticleSystemRenderer.h"
 
 POOLED_ALLOC_DEF_NOT_THREADSAFE(CPUParticleSystem, 32, ASSERT_RENDER_THREAD());
 
@@ -25,7 +26,12 @@ CPUParticleSystem::CPUParticleSystem(const ParticleSystemDef& def, f32v3 positio
     mSystemDefID = def.getID();
     mEmitters.reserve(def.mEmitters.size());
     for (auto&& emitterDef : def.mEmitters) {
-        mEmitters.emplace_back(std::make_unique<CpuParticleEmitter>(emitterDef, mInputs.get(), &def.mUserParameters));
+        if (emitterDef.isValid()) [[likely]] {
+            mEmitters.emplace_back(std::make_unique<CpuParticleEmitter>(emitterDef, mInputs.get(), &def.mUserParameters));
+        }
+        else {
+            LOG_WARN("Emitter {} on {} is invalid", emitterDef.mEmitterName.toString(), def.getName().toString());
+        }
     }
 }
 
@@ -65,24 +71,13 @@ bool CPUParticleSystem::updateAndRenderEditor(f32 elapsedSec, const f32m4& VP, c
         if (*iter) {
             if (emitterVisibility[i]) {
                 CpuParticleEmitter& emitter = **iter;
-                const MaterialShaderDef* nextShader = MaterialShaderRepository::get().tryGetLoadedAsset(emitter.getShaderID());
-                if (!nextShader) {
-                    continue;
-                }
-                if (nextShader != boundShader) {
-                    MaterialRenderer::bindMaterialShaderForRender(*nextShader);
-                    glUniformMatrix4fv(nextShader->getUniform("unVP"), 1, false, &VP[0][0]);
-                    glUniform3fv(nextShader->getUniform("unRootPos"), 1, &mRootPosition[0]);
-                    boundShader = nextShader;
-                }
                 if (emitter.update(elapsedSec)) {
                     // Editor doesn't remove from the vector
                     iter->reset();
                     --numAliveEmitters;
                 }
                 else {
-                    bindStateForParticleBlendMode(emitter.getBlendMode());
-                    emitter.render();
+                    ParticleSystemRenderer::renderEmitterEditor(&emitter, VP, mRootPosition);
                 }
             }
         }

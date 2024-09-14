@@ -32,19 +32,28 @@ public:
     CPUParticleEmitterModuleVector mParticleUpdate;
 };
 
+using ParticleVariableNameVariant = std::variant<ParticleEmitterVariableNameUInt, ParticleEmitterVariableNameFloat, ParticleEmitterVariableNameVec2, ParticleEmitterVariableNameVec3>;
+
 class ParticleEmitterDef {
 public:
     ParticleEmitterDef() = default;
     ~ParticleEmitterDef() = default;
 
-    bool isValid() { return mShaderRef.isValid(); }
+    bool isValid() const { return mShaderRef.isValid(); }
 
     ParticleEmitterModuleContainer mModules;
+
+    struct ShaderBinding {
+        ParticleVariableNameVariant mVariableName;
+        ui32 mShaderBindingIndex;
+    };
 
     std::vector<ParticleEmitterVariableNameUInt> mUIntVariables;
     std::vector<ParticleEmitterVariableNameFloat> mFloatVariables;
     std::vector<ParticleEmitterVariableNameVec2> mVec2Variables;
     std::vector<ParticleEmitterVariableNameVec3> mVec3Variables;
+
+    std::vector<ShaderBinding> mShaderBindings;
 
     MaterialShaderAssetRef mShaderRef;
     MaterialAssetRef mMaterialRef;
@@ -58,3 +67,5 @@ public:
     ParticleBlendMode mBlendMode = ParticleBlendMode::Additive;
     BitFlags<ParticleComponentType> mActiveComponents;
 };
+
+SERIALIZABLE_DECL(ParticleEmitterDef::ShaderBinding);

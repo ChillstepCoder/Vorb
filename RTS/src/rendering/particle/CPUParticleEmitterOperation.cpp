@@ -229,6 +229,13 @@ void CPUParticleEmitterParameter::saveYmlData(ryml::NodeRef node, std::string_vi
     });
 }
 
+bool CPUParticleEmitterParameter::validate(const ParticleEmitterDef& def) const {
+    if (mOperation) {
+        return mOperation->validate(def);
+    }
+    return true;
+}
+
 bool CPUParticleEmitterOperation::updateAndRenderControls(const ParticleEmitterDef& parentEmitter) {
     ImVec2 frameMin = ImGui::GetCursorScreenPos(); // Top left of frame
     ImGui::BeginGroup();
@@ -310,16 +317,36 @@ void CPUPEO_UIntVariable::execute(CpuParticleEmitter& emitter, ParticleID id, CP
     output->mVarData = emitter.getUIntVariable(std::get<ParticleEmitterVariableNameUInt>(mParams[0].mVarData), id);
 }
 
+bool CPUPEO_UIntVariable::validate(const ParticleEmitterDef& def) const {
+    if (!validateParamsInternal(def)) return false;
+    return std::find(def.mUIntVariables.begin(), def.mUIntVariables.end(), std::get<ParticleEmitterVariableNameUInt>(mParams[0].mVarData)) != def.mUIntVariables.end();
+}
+
 void CPUPEO_FloatVariable::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     output->mVarData = emitter.getFloatVariable(std::get<ParticleEmitterVariableNameFloat>(mParams[0].mVarData), id);
+}
+
+bool CPUPEO_FloatVariable::validate(const ParticleEmitterDef& def) const {
+    if (!validateParamsInternal(def)) return false;
+    return std::find(def.mFloatVariables.begin(), def.mFloatVariables.end(), std::get<ParticleEmitterVariableNameFloat>(mParams[0].mVarData)) != def.mFloatVariables.end();
 }
 
 void CPUPEO_Vec2Variable::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     output->mVarData = emitter.getVec2Variable(std::get<ParticleEmitterVariableNameVec2>(mParams[0].mVarData), id);
 }
 
+bool CPUPEO_Vec2Variable::validate(const ParticleEmitterDef& def) const {
+    if (!validateParamsInternal(def)) return false;
+    return std::find(def.mVec2Variables.begin(), def.mVec2Variables.end(), std::get<ParticleEmitterVariableNameVec2>(mParams[0].mVarData)) != def.mVec2Variables.end();
+}
+
 void CPUPEO_Vec3Variable::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
     output->mVarData = emitter.getVec3Variable(std::get<ParticleEmitterVariableNameVec3>(mParams[0].mVarData), id);
+}
+
+bool CPUPEO_Vec3Variable::validate(const ParticleEmitterDef& def) const {
+    if (!validateParamsInternal(def)) return false;
+    return std::find(def.mVec3Variables.begin(), def.mVec3Variables.end(), std::get<ParticleEmitterVariableNameVec3>(mParams[0].mVarData)) != def.mVec3Variables.end();
 }
 
 void CPUPEO_RandomFloatInRange::execute(CpuParticleEmitter& emitter, ParticleID id, CPUParticleEmitterParameter* output) {
