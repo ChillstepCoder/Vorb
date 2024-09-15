@@ -116,12 +116,18 @@ void CPUPEM_SpawnRate::refresh() {
             moduleData->mNextEmitTime = std::get<f32>(moduleData->mInitialDelay.mVarData);
         }
 
-        const f32 timeDiff = emitter.getTotalElapsedSec() - moduleData->mNextEmitTime;
-        if (timeDiff >= 0.0f) {
-            moduleData->mSpawnCount.evaluate(emitter, particleID);
-            moduleData->mEmitRateSec.evaluate(emitter, particleID);
-            emitter.emitParticles(std::get<ui32>(moduleData->mSpawnCount.mVarData));
-            moduleData->mNextEmitTime = emitter.getTotalElapsedSec() + std::get<f32>(moduleData->mEmitRateSec.mVarData) - timeDiff;
+        moduleData->mTimeStop.evaluate(emitter, particleID);
+        const f32 timeStop = std::get<f32>(moduleData->mTimeStop.mVarData);
+        if (timeStop < 0.0f || emitter.getTotalElapsedSec() < timeStop) {
+            const f32 timeDiff = emitter.getTotalElapsedSec() - moduleData->mNextEmitTime;
+            if (timeDiff >= 0.0f) {
+                // Emit particles (if not past the stop time
+                moduleData->mSpawnCount.evaluate(emitter, particleID);
+                moduleData->mEmitRateSec.evaluate(emitter, particleID);
+
+                emitter.emitParticles(std::get<ui32>(moduleData->mSpawnCount.mVarData));
+                moduleData->mNextEmitTime = emitter.getTotalElapsedSec() + std::get<f32>(moduleData->mEmitRateSec.mVarData) - timeDiff;
+            }
         }
     };
 }
@@ -131,6 +137,7 @@ bool CPUPEM_SpawnRate::updateAndRenderEditorControls(const ParticleEmitterDef& p
     changed |= updateAndRenderVariable(mModuleData.mEmitRateSec, "Spawn Rate Sec", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mInitialDelay, "Initial Delay Sec", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mSpawnCount, "Spawn Count", parentEmitter);
+    changed |= updateAndRenderVariable(mModuleData.mTimeStop, "Time Stop Sec", parentEmitter);
     return changed;
 }
 
@@ -138,6 +145,7 @@ bool CPUPEM_SpawnRate::loadFromYml(ryml::ConstNodeRef node) {
     LOAD_VAR(mEmitRateSec, "emit_rate"sv);
     LOAD_VAR(mInitialDelay, "initial_delay"sv);
     LOAD_VAR(mSpawnCount, "spawn_count"sv);
+    LOAD_VAR(mTimeStop, "time_stop"sv);
     return true;
 }
 
@@ -145,12 +153,14 @@ void CPUPEM_SpawnRate::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mEmitRateSec, "emit_rate"sv);
     SAVE_VAR(mInitialDelay, "initial_delay"sv);
     SAVE_VAR(mSpawnCount, "spawn_count"sv);
+    SAVE_VAR(mTimeStop, "time_stop"sv);
 }
 
 bool CPUPEM_SpawnRate::validateParams(const ParticleEmitterDef& def) const {
     VALIDATE_PARAM(mEmitRateSec);
     VALIDATE_PARAM(mInitialDelay);
     VALIDATE_PARAM(mSpawnCount);
+    VALIDATE_PARAM(mTimeStop);
     return true;
 }
 #pragma endregion

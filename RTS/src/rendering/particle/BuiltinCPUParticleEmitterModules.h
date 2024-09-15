@@ -46,6 +46,7 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_SpawnRate, ParticleEmitterModuleStage::Emitte
         CPUParticleEmitterParameter mEmitRateSec = CPUParticleEmitterParameter(0.0f);
         CPUParticleEmitterParameter mInitialDelay = CPUParticleEmitterParameter(0.0f);
         CPUParticleEmitterParameter mSpawnCount = CPUParticleEmitterParameter(ui32(3));
+        CPUParticleEmitterParameter mTimeStop = CPUParticleEmitterParameter(-1.0f);
         f32 mNextEmitTime = -1.0f;
     );
 )
