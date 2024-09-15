@@ -28,6 +28,7 @@ void TileGrassRepository::onRegisteredAsset(AssetID id) {
 
 void TileGrassRepository::onAllAssetTypesRegistered() {
     // Grab material IDs
+    //' TODO: move to fixupRegisteredAsset
     for (AssetID id = 0; id < mAssets.size(); ++id) {
         TileGrassDef& def = *mAssets[id];
         if (def.mAlphaMaskTextureName.isValid()) {

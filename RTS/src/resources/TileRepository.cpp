@@ -40,6 +40,10 @@ void TileRepository::fixupRegisteredAsset(AssetID id) {
     MaterialRepository& materialRepo = MaterialRepository::get();
     ItemRepository& itemRepo = ItemRepository::get();
     TileDef& def = *mAssets[id];
+
+    mAllTileShapes[id] = def.shape;
+    mAllTileModelIds[id] = def.modelRef.getAssetID();
+
     // TODO: DROPS
    /* for (size_t i = 0; i < def.itemDrops.size(); ++i) {
         def.itemDrops[i].id = itemRepo.getAssetID(def.itemDrops[i].itemName);
@@ -116,9 +120,4 @@ void TileRepository::fixupRegisteredAsset(AssetID id) {
 void TileRepository::onAllAssetTypesRegistered() {
     mAllTileShapes.resize(mAssets.size());
     mAllTileModelIds.resize(mAssets.size());
-    for (AssetID id = 0; id < mAssets.size(); ++id) {
-        TileDef& def = *mAssets[id];
-        mAllTileShapes[id] = def.shape;
-        mAllTileModelIds[id] = def.modelRef.getAssetID();
-    }
 }

@@ -74,7 +74,6 @@ void main() {
         for (int i = 0; i < 3; ++i) {
             getMaterialPixelInfo(unDamageTexture, uvs[i], colorD[i], normalD[i], aoD[i], metallicD[i], roughnessD[i], vec4(1.0));
         }
-        
         vec3 weights = computeTriPlanarBlend(fTBN[2], getLuminance(colorD[0].rgb), getLuminance(colorD[1].rgb), 0.0, 1.0, 80.0);
         vec3 blendedColor = weights.x * colorD[0].rgb + weights.y * colorD[1].rgb + weights.z * colorD[2].rgb;
         vec3 blendedNormal = computeTriplanarNormal(fTBN[2], normalD, weights);

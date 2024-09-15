@@ -241,8 +241,7 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(
 }
 
 
-vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(const vio::Path& compPath, const ShaderDefinesVector* defines /*= nullptr*/)
-{
+vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(const vio::Path& compPath, const ShaderDefinesVector* defines /*= nullptr*/) {
     vio::Path compSearchDir;
 
     // Set search dir to same dir as the files

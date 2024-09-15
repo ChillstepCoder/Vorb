@@ -40,8 +40,8 @@ public:
     CollisionShapeRepository& getCollisionShapeRepository() const { return *mCollisionShapeRepository; }
     vio::IOManager& getIoManager() const { return *mIoManager; }
 
-    // Hot reload
-    void reloadMaterials();
+    // Hot reload, if forceReloadAll, ignore write times
+    void reloadMaterials(bool forceReloadAll);
 
     bool hasLoadedResources() const { return mHasLoadedResources; }
 

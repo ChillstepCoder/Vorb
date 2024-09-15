@@ -16,4 +16,7 @@ struct AssetMetadata {
     bool mRequestedLoad = false;
     //bool mFinishedLoading = false; // Or refcount needed to ensure we dont destroy this while
     // it is being loaded once we implement deallocation of assets
+
+    // Optional -  to determine if the asset has been modified since it was loaded
+    std::filesystem::file_time_type mLoadedWriteTime = {};
 };

@@ -195,7 +195,7 @@ void EditorWorldInterfaceController::initEvents() {
             sDebugOptions.mShowNavGraphUpdates = !sDebugOptions.mShowNavGraphUpdates;
         }
         else if (event.keyCode == VKEY_R && event.mod.lShift) {
-            Services::ResourceManager::ref().reloadMaterials();
+            Services::ResourceManager::ref().reloadMaterials(event.mod.lCtrl);
         }
         else if (event.keyCode == VKEY_N && event.mod.lShift) {
             RenderContext::getInstance().selectNextDebugShader();

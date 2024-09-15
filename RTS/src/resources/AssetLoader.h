@@ -33,8 +33,6 @@ public:
     }
 
     void requestAssetLoad(std::unique_ptr<AssetLoadTask>&& task) {
-        // TODO: Singleton pool
-        LOG_TRACE("Request load {} {}", task->mAssetID, task->mFilePath.getCString());
         mLoadQueue.enqueue(std::move(task));
     }
 

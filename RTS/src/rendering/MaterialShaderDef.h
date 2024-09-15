@@ -50,6 +50,19 @@ struct MaterialTextureInput {
     VGUniform textureUniform;
 };
 
+struct MaterialShaderNames {
+    nString vertex;
+    nString fragment;
+    nString geometry;
+    nString tessControl;
+    nString tessEval;
+    fs::file_time_type vertexWriteTime;
+    fs::file_time_type fragmentWriteTime;
+    fs::file_time_type geometryWriteTime;
+    fs::file_time_type tessControlWriteTime;
+    fs::file_time_type tessEvalWriteTime;
+};
+
 class MaterialShaderDef : public IAsset {
 public:
     DEFAULT_ASSET_CONSTRUCTOR(MaterialShaderDef, AssetType::MaterialShader);
@@ -70,6 +83,7 @@ public:
     std::vector<std::pair<MaterialShaderUniform, VGUniform> > mUniforms;
     std::vector<MaterialTextureInput> mInputTextures;
     ShaderDefinesVector mDefines;
+    std::unique_ptr<MaterialShaderNames> mShaderNames;
 
     mutable vg::GLProgram mProgram; //  TODO: Handle
     bool mIsCompute = false;

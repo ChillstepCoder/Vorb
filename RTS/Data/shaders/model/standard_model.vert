@@ -33,7 +33,6 @@ layout(std430, binding = 9) readonly restrict buffer CrossfadeBuffer {
     float crossfadeBuffer[];
 };
 
-
 uint extractDamageZoneByte(ModelDamageZoneGPUData data, uint index) {
     if (index >= 32) {
         return 0; 

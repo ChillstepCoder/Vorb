@@ -140,7 +140,7 @@ void ResourceManager::gatherFiles() {
         assetRepo->onAllAssetTypesRegistered();
     }
     for (auto& assetRepo : mAssetRepositories) {
-        assetRepo->fixupAllAssets();
+        assetRepo->fixupAllRegisteredAssets();
     }
 
     preloadFiles();
@@ -189,15 +189,15 @@ void ResourceManager::loadFiles() {
     LOG_INFO("Loaded resources in {} s", totalTimer.stop() / 1000.0);
 }
 
-void ResourceManager::reloadMaterials() {
+void ResourceManager::reloadMaterials(bool forceReloadAll) {
 
     if (!mHasLoadedResources) {
         return;
     }
 
     LOG_DEBUG("Reloading materials...");
-
-    AssetHandleBundle assets = MaterialShaderRepository::get().reloadAllLoadedAssets();
+    MaterialRepository& repo = MaterialRepository::get();
+    AssetHandleBundle assets = forceReloadAll ? repo.reloadAllLoadedAssets() : repo.reloadChangedAssets();
     AssetLoader& loader = AssetLoader::getInstance();
     while (!assets.areAllAssetsLoaded()) {
         loader.update();
@@ -248,7 +248,7 @@ AssetDescriptor ResourceManager::registerOrGetRegisteredAsset(const std::filesys
 
         if (mHasGathered) {
             repo.onAllAssetTypesRegistered();
-            repo.fixupAllAssets();
+            repo.fixupAllRegisteredAssets();
         }
     }
     return AssetDescriptor{ .id=repo.getAssetID(assetName), .assetType=type };

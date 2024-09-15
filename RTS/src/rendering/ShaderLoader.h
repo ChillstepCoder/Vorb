@@ -21,6 +21,16 @@
 
 DECL_VIO(class IOManager);
 
+enum class ShaderType {
+    Vertex,
+    Fragment,
+    Geometry,
+    TessControl,
+    TessEval,
+    Compute,
+    COUNT
+};
+
 #pragma once
 class ShaderLoader {
 public:
@@ -32,7 +42,6 @@ public:
     /// Creates a program using code loaded from files, and does error checking
     /// Does not register with global cache
     static CALLER_DELETE vg::GLProgram createProgramFromFile(
-        const nString& name,
         const vio::Path& vertPath,
         const vio::Path& fragPath,
         const vio::Path geometryPath = "",
@@ -48,20 +57,23 @@ public:
     static CALLER_DELETE vg::GLProgram createComputeProgramFromFile(const nString& name, const vio::Path& path);
 
     static void registerVertexShaderPath(const nString& name, const vio::Path& path) {
-        sVertexShaderNameToPath[name] = path;
+        sVertexShaderNameToPath[name] = CachedPath{ path };
     }
     static void registerFragmentShaderPath(const nString& name, const vio::Path& path) {
-        sFragmentShaderNameToPath[name] = path;
+        sFragmentShaderNameToPath[name] = CachedPath{ path };
     }
     static void registerGeometryShaderPath(const nString& name, const vio::Path& path) {
-        sGeometryShaderNameToPath[name] = path;
+        sGeometryShaderNameToPath[name] = CachedPath{ path };
     }
     static void registerTessControlShaderPath(const nString& name, const vio::Path& path) {
-        sTessControlShaderNameToPath[name] = path;
+        sTessControlShaderNameToPath[name] = CachedPath{ path };
     }
     static void registerTessEvalShaderPath(const nString& name, const vio::Path& path) {
-        sTessEvalShaderNameToPath[name] = path;
-    }
+        sTessEvalShaderNameToPath[name] = CachedPath{ path };
+    } 
+
+    // Return true if it was out of date
+    static bool refreshFileWriteTime(const nString& shaderName, ShaderType type, fs::file_time_type& inOutTime);
 
 private:
     static void tryGetCachedPaths(
@@ -89,11 +101,15 @@ private:
         OUT vio::Path& resultTessEvalPath
     );
 
-    static std::map<nString, vio::Path> sVertexShaderNameToPath;
-    static std::map<nString, vio::Path> sFragmentShaderNameToPath;
-    static std::map<nString, vio::Path> sGeometryShaderNameToPath;
-    static std::map<nString, vio::Path> sTessControlShaderNameToPath;
-    static std::map<nString, vio::Path> sTessEvalShaderNameToPath;
+    struct CachedPath {
+        vio::Path path;
+    };
+
+    inline static std::map<nString, CachedPath> sVertexShaderNameToPath;
+    inline static std::map<nString, CachedPath> sFragmentShaderNameToPath;
+    inline static std::map<nString, CachedPath> sGeometryShaderNameToPath;
+    inline static std::map<nString, CachedPath> sTessControlShaderNameToPath;
+    inline static std::map<nString, CachedPath> sTessEvalShaderNameToPath;
 };
 
 #endif // ShaderLoader_h__

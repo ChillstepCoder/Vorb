@@ -34,9 +34,11 @@ public:
     virtual AssetID registerAsset(StrToken name, const vio::Path& filePath) = 0;
     virtual void notifyAssetRegisters() = 0;
     virtual void onAllAssetTypesRegistered() = 0;
-    virtual void fixupAllAssets() = 0;
+    virtual void fixupAllRegisteredAssets() = 0;
     virtual bool renderImguiAssetActions(AssetMetadata& asset) { return false; }
-
+    virtual bool assetSourceIsDirty(AssetID id) { 
+        return mAssetRegistry[id].mLoadedWriteTime < std::filesystem::last_write_time(mAssetRegistry[id].mFilePath.getStdPath());
+    }
 
     size_t getNumRegisteredAssets() const { return mAssetRegistry.size(); }
 
@@ -300,7 +302,12 @@ public:
             );
         }
         mAssetLookup[name] = id;
-        mAssetRegistry.emplace_back(AssetMetadata{ .mFilePath=filePath, .mName=name, .mDescriptor=AssetDescriptor{.id=id, .assetType=getAssetType()}});
+        mAssetRegistry.emplace_back(AssetMetadata{ 
+            .mFilePath=filePath,
+            .mName=name,
+            .mDescriptor=AssetDescriptor{.id=id, .assetType=getAssetType()},
+            .mLoadedWriteTime=std::filesystem::last_write_time(filePath.getStdPath())
+        });
         mAssetRefCounts.emplace_back(std::make_unique<ExclusiveCacheLine<std::atomic_int>>(0));
         mAssets.emplace_back(std::make_unique<T>(name, id));
         mLoadedAssets.emplace_back(std::make_unique<ExclusiveCacheLine<std::atomic_bool>>(false));
@@ -320,8 +327,8 @@ public:
     AssetHandleBasePtr reloadAsset(AssetID id) override {
         preReloadAsset(id);
         onRegisteredAsset(id);
-        onAllAssetTypesRegistered(); // TODO: MIGHT CAUSE PROBLEMS if this is implemented to not clean itself up
-        fixupAllAssets();
+        //onAllAssetTypesRegistered(); // We no longer do this on individual reload! Asset managers should use fixupAsset instead
+        fixupRegisteredAsset(id);
         // Some assets don't "load"
         if (getAssetLoadFunc() || getAssetLoadRenderProcessFunc()) {
             if (mLoadedAssets[id]->load()) {
@@ -339,6 +346,16 @@ public:
     AssetHandleBasePtr reloadAsset(StrToken name) {
         return reloadAsset(getAssetID(name));
     }
+
+    AssetHandleBundle reloadChangedAssets() {
+        AssetHandleBundle assets;
+        for (AssetID id = 0; id < mAssetRegistry.size(); ++id) {
+            if (assetSourceIsDirty(id)) {
+                assets.addAssetHandle(reloadAsset(id));
+            }
+        }
+        return assets;
+    }
     AssetHandleBundle reloadAllLoadedAssets() {
         AssetHandleBundle assets;
         for (AssetID id = 0; id < mAssetRegistry.size(); ++id) {
@@ -346,7 +363,7 @@ public:
         }
         notifyAssetRegisters();
         onAllAssetTypesRegistered();
-        fixupAllAssets();
+        fixupAllRegisteredAssets();
         // Some assets don't "load"
         if (getAssetLoadFunc() || getAssetLoadRenderProcessFunc()) {
             for (AssetID id = 0; id < mAssets.size(); ++id) {
@@ -372,7 +389,8 @@ public:
     }
     void onAllAssetTypesRegistered() override {}
 
-    void fixupAllAssets() override {
+    // Called after onAllAssetTypesRegistered();
+    void fixupAllRegisteredAssets() override {
         for (AssetID id = 0; id < mAssetRegistry.size(); ++id) {
             fixupRegisteredAsset(id);
         }

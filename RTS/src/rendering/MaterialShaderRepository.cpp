@@ -64,6 +64,36 @@ SERIALIZABLE_SIMPLE(MaterialShaderFileData,
     make_field(o.tessEvalShaderName, "tes"sv)
 );
 
+bool MaterialShaderRepository::assetSourceIsDirty(AssetID assetId) {
+    bool dirty = IAssetRepositoryBase::assetSourceIsDirty(assetId);
+    MaterialShaderDef& def = *mAssets[assetId];
+
+    if (!def.mIsCompute) {
+        if (!def.mShaderNames) {
+            dirty = true;
+        }
+        else {
+            if (def.mShaderNames->vertex.size()) {
+                dirty |= ShaderLoader::refreshFileWriteTime(def.mShaderNames->vertex, ShaderType::Vertex, def.mShaderNames->vertexWriteTime);
+            }
+            if (def.mShaderNames->fragment.size()) {
+                dirty |= ShaderLoader::refreshFileWriteTime(def.mShaderNames->fragment, ShaderType::Fragment, def.mShaderNames->fragmentWriteTime);
+            }
+            if (def.mShaderNames->geometry.size()) {
+                dirty |= ShaderLoader::refreshFileWriteTime(def.mShaderNames->geometry, ShaderType::Geometry, def.mShaderNames->geometryWriteTime);
+            }
+            if (def.mShaderNames->tessControl.size()) {
+                dirty |= ShaderLoader::refreshFileWriteTime(def.mShaderNames->tessControl, ShaderType::TessControl, def.mShaderNames->tessControlWriteTime);
+            }
+            if (def.mShaderNames->tessEval.size()) {
+                dirty |= ShaderLoader::refreshFileWriteTime(def.mShaderNames->tessEval, ShaderType::TessEval, def.mShaderNames->tessEvalWriteTime);
+            }
+        }
+    }
+
+    return dirty;
+}
+
 void MaterialShaderRepository::preReloadAsset(AssetID assetId) {
     if (mLoadedAssets[assetId]) {
         MaterialShaderDef& def = *mAssets[assetId];
@@ -105,10 +135,11 @@ AssetLoadFunc MaterialShaderRepository::getAssetLoadFunc() {
                 def.mProgram = ShaderLoader::createComputeProgramFromFile(def.getName().toString(), filePath);
             }
             else {
+                const fs::path stdPath = filePath.getStdPath();
 
                 def.mProgram = ShaderLoader::createProgram(fileData.vertexShaderName, fileData.fragmentShaderName, fileData.geometryShaderName, fileData.tessControlShaderName, fileData.tessEvalShaderName);
-                assert(def.mProgram.isLinked());
 
+                assert(def.mProgram.isLinked());
 
                 for (int i = 0; i < fileData.textures.size(); ++i) {
                     const MaterialTextureInputData& textureData = fileData.textures[i];
@@ -127,6 +158,18 @@ AssetLoadFunc MaterialShaderRepository::getAssetLoadFunc() {
                 }
 
             }
+            def.mShaderNames = std::make_unique<MaterialShaderNames>();
+            def.mShaderNames->vertex = std::move(fileData.vertexShaderName);
+            def.mShaderNames->fragment = std::move(fileData.fragmentShaderName);
+            def.mShaderNames->geometry = std::move(fileData.geometryShaderName);
+            def.mShaderNames->tessControl = std::move(fileData.tessControlShaderName);
+            def.mShaderNames->tessEval = std::move(fileData.tessEvalShaderName);
+            ShaderLoader::refreshFileWriteTime(def.mShaderNames->vertex, ShaderType::Vertex, def.mShaderNames->vertexWriteTime);
+            ShaderLoader::refreshFileWriteTime(def.mShaderNames->fragment, ShaderType::Fragment, def.mShaderNames->fragmentWriteTime);
+            ShaderLoader::refreshFileWriteTime(def.mShaderNames->geometry, ShaderType::Geometry, def.mShaderNames->geometryWriteTime);
+            ShaderLoader::refreshFileWriteTime(def.mShaderNames->tessControl, ShaderType::TessControl, def.mShaderNames->tessControlWriteTime);
+            ShaderLoader::refreshFileWriteTime(def.mShaderNames->tessEval, ShaderType::TessEval, def.mShaderNames->tessEvalWriteTime);
+
             return true;
         },
             assetID,

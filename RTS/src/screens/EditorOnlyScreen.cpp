@@ -68,7 +68,7 @@ void EditorOnlyScreen::update(const vui::GameTime& gameTime) {
     static bool wasReloadPressed = false;
     if (vui::InputDispatcher::key.isKeyDown(VKEY_R) && vui::InputDispatcher::key.isKeyDown(VKEY_LSHIFT)) {
         if (!wasReloadPressed) {
-            Services::ResourceManager::ref().reloadMaterials();
+            Services::ResourceManager::ref().reloadMaterials(vui::InputDispatcher::key.isKeyDown(VKEY_LCTRL));
             wasReloadPressed = true;
         }
     } else {

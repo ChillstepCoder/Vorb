@@ -6,11 +6,6 @@
 
 #include <conio.h>
 
-std::map<nString, vio::Path> ShaderLoader::sVertexShaderNameToPath;
-std::map<nString, vio::Path> ShaderLoader::sFragmentShaderNameToPath;
-std::map<nString, vio::Path> ShaderLoader::sGeometryShaderNameToPath;
-std::map<nString, vio::Path> ShaderLoader::sTessControlShaderNameToPath;
-std::map<nString, vio::Path> ShaderLoader::sTessEvalShaderNameToPath;
 typedef eventpp::ScopedRemover<eventpp::EventDispatcher<vg::SHADER_ERROR_EVENT_TYPE, void(const vg::ProgramError&)>> ScopedRemover;
 
 namespace {
@@ -47,12 +42,11 @@ vg::GLProgram ShaderLoader::createProgram(const nString& vertexShaderName, const
         tryGetCachedPaths(vertexShaderName, fragmentShaderName, vertPath, fragPath);
     }
 
-    vg::GLProgram newProgram = createProgramFromFile(vertexShaderName + fragmentShaderName + geometryShaderName, vertPath, fragPath, geomPath, tessControlPath, tessEvalPath);
+    vg::GLProgram newProgram = createProgramFromFile(vertPath, fragPath, geomPath, tessControlPath, tessEvalPath);
     return newProgram;
 }
 
 CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(
-    const nString& name,
     const vio::Path& vertPath,
     const vio::Path& fragPath,
     const vio::Path geometryPath /*= ""*/,
@@ -133,12 +127,82 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createComputeProgramFromFile(const nSt
     return program;
 }
 
+bool ShaderLoader::refreshFileWriteTime(const nString& shaderName, ShaderType type, OUT fs::file_time_type& inOutTime) {
+    switch (type) {
+        case ShaderType::Vertex: {
+            auto it = sVertexShaderNameToPath.find(shaderName);
+            if (it != sVertexShaderNameToPath.end()) {
+                std::filesystem::file_time_type time = std::filesystem::last_write_time(it->second.path.getStdPath());
+                if (time > inOutTime) {
+                    inOutTime = time;
+                    return true;
+                }
+            }
+            break;
+        }
+        case ShaderType::Fragment: {
+            auto it = sFragmentShaderNameToPath.find(shaderName);
+            if (it != sFragmentShaderNameToPath.end()) {
+                std::filesystem::file_time_type time = std::filesystem::last_write_time(it->second.path.getStdPath());
+                if (time > inOutTime) {
+                    inOutTime = time;
+                    return true;
+                }
+            }
+            break;
+        }
+        case ShaderType::Geometry: {
+            auto it = sGeometryShaderNameToPath.find(shaderName);
+            if (it != sGeometryShaderNameToPath.end()) {
+                std::filesystem::file_time_type time = std::filesystem::last_write_time(it->second.path.getStdPath());
+                if (time > inOutTime) {
+                    inOutTime = time;
+                    return true;
+                }
+            }
+            break;
+        }
+        case ShaderType::TessControl: {
+            auto it = sTessControlShaderNameToPath.find(shaderName);
+            if (it != sTessControlShaderNameToPath.end()) {
+                std::filesystem::file_time_type time = std::filesystem::last_write_time(it->second.path.getStdPath());
+                if (time > inOutTime) {
+                    inOutTime = time;
+                    return true;
+                }
+            }
+            break;
+        }
+        case ShaderType::TessEval: {
+            auto it = sTessEvalShaderNameToPath.find(shaderName);
+            if (it != sTessEvalShaderNameToPath.end()) {
+                std::filesystem::file_time_type time = std::filesystem::last_write_time(it->second.path.getStdPath());
+                if (time > inOutTime) {
+                    inOutTime = time;
+                    return true;
+                }
+            }
+            break;
+        }
+        case ShaderType::Compute: {
+            assert(false);
+            break;
+        }
+        default:
+            assert(false);
+            break;
+
+    }
+    static_assert(e_count(ShaderType) == 6);
+    return false;
+}
+
 void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nString& fragmentShaderName, OUT vio::Path& resultVertPath, OUT vio::Path& resultFragPath)
 {
     {
         auto&& it = sVertexShaderNameToPath.find(vertexShaderName);
         if (it != sVertexShaderNameToPath.end()) {
-            resultVertPath = it->second;
+            resultVertPath = it->second.path;
         }
         else {
             resultVertPath = vertexShaderName;
@@ -147,7 +211,7 @@ void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nStr
     {
         auto&& it = sFragmentShaderNameToPath.find(fragmentShaderName);
         if (it != sFragmentShaderNameToPath.end()) {
-            resultFragPath = it->second;
+            resultFragPath = it->second.path;
         }
         else {
             resultFragPath = fragmentShaderName;
@@ -160,7 +224,7 @@ void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nStr
     {
         auto&& it = sVertexShaderNameToPath.find(vertexShaderName);
         if (it != sVertexShaderNameToPath.end()) {
-            resultVertPath = it->second;
+            resultVertPath = it->second.path;
         }
         else {
             resultVertPath = vertexShaderName;
@@ -169,7 +233,7 @@ void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nStr
     {
         auto&& it = sFragmentShaderNameToPath.find(fragmentShaderName);
         if (it != sFragmentShaderNameToPath.end()) {
-            resultFragPath = it->second;
+            resultFragPath = it->second.path;
         }
         else {
             resultFragPath = fragmentShaderName;
@@ -178,7 +242,7 @@ void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nStr
     {
         auto&& it = sGeometryShaderNameToPath.find(geometryShaderName);
         if (it != sGeometryShaderNameToPath.end()) {
-            resultGeomPath = it->second;
+            resultGeomPath = it->second.path;
         }
         else {
             resultGeomPath = geometryShaderName;
@@ -191,7 +255,7 @@ void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nStr
     {
         auto&& it = sVertexShaderNameToPath.find(vertexShaderName);
         if (it != sVertexShaderNameToPath.end()) {
-            resultVertPath = it->second;
+            resultVertPath = it->second.path;
         }
         else {
             resultVertPath = vertexShaderName;
@@ -200,7 +264,7 @@ void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nStr
     {
         auto&& it = sFragmentShaderNameToPath.find(fragmentShaderName);
         if (it != sFragmentShaderNameToPath.end()) {
-            resultFragPath = it->second;
+            resultFragPath = it->second.path;
         }
         else {
             resultFragPath = fragmentShaderName;
@@ -209,7 +273,7 @@ void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nStr
     {
         auto&& it = sTessControlShaderNameToPath.find(tessControlShaderName);
         if (it != sTessControlShaderNameToPath.end()) {
-            resultTessControlPath = it->second;
+            resultTessControlPath = it->second.path;
         }
         else {
             resultTessControlPath = tessControlShaderName;
@@ -218,7 +282,7 @@ void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nStr
     {
         auto&& it = sTessEvalShaderNameToPath.find(tessEvalShaderName);
         if (it != sTessEvalShaderNameToPath.end()) {
-            resultTessEvalPath = it->second;
+            resultTessEvalPath = it->second.path;
         }
         else {
             resultTessEvalPath = tessEvalShaderName;
