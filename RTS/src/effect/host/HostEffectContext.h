@@ -13,7 +13,16 @@ public:
     void playParticleEffectAtPoint(
         EffectAssetRef effectName,
         f32v3 point,
+        f32q orientation,
         ParticleSystemInputsPtr inputs,
+        BitFlags<EffectCreateFlags> flags
+    ) override;
+
+    void playMutationEffect(
+        const f32m4& transform,
+        ModelID startModel,
+        ModelID endModel,
+        TileMutationType mutationType,
         BitFlags<EffectCreateFlags> flags
     ) override;
 protected:

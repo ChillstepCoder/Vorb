@@ -44,17 +44,11 @@ void main() {
 	
 	// Normal to tangent space
     normal = normalize(fTBN * normal);
+    
     // Invert normals if away from camera
     if (!gl_FrontFacing) {
-        
-        // Doesnt quite work
-        //vec3 frontNormal = normal;
-       // vec3 backNormal = -normal;
-        //float blendFactor = dot(normal, -tangentViewDir);
-        //normal = mix(frontNormal, backNormal, blendFactor);
         normal = -normal;
-   }
-    // Into 0-1 range
+    }
     
     oColor.rgb = color.rgb;
     

@@ -74,7 +74,6 @@ void CPUPEM_SpawnBurst::refresh() {
 }
 
 bool CPUPEM_SpawnBurst::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
-   
     bool changed = false;
     changed |= updateAndRenderVariable(mModuleData.mDelay, "Delay Sec", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mSpawnCount, "Spawn Count", parentEmitter);
@@ -1069,6 +1068,7 @@ void CPUPEM_MeshReproductionSource::refresh() {
             const ui16v3 indices = getRandomTriangleIndices(*meshInput.mModelDef, &submeshIndex);
 
             const MeshCpuData& meshData = meshInput.mModelDef->mSubmeshCpuData[submeshIndex];
+            const f32 sourceScale = emitter.getInputs()->getFloatInput(ParticleSystemInputName::FloatSourceScale);
 
             // Barycentric interpolation via random point in triangle
             switch (meshData.mVertexType) {
@@ -1085,7 +1085,7 @@ void CPUPEM_MeshReproductionSource::refresh() {
                         variantIndex, submeshIndex, vertexData[indices.x].materialSlot % MATERIAL_SLOT_COUNT
                     );
                     emitter.setUIntVariable(ParticleEmitterVariableNameUInt::StartMaterial, particleID, materialId);
-                    emitter.setVec3Variable(ParticleEmitterVariableNameVec3::MeshSourcePos, particleID, pos);
+                    emitter.setVec3Variable(ParticleEmitterVariableNameVec3::MeshSourcePos, particleID, pos * sourceScale);
                     emitter.setVec2Variable(ParticleEmitterVariableNameVec2::MeshSourceUV, particleID, uv);
 
                     // Scale based on size of triangle
@@ -1106,7 +1106,7 @@ void CPUPEM_MeshReproductionSource::refresh() {
 bool CPUPEM_MeshReproductionSource::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
     
     bool changed = false;
-    ImGui::Text("Using (in) MeshSource");
+    ImGui::Text("Using (in) MeshSource + (in) FloatSourceScale");
     ImGui::Text("   Providing MeshSourcePos");
     changed |= updateAndRenderVariable(mModuleData.mScaleMult, "Scale Mult", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mScaleClamp, "Scale Clamp", parentEmitter);
@@ -1203,23 +1203,23 @@ void CPUPEM_MeshReproductionTarget::refresh() {
                 const f32v2 scaleClamp = std::get<f32v2>(MODULE_DATA->mScaleClamp.mVarData);
                 const f32 scale = glm::clamp(bestSampler.getArea(), scaleClamp.x, scaleClamp.y) * std::get<f32>(MODULE_DATA->mScaleMult.mVarData);
 
+                const f32 targetScale = emitter.getInputs()->getFloatInput(ParticleSystemInputName::FloatTargetScale);
+
                 const MaterialID materialId = meshInput.mModelDef->getMaterialForSubmesh(
                     variantIndex, submeshIndex, bestVertexData[bestIndices.x].materialSlot % MATERIAL_SLOT_COUNT
                 );
                 emitter.setUIntVariable(ParticleEmitterVariableNameUInt::EndMaterial, particleID, materialId);
                 emitter.setFloatVariable(ParticleEmitterVariableNameFloat::MeshTargetScale, particleID, scale);
                 emitter.setVec2Variable(ParticleEmitterVariableNameVec2::MeshTargetUV, particleID, uv);
-                emitter.setVec3Variable(ParticleEmitterVariableNameVec3::MeshTargetPos, particleID, bestPos);
+                emitter.setVec3Variable(ParticleEmitterVariableNameVec3::MeshTargetPos, particleID, targetScale * bestPos);
             }
         }
     };
 }
 
 bool CPUPEM_MeshReproductionTarget::updateAndRenderEditorControls(const ParticleEmitterDef& parentEmitter) {
-    
     bool changed = false;
-    ImGui::Text("Using (in) MeshTarget");
-    ImGui::Text("   Providing MeshTargetPos");
+    ImGui::Text("Using (in) MeshTarget + (in) FloatTargetScale");
     changed |= updateAndRenderVariable(mModuleData.mScaleMult, "Scale Mult", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mScaleClamp, "Scale Clamp", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mFindClosestChecks, "Closest Checks", parentEmitter);

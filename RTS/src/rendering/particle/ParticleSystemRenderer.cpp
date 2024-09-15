@@ -6,6 +6,7 @@
 #include "camera/Camera3D.h"
 
 #include "rendering/particle/CpuParticleEmitter.h"
+#include "rendering/particle/CPUParticleSystem.h"
 
 #include <Vorb/graphics/DepthState.h>
 
@@ -28,12 +29,15 @@ void ParticleSystemRenderer::renderEmitters(CpuParticleEmitterRenderList& render
                 continue;
             }
             VGUniform unRootPos = shader->getUniform("unRootPos");
+            VGUniform unOrientationMatrix = shader->getUniform("unOrientationMatrix");
             MaterialRenderer::bindMaterialShaderForRender(*shader);
             glUniformMatrix4fv(shader->getUniform("unVP"), 1, false, &camera.getVPMatrix()[0][0]);
 
             const VGUniform* lifetimeUniform = shader->tryGetUniform("EmitterNormalizedLifetime");
             for (auto& renderData : emitterList) {
-                glUniform3fv(unRootPos, 1, (const GLfloat*)renderData.rootPosition);
+                const f32v3 position = renderData.system->getPosition();
+                glUniform3fv(unRootPos, 1, &position.x);
+                glUniformMatrix3fv(unOrientationMatrix, 1, false, &renderData.system->getOrientation()[0][0]);
 
                 if (lifetimeUniform) {
                     glUniform1f(*lifetimeUniform, renderData.emitter->getNormalizedLifetime());

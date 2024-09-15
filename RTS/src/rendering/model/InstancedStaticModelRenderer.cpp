@@ -61,8 +61,11 @@ void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelMan
 
     GLDrawCommandBuffer& drawCommands = *modelManager.mDrawCommands[e_cast(passType)];
     GLDrawCommandBuffer* crossfadeDrawCommands = modelManager.mDrawCommandsCrossfade[e_cast(passType)].get();
+    GLDrawCommandBuffer* mutationDrawCommands = modelManager.mDrawCommandsMutations[e_cast(passType)].get();
 
-    if (!drawCommands.getNumActiveCommands() && (!crossfadeDrawCommands || crossfadeDrawCommands->getNumActiveCommands() == 0)) {
+    if (!drawCommands.getNumActiveCommands() &&
+        (!crossfadeDrawCommands || crossfadeDrawCommands->getNumActiveCommands() == 0) &&
+        (!mutationDrawCommands || mutationDrawCommands->getNumActiveCommands() == 0)) {
         return;
     }
 
@@ -182,6 +185,9 @@ void InstancedStaticModelRenderer::renderModelPass(const InstancedStaticModelMan
         crossfadeDrawCommands->multiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT);
     }
 
+    // Mutations
+    renderMutations(modelManager, camera, passType);
+
     // TODO: Material specific
     glEnable(GL_CULL_FACE);
     checkGlError("InstancedStaticModelRenderer::renderModelPass");
@@ -238,4 +244,37 @@ void InstancedStaticModelRenderer::renderModelShadows(const InstancedStaticModel
     // TODO: Material specific
     glEnable(GL_CULL_FACE);
     checkGlError("InstancedStaticModelRenderer::renderModelShadows");
+}
+
+void InstancedStaticModelRenderer::renderMutations(const InstancedStaticModelManager& modelManager, const Camera3D& camera, MaterialRenderPassType passType) {
+    // Render mutations using alternate shaders
+    const MaterialShaderDef* def = nullptr;
+    switch (passType) {
+        case MaterialRenderPassType::Default:
+            def = mStandardShader;
+            break;
+        case MaterialRenderPassType::Smudge:
+            def = mSmudgeShader;
+            break;
+        case MaterialRenderPassType::Water:
+            break;
+        default:
+            assert(false);
+            break;
+
+    }
+    static_assert(e_count(MaterialRenderPassType) == 3);
+
+    if (def) {
+        ui32 nextTextureIndex = 0;
+        MaterialRenderer::bindMaterialShaderForRender(*def, &nextTextureIndex);
+
+        GLDrawCommandBuffer* mutationDrawCommands = modelManager.mDrawCommandsMutations[e_cast(passType)].get();
+        if (mutationDrawCommands && mutationDrawCommands->getNumActiveCommands()) {
+            GpuStreamingDataBuffer& mutationBuffer = *modelManager.mMutationBuffers[e_cast(passType)];
+            mutationBuffer.bindBufferAsSSBO(BUFFER_BASE_MUTATION_SSBO);
+
+            mutationDrawCommands->multiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_SHORT);
+        }
+    }
 }

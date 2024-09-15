@@ -3,7 +3,7 @@
 #include "rendering/model/MaterialRenderPassType.h"
 
 #include "tile/TileDamageData.h"
-#include "tile/TileTransformationDef.h"
+#include "tile/TileMutationDef.h"
 
 #include "definitions/ModelDef.h"
 
@@ -11,6 +11,7 @@
 
 struct TileContainerEvent;
 class Camera3D;
+class World;
 class InstancedStaticModelGatherer;
 class ModelRepository;
 class MaterialShaderDef;
@@ -41,8 +42,8 @@ static_assert(e_count(StaticModelAnimationTypes) == 1);
 using TileModelInstanceIndex = ui32;
 constexpr TileModelInstanceIndex INVALID_TILE_MODEL_INSTANCE_INDEX = std::numeric_limits<TileModelInstanceIndex>::max();
 
-using TransformationDataIndex = ui16;
-constexpr TransformationDataIndex INVALID_TRANSFORMATION_DATA_INDEX = std::numeric_limits<TransformationDataIndex>::max();
+using MutationDataIndex = ui16;
+constexpr MutationDataIndex INVALID_MUTATION_DATA_INDEX = std::numeric_limits<MutationDataIndex>::max();
 
 struct StaticMeshAnimation {
     f32 currentTimeSec;
@@ -79,7 +80,7 @@ class InstancedStaticModelManager
 {
     friend class InstancedStaticModelRenderer;
 public:
-    InstancedStaticModelManager();
+    InstancedStaticModelManager(World& world);
     ~InstancedStaticModelManager();
 
     void frameUpdate(const Camera3D& camera, f32 elapsedSec);
@@ -111,6 +112,8 @@ public:
 private:
     void init();
     void updatePendingLooseModelInstances();
+
+    color4 getMutationColor(TileMutationType type);
 
     void removeModelInstanceInternal(TileModelInstanceIndex instanceIndex);
 
@@ -148,11 +151,16 @@ private:
         ui32 damageModelIndex;
     };
 
-    struct TransformationData {
+    struct MutationData {
         TileModelInstanceIndex fromIndex;
         TileModelInstanceIndex toIndex;
-        TileTransformationType type;
+        TileMutationType type;
         bool isFrom; // If true, we are the fromIndex
+    };
+
+    struct ModelMutationGpuData {
+        color4 color = color4(1.0f);
+        f32 crossfade = 0.0f;
     };
 
     struct InstanceCrossfadeData {
@@ -161,7 +169,7 @@ private:
         f32 mCrossfade = 0.0f; // 0 = not transitioning, positive = crossfade in, negative = crossfade out
         MeshLODLevel mCurrentLOD = MeshLODLevel::INVALID;
         MeshLODLevel mTargetLOD = MeshLODLevel::INVALID;
-        TransformationDataIndex mTransformationDataIndex = INVALID_TRANSFORMATION_DATA_INDEX;
+        MutationDataIndex mMutationDataIndex = INVALID_MUTATION_DATA_INDEX;
     };
     static_assert(sizeof(InstanceCrossfadeData) == 8, "Keep small");
 
@@ -180,7 +188,7 @@ private:
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommands[e_count(MaterialRenderPassType)];
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsCrossfade[e_count(MaterialRenderPassType)];
     std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsShadows[e_count(MaterialRenderPassType)];
-    std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsTransformations[e_count(MaterialRenderPassType)];
+    std::unique_ptr<GLDrawCommandBuffer> mDrawCommandsMutations[e_count(MaterialRenderPassType)];
     ui32 mDrawCommandsCount[e_count(MaterialRenderPassType)] = {};
     ui32 mDrawCommandsShadowsCount[e_count(MaterialRenderPassType)] = {};
 
@@ -193,8 +201,8 @@ private:
     ui32 mLastDirtyInstance = 0;
     // Crossfade Transitions
     std::unique_ptr<GpuStreamingDataBuffer> mCrossfadeBuffers[e_count(MaterialRenderPassType)];
-    std::unique_ptr<GpuStreamingDataBuffer> mTransformationAlphaBuffers[e_count(MaterialRenderPassType)];
-    std::vector<TransformationData> mTransformationData;
+    std::unique_ptr<GpuStreamingDataBuffer> mMutationBuffers[e_count(MaterialRenderPassType)];
+    std::vector<MutationData> mMutationData;
     i32 mNumActiveLodTransitions = 0;
     i32 mNumActiveTransformationTransitions = 0;
 
@@ -204,7 +212,7 @@ private:
 
     // Animated instances
     FlatMap<LiteTileHandle, StaticMeshAnimation> mAnimatedTileInstances;
-    FlatMap<LiteTileHandle, TransformationDataIndex> mTransformingTileInstances;
+    FlatMap<LiteTileHandle, MutationDataIndex> mTransformingTileInstances;
 
     std::map<TileContainerID, SpatialInstanceDataMap> mTileContainerTrackedModels;
     GLBuffer mGpuCullingUniformBuffer;
@@ -215,6 +223,8 @@ private:
     AssetHandlePtr<MaterialShaderDef> mCullingComputeShader;
 
     std::unique_ptr<ModelImpostorManager> mBillboardLodManager;
+
+    World& mWorld;
 
     bool mNeedsInit = true;
 

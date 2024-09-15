@@ -331,7 +331,6 @@ void RenderContext::renderFrame(CameraController& cameraController, f32 frameAlp
     mActiveGBuffer->use();
     mCurrentFramebufferDims = mActiveGBuffer->getSize();
 
-
     vg::DepthState::FULL.set();
     vg::BlendState::set(vg::BlendStateType::REPLACE);
     if (sDebugOptions.mWireframe) {

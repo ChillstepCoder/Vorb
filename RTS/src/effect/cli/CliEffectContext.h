@@ -5,28 +5,28 @@
 
 #include "rendering/particle/CpuParticleEmitterRenderList.h"
 
-#include <concurrent_queue.h>
-
 class CPUParticleSystem;
 
 class PendingEffectInstanceData {
 public:
     PendingEffectInstanceData() = default;
-    PendingEffectInstanceData(f32v3 position, ParticleSystemInputsPtr inputs, BitFlags<EffectCreateFlags> flags) :
+    PendingEffectInstanceData(f32v3 position, f32q orientation, ParticleSystemInputsPtr inputs, BitFlags<EffectCreateFlags> flags) :
         position(position),
+        orientation(orientation),
         inputs(inputs),
         flags(flags) {}
 
     VORB_NON_COPYABLE_BUT_MOVABLE(PendingEffectInstanceData);
 
     f32v3 position;
-    ParticleSystemInputsPtr inputs;
+    f32q orientation;
     BitFlags<EffectCreateFlags> flags;
+    ParticleSystemInputsPtr inputs;
 };
 
 class EffectInstance {
 public:
-    EffectInstance(const EffectDef* effectDef, const ParticleSystemDef* systemDef, f32v3 position, ParticleSystemInputsPtr inputs);
+    EffectInstance(const EffectDef* effectDef, const ParticleSystemDef* systemDef, f32v3 position, f32q orientation, ParticleSystemInputsPtr inputs);
     ~EffectInstance();
 
     VORB_NON_COPYABLE_BUT_MOVABLE(EffectInstance);
@@ -50,7 +50,16 @@ public:
     void playParticleEffectAtPoint(
         EffectAssetRef effectName,
         f32v3 point,
+        f32q orientation,
         ParticleSystemInputsPtr inputs,
+        BitFlags<EffectCreateFlags> flags
+    ) override;
+
+    void playMutationEffect(
+        const f32m4& transform,
+        ModelID startModel,
+        ModelID endModel,
+        TileMutationType mutationType,
         BitFlags<EffectCreateFlags> flags
     ) override;
 

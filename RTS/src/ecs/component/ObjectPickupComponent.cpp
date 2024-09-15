@@ -42,7 +42,7 @@ void ObjectPickupSystem::update(World& world, entt::registry& registry, f32 elap
 
         }
         if (destroy) {
-            world.getEffectContext().playParticleEffectAtPoint(EffectAssetRef(CStrToken("item_pickup")), objectPos.mPosition, nullptr, BitFlags<EffectCreateFlags>());
+            world.getEffectContext().playParticleEffectAtPoint(EffectAssetRef(CStrToken("item_pickup")), objectPos.mPosition, f32q(), nullptr, BitFlags<EffectCreateFlags>());
             EntityFactory::destroyEntity(world, entity);
         }
     });

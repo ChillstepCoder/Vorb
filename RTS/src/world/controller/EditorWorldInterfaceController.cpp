@@ -59,7 +59,7 @@ void EditorWorldInterfaceController::update()
             GameThreadTasks::getInstance().addGenericTask([this]() {
                 for (int i = 0; i < 50; ++i) {
                     mWorld->getEffectContext().playParticleEffectAtPoint(
-                        EffectAssetRef(CStrToken("snow")), mWorld->getECS().getLocalPlayerPosition(), nullptr, BitFlags<EffectCreateFlags>()
+                        EffectAssetRef(CStrToken("snow")), mWorld->getECS().getLocalPlayerPosition(), f32q(), nullptr, BitFlags<EffectCreateFlags>()
                     );
                 }
             });
@@ -142,7 +142,7 @@ void EditorWorldInterfaceController::updateTilePicking() {
             // TMP REMOVE
             if (vui::InputDispatcher::key.isKeyDown(VKEY_I)) {
                 AM::DebugRenderer::drawWireQuad(hitResult.mPosition + f32v3(0.0f, 0.0f, 0.5f), f32v2(0.3f), color4(1.0f, 0.0f, 0.0f, 1.0f), 100);
-                mWorld->getEffectContext().playParticleEffectAtPoint(EffectAssetRef(CStrToken("hitfx")), hitResult.mPosition + f32v3(0.0f, 0.0f, 0.5f), nullptr, BitFlags<EffectCreateFlags>());
+                mWorld->getEffectContext().playParticleEffectAtPoint(EffectAssetRef(CStrToken("hitfx")), hitResult.mPosition + f32v3(0.0f, 0.0f, 0.5f), f32q(), nullptr, BitFlags<EffectCreateFlags>());
                 mRightClickUpPick.reset();
                 return;
             }
@@ -440,7 +440,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([tileHandlePtr]() {
                     TileContainer* container = tileHandlePtr->getMutableContainer();
-                    container->tryTransformTile(tileHandlePtr->tileIndex, TileTransformationType::CCorrupt);
+                    container->tryTransformTile(tileHandlePtr->tileIndex, TileMutationType::CCorrupt);
                     delete tileHandlePtr;
                 });
             }

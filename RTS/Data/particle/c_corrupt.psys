@@ -21,17 +21,7 @@ emitters:
         - mesh_rep_tgt:
             scale: 4
             scale_clmp: [0.5,2]
-            find_close: 15
-        - set_position:
-            pos:
-              v_vec3:
-                name: MeshSourcePos
-        - set_scale:
-            scale:
-              f32_to_vec2:
-                v:
-                  v_float:
-                    name: MeshSourceScale
+            find_close: 12
       p_update:
         - set_position:
             pos:
@@ -91,10 +81,6 @@ emitters:
             scale: 1
             scale_clmp: [0.1,5]
             find_close: 12
-        - set_position:
-            pos:
-              v_vec3:
-                name: MeshSourcePos
       p_update:
         - set_position:
             pos:
@@ -137,7 +123,7 @@ emitters:
                 norm_input:
                   p_norm_life: {}
                 keys:
-                  - [0,56,255,255,128]
+                  - [0,56,255,255,32]
                   - [1,56,255,255,0]
   - bigglow:
       scale: [30,30]
@@ -162,10 +148,6 @@ emitters:
             scale: 1
             scale_clmp: [0.5,5]
             find_close: 12
-        - set_position:
-            pos:
-              v_vec3:
-                name: MeshSourcePos
       p_update:
         - set_position:
             pos:
@@ -208,9 +190,11 @@ emitters:
                 norm_input:
                   p_norm_life: {}
                 keys:
-                  - [0,56,255,255,128]
+                  - [0,56,255,255,32]
                   - [1,56,255,255,0]
 lifetime: 10.17
 inputs:
+  - FloatSourceScale: 1
+  - FloatTargetScale: 1
   - MeshSource: tree_pine
   - MeshTarget: tree_pine_c

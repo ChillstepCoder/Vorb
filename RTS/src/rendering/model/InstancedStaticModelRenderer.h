@@ -24,6 +24,7 @@ public:
     void renderModelShadows(const InstancedStaticModelManager& modelManager, const ShadowPassShaderData& shaderData, const Camera3D& camera);
 
 private:
+    void renderMutations(const InstancedStaticModelManager& modelManager, const Camera3D& camera, MaterialRenderPassType passType);
 
     const MaterialShaderDef* mStandardShader = nullptr;
     const MaterialShaderDef* mShadowMapperShader = nullptr;

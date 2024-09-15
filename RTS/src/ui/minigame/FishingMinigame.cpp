@@ -257,7 +257,8 @@ void FishingMinigame::render(f32 elapsedSec) {
         assert(shaderID == mUIShader->getID());
 
         for (auto& renderData : emitterList) {
-            glUniform3fv(unRootPos, 1, (const GLfloat*)renderData.rootPosition);
+            const f32v3 position = renderData.system->getPosition();
+            glUniform3fv(unRootPos, 1, &position.x);
             renderData.emitter->render();
         }
     }

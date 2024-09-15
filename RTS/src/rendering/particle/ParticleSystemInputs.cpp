@@ -129,6 +129,11 @@ void ParticleSystemInputs::readYmlNode(const ryml::ConstNodeRef& node, ParticleS
         node >> v;
         input = v;
     }
+    else if (name <= ParticleSystemInputName::FLOAT_TERM) {
+        f32 v;
+        node >> v;
+        input = v;
+    }
     else if (name <= ParticleSystemInputName::VEC2_TERM) {
         f32v2 v;
         node >> v;

@@ -614,7 +614,7 @@ void ParticleSystemEditorViewportPanel::renderMesh() {
 void ParticleSystemEditorViewportPanel::createPreviewSystem() {
     if (!mAssetData) return;
     mCurrentTime = 0.0f;
-    mPreviewSystem = std::make_unique<CPUParticleSystem>(*mAssetData, f32v3(0.0f), mAssetData->mDefaultInputs);
+    mPreviewSystem = std::make_unique<CPUParticleSystem>(*mAssetData, f32v3(0.0f), f32q(), mAssetData->mDefaultInputs);
     mPreviewSystem->setAsEditorPreviewSystem();
 }
 

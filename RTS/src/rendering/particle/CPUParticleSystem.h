@@ -13,11 +13,13 @@ class CPUParticleSystem {
 public:
     CPUParticleSystem(size_t reserveEmitterCount, f32 lifespanSec);
     CPUParticleSystem(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, f32 particleLifespanSec = FLT_MAX, f32 emitterLifespanSec = FLT_MAX);
-    CPUParticleSystem(const ParticleSystemDef& def, f32v3 position, ParticleSystemInputsPtr inputs);
+    CPUParticleSystem(const ParticleSystemDef& def, f32v3 position, f32q orientation, ParticleSystemInputsPtr inputs);
 
     // Inputs
     f32v3 getPosition() const { return mRootPosition; }
     void setPosition(f32v3 position) { mRootPosition = position; }
+    const f32m3& getOrientation() const { return mOrientationMatrix; }
+    void setOrientation(f32m3 orientation) { mOrientationMatrix = orientation; }
 
     VORB_NON_COPYABLE(CPUParticleSystem);
 
@@ -48,4 +50,5 @@ private:
     ConstParticleSystemInputsPtr mInputs;
     f32v3 mRootPosition = f32v3(0.0f);
     f32 mLifetimeRemaining = 0.0f;
+    f32m3 mOrientationMatrix = f32m3(1.0f);
 };

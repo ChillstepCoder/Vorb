@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "InstancedStaticModelManager.h"
 
-#include "resources/ResourceManager.h"
 #include "resources/ModelRepository.h"
 #include "resources/TileRepository.h"
 #include "tile/TileContainer.h"
@@ -14,11 +13,15 @@
 #include "rendering/RenderThreadTasks.h"
 #include "rendering/model/ModelImpostorManager.h"
 
+#include "effect/IEffectContext.h"
+
 #include "camera/Camera3D.h"
 
 #include <boost/pool/singleton_pool.hpp>
 
 #include "options/DebugOptions.h"
+
+#include "world/World.h"
 
 #include "rendering/gl/GL.h"
 
@@ -56,9 +59,10 @@ void TileContainerModelEditEvent::operator delete(void* pointer, size_t size) {
 
 // Maximum concurrent LOD transitioning meshes, note that an impostor doesn't count towards this
 constexpr int MAX_LOD_DITHER_TRANSITION_DRAWS = 2048;
-constexpr int MAX_TRANSFORMATION_TRANSITION_DRAWS = 512;
+constexpr int MAX_MUTATION_TRANSITION_DRAWS = 512;
 constexpr int WORK_GROUP_SIZE = 64;
 constexpr f32 LOD_TRANSITION_SPEED = 1.0f; // Multiplied by elapsedSec. 1 = 1 second, 2 = 0.5 seconds
+constexpr f32 MUTATION_TRANSITION_SPEED = 0.35f; // Multiplied by elapsedSec. 1 = 1 second, 2 = 0.5 seconds
 // TODO: Read about advanced gpu driven rendering https://advances.realtimerendering.com/s2015/aaltonenhaar_siggraph2015_combined_final_footer_220dpi.pdf
 
 // Must be done or we will corrupt gpu memory :P
@@ -82,8 +86,9 @@ static_assert(offsetof(GpuCullUniformData, numShapesToCull) == 128);
 static_assert(sizeof(GpuCullUniformData) == 132);
 static_assert(sizeof(MeshLODDrawInfo) == sizeof(ui32v2));
 
-InstancedStaticModelManager::InstancedStaticModelManager() :
-    mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT)
+InstancedStaticModelManager::InstancedStaticModelManager(World& world) :
+    mGpuCullingUniformBuffer(sizeof(GpuCullUniformData), nullptr, GL_DYNAMIC_STORAGE_BIT),
+    mWorld(world)
 {
     ASSERT_GAME_THREAD(); // This is currently created on the game thread
 
@@ -254,18 +259,24 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
         panic("GPU Culling is defunct");
     }
     else {
-        PROFILE_SCOPE("CPU Culling");
-        // CPU Culling
-        // TODO: Should the renderer handle this??
+        PROFILE_SCOPE("Build Draw Data");
+        // CPU Culling and draw commands
+
         int activeCount[e_count(MaterialRenderPassType)] = {};
         int shadowCount[e_count(MaterialRenderPassType)] = {};
         int crossfadeActiveCount[e_count(MaterialRenderPassType)] = {};
         crossfadeActiveCount[e_cast(MaterialRenderPassType::Water)] = INT32_MAX;
         f32* crossfadeArrays[e_count(MaterialRenderPassType)] = {};
+        int mutationActiveCount[e_count(MaterialRenderPassType)] = {};
+        mutationActiveCount[e_cast(MaterialRenderPassType::Water)] = INT32_MAX;
+        ModelMutationGpuData* mutationArrays[e_count(MaterialRenderPassType)] = {};
+
         // Ignoring water
         for (MaterialRenderPassType type : CROSSFADE_PASSES) {
             crossfadeArrays[e_cast(type)] = static_cast<f32*>(mCrossfadeBuffers[e_cast(type)]->frameBeginAndGetDataForUpdate());
             mDrawCommandsCrossfade[e_cast(type)]->frameBegin();
+            mutationArrays[e_cast(type)] = static_cast<ModelMutationGpuData*>(mMutationBuffers[e_cast(type)]->frameBeginAndGetDataForUpdate());
+            mDrawCommandsMutations[e_cast(type)]->frameBegin();
         }
         static_assert(e_count(MaterialRenderPassType) == 3);
 
@@ -332,7 +343,6 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
         std::vector<TileModelInstanceIndex> transformationIndicesToRemove;
 
         const f32 LodTransitionSpeed = LOD_TRANSITION_SPEED * sDebugOptions.mLodCrossfadeSpeed;
-        const f32 TransformationSpeed = LOD_TRANSITION_SPEED; // TODO: Dynamic?
 
         ModelRepository& modelRepo = ModelRepository::get();
         for (TileModelInstanceIndex instanceIndex = 0; instanceIndex < (TileModelInstanceIndex)mInstanceTransforms.size(); ++instanceIndex) {
@@ -344,14 +354,14 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
             const ModelLodParams& lodParams = modelRepo.getLodParams(instanceDrawData.modelId);
 
             if (transitionData.isActive()) {
-                if (transitionData.mTransformationDataIndex != INVALID_TRANSFORMATION_DATA_INDEX) {
-                    TransformationData& transformationData = mTransformationData[transitionData.mTransformationDataIndex];
+                if (transitionData.mMutationDataIndex != INVALID_MUTATION_DATA_INDEX) {
+                    MutationData& mutationData = mMutationData[transitionData.mMutationDataIndex];
                     // Transformation transition updates, such as corruption
-                    if (transformationData.isFrom) {
-                        transitionData.mCrossfade -= TransformationSpeed * elapsedSec;
+                    if (mutationData.isFrom) {
+                        transitionData.mCrossfade -= MUTATION_TRANSITION_SPEED * elapsedSec;
                     }
                     else {
-                        transitionData.mCrossfade += TransformationSpeed * elapsedSec;
+                        transitionData.mCrossfade += MUTATION_TRANSITION_SPEED * elapsedSec;
                     }
                     if (std::fabs(transitionData.mCrossfade) >= 1.0f) {
 
@@ -361,10 +371,10 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                         transitionData.mCrossfade = 0.0f;
 
                         // Add from index to remove later:
-                        transitionData.mTransformationDataIndex = INVALID_TRANSFORMATION_DATA_INDEX;
-                        if (transformationData.isFrom) {
-                            assert(transformationData.fromIndex == instanceIndex);
-                            transformationIndicesToRemove.push_back(transformationData.fromIndex);
+                        transitionData.mMutationDataIndex = INVALID_MUTATION_DATA_INDEX;
+                        if (mutationData.isFrom) {
+                            assert(mutationData.fromIndex == instanceIndex);
+                            transformationIndicesToRemove.push_back(mutationData.fromIndex);
                             continue;
                         }
                     }
@@ -372,10 +382,40 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                         if (camera.sphereIsVisible(pos, lodParams.boundingSphereRadius)) {
                             const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataArrayForModel(instanceDrawData.key);
 
-                            addCrossfadingModel(transitionData.mCurrentLOD, instanceDrawData, drawDataArray, pos, instanceIndex, transitionData.mCrossfade);
+                            const f32 crossfade = transitionData.mCrossfade;
+                            MeshLODLevel lod = transitionData.mCurrentLOD;
+
+                            if (transitionData.mCurrentLOD == MeshLODLevel::IMPOSTOR) {
+                                addBillboard(instanceDrawData, pos, instanceIndex, crossfade);
+                            }
+                            else {
+                                // Add mutation commands
+                                for (int m = 0; m < instanceDrawData.key.count; ++m) {
+                                    const ModelBatchSubmeshDrawData& drawData = drawDataArray[m];
+                                    const int renderPassIndex = e_cast(drawData.renderPass);
+                                    int& cActive = mutationActiveCount[renderPassIndex];
+                                    if (cActive < MAX_MUTATION_TRANSITION_DRAWS) {
+                                        ModelMutationGpuData& gpuData = mutationArrays[renderPassIndex][cActive];
+                                        gpuData.crossfade = crossfade;
+                                        gpuData.color = getMutationColor(mutationData.type);
+                                        setCommand(
+                                            mDrawCommandsMutations[renderPassIndex]->getDrawCommands().data()[cActive++],
+                                            (GLuint)instanceIndex,
+                                            drawData.baseVertex,
+                                            drawData.lodDrawInfo[e_cast(lod)]
+                                        );
+                                    }
+                                    else {
+                                        // Fallback to normal render if we are out of space, but only for the fading in model
+                                        if (crossfade > 0.0) {
+                                            setCommand(mDrawCommands[renderPassIndex]->getDrawCommands().data()[activeCount[renderPassIndex]++], (GLuint)instanceIndex, drawData.baseVertex, drawData.lodDrawInfo[e_cast(lod)]);
+                                        }
+                                    }
+                                }
+                            }
 
                             // DrawShadows for whichever is closer
-                            if ((transformationData.isFrom && transitionData.mCrossfade > -0.5f) || (!transformationData.isFrom && transitionData.mCrossfade >= 0.5f)) {
+                            if ((mutationData.isFrom && transitionData.mCrossfade > -0.5f) || (!mutationData.isFrom && transitionData.mCrossfade >= 0.5f)) {
                                 // Draw current shadow
                                 if ((int)lodParams.shadowLodDetail > (int)transitionData.mCurrentLOD) {
                                     const ModelBatchSubmeshDrawData* drawDataArray = modelRepo.getSubmeshDrawDataArrayForModel(instanceDrawData.key);
@@ -506,11 +546,11 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
 
         for (MaterialRenderPassType type : CROSSFADE_PASSES) {
             mCrossfadeBuffers[e_cast(type)]->flushDataAndIncrementFrame(crossfadeActiveCount[e_cast(type)]);
-            if (crossfadeActiveCount[e_cast(type)] > 0) {
-                LOG_INFO("Crossfade count: {} - {}", e_cast(type), crossfadeActiveCount[e_cast(type)]);
-            }
             mDrawCommandsCrossfade[e_cast(type)]->setNumActiveCommands(crossfadeActiveCount[e_cast(type)]);
             mDrawCommandsCrossfade[e_cast(type)]->uploadDrawCommands();
+            mMutationBuffers[e_cast(type)]->flushDataAndIncrementFrame(mutationActiveCount[e_cast(type)]);
+            mDrawCommandsMutations[e_cast(type)]->setNumActiveCommands(mutationActiveCount[e_cast(type)]);
+            mDrawCommandsMutations[e_cast(type)]->uploadDrawCommands();
         }
 
         // TODO: We lose a lot of these due to culling, so we probably don't need
@@ -525,7 +565,6 @@ void InstancedStaticModelManager::frameUpdate(const Camera3D& camera, f32 elapse
                     mDrawCommandsShadows[r]->setNumActiveCommands(shadowCount[r]);
                     mDrawCommandsShadows[r]->uploadDrawCommands();
                 }
-
             }
         }
 
@@ -713,11 +752,11 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
         f32 zPos;
         TileIndex tileIndex;
     };
-    struct ModelTransformEvent {
+    struct ModelMutationEvent {
         ModelID nextId;
         TileIndex tileIndex;
         ui8 nextVariant;
-        TileTransformationType transformType;
+        TileMutationType transformType;
     };
     struct ModelEditEvents {
         TileContainerID containerId;
@@ -725,10 +764,10 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
         std::vector<ModelAddEvent> addEvents;
         std::vector<ModelHeightAdjustEvent> heightAdjustEvents;
         std::vector<TileIndex> removeEvents;
-        std::vector<ModelTransformEvent> transformEvents;
+        std::vector<ModelMutationEvent> mutationEvents;
 
         bool hasAny() const {
-            return removeEvents.size() || addEvents.size() || heightAdjustEvents.size() || transformEvents.size();
+            return removeEvents.size() || addEvents.size() || heightAdjustEvents.size() || mutationEvents.size();
         }
     };
 
@@ -743,9 +782,9 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
             for (ui32 i = 0; i < editEvent.editCount; ++i) {
                 TileContainerEditLayerEventData& edit = editEvent.changeLayerArray[i];
 
-                if (edit.transformType != TileTransformationType::COUNT) {
+                if (edit.mutationType != TileMutationType::COUNT) {
                     assert(edit.prevId != TILE_ID_NONE && edit.newId != TILE_ID_NONE);
-                    editEvents.transformEvents.emplace_back(ModelTransformEvent{ TileRepository::get().getTileModelID(edit.newId), edit.tileIndex, 0/*TODO: VARIANTS*/, edit.transformType});
+                    editEvents.mutationEvents.emplace_back(ModelMutationEvent{ TileRepository::get().getTileModelID(edit.newId), edit.tileIndex, 0/*TODO: VARIANTS*/, edit.mutationType});
                     continue;
                 }
 
@@ -824,24 +863,24 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
                     mgr->onDirtyModelInstance(tileInstance);
                 }
             }
-            for (auto&& transformEvent : editPtr->transformEvents) {
+            for (auto&& mutationEvent : editPtr->mutationEvents) {
                 SpatialInstanceDataMap& tileContainerModels = mgr->mTileContainerTrackedModels[containerId];
 
-                auto it = tileContainerModels.find(transformEvent.tileIndex);
+                auto it = tileContainerModels.find(mutationEvent.tileIndex);
                 if (it != tileContainerModels.end()) {
                     TileModelInstanceIndex sourceInstance = it->second;
-                    const ModelDef& nextModelDef = ModelRepository::get().getLoadedOrUnloadedAsset(transformEvent.nextId);
+                    const ModelDef& nextModelDef = ModelRepository::get().getLoadedOrUnloadedAsset(mutationEvent.nextId);
                     InstanceCrossfadeData& sourceCrossfadeData = mgr->mInstanceCrossfadeData[sourceInstance];
                     if (sourceCrossfadeData.isActive()) {
-                        if (sourceCrossfadeData.mTransformationDataIndex != INVALID_TRANSFORMATION_DATA_INDEX) {
+                        if (sourceCrossfadeData.mMutationDataIndex != INVALID_MUTATION_DATA_INDEX) {
                             assert(sourceCrossfadeData.mTargetLOD == sourceCrossfadeData.mCurrentLOD);
                             // We transformed an already transforming tile. Just update the target and refresh the crossfade
-                            TransformationData& transformationData = mgr->mTransformationData[sourceCrossfadeData.mTransformationDataIndex];
-                            mgr->mInstanceDrawData[transformationData.toIndex] = InstanceDrawData(modelRepo.getDrawDataSpanKeyForModel(nextModelDef.getID()), nextModelDef.getID());
-                            mgr->mInstanceGpuData[transformationData.toIndex].submeshDataIndex = mgr->mInstanceDrawData[transformationData.toIndex].key.startIndex;
+                            MutationData& mutationData = mgr->mMutationData[sourceCrossfadeData.mMutationDataIndex];
+                            mgr->mInstanceDrawData[mutationData.toIndex] = InstanceDrawData(modelRepo.getDrawDataSpanKeyForModel(nextModelDef.getID()), nextModelDef.getID());
+                            mgr->mInstanceGpuData[mutationData.toIndex].submeshDataIndex = mgr->mInstanceDrawData[mutationData.toIndex].key.startIndex;
 
                             sourceCrossfadeData.mCrossfade = -MATH_EPSILON;
-                            InstanceCrossfadeData& targetCrossfadeData = mgr->mInstanceCrossfadeData[transformationData.toIndex];
+                            InstanceCrossfadeData& targetCrossfadeData = mgr->mInstanceCrossfadeData[mutationData.toIndex];
                             assert(targetCrossfadeData.mTargetLOD == targetCrossfadeData.mCurrentLOD);
                             targetCrossfadeData.mCrossfade = MATH_EPSILON;
                         }
@@ -854,33 +893,38 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
                     else {
                         // Remove old instance tracking as we will replace with new in addTileInstanceInternal
                         SpatialInstanceDataMap& tileContainerModels = mgr->mTileContainerTrackedModels[containerId];
-                        tileContainerModels.erase(transformEvent.tileIndex);
+                        tileContainerModels.erase(mutationEvent.tileIndex);
                         mgr->mInstanceSources[sourceInstance] = std::monostate{};
 
                         // Create a new instance that is identical to our current one except for its model
                         TileModelInstanceIndex targetInstance = mgr->addTileInstanceInternal(
                             nextModelDef,
                             containerId,
-                            transformEvent.tileIndex,
+                            mutationEvent.tileIndex,
                             mgr->mInstanceTransforms[sourceInstance],
-                            transformEvent.nextVariant,
+                            mutationEvent.nextVariant,
                             nullptr /*no damage?*/,
                             mgr->mInstanceScales[sourceInstance]
                         );
 
                         sourceCrossfadeData.mCrossfade = -MATH_EPSILON;
-                        sourceCrossfadeData.mTransformationDataIndex = mgr->mTransformationData.size();
-                        mgr->mTransformationData.emplace_back(TransformationData{ sourceInstance, targetInstance, transformEvent.transformType, true });
+                        sourceCrossfadeData.mMutationDataIndex = mgr->mMutationData.size();
+                        mgr->mMutationData.emplace_back(MutationData{ sourceInstance, targetInstance, mutationEvent.transformType, true });
 
                         InstanceCrossfadeData& targetCrossfadeData = mgr->mInstanceCrossfadeData[targetInstance];
                         targetCrossfadeData.mCrossfade = MATH_EPSILON;
-                        targetCrossfadeData.mTransformationDataIndex = mgr->mTransformationData.size();
+                        targetCrossfadeData.mMutationDataIndex = mgr->mMutationData.size();
                         targetCrossfadeData.mCurrentLOD = sourceCrossfadeData.mCurrentLOD;
                         targetCrossfadeData.mTargetLOD = sourceCrossfadeData.mTargetLOD;
-                        mgr->mTransformationData.emplace_back(TransformationData{ sourceInstance, targetInstance, transformEvent.transformType, false });
+                        mgr->mMutationData.emplace_back(MutationData{ sourceInstance, targetInstance, mutationEvent.transformType, false });
 
                         mgr->mNumActiveTransformationTransitions += 2;
                     }
+
+                    // Play effect
+                    mgr->mWorld.getEffectContext().playMutationEffect(
+                        mgr->mInstanceTransforms[sourceInstance], mgr->mInstanceDrawData[sourceInstance].modelId, mutationEvent.nextId, mutationEvent.transformType, {} /*flags*/
+                    );
                 }
             }
             delete editPtr;
@@ -983,7 +1027,8 @@ void InstancedStaticModelManager::init() {
     for (MaterialRenderPassType type : CROSSFADE_PASSES) {
         mCrossfadeBuffers[(int)type] = std::make_unique<GpuStreamingDataBuffer>(MAX_LOD_DITHER_TRANSITION_DRAWS, sizeof(f32));
         mDrawCommandsCrossfade[(int)type] = std::make_unique<GLDrawCommandBuffer>(MAX_LOD_DITHER_TRANSITION_DRAWS);
-        mDrawCommandsTransformations[(int)type] = std::make_unique<GLDrawCommandBuffer>(MAX_TRANSFORMATION_TRANSITION_DRAWS);
+        mMutationBuffers[(int)type] = std::make_unique<GpuStreamingDataBuffer>(MAX_LOD_DITHER_TRANSITION_DRAWS, sizeof(ModelMutationGpuData));
+        mDrawCommandsMutations[(int)type] = std::make_unique<GLDrawCommandBuffer>(MAX_MUTATION_TRANSITION_DRAWS);
     }
 
 }
@@ -1015,6 +1060,30 @@ void InstancedStaticModelManager::updatePendingLooseModelInstances() {
             static_assert(e_count(PendingLooseModelInstance::Type) == 3);
         }
     }
+}
+
+color4 InstancedStaticModelManager::getMutationColor(TileMutationType type) {
+    switch (type) {
+        case TileMutationType::BCorrupt:
+            break;
+        case TileMutationType::BPurify:
+            break;
+        case TileMutationType::CCorrupt:
+            return color4(38, 211, 255, 255);
+        case TileMutationType::CPurify:
+            break;
+        case TileMutationType::Grow:
+            break;
+        case TileMutationType::Decay:
+            break;
+        case TileMutationType::COUNT:
+            assert(false);
+            break;
+        default:
+            break;
+    }
+    return color4(255, 255, 255, 255);
+    static_assert(e_count(TileMutationType) == 6);
 }
 
 void InstancedStaticModelManager::removeModelInstanceInternal(TileModelInstanceIndex instanceIndex) {
@@ -1054,8 +1123,8 @@ void InstancedStaticModelManager::removeModelInstanceInternal(TileModelInstanceI
     InstanceCrossfadeData& crossfadeData = mInstanceCrossfadeData[instanceIndex];
     if (crossfadeData.isActive()) {
         // If we are crossfading as a transformation, make sure to remove the other instance
-        if (crossfadeData.mTransformationDataIndex != INVALID_TRANSFORMATION_DATA_INDEX) [[unlikely]] {
-            TransformationData& transformationData = mTransformationData[crossfadeData.mTransformationDataIndex];
+        if (crossfadeData.mMutationDataIndex != INVALID_MUTATION_DATA_INDEX) [[unlikely]] {
+            MutationData& transformationData = mMutationData[crossfadeData.mMutationDataIndex];
             // The "to" index is the authoritative index, so we remove the "from" index
             if (transformationData.isFrom == false) {
                 fromTransformationToRemove = transformationData.fromIndex;
@@ -1070,24 +1139,24 @@ void InstancedStaticModelManager::removeModelInstanceInternal(TileModelInstanceI
     }
 
     // If the back is transforming
-    if (mInstanceCrossfadeData.back().mTransformationDataIndex != INVALID_TRANSFORMATION_DATA_INDEX) {
+    if (mInstanceCrossfadeData.back().mMutationDataIndex != INVALID_MUTATION_DATA_INDEX) {
         InstanceCrossfadeData& backCrossfadeData = mInstanceCrossfadeData.back();
         const TileModelInstanceIndex backIndex = mInstanceCrossfadeData.size() - 1;
         assert(backCrossfadeData.isActive());
-        TransformationData& backTransformationData = mTransformationData[backCrossfadeData.mTransformationDataIndex];
+        MutationData& backTransformationData = mMutationData[backCrossfadeData.mMutationDataIndex];
         // (and it isn't the one we just deleted), we need to update the indices pointing to it
         if (backTransformationData.fromIndex != instanceIndex && backTransformationData.toIndex != instanceIndex) {
             // One of these will be the same as backTransformationData
-            const TransformationDataIndex fromDataIndex = mInstanceCrossfadeData[backTransformationData.fromIndex].mTransformationDataIndex;
-            const TransformationDataIndex toDataIndex = mInstanceCrossfadeData[backTransformationData.toIndex].mTransformationDataIndex;
+            const MutationDataIndex fromDataIndex = mInstanceCrossfadeData[backTransformationData.fromIndex].mMutationDataIndex;
+            const MutationDataIndex toDataIndex = mInstanceCrossfadeData[backTransformationData.toIndex].mMutationDataIndex;
             if (backTransformationData.fromIndex == backIndex) {
-                mTransformationData[fromDataIndex].fromIndex = instanceIndex;
-                mTransformationData[toDataIndex].fromIndex = instanceIndex;
+                mMutationData[fromDataIndex].fromIndex = instanceIndex;
+                mMutationData[toDataIndex].fromIndex = instanceIndex;
             }
             else {
                 assert(backTransformationData.toIndex == backIndex);
-                mTransformationData[fromDataIndex].toIndex = instanceIndex;
-                mTransformationData[toDataIndex].toIndex = instanceIndex;
+                mMutationData[fromDataIndex].toIndex = instanceIndex;
+                mMutationData[toDataIndex].toIndex = instanceIndex;
             }
         }
     }

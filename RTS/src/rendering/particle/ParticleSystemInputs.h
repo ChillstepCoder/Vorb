@@ -7,6 +7,9 @@ enum class ParticleSystemInputName : ui8 {
     UINT_END,
     UINT_TERM = UINT_END - 1,
 
+    FloatSourceScale,
+    FloatTargetScale,
+
     FLOAT_END,
     FLOAT_TERM = FLOAT_END - 1,
 
@@ -29,6 +32,8 @@ enum class ParticleSystemInputName : ui8 {
 };
 SERIALIZABLE_ENUM_SAME_NAME(ParticleSystemInputName,
     ENUM_FIELD_SIMPLE(ParticleSystemInputName, INVALID),
+    ENUM_FIELD_SIMPLE(ParticleSystemInputName, FloatSourceScale),
+    ENUM_FIELD_SIMPLE(ParticleSystemInputName, FloatTargetScale),
     ENUM_FIELD_SIMPLE(ParticleSystemInputName, Vec3ImpactDirection),
     ENUM_FIELD_SIMPLE(ParticleSystemInputName, Vec3ImpactSurfaceNormal),
     ENUM_FIELD_SIMPLE(ParticleSystemInputName, MeshSource),
@@ -57,7 +62,7 @@ struct ParticleSystemInputs {
     void addDefaultInput(ParticleSystemInputName name);
 
     ui32 getUIntInput(ParticleSystemInputName name, ui32 defaultIfNotFound = 0) const;
-    f32 getFloatInput(ParticleSystemInputName name, f32 defaultIfNotFound = 0.0f) const;
+    f32 getFloatInput(ParticleSystemInputName name, f32 defaultIfNotFound = 1.0f) const;
     f32v2 getVec2Input(ParticleSystemInputName name, f32v2 defaultIfNotFound = f32v2(0.0f)) const;
     f32v3 getVec3Input(ParticleSystemInputName name, f32v3 defaultIfNotFound = f32v3(0.0f)) const;
     ParticleSystemMeshInput getMeshInput(ParticleSystemInputName name, ParticleSystemMeshInput defaultIfNotFound = ParticleSystemMeshInput()) const;

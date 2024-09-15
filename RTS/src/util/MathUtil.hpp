@@ -307,6 +307,17 @@ namespace MathUtil {
     inline f32 crossProduct2d(f32v2 v1, f32v2 v2) {
         return (v1.x * v2.y) - (v1.y * v2.x);
     }
+
+    inline void decomposeMatrix(const f32m4& m, f32v3& scale, f32q& rot, f32v3& translation) {
+        translation = m[3];
+        for (int i = 0; i < 3; i++)
+            scale[i] = glm::length(f32v3(m[i]));
+        const glm::mat3 rotMtx(
+            glm::vec3(m[0]) / scale[0],
+            glm::vec3(m[1]) / scale[1],
+            glm::vec3(m[2]) / scale[2]);
+        rot = glm::quat_cast(rotMtx);
+    }
 }
 
 #define DECL_VEC2_LESS(T) \

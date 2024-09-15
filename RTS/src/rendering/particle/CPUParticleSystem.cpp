@@ -18,7 +18,11 @@ CPUParticleSystem::CPUParticleSystem(const ParticleUpdateFunction& updateFunctio
     addEmitter(updateFunction, maxParticles, components, shader, particleLifespanSec, emitterLifespanSec);
 }
 
-CPUParticleSystem::CPUParticleSystem(const ParticleSystemDef& def, f32v3 position, ParticleSystemInputsPtr inputs) : mRootPosition(position), mInputs(std::move(inputs)) {
+CPUParticleSystem::CPUParticleSystem(const ParticleSystemDef& def, f32v3 position, f32q orientation, ParticleSystemInputsPtr inputs) :
+    mInputs(std::move(inputs)),
+    mRootPosition(position),
+    mOrientationMatrix(glm::toMat3(orientation)
+) {
     if (mInputs == nullptr) {
         mInputs = def.mDefaultInputs;
     }
@@ -55,7 +59,7 @@ bool CPUParticleSystem::update(f32 elapsedSec, CpuParticleEmitterRenderList& out
 
     // Add active emitters to the render list
     for (auto&& emitter : mEmitters) {
-        outRenderList[e_cast(emitter->getBlendMode())][emitter->getShaderID()].push_back(EmitterRenderData{ emitter.get(), &mRootPosition });
+        outRenderList[e_cast(emitter->getBlendMode())][emitter->getShaderID()].push_back(EmitterRenderData{ emitter.get(), this });
     }
 
     return false;

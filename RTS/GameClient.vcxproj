@@ -513,7 +513,7 @@
     <ClCompile Include="src\tile\TileContainerLoader.cpp" />
     <ClCompile Include="src\tile\TileDamageData.cpp" />
     <ClCompile Include="src\definitions\TileDef.cpp" />
-    <ClCompile Include="src\tile\TileTransformationDef.cpp" />
+    <ClCompile Include="src\tile\TileMutationDef.cpp" />
     <ClCompile Include="src\ui\debugging\GameplayDebugger.cpp" />
     <ClCompile Include="src\ui\debugging\MovementDebugger.cpp" />
     <ClCompile Include="src\ui\debugging\PhysicsDebugger.cpp" />
@@ -1096,7 +1096,7 @@
     <ClInclude Include="src\tile\SimTileReservation.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
     <ClInclude Include="src\tile\TileDamageData.h" />
-    <ClInclude Include="src\tile\TileTransformationDef.h" />
+    <ClInclude Include="src\tile\TileMutationDef.h" />
     <ClInclude Include="src\tile\TileType.h" />
     <ClInclude Include="src\tile\TileTypeDataVariant.h" />
     <ClInclude Include="src\ui\debugging\GameplayDebugger.h" />

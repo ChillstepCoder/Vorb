@@ -1341,7 +1341,7 @@
     <ClCompile Include="src\definitions\TileDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\tile\TileTransformationDef.cpp">
+    <ClCompile Include="src\tile\TileMutationDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\model\MaterialRenderPassType.cpp">
@@ -3167,7 +3167,7 @@
     <ClInclude Include="src\rendering\particle\CpuParticleEmitterRenderList.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\tile\TileTransformationDef.h">
+    <ClInclude Include="src\tile\TileMutationDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\particle\ParticleEmitterVariableName.h">

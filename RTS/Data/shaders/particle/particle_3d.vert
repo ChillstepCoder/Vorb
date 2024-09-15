@@ -6,6 +6,7 @@ uniform vec4 unGlobalColor = vec4(1.0);
 uniform uint unGlobalMaterial = 0;
 uniform vec2 unGlobalScale = vec2(1.0);
 uniform vec3 unRootPos = vec3(0.0);
+uniform mat3 unOrientationMatrix = mat3(1.0);
 
 // TODO: UBO
 uniform uint unIsUsingColor = 0;
@@ -132,7 +133,8 @@ void main() {
 
     fUV = (offset.xy + 0.5);
     fUV.y = 1.0 - fUV.y; // Flip
-    vec3 position = ParticlePositions[particleId].xyz + (unRootPos - CameraPos);
+    vec3 position = unOrientationMatrix * ParticlePositions[particleId].xyz;
+    position += (unRootPos - CameraPos);
     
     vec3 upOrient = CameraUp;
     vec3 rightOrient = CameraRight;

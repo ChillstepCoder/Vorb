@@ -159,7 +159,7 @@ void TileContainer::setTile(TileIndex i, TileID id, ui8 variant) {
     onTileChanged(i);
 }
 
-bool TileContainer::tryTransformTile(TileIndex i, TileTransformationType type) {
+bool TileContainer::tryTransformTile(TileIndex i, TileMutationType type) {
     assert(isReady());
     Tile& tile = mTiles[i];
     const TileID prevId = tile.mainLayer;
@@ -188,7 +188,7 @@ bool TileContainer::tryTransformTile(TileIndex i, TileTransformationType type) {
     eventData.worldPosition = getTileCenterWorldPosition(i);
     eventData.prevId = prevId;
     eventData.newId = newId;
-    eventData.transformType = type;
+    eventData.mutationType = type;
     eventData.newVariant = newVariant;
 
     // Edit
@@ -504,7 +504,7 @@ bool TileContainer::adjustTileHealth(TileIndex index, int healthAdjust, f32v3 im
         // Optional VFX
         const TileDef& tileDef = TileRepository::get().getLoadedOrUnloadedAsset(tileId);
         if (tileDef.destroyEffectRef.isValid()) {
-            mWorld.getEffectContext().playParticleEffectAtPoint(tileDef.destroyEffectRef, impactPosition, nullptr, BitFlags<EffectCreateFlags>());
+            mWorld.getEffectContext().playParticleEffectAtPoint(tileDef.destroyEffectRef, impactPosition, f32q(), nullptr, BitFlags<EffectCreateFlags>());
         }
        
         const f32v3 worldPos = getTileCenterWorldPosition(index);

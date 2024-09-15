@@ -3,10 +3,11 @@
 #include "rendering/particle/ParticleEnumTypes.h"
 
 class CpuParticleEmitter;
+class CPUParticleSystem;
 
 struct EmitterRenderData {
     CpuParticleEmitter* emitter;
-    const f32v3* rootPosition;
+    CPUParticleSystem* system;
 };
 
 // Sort by blend mode, then by shader

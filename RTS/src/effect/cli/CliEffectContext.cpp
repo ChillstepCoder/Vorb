@@ -5,11 +5,15 @@
 #include "rendering/particle/CPUParticleSystem.h"
 #include "rendering/particle/ParticleSystemRenderer.h"
 
+#include "resources/ModelRepository.h"
+
 #include "camera/Camera3D.h"
 
-EffectInstance::EffectInstance(const EffectDef* effectDef, const ParticleSystemDef* systemDef, f32v3 position, ParticleSystemInputsPtr inputs) : mEffectDef(effectDef) {
+#include "util/MathUtil.hpp"
+
+EffectInstance::EffectInstance(const EffectDef* effectDef, const ParticleSystemDef* systemDef, f32v3 position, f32q orientation, ParticleSystemInputsPtr inputs) : mEffectDef(effectDef) {
     assert(systemDef); // TODO: Allow effects with no particle system?
-    mSystem = std::make_unique<CPUParticleSystem>(*systemDef, position, std::move(inputs));
+    mSystem = std::make_unique<CPUParticleSystem>(*systemDef, position, orientation, std::move(inputs));
 }
 EffectInstance::~EffectInstance() = default;
 
@@ -26,7 +30,7 @@ void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
             for (PendingEffectInstanceData& instance : data.mPendingInstances) {
                 addEffectInstance(
                     data.mEffectHandle->getAssetID(),
-                    EffectInstance(def, sysDef, instance.position, instance.inputs)
+                    EffectInstance(def, sysDef, instance.position, instance.orientation, instance.inputs)
                 );
             }
             it = mPendingAssetLoadEffects.erase(it);
@@ -42,7 +46,7 @@ void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
     if (size_t count = mRenderThreadQueue.try_dequeue_bulk(effects, BULK_SIZE)) {
         for (size_t i = 0; i < count; ++i) {
             auto&& data = effects[i];
-            playParticleEffectAtPoint(data.first, data.second.position, data.second.inputs, data.second.flags);
+            playParticleEffectAtPoint(data.first, data.second.position, data.second.orientation, data.second.inputs, data.second.flags);
         }
     }
 
@@ -72,31 +76,76 @@ void CliEffectContext::renderEffects(f32 elapsedSec, const Camera3D& camera) {
     ParticleSystemRenderer::renderEmitters(mEmitterRenderList, camera);
 }
 
-void CliEffectContext::playParticleEffectAtPoint(EffectAssetRef effectName, f32v3 point, ParticleSystemInputsPtr inputs, BitFlags<EffectCreateFlags> flags) {
+void CliEffectContext::playParticleEffectAtPoint(EffectAssetRef effectName, f32v3 point, f32q orientation, ParticleSystemInputsPtr inputs, BitFlags<EffectCreateFlags> flags) {
     if (IS_RENDER_THREAD()) {
         AssetHandlePtr<EffectDef> effectHandle = effectName.getAssetHandle<EffectDef>();
         if (const EffectDef* effectDef = effectHandle->tryGetLoadedAsset()) {
             addEffectInstance(
                 effectHandle->getAssetID(),
-                EffectInstance(effectDef, effectDef->getLoadedParticleSystemDef(), point, std::move(inputs))
+                EffectInstance(effectDef, effectDef->getLoadedParticleSystemDef(), point, orientation, std::move(inputs))
             );
         }
         else {
             auto it = mPendingAssetLoadEffects.find(effectName);
             if (it != mPendingAssetLoadEffects.end()) {
-                it->second.mPendingInstances.emplace_back(point, std::move(inputs), flags);
+                it->second.mPendingInstances.emplace_back(point, orientation, std::move(inputs), flags);
             }
             else {
                 auto newIt = mPendingAssetLoadEffects.insert(std::make_pair(effectName, PendingEffectData{
                     .mEffectHandle = std::move(effectHandle)
                     })
                 ).first;
-                newIt->second.mPendingInstances.emplace_back(point, std::move(inputs), flags);
+                newIt->second.mPendingInstances.emplace_back(point, orientation, std::move(inputs), flags);
             }
         }
     } else {
-        mRenderThreadQueue.enqueue(std::make_pair(effectName, PendingEffectInstanceData(point, std::move(inputs), flags)));
+        mRenderThreadQueue.enqueue(std::make_pair(effectName, PendingEffectInstanceData(point, orientation, std::move(inputs), flags)));
     }
+}
+
+void CliEffectContext::playMutationEffect(const f32m4& transform, ModelID startModel, ModelID endModel, TileMutationType mutationType, BitFlags<EffectCreateFlags> flags) {
+
+    ParticleSystemInputsPtr inputs = std::make_unique<ParticleSystemInputs>();
+    f32v3 scale;
+    f32q rot;
+    f32v3 translation;
+    MathUtil::decomposeMatrix(transform, scale, rot, translation);
+
+    inputs->setFloatInput(ParticleSystemInputName::FloatSourceScale, scale.x);
+    inputs->setFloatInput(ParticleSystemInputName::FloatTargetScale, scale.x);
+    inputs->setMeshInput(ParticleSystemInputName::MeshSource, ParticleSystemMeshInput{ &ModelRepository::get().getLoadedOrUnloadedAsset(startModel) });
+    inputs->setMeshInput(ParticleSystemInputName::MeshTarget, ParticleSystemMeshInput{ &ModelRepository::get().getLoadedOrUnloadedAsset(endModel) });
+
+    EffectAssetRef effectName;
+
+    switch (mutationType) {
+        case TileMutationType::BCorrupt:
+            assert(false);
+            break;
+        case TileMutationType::BPurify:
+            assert(false);
+            break;
+        case TileMutationType::CCorrupt:
+            effectName = CStrToken("c_corrupt");
+            break;
+        case TileMutationType::CPurify:
+            assert(false);
+            break;
+        case TileMutationType::Grow:
+            assert(false);
+            break;
+        case TileMutationType::Decay:
+            assert(false);
+            break;
+        case TileMutationType::COUNT:
+            break;
+        default:
+            assert(false);
+
+    }
+    static_assert(e_count(TileMutationType) == 6, "Please update this switch statement");
+
+    playParticleEffectAtPoint(effectName, translation, rot, std::move(inputs), flags);
 }
 
 void CliEffectContext::addEffectInstance(AssetID assetId, EffectInstance instance) {
