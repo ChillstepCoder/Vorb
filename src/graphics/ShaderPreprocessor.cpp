@@ -25,7 +25,7 @@ inline bool isNumeric(char c) {
     return (c >= '0' && c <= '9');
 }
 
-void vg::ShaderPreprocessor::processVertexShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom, ShaderDefinesMap* definesMap) {
+void vg::ShaderPreprocessor::processVertexShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom, const ShaderDefinesVector* defines) {
     isNormalComment = false;
     isBlockComment = false;
     m_parsedIncludes.clear();
@@ -47,7 +47,7 @@ void vg::ShaderPreprocessor::processVertexShader(const cString inputCode, OUT nS
             if (tryParseInclude(input, i)) {
                 i--;
                 continue;
-            } else if (definesMap && tryParseIfdef(input, i, *definesMap)) {
+            } else if (defines && tryParseIfdef(input, i, *defines)) {
                 continue;
             }
         }
@@ -55,7 +55,7 @@ void vg::ShaderPreprocessor::processVertexShader(const cString inputCode, OUT nS
     }
 }
 
-void vg::ShaderPreprocessor::processFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom, ShaderDefinesMap* definesMap) {
+void vg::ShaderPreprocessor::processFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom, const ShaderDefinesVector* defines) {
     isNormalComment = false;
     isBlockComment = false;
     m_parsedIncludes.clear();
@@ -74,9 +74,12 @@ void vg::ShaderPreprocessor::processFragmentOrGeometryShader(const cString input
     for (size_t i = 0; i < input.size(); i++) {
         char c = input[i];
         checkForComment(input.c_str(), i);
-        if (!isComment() && c == '#') {
+        if (!isComment() && c == '#' && (i == 0 || input[i - 1] == '\n')) {
             if (tryParseInclude(input, i)) {
                 i--;
+                continue;
+            }
+            else if (defines && tryParseIfdef(input, i, *defines)) {
                 continue;
             }
         } 
@@ -156,7 +159,7 @@ bool vg::ShaderPreprocessor::tryParseInclude(nString& s, size_t i) {
     return false;
 }
 
-bool vorb::graphics::ShaderPreprocessor::tryParseIfdef(nString& s, size_t& i, const ShaderDefinesMap& defines) {
+bool vorb::graphics::ShaderPreprocessor::tryParseIfdef(nString& s, size_t& i, const ShaderDefinesVector& defines) {
     size_t startI = i;
     static const char IFDEF_STR[7] = "#ifdef";
     for (int j = 0; IFDEF_STR[j] != '\0'; j++) {
@@ -176,8 +179,8 @@ bool vorb::graphics::ShaderPreprocessor::tryParseIfdef(nString& s, size_t& i, co
     const std::string_view defineSV(defineNameBuffer, defineNameIndex);
     nString defineName(defineSV);
 
-    auto it = defines.find(defineName);
-    const bool defineExists = it != defines.end() && it->second;
+    auto it = std::find_if(defines.begin(), defines.end(), [&](const ShaderDefine& d) { return d.name == defineName; });
+    const bool defineExists = it != defines.end() && it->active;
 
     // Find the matching #endif
     size_t endifPos = s.find("#endif", i);

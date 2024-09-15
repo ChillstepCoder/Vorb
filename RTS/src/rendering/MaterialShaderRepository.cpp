@@ -64,14 +64,22 @@ SERIALIZABLE_SIMPLE(MaterialShaderFileData,
     make_field(o.tessEvalShaderName, "tes"sv)
 );
 
+void MaterialShaderRepository::preReloadAsset(AssetID assetId) {
+    if (mLoadedAssets[assetId]) {
+        MaterialShaderDef& def = *mAssets[assetId];
+        if (def.mProgram.isLinked()) {
+            def.mProgram.dispose();
+        }
+        def.mInputTextures.clear();
+        def.mUniforms.clear();
+        def.mDefines.clear();
+    }
+}
+
 AssetLoadFunc MaterialShaderRepository::getAssetLoadFunc() {
     return [&]ASSET_LOAD_LAMBDA(assetID, filePath, assetDataPtr, userData) {
         MaterialShaderFileData& fileData = std::any_cast<MaterialShaderFileData&>(userData);
         MaterialShaderDef& def = *static_cast<MaterialShaderDef*>(assetDataPtr);
-
-        // Clear in case of reload
-        def.mInputTextures.clear();
-        def.mUniforms.clear();
 
         // TODO: Can we do any work here? If not, can we have it send directly to the render thread?
         if (filePath.getExtension() == "comp") {
@@ -98,7 +106,7 @@ AssetLoadFunc MaterialShaderRepository::getAssetLoadFunc() {
             }
             else {
 
-                def.mProgram = ShaderLoader::getOrCreateProgram(fileData.vertexShaderName, fileData.fragmentShaderName, fileData.geometryShaderName, fileData.tessControlShaderName, fileData.tessEvalShaderName);
+                def.mProgram = ShaderLoader::createProgram(fileData.vertexShaderName, fileData.fragmentShaderName, fileData.geometryShaderName, fileData.tessControlShaderName, fileData.tessEvalShaderName);
                 assert(def.mProgram.isLinked());
 
 

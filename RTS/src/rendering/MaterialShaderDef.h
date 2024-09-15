@@ -3,6 +3,13 @@
 #include "rendering/material/MaterialDef.h"
 
 #include <Vorb/graphics/GLProgram.h>
+#include <Vorb/graphics/ShaderDefine.h>
+
+
+SERIALIZABLE_SIMPLE(ShaderDefine,
+    make_field(o.name, "name"sv),
+    make_field(o.active, "active"sv)
+);
 
 DECL_VG(class Texture);
 
@@ -62,6 +69,8 @@ public:
 
     std::vector<std::pair<MaterialShaderUniform, VGUniform> > mUniforms;
     std::vector<MaterialTextureInput> mInputTextures;
+    ShaderDefinesVector mDefines;
+
     mutable vg::GLProgram mProgram; //  TODO: Handle
     bool mIsCompute = false;
 };

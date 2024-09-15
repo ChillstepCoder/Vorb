@@ -13,6 +13,7 @@ public:
     const char* const getAssetTypeDisplayName() const override { return "Shader Program"; }
 
 private:
+    void preReloadAsset(AssetID assetId) override;
     AssetLoadFunc getAssetLoadFunc() override;
     std::any getUserData(AssetID assetId) override;
 };

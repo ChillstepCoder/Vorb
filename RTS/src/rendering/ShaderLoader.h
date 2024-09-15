@@ -17,6 +17,7 @@
 
 #include <Vorb/VorbPreDecl.inl>
 #include <Vorb/graphics/GLProgram.h>
+#include <Vorb/graphics/ShaderDefine.h>
 
 DECL_VIO(class IOManager);
 
@@ -24,22 +25,25 @@ DECL_VIO(class IOManager);
 class ShaderLoader {
 public:
 
-    /// Gets a previously created program by name
-    static vg::GLProgram getProgram(const nString& name);
-
-
     /// Gets or creates a program from two shader paths
     // TODO: c_strings for less heap alloc
-    static CALLEE_DELETE vg::GLProgram getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName, const nString geometryShaderName = "", const nString tessControlShaderName = "", const nString tessEvalShaderName = "");
+    static CALLEE_DELETE vg::GLProgram createProgram(const nString& vertexShaderName, const nString& fragmentShaderName, const nString geometryShaderName = "", const nString tessControlShaderName = "", const nString tessEvalShaderName = "");
 
     /// Creates a program using code loaded from files, and does error checking
     /// Does not register with global cache
-    static CALLER_DELETE vg::GLProgram createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path geometryPath = "", const vio::Path tessControlPath = "", const vio::Path tessEvalPath = "",
-        const cString defines = nullptr);
+    static CALLER_DELETE vg::GLProgram createProgramFromFile(
+        const nString& name,
+        const vio::Path& vertPath,
+        const vio::Path& fragPath,
+        const vio::Path geometryPath = "",
+        const vio::Path tessControlPath = "",
+        const vio::Path tessEvalPath = "",
+        const ShaderDefinesVector* defines = nullptr
+    );
 
     /// Creates a program using passed code, and does error checking
     /// Does not register with global cache
-    static CALLER_DELETE vg::GLProgram createProgram(const nString& name, const cString vertSrc, const cString fragSrc, const cString defines = nullptr);
+    static CALLER_DELETE vg::GLProgram createProgram(const nString& name, const cString vertSrc, const cString fragSrc, const ShaderDefinesVector* defines = nullptr);
 
     static CALLER_DELETE vg::GLProgram createComputeProgramFromFile(const nString& name, const vio::Path& path);
 
@@ -58,9 +62,6 @@ public:
     static void registerTessEvalShaderPath(const nString& name, const vio::Path& path) {
         sTessEvalShaderNameToPath[name] = path;
     }
-
-    static void clearAllCachedPrograms();
-    static void clearCachedProgram(nString vert, nString fragGeom);
 
 private:
     static void tryGetCachedPaths(
@@ -88,7 +89,6 @@ private:
         OUT vio::Path& resultTessEvalPath
     );
 
-    static std::map<std::pair<nString /*vert*/, nString /*frag + geom*/>, vg::GLProgram> sProgramCache;
     static std::map<nString, vio::Path> sVertexShaderNameToPath;
     static std::map<nString, vio::Path> sFragmentShaderNameToPath;
     static std::map<nString, vio::Path> sGeometryShaderNameToPath;

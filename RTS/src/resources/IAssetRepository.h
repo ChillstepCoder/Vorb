@@ -74,10 +74,10 @@ public:
     virtual void fixupRegisteredAsset(AssetID assetId) {};
     // Called only on edit, must be manually called post load if used
     virtual void fixupLoadedAsset(AssetID assetId) {};
+    // Called before reload
+    virtual void preReloadAsset(AssetID assetId) {};
 
-    virtual AssetHandleBasePtr reloadAsset(AssetID id) {
-        return nullptr;
-    }
+    virtual AssetHandleBasePtr reloadAsset(AssetID id) = 0;
 
     // TODO: DOES NOT FIX REFERENCES!
     void renameAsset(AssetDescriptor prevDesc, const std::filesystem::path& newPath) {
@@ -318,7 +318,7 @@ public:
         return it->second;
     }
     AssetHandleBasePtr reloadAsset(AssetID id) override {
-        // TODO: Cleanup first?
+        preReloadAsset(id);
         onRegisteredAsset(id);
         onAllAssetTypesRegistered(); // TODO: MIGHT CAUSE PROBLEMS if this is implemented to not clean itself up
         fixupAllAssets();
@@ -341,8 +341,9 @@ public:
     }
     AssetHandleBundle reloadAllLoadedAssets() {
         AssetHandleBundle assets;
-        // TODO: Cleanup first?
-       
+        for (AssetID id = 0; id < mAssetRegistry.size(); ++id) {
+            preReloadAsset(id);
+        }
         notifyAssetRegisters();
         onAllAssetTypesRegistered();
         fixupAllAssets();

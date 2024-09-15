@@ -32,7 +32,7 @@
 #include "Vorb/graphics/GLEnums.h"
 #include "Vorb/graphics/gtypes.h"
 
-using ShaderDefinesMap = std::unordered_map<nString, bool>;
+#include "ShaderDefine.h"
 
 DECL_VIO(class IOManager);
 
@@ -54,18 +54,18 @@ namespace vorb {
             /// @param attributeNames: The stored attribute names
             /// @param semantics: The stored semantics, 1 to 1 with attributeNames
             /// @param iom: Optional iomanager to use for include lookups
-            static void processVertexShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom, ShaderDefinesMap* definesMap);
+            static void processVertexShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom, const ShaderDefinesVector* defines);
             // Parses includes for a fragment shader
             /// @param inputCode: The input code to use for parsing
             /// @param resultCode: The stored resulting code after parse
             /// @param iom: Optional iomanager to use for include lookups
-            static void processFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom, ShaderDefinesMap* definesMap);
+            static void processFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom, const ShaderDefinesVector* defines);
             
             static eventpp::CallbackList<void(const ShaderPreprocessError&)> onError; ///< Event that fires on a parsing error
         private:
             static bool tryParseInclude(nString& s, size_t i);
             static bool checkForComment(const cString s, size_t i);
-            static bool tryParseIfdef(nString& s, size_t& i, const ShaderDefinesMap& defines);
+            static bool tryParseIfdef(nString& s, size_t& i, const ShaderDefinesVector& defines);
            
             static bool isComment() { return isBlockComment || isNormalComment; }
 

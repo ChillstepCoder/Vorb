@@ -197,8 +197,6 @@ void ResourceManager::reloadMaterials() {
 
     LOG_DEBUG("Reloading materials...");
 
-    ShaderLoader::clearAllCachedPrograms();
-    vg::ShaderManager::disposeAllPrograms();
     AssetHandleBundle assets = MaterialShaderRepository::get().reloadAllLoadedAssets();
     AssetLoader& loader = AssetLoader::getInstance();
     while (!assets.areAllAssetsLoaded()) {

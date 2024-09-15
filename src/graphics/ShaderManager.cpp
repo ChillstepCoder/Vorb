@@ -9,7 +9,6 @@
 
 eventpp::EventDispatcher<vg::SHADER_ERROR_EVENT_TYPE, void(const vg::ProgramError&)> vg::ShaderManager::errorDispatcher;
 typedef eventpp::ScopedRemover<eventpp::EventDispatcher<vg::SHADER_ERROR_EVENT_TYPE, void(const nString&)>> ScopedRemover;
-vg::GLProgramMap vg::ShaderManager::m_programMap;
 vg::GLProgram vg::ShaderManager::m_nilProgram;
 vio::IOManager vg::ShaderManager::mIoManager;
 
@@ -18,7 +17,7 @@ void vorb::graphics::ShaderManager::setShaderRootDirectory(const vio::Path& root
     mIoManager.setSearchDirectory(rootDir);
 }
 
-vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cString compSrc, const cString defines) {
+vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cString compSrc, const ShaderDefinesVector* defines) {
     nString parsedCompSrc;
 
     // Allocate program object
@@ -29,12 +28,11 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     linkEvent.append([](const vg::ProgramError& s) { triggerProgramLinkError(s); });
 
     // Parse vertex shader code
-    ShaderPreprocessor::processVertexShader(compSrc, parsedCompSrc, mIoManager, nullptr);
+    ShaderPreprocessor::processVertexShader(compSrc, parsedCompSrc, mIoManager, defines);
 
     // Create vertex shader
     ShaderSource srcCompute;
     srcCompute.stage = vg::ShaderType::COMPUTE_SHADER;
-    if (defines) srcCompute.sources.push_back(defines);
     srcCompute.sources.push_back(parsedCompSrc.c_str());
     if (!program.addShader(srcCompute)) {
         program.dispose();
@@ -54,7 +52,7 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     return program;
 }
 
-vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cString fragSrc, const cString defines /*= nullptr*/) {
+vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cString fragSrc, const ShaderDefinesVector* defines /*= nullptr*/) {
 
     nString parsedVertSrc;
     nString parsedFragSrc;
@@ -67,12 +65,11 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     linkEvent.append([](const vg::ProgramError& s) { triggerProgramLinkError(s); });
    
     // Parse vertex shader code
-    ShaderPreprocessor::processVertexShader(vertSrc, parsedVertSrc, mIoManager, nullptr);
+    ShaderPreprocessor::processVertexShader(vertSrc, parsedVertSrc, mIoManager, defines);
 
     // Create vertex shader
     ShaderSource srcVert;
     srcVert.stage = vg::ShaderType::VERTEX_SHADER;
-    if (defines) srcVert.sources.push_back(defines);
     srcVert.sources.push_back(parsedVertSrc.c_str());
     if (!program.addShader(srcVert)) {
         program.dispose();
@@ -80,12 +77,11 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     }
 
     // Parse fragment shader code
-    ShaderPreprocessor::processFragmentOrGeometryShader(fragSrc, parsedFragSrc, mIoManager, nullptr);
+    ShaderPreprocessor::processFragmentOrGeometryShader(fragSrc, parsedFragSrc, mIoManager, defines);
 
     // Create the fragment shader
     ShaderSource srcFrag;
     srcFrag.stage = vg::ShaderType::FRAGMENT_SHADER;
-    if (defines) srcFrag.sources.push_back(defines);
     srcFrag.sources.push_back(parsedFragSrc.c_str());
     if (!program.addShader(srcFrag)) {
         program.dispose();
@@ -105,7 +101,7 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     return program;
 }
 
-vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cString fragSrc, const cString geomSrc, const cString defines /*= nullptr*/) {
+vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cString fragSrc, const cString geomSrc, const ShaderDefinesVector* defines /*= nullptr*/) {
     nString parsedVertSrc;
     nString parsedFragSrc;
     nString parsedGeomSrc;
@@ -118,12 +114,11 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     linkEvent.append([](const vg::ProgramError& s) { triggerProgramLinkError(s); });
 
     // Parse vertex shader code
-    ShaderPreprocessor::processVertexShader(vertSrc, parsedVertSrc, mIoManager, nullptr);
+    ShaderPreprocessor::processVertexShader(vertSrc, parsedVertSrc, mIoManager, defines);
 
     // Create vertex shader
     ShaderSource srcVert;
     srcVert.stage = vg::ShaderType::VERTEX_SHADER;
-    if (defines) srcVert.sources.push_back(defines);
     srcVert.sources.push_back(parsedVertSrc.c_str());
     if (!program.addShader(srcVert)) {
         program.dispose();
@@ -131,12 +126,11 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     }
 
     // Parse fragment shader code
-    ShaderPreprocessor::processFragmentOrGeometryShader(fragSrc, parsedFragSrc, mIoManager, nullptr);
+    ShaderPreprocessor::processFragmentOrGeometryShader(fragSrc, parsedFragSrc, mIoManager, defines);
 
     // Create the fragment shader
     ShaderSource srcFrag;
     srcFrag.stage = vg::ShaderType::FRAGMENT_SHADER;
-    if (defines) srcFrag.sources.push_back(defines);
     srcFrag.sources.push_back(parsedFragSrc.c_str());
     if (!program.addShader(srcFrag)) {
         program.dispose();
@@ -144,12 +138,11 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     }
 
     // Parse geometry shader code
-    ShaderPreprocessor::processFragmentOrGeometryShader(geomSrc, parsedGeomSrc, mIoManager, nullptr);
+    ShaderPreprocessor::processFragmentOrGeometryShader(geomSrc, parsedGeomSrc, mIoManager, defines);
 
     // Create the geometry shader
     ShaderSource srcGeom;
     srcGeom.stage = vg::ShaderType::GEOMETRY_SHADER;
-    if (defines) srcGeom.sources.push_back(defines);
     srcGeom.sources.push_back(parsedGeomSrc.c_str());
     if (!program.addShader(srcGeom)) {
         program.dispose();
@@ -169,7 +162,9 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     return program;
 }
 
-vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cString vertSrc, const cString fragSrc, const cString tcsSrc, const cString tesSrc, const cString defines /*= nullptr */) {
+vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(
+    const cString vertSrc, const cString fragSrc, const cString tcsSrc, const cString tesSrc, const ShaderDefinesVector* defines /*= nullptr */
+) {
 
     nString parsedVertSrc;
     nString parsedFragSrc;
@@ -184,12 +179,11 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     linkEvent.append([](const vg::ProgramError& s) { triggerProgramLinkError(s); });
 
     // Parse vertex shader code
-    ShaderPreprocessor::processVertexShader(vertSrc, parsedVertSrc, mIoManager, nullptr);
+    ShaderPreprocessor::processVertexShader(vertSrc, parsedVertSrc, mIoManager, defines);
 
     // Create vertex shader
     ShaderSource srcVert;
     srcVert.stage = vg::ShaderType::VERTEX_SHADER;
-    if (defines) srcVert.sources.push_back(defines);
     srcVert.sources.push_back(parsedVertSrc.c_str());
     if (!program.addShader(srcVert)) {
         program.dispose();
@@ -197,12 +191,11 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     }
 
     // Parse fragment shader code
-    ShaderPreprocessor::processFragmentOrGeometryShader(fragSrc, parsedFragSrc, mIoManager, nullptr);
+    ShaderPreprocessor::processFragmentOrGeometryShader(fragSrc, parsedFragSrc, mIoManager, defines);
 
     // Create the fragment shader
     ShaderSource srcFrag;
     srcFrag.stage = vg::ShaderType::FRAGMENT_SHADER;
-    if (defines) srcFrag.sources.push_back(defines);
     srcFrag.sources.push_back(parsedFragSrc.c_str());
     if (!program.addShader(srcFrag)) {
         program.dispose();
@@ -210,12 +203,11 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     }
 
     // Parse tcs shader code
-    ShaderPreprocessor::processFragmentOrGeometryShader(tcsSrc, parsedTcsSrc, mIoManager, nullptr);
+    ShaderPreprocessor::processFragmentOrGeometryShader(tcsSrc, parsedTcsSrc, mIoManager, defines);
 
     // Create the tcs shader
     ShaderSource srcTcs;
     srcTcs.stage = vg::ShaderType::TESS_CONTROL_SHADER;
-    if (defines) srcTcs.sources.push_back(defines);
     srcTcs.sources.push_back(parsedTcsSrc.c_str());
     if (!program.addShader(srcTcs)) {
         program.dispose();
@@ -223,12 +215,11 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     }
 
     // Parse tes shader code
-    ShaderPreprocessor::processFragmentOrGeometryShader(tesSrc, parsedTesSrc, mIoManager, nullptr);
+    ShaderPreprocessor::processFragmentOrGeometryShader(tesSrc, parsedTesSrc, mIoManager, defines);
 
     // Create the tes shader
     ShaderSource srcTes;
     srcTes.stage = vg::ShaderType::TESS_EVALUATION_SHADER;
-    if (defines) srcTes.sources.push_back(defines);
     srcTes.sources.push_back(parsedTesSrc.c_str());
     if (!program.addShader(srcTes)) {
         program.dispose();
@@ -250,7 +241,7 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
 }
 
 
-vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(const vio::Path& compPath, const cString defines /*= nullptr*/)
+vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(const vio::Path& compPath, const ShaderDefinesVector* defines /*= nullptr*/)
 {
     vio::Path compSearchDir;
 
@@ -270,7 +261,7 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(c
     return createProgram(compSrc.c_str(), defines);
 }
 
-vg::GLProgram vg::ShaderManager::createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const cString defines) {
+vg::GLProgram vg::ShaderManager::createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const ShaderDefinesVector* defines) {
     vio::Path vertSearchDir;
     vio::Path fragSearchDir;
 
@@ -300,7 +291,7 @@ vg::GLProgram vg::ShaderManager::createProgramFromFile(const vio::Path& vertPath
 
 
 vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(
-    const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& geometryPath, const cString defines)
+    const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& geometryPath, const ShaderDefinesVector* defines)
 {
     vio::Path vertSearchDir;
     vio::Path fragSearchDir;
@@ -338,7 +329,7 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(
     return createProgram(vertSrc.c_str(), fragSrc.c_str(), geomSrc.c_str(), defines);
 }
 
-vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& tessControlPath, const vio::Path& tessEvalPath, const cString defines /*= nullptr*/)
+vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path& tessControlPath, const vio::Path& tessEvalPath, const ShaderDefinesVector* defines /*= nullptr*/)
 {
     vio::Path vertSearchDir;
     vio::Path fragSearchDir;
@@ -384,51 +375,6 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(c
 
     return createProgram(vertSrc.c_str(), fragSrc.c_str(), tcsSrc.c_str(), tesSrc.c_str(), defines);
 }
-
-void vg::ShaderManager::disposeAllPrograms() {
-    for (auto& it : m_programMap) {
-        it.second.dispose();
-    }
-    GLProgramMap().swap(m_programMap);
-}
-
-void vg::ShaderManager::disposeProgram(const nString& name) {
-    auto&& it = m_programMap.find(name);
-    assert(it != m_programMap.end());
-    it->second.dispose();
-    m_programMap.erase(it);
-}
-
-bool vg::ShaderManager::registerProgram(const nString& name, const GLProgram& program) {
-    auto it = m_programMap.find(name);
-    if (it != m_programMap.end()) return false;
-    m_programMap[name] = program;
-    return true;
-}
-
-CALLER_DELETE vg::GLProgram vg::ShaderManager::unregisterProgram(const nString& name) {
-    auto it = m_programMap.find(name);
-    GLProgram rv = it->second;
-    m_programMap.erase(it);
-    return rv;
-}
-
-bool vg::ShaderManager::unregisterProgram(const GLProgram& program) {
-    for (auto it = m_programMap.begin(); it != m_programMap.end(); it++) {
-        if (it->second.getID() == program.getID()) {
-            m_programMap.erase(it);
-            return true;
-        }
-    }
-    return false;
-}
-
-vg::GLProgram& vg::ShaderManager::getProgram(const nString& name) {
-    auto it = m_programMap.find(name);
-    if (it == m_programMap.end()) return m_nilProgram;
-    return it->second;
-}
-
 
 // Helper
 int findNumberInParentheses(const nString& str) {

@@ -6,7 +6,6 @@
 
 #include <conio.h>
 
-std::map<std::pair<nString /*vert*/, nString /*frag*/>, vg::GLProgram> ShaderLoader::sProgramCache;
 std::map<nString, vio::Path> ShaderLoader::sVertexShaderNameToPath;
 std::map<nString, vio::Path> ShaderLoader::sFragmentShaderNameToPath;
 std::map<nString, vio::Path> ShaderLoader::sGeometryShaderNameToPath;
@@ -29,17 +28,7 @@ namespace {
     }
 }
 
-vg::GLProgram ShaderLoader::getProgram(const nString& name) {
-    return vg::ShaderManager::getProgram(name);
-}
-
-vg::GLProgram ShaderLoader::getOrCreateProgram(const nString& vertexShaderName, const nString& fragmentShaderName, const nString geometryShaderName /*= ""*/, const nString tessControlShaderName /*= ""*/, const nString tessEvalShaderName /*= ""*/) {
-    
-    auto id = std::make_pair(vertexShaderName, fragmentShaderName + geometryShaderName);
-    auto&& it = sProgramCache.find(id);
-    if (it != sProgramCache.end()) {
-        return it->second;
-    }
+vg::GLProgram ShaderLoader::createProgram(const nString& vertexShaderName, const nString& fragmentShaderName, const nString geometryShaderName /*= ""*/, const nString tessControlShaderName /*= ""*/, const nString tessEvalShaderName /*= ""*/) {
 
     vio::Path vertPath;
     vio::Path fragPath;
@@ -59,19 +48,23 @@ vg::GLProgram ShaderLoader::getOrCreateProgram(const nString& vertexShaderName, 
     }
 
     vg::GLProgram newProgram = createProgramFromFile(vertexShaderName + fragmentShaderName + geometryShaderName, vertPath, fragPath, geomPath, tessControlPath, tessEvalPath);
-    sProgramCache.insert(std::make_pair(id, newProgram));
     return newProgram;
 }
 
-CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path geometryPath /*= ""*/, const vio::Path tessControlPath /*= ""*/, const vio::Path tessEvalPath /*= ""*/,
-    const cString defines /*= nullptr*/) {
+CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(
+    const nString& name,
+    const vio::Path& vertPath,
+    const vio::Path& fragPath,
+    const vio::Path geometryPath /*= ""*/,
+    const vio::Path tessControlPath /*= ""*/,
+    const vio::Path tessEvalPath /*= ""*/,
+    const ShaderDefinesVector* defines /*= nullptr*/
+) {
     ScopedRemover events(vg::ShaderManager::errorDispatcher);
     events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::FileIOFailure, [](const vg::ProgramError& s) { printFileIOError(s); });
     events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, [](const vg::ProgramError& s) { printShaderError(s); });
     events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ProgramLinkError, [](const vg::ProgramError& s) { printLinkError(s); });
     
-    assert(!vg::ShaderManager::getProgram(name).isLinked());
-
     vg::GLProgram program;
     while (true) {
         if (!tessControlPath.isNull()) {
@@ -98,19 +91,14 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& n
         if (tmp == 'Z' || tmp == 'z') break;
     }
 
-    if (program.isLinked()) {
-        vg::ShaderManager::registerProgram(name, program);
-    }
     return program;
 }
 
-CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, const cString vertSrc, const cString fragSrc, const cString defines /*= nullptr*/) {
+CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, const cString vertSrc, const cString fragSrc, const ShaderDefinesVector* defines /*= nullptr*/) {
     ScopedRemover events;
     events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::FileIOFailure, [](const vg::ProgramError& s) { printFileIOError(s); });
     events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, [](const vg::ProgramError& s) { printShaderError(s); });
     events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ProgramLinkError, [](const vg::ProgramError& s) { printLinkError(s); });
-
-    assert(!vg::ShaderManager::getProgram(name).isLinked());
 
     vg::GLProgram program;
     while (true) {
@@ -122,9 +110,6 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, con
         if (tmp == 'Z' || tmp == 'z') break;
     }
 
-    if (program.isLinked()) {
-        vg::ShaderManager::registerProgram(name, program);
-    }
     return program;
 }
 
@@ -134,8 +119,6 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createComputeProgramFromFile(const nSt
     events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::FileIOFailure, [](const vg::ProgramError& s) { printFileIOError(s); });
     events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, [](const vg::ProgramError& s) { printShaderError(s); });
     events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ProgramLinkError, [](const vg::ProgramError& s) { printLinkError(s); });
-
-    assert(!vg::ShaderManager::getProgram(name).isLinked());
 
     vg::GLProgram program;
     while (true) {
@@ -147,18 +130,7 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createComputeProgramFromFile(const nSt
         if (tmp == 'Z' || tmp == 'z') break;
     }
 
-    if (program.isLinked()) {
-        vg::ShaderManager::registerProgram(name, program);
-    }
     return program;
-}
-
-void ShaderLoader::clearAllCachedPrograms() {
-    sProgramCache.clear();
-}
-
-void ShaderLoader::clearCachedProgram(nString vert, nString fragGeom) {
-    sProgramCache.erase(std::make_pair(vert, fragGeom));
 }
 
 void ShaderLoader::tryGetCachedPaths(const nString& vertexShaderName, const nString& fragmentShaderName, OUT vio::Path& resultVertPath, OUT vio::Path& resultFragPath)

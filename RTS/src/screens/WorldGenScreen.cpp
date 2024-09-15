@@ -398,9 +398,6 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     if (mScreenShader->isLoaded()) {
         if (ImGui::Button("Reload Generation Shaders")) {
             PreciseTimer loadTimer;
-            vg::ShaderManager::disposeProgram("terrain_base");
-            vg::ShaderManager::disposeProgram("generation_map.vertgeneration_map.frag");
-            ShaderLoader::clearCachedProgram("generation_map.vert", "generation_map.frag");
             AssetHandleBasePtr newAssetPtrA = MaterialShaderRepository::get().reloadAsset(CStrToken("terrain_base"));
             AssetHandleBasePtr newAssetPtrB = MaterialShaderRepository::get().reloadAsset(CStrToken("generation_map"));
             AssetLoader& loader = AssetLoader::getInstance();
