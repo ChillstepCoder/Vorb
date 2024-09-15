@@ -44,7 +44,6 @@ void vg::GLProgram::dispose() {
     }
     AttributeMap().swap(m_attributes);
     UniformMap().swap(m_uniforms);
-    AttributeSemBinding().swap(m_semanticBinding);
     SsboMap().swap(m_ssboBindings);
 }
 
@@ -156,56 +155,6 @@ bool vg::GLProgram::addShader(const ShaderType& type, const cString code, const 
     return addShader(src);
 }
 
-void vg::GLProgram::setAttribute(nString name, VGAttribute index) {
-    // Adding attributes to a linked program does nothing
-    if (isLinked() || !isCreated()) return;
-
-    // Set the custom attribute
-    glBindAttribLocation(m_id, index, name.c_str());
-    m_attributes[name] = index;
-}
-void vg::GLProgram::setAttributes(const std::map<nString, VGAttribute>& attr) {
-    // Adding attributes to a linked program does nothing
-    if (isLinked() || !isCreated()) return;
-
-    // Set the custom attributes
-    for (auto& binding : attr) {
-        glBindAttribLocation(m_id, binding.second, binding.first.c_str());
-        m_attributes[binding.first] = binding.second;
-    }
-}
-void vg::GLProgram::setAttributes(const std::vector<AttributeBinding>& attr) {
-    // Adding attributes to a linked program does nothing
-    if (isLinked() || !isCreated()) return;
-
-    // Set the custom attributes
-    for (auto& binding : attr) {
-        glBindAttribLocation(m_id, binding.second, binding.first.c_str());
-        m_attributes[binding.first] = binding.second;
-    }
-}
-void vg::GLProgram::setAttributes(const std::vector<nString>& attr) {
-
-    // Adding attributes to a linked program does nothing
-    if (isLinked() || !isCreated()) return;
-
-    // Set the custom attributes
-    for (ui32 i = 0; i < attr.size(); i++) {
-        glBindAttribLocation(m_id, i, attr[i].c_str());
-        m_attributes[attr[i]] = i;
-    }
-}
-
-void vg::GLProgram::setAttributes(const std::vector<nString>& attr, const std::vector<VGSemantic>& sem) {
-    setAttributes(attr);
-    for (int i = 0; i < (int)sem.size(); i++) {
-        VGSemantic s = sem[i];
-        if (s != Semantic::SEM_INVALID) {
-            m_semanticBinding[s] = static_cast<VGAttribute>(i);
-        }
-    }
-}
-
 bool vg::GLProgram::link() {
     // Check internal state
     if (isLinked() || !isCreated()) {
@@ -267,7 +216,7 @@ bool vg::GLProgram::link() {
 
 void vg::GLProgram::initAttributes() {
     if (!isLinked()) return;
-
+    
     // Obtain attribute count
     i32 count;
     glGetProgramiv(m_id, GL_ACTIVE_ATTRIBUTES, &count);

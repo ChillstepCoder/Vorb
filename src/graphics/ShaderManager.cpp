@@ -17,8 +17,6 @@ void vorb::graphics::ShaderManager::setShaderRootDirectory(const vio::Path& root
 }
 
 vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cString compSrc, const cString defines) {
-    std::vector<nString> attributeNames;
-    std::vector<VGSemantic> semantics;
     nString parsedCompSrc;
 
     // Allocate program object
@@ -29,7 +27,7 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     linkEvent.append([](const nString& s) { triggerProgramLinkError(s); });
 
     // Parse vertex shader code
-    ShaderParser::parseVertexShader(compSrc, parsedCompSrc, attributeNames, semantics, mIoManager);
+    ShaderParser::parseVertexShader(compSrc, parsedCompSrc, mIoManager);
 
     // Create vertex shader
     ShaderSource srcCompute;
@@ -41,14 +39,13 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
         return m_nilProgram;
     }
 
-    // Set the attributes
-    program.setAttributes(attributeNames, semantics);
     // Link the program
     if (!program.link()) {
         program.dispose();
         return m_nilProgram;
     }
 
+    program.initAttributes();
     program.initUniforms();
     program.initSsboBindings();
 
@@ -57,8 +54,6 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
 
 vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cString fragSrc, const cString defines /*= nullptr*/) {
 
-    std::vector<nString> attributeNames;
-    std::vector<VGSemantic> semantics;
     nString parsedVertSrc;
     nString parsedFragSrc;
 
@@ -70,7 +65,7 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     linkEvent.append([](const nString& s) { triggerProgramLinkError(s); });
    
     // Parse vertex shader code
-    ShaderParser::parseVertexShader(vertSrc, parsedVertSrc, attributeNames, semantics, mIoManager);
+    ShaderParser::parseVertexShader(vertSrc, parsedVertSrc, mIoManager);
 
     // Create vertex shader
     ShaderSource srcVert;
@@ -95,14 +90,13 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
         return m_nilProgram;
     }
 
-    // Set the attributes
-    program.setAttributes(attributeNames, semantics);
     // Link the program
     if (!program.link()) {
         program.dispose();
         return m_nilProgram;
     }
 
+    program.initAttributes();
     program.initUniforms();
     program.initSsboBindings();
 
@@ -110,10 +104,6 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
 }
 
 vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cString fragSrc, const cString geomSrc, const cString defines /*= nullptr*/) {
-
-
-    std::vector<nString> attributeNames;
-    std::vector<VGSemantic> semantics;
     nString parsedVertSrc;
     nString parsedFragSrc;
     nString parsedGeomSrc;
@@ -126,7 +116,7 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     linkEvent.append([](const nString& s) { triggerProgramLinkError(s); });
 
     // Parse vertex shader code
-    ShaderParser::parseVertexShader(vertSrc, parsedVertSrc, attributeNames, semantics, mIoManager);
+    ShaderParser::parseVertexShader(vertSrc, parsedVertSrc, mIoManager);
 
     // Create vertex shader
     ShaderSource srcVert;
@@ -164,14 +154,13 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
         return m_nilProgram;
     }
 
-    // Set the attributes
-    program.setAttributes(attributeNames, semantics);
     // Link the program
     if (!program.link()) {
         program.dispose();
         return m_nilProgram;
     }
 
+    program.initAttributes();
     program.initUniforms();
     program.initSsboBindings();
 
@@ -180,8 +169,6 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
 
 vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cString vertSrc, const cString fragSrc, const cString tcsSrc, const cString tesSrc, const cString defines /*= nullptr */) {
 
-    std::vector<nString> attributeNames;
-    std::vector<VGSemantic> semantics;
     nString parsedVertSrc;
     nString parsedFragSrc;
     nString parsedTcsSrc;
@@ -195,7 +182,7 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     linkEvent.append([](const nString& s) { triggerProgramLinkError(s); });
 
     // Parse vertex shader code
-    ShaderParser::parseVertexShader(vertSrc, parsedVertSrc, attributeNames, semantics, mIoManager);
+    ShaderParser::parseVertexShader(vertSrc, parsedVertSrc, mIoManager);
 
     // Create vertex shader
     ShaderSource srcVert;
@@ -247,13 +234,13 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     }
 
     // Set the attributes
-    program.setAttributes(attributeNames, semantics);
     // Link the program
     if (!program.link()) {
         program.dispose();
         return m_nilProgram;
     }
 
+    program.initAttributes();
     program.initUniforms();
     program.initSsboBindings();
 

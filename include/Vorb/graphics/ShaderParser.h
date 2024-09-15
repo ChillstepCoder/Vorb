@@ -8,7 +8,7 @@
 //
 
 /*! \file ShaderParser.h
- * @brief Handles parsing of semantics and includes for shaders.
+ * @brief Handles parsing of includes for shaders.
  */
 
 #pragma once
@@ -45,33 +45,21 @@ namespace vorb {
             /// @param attributeNames: The stored attribute names
             /// @param semantics: The stored semantics, 1 to 1 with attributeNames
             /// @param iom: Optional iomanager to use for include lookups
-            static void parseVertexShader(const cString inputCode, OUT nString& resultCode,
-                                          OUT std::vector<nString>& attributeNames, 
-                                          OUT std::vector<VGSemantic>& semantics,
-                                          vio::IOManager& iom);
+            static void parseVertexShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom);
             // Parses includes for a fragment shader
             /// @param inputCode: The input code to use for parsing
             /// @param resultCode: The stored resulting code after parse
             /// @param iom: Optional iomanager to use for include lookups
-            static void parseFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode,
-                                            vio::IOManager& iom);
+            static void parseFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom);
             
             static eventpp::CallbackList<void(const nString&)> onParseError; ///< Event that fires on a parsing error
         private:
-            /// Initializes the semantic map. Call once.
-            static void initSemantics();
             /// Attempts to parse an #include line
             /// @param s: The code to parse
             /// @param i: Position in the s string
             /// @return true if parse was successful
             /// @post s may be resized with new included code
             static bool tryParseInclude(nString& s, size_t i);
-            /// Attempts to parse an attribute
-            /// @param s: The code to parse
-            /// @param i: Position in the s string
-            /// @param semantic: Stores the semantic type
-            /// @return the attribute name if successful or the empty string
-            static nString tryParseAttribute(const cString s, size_t i, OUT VGSemantic& semantic);
             /// Checks if there is a comment at a point in the string,
             /// and sets the internal comment bools as well.
             /// @param s: The code to check
@@ -81,7 +69,6 @@ namespace vorb {
            
             static bool isComment() { return isBlockComment || isNormalComment; }
 
-            static std::map<nString, Semantic> m_semantics; ///< List of all possible semantics
             static std::set<nString> m_parsedIncludes; ///< Cache of already parsed includes to check for circular includes
             static bool isNormalComment; ///< True when in a standard C++ style comment
             static bool isBlockComment; ///< True when in a block comment

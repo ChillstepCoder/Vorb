@@ -113,24 +113,6 @@ namespace vorb {
             /// @return True on success
             bool addShader(const ShaderType& type, const cString code, const ShaderLanguageVersion& version = DEFAULT_SHADING_LANGUAGE_VERSION);
 
-            /// Sets an attribute before the link step
-            /// @param name: Attribute name
-            /// @param index: Attribute index
-            void setAttribute(nString name, VGAttribute index);
-            /// Sets a list of attributes before the link step
-            /// @param attr: Map of attributes
-            void setAttributes(const std::map<nString, VGAttribute>& attr);
-            /// Sets a list of attributes before the link step
-            /// @param attr: List of attribute bindings
-            void setAttributes(const std::vector<AttributeBinding>& attr);
-            /// Sets a list of attributes before the link step
-            /// @param attr: List of attributes (array index as attribute index)
-            void setAttributes(const std::vector<nString>& attr);
-            /// Sets a list of attributes before the link step
-            /// @param attr: List of attributes (array index as attribute index)
-            /// @param sem: List of semantics (array index as attribute index)
-            void setAttributes(const std::vector<nString>& attr, const std::vector<VGSemantic>& sem);
-
             /// Links the shader program using its currently added shaders
             /// @return True on success
             bool link();
@@ -171,9 +153,6 @@ namespace vorb {
                 return it != m_uniforms.end() ? &it->second : nullptr;
             }
 
-            /// Gets the current semantic binding
-            const AttributeSemBinding& getSemanticBinding() const { return m_semanticBinding; }
-
             /// Enables all vertex attrib arrays used by the program
             void enableVertexAttribArrays() const;
 
@@ -209,7 +188,6 @@ namespace vorb {
 
             AttributeMap m_attributes; ///< Dictionary of attributes
             UniformMap m_uniforms; ///< Dictionary of uniforms
-            AttributeSemBinding m_semanticBinding; ///< Dictionary of attributes for semantics
             SsboMap m_ssboBindings; //< binding indices for named SSBOs
 
             static VGProgram m_programInUse; ///< The current program in use

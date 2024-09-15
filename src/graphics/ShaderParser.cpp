@@ -7,7 +7,6 @@
 
 // Static definitions
 eventpp::CallbackList<void(const nString&)> vg::ShaderParser::onParseError;
-std::map<nString, vg::Semantic> vg::ShaderParser::m_semantics;
 std::set<nString> vg::ShaderParser::m_parsedIncludes;
 bool vg::ShaderParser::isNormalComment = false;
 bool vg::ShaderParser::isBlockComment = false;
@@ -26,11 +25,7 @@ inline bool isNumeric(char c) {
     return (c >= '0' && c <= '9');
 }
 
-void vg::ShaderParser::parseVertexShader(const cString inputCode, OUT nString& resultCode,
-                                         OUT std::vector<nString>& attributeNames,
-                                         OUT std::vector<VGSemantic>& semantics,
-                                         vio::IOManager& iom) {
-    if (m_semantics.empty()) initSemantics();
+void vg::ShaderParser::parseVertexShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom) {
     isNormalComment = false;
     isBlockComment = false;
     m_parsedIncludes.clear();
@@ -45,38 +40,20 @@ void vg::ShaderParser::parseVertexShader(const cString inputCode, OUT nString& r
     resultCode = "";
     resultCode.reserve(input.size());
 
-    bool wasNewLine = true;
     for (size_t i = 0; i < input.size(); i++) {
         char c = input[i];
         checkForComment(input.c_str(), i);
-        if (!isComment()) {
-            if (wasNewLine) {
-                if (c == '#') {
-                    if (tryParseInclude(input, i)) {
-                        i--;
-                        continue;
-                    }
-                }
-                else if (c == 'i') {
-                    // Attempt to parse as an attribute
-                    VGSemantic semantic;
-                    nString attribute = tryParseAttribute(input.c_str(), i, semantic);
-                    if (attribute.size()) {
-                        attributeNames.push_back(attribute);
-                        if (semantic != vg::Semantic::SEM_INVALID) {
-                            semantics.push_back(semantic);
-                        }
-                    }
-                }
+        if (!isComment() && c == '#' && (i == 0 || input[i - 1] == '\n')) {
+            if (tryParseInclude(input, i)) {
+                i--;
+                continue;
             }
         }
         resultCode += c;
-        wasNewLine = (c == '\n');
     }
 }
 
 void vg::ShaderParser::parseFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom) {
-    if (m_semantics.empty()) initSemantics();
     isNormalComment = false;
     isBlockComment = false;
     m_parsedIncludes.clear();
@@ -103,20 +80,6 @@ void vg::ShaderParser::parseFragmentOrGeometryShader(const cString inputCode, OU
         } 
         resultCode += c;
     }
-}
-
-void vorb::graphics::ShaderParser::initSemantics() {
-    m_semantics["COLOR"] = SEM_COLOR;
-    m_semantics["POSITION"] = SEM_POSITION;
-    m_semantics["TEXCOORD"] = SEM_TEXCOORD;
-    m_semantics["NORMAL"] = SEM_NORMAL;
-    m_semantics["BINORMAL"] = SEM_BINORMAL;
-    m_semantics["TANGENT"] = SEM_TANGENT;
-    m_semantics["FOG"] = SEM_FOG;
-    m_semantics["BLENDINDICES"] = SEM_BLENDINDICES;
-    m_semantics["BLENDWEIGHT"] = SEM_BLENDWEIGHT;
-    m_semantics["PSIZE"] = SEM_PSIZE;
-    m_semantics["TESSFACTOR"] = SEM_TESSFACTOR;
 }
 
 bool vg::ShaderParser::checkForComment(const cString s, size_t i) {
@@ -148,24 +111,29 @@ bool vg::ShaderParser::tryParseInclude(nString& s, size_t i) {
 
     if (s[i++] != '\"') { return false; }
     // Grab the include string
+    char includePathBuffer[512];
+    int includeStrIndex = 0;
     nString include = "";
     while (s[i] != '\"' && s[i] != '\n') {
         // Check for invalid characters in path
         if (isWhitespace(s[i])) { return false; }
-        include += s[i++];
+        includePathBuffer[includeStrIndex++] = s[i++];
     }
     if (s[i] != '\"') return false;
+    includePathBuffer[includeStrIndex++] = '\0';
 
-    if (include.size()) {
+    std::string_view includePathSV(includePathBuffer, includeStrIndex);
 
-        if (m_parsedIncludes.find(include) != m_parsedIncludes.end()) {
-            onParseError("Circular include detected: " + include);
+    if (includeStrIndex) {
+
+        nString includePath(includePathSV);
+        if (m_parsedIncludes.find(includePath) != m_parsedIncludes.end()) {
+            onParseError("Circular include detected: " + nString(includePathBuffer));
             return false;
         }
-        m_parsedIncludes.insert(include);
         // Replace the include with the file contents
         nString data = "";
-        if (ioManager->readFileToString(include, data)) {
+        if (ioManager->readFileToString(vio::Path(includePathBuffer), data)) {
             if (data.empty()) {
                 s.erase(startI, i + 1 - startI);
             } else {
@@ -174,91 +142,15 @@ bool vg::ShaderParser::tryParseInclude(nString& s, size_t i) {
                 s.erase(startI, i + 1 - startI);
                 if (data.length()) s.insert(startI, data.c_str());
             }
+
+            m_parsedIncludes.insert(std::move(includePath));
             return true;
         } else {
-            onParseError("Failed to open file " + include);
+            onParseError("Failed to open file " + nString(includePathSV));
+            m_parsedIncludes.insert(std::move(includePath));
             return false;
         }
+
     }
     return false;
-}
-
-nString vg::ShaderParser::tryParseAttribute(const cString s, size_t i, OUT VGSemantic& semantic) {
-    static const char IN_STR[4] = "in ";
-    static const char SEM_STR[5] = "SEM ";
-    semantic = vg::Semantic::SEM_INVALID;
-    // Check that in is correct
-    for (int j = 0; IN_STR[j] != '\0'; j++) {
-        if (s[i] == '\0') return "";
-        if (s[i++] != IN_STR[j]) return "";
-    }
-
-    skipWhitespace(s, i);
-    if (s[i] == '\0') return "";
-
-    // Skip the type
-    while (!isWhitespace(s[i])) {
-        // Check for null character
-        if (s[i] == '\0') return "";
-        i++;
-    }
-
-    skipWhitespace(s, i);
-    if (s[i] == '\0') return "";
-
-    // Read the name
-    nString name = "";
-    while (s[i] != ';' && !isWhitespace(s[i])) {
-        // Check for null character
-        if (s[i] == '\0') return "";
-        name += s[i++];
-    }
-
-    // Now to look for semantic comment
-
-    skipWhitespace(s, i);
-    if (s[i] == '\0') return name;
-
-    // Check for comment
-    if (s[i++] != '/') return name;
-    if (s[i] == '\0') return name;
-    if (s[i++] != '/') return name;
-    if (s[i] == '\0') return name;
-
-    skipWhitespace(s, i);
-    if (s[i] == '\0') return name;
-
-    // Check for SEM
-    for (int j = 0; SEM_STR[j] != '\0'; j++) {
-        if (s[i] == '\0') return name;
-        if (s[i++] != SEM_STR[j]) return name;
-    }
-
-    skipWhitespace(s, i);
-    if (s[i] == '\0') return name;
-
-    // Read the semantic
-    nString semanticName = "";
-    while (!isWhitespace(s[i]) && !isNumeric(s[i])) {
-        // Check for null character
-        if (s[i] == '\0') return name;
-        semanticName += s[i++];
-    }
-    auto it = m_semantics.find(semanticName);
-    if (it == m_semantics.end()) return name;
-
-    // Get the number
-    nString numberString = "";
-    for (int j = 0; s[i] != '\0' && isNumeric(s[i]); j++) {
-        numberString += s[i];
-        i++;
-    }
-    int number = 0;
-    if (numberString.size()) {
-        std::istringstream(numberString) >> number;
-    }
-
-    // Calculate the semantic ID
-    semantic = (VGSemantic)it->second + number * Semantic::SEM_NUM_SEMANTICS + 1;
-    return name;
 }
