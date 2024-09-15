@@ -30,6 +30,7 @@
 InstancedStaticModelRenderer::InstancedStaticModelRenderer() {
 
     mStandardShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("standard_model"));
+    mStandardShaderMutate = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("standard_model_mutate"));
     mShadowMapperShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("shadow_mapper_instd"));
     // TODO: USE
     //mCutoutShadowMapperShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("shadow_mapper_cutout"));
@@ -251,7 +252,7 @@ void InstancedStaticModelRenderer::renderMutations(const InstancedStaticModelMan
     const MaterialShaderDef* def = nullptr;
     switch (passType) {
         case MaterialRenderPassType::Default:
-            def = mStandardShader;
+            def = mStandardShaderMutate;
             break;
         case MaterialRenderPassType::Smudge:
             def = mSmudgeShader;
@@ -268,6 +269,11 @@ void InstancedStaticModelRenderer::renderMutations(const InstancedStaticModelMan
     if (def) {
         ui32 nextTextureIndex = 0;
         MaterialRenderer::bindMaterialShaderForRender(*def, &nextTextureIndex);
+
+        glUniform1f(def->getUniform("unSnowLevel"), mWeatherManager->mSnowLevel);
+        if (def->tryGetUniform("unDamageTexture")) {
+            glUniform1ui(def->getUniform("unDamageTexture"), MaterialRepository::get().getMaterialId(CStrToken("wood_chopping_texture_01")));
+        }
 
         GLDrawCommandBuffer* mutationDrawCommands = modelManager.mDrawCommandsMutations[e_cast(passType)].get();
         if (mutationDrawCommands && mutationDrawCommands->getNumActiveCommands()) {

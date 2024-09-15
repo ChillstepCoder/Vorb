@@ -5,12 +5,6 @@
 #include <Vorb/graphics/GLProgram.h>
 #include <Vorb/graphics/ShaderDefine.h>
 
-
-SERIALIZABLE_SIMPLE(ShaderDefine,
-    make_field(o.name, "name"sv),
-    make_field(o.active, "active"sv)
-);
-
 DECL_VG(class Texture);
 
 enum class MaterialShaderUniform {

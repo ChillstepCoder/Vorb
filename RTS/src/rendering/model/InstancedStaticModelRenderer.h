@@ -27,6 +27,7 @@ private:
     void renderMutations(const InstancedStaticModelManager& modelManager, const Camera3D& camera, MaterialRenderPassType passType);
 
     const MaterialShaderDef* mStandardShader = nullptr;
+    const MaterialShaderDef* mStandardShaderMutate = nullptr;
     const MaterialShaderDef* mShadowMapperShader = nullptr;
     // TODO: USE
     //const MaterialShaderDef* mCutoutShadowMapperShader = nullptr;

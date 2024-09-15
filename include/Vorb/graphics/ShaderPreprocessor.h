@@ -63,7 +63,7 @@ namespace vorb {
             
             static eventpp::CallbackList<void(const ShaderPreprocessError&)> onError; ///< Event that fires on a parsing error
         private:
-            static bool tryParseInclude(nString& s, size_t i);
+            static bool tryParseInclude(nString& s, size_t& i);
             static bool checkForComment(const cString s, size_t i);
             static bool tryParseIfdef(nString& s, size_t& i, const ShaderDefinesVector& defines);
            

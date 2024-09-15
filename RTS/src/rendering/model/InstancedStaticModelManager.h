@@ -158,9 +158,10 @@ private:
         bool isFrom; // If true, we are the fromIndex
     };
 
+    // std430 layout
     struct ModelMutationGpuData {
-        color4 color = color4(1.0f);
-        f32 crossfade = 0.0f;
+        color4 color;
+        f32 crossfade;
     };
 
     struct InstanceCrossfadeData {

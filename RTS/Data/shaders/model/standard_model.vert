@@ -29,9 +29,19 @@ layout(std430, binding = 7) readonly restrict buffer ModelDamageZoneBuffer {
     ModelDamageZoneGPUData modelDamageZoneBuffer[];
 };
 
+#ifdef MUTATE
+struct MutationData {
+    uint packedColor;
+    float crossfade;
+};
+layout(std430, binding = 9) readonly restrict buffer MutateBuffer {
+    MutationData mutationBuffer[];
+};
+#else
 layout(std430, binding = 9) readonly restrict buffer CrossfadeBuffer {
     float crossfadeBuffer[];
 };
+#endif
 
 uint extractDamageZoneByte(ModelDamageZoneGPUData data, uint index) {
     if (index >= 32) {
@@ -59,6 +69,10 @@ out float fDamage;
 out vec3 fLocalPosition;
 flat out float fCrossfade;
 
+#ifdef MUTATE
+flat out vec4 fMutateColor;
+#endif
+
 float damageTest(inout vec4 position, float damageValue) {
     vec2 offset = position.xy;
     float len = length(offset);
@@ -79,17 +93,21 @@ void main() {
 	vec3 tangent = normalize(vTangent);
     
 	fTBN = computeTbn(mat3(vModelMatrix), normal, tangent);
-    
-    if (unCrossfadeEnabled == 1) {
-        fCrossfade = crossfadeBuffer[gl_DrawID];
-    } else {
-        fCrossfade = -0.0001; // Indicates fully rendered object
-    }
-    
+ 
     fSnow = max(normal.z, 0.0) * unSnowLevel;
 
+#ifdef MUTATE
+    MutationData mutateData = mutationBuffer[gl_DrawID];
+    fCrossfade = mutateData.crossfade;
+    fMutateColor = unpackUnorm4x8(mutateData.packedColor);
+#else
+   if (unCrossfadeEnabled == 1) {
+       fCrossfade = crossfadeBuffer[gl_DrawID];
+   } else {
+       fCrossfade = -0.0001; // Indicates fully rendered object
+   }
+#endif
     
-// TODO: Handle defines
 //#ifndef SMUDGE
     
     vec4 adjustedPosition = vPosition;

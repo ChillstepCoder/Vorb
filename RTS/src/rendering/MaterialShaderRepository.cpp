@@ -4,8 +4,12 @@
 #include "resources/TextureRepository.h"
 #include "ShaderLoader.h"
 
-#include <Vorb/io/IOManager.h>
 #include <Vorb/graphics/GLProgram.h>
+
+SERIALIZABLE_SIMPLE(ShaderDefine,
+    make_field(o.name, "name"sv),
+    make_field(o.active, "active"sv)
+);
 
 // TODO: StrToken
 const std::map<nString, MaterialShaderUniform> sUniformLookup = {
@@ -54,6 +58,7 @@ struct MaterialShaderFileData {
     nString geometryShaderName;
     nString tessControlShaderName;
     nString tessEvalShaderName;
+    ShaderDefinesVector defines;
 };
 SERIALIZABLE_SIMPLE(MaterialShaderFileData,
     make_field(o.textures, "textures"sv),
@@ -61,11 +66,12 @@ SERIALIZABLE_SIMPLE(MaterialShaderFileData,
     make_field(o.fragmentShaderName, "frag"sv),
     make_field(o.geometryShaderName, "geom"sv),
     make_field(o.tessControlShaderName, "tcs"sv),
-    make_field(o.tessEvalShaderName, "tes"sv)
+    make_field(o.tessEvalShaderName, "tes"sv),
+    make_field(o.defines, "defines"sv)
 );
 
 bool MaterialShaderRepository::assetSourceIsDirty(AssetID assetId) {
-    bool dirty = IAssetRepositoryBase::assetSourceIsDirty(assetId);
+    bool dirty = IAssetRepository::assetSourceIsDirty(assetId);
     MaterialShaderDef& def = *mAssets[assetId];
 
     if (!def.mIsCompute) {
@@ -117,6 +123,8 @@ AssetLoadFunc MaterialShaderRepository::getAssetLoadFunc() {
         }
         else {
             YmlSerializer::readFileData(readFileToString(filePath), fileData);
+
+            def.mDefines = std::move(fileData.defines);
             def.mIsCompute = false;
             // Texture dependencies
             for (int i = 0; i < fileData.textures.size(); ++i) {
@@ -137,7 +145,15 @@ AssetLoadFunc MaterialShaderRepository::getAssetLoadFunc() {
             else {
                 const fs::path stdPath = filePath.getStdPath();
 
-                def.mProgram = ShaderLoader::createProgram(fileData.vertexShaderName, fileData.fragmentShaderName, fileData.geometryShaderName, fileData.tessControlShaderName, fileData.tessEvalShaderName);
+                def.mProgram = ShaderLoader::createProgram(
+                    def.getName().toString(),
+                    fileData.vertexShaderName,
+                    fileData.fragmentShaderName,
+                    fileData.geometryShaderName,
+                    fileData.tessControlShaderName,
+                    fileData.tessEvalShaderName,
+                    &def.mDefines
+                );
 
                 assert(def.mProgram.isLinked());
 

@@ -196,7 +196,7 @@ void ResourceManager::reloadMaterials(bool forceReloadAll) {
     }
 
     LOG_DEBUG("Reloading materials...");
-    MaterialRepository& repo = MaterialRepository::get();
+    MaterialShaderRepository& repo = MaterialShaderRepository::get();
     AssetHandleBundle assets = forceReloadAll ? repo.reloadAllLoadedAssets() : repo.reloadChangedAssets();
     AssetLoader& loader = AssetLoader::getInstance();
     while (!assets.areAllAssetsLoaded()) {

@@ -14,6 +14,11 @@ in float fDamage;
 in vec3 fLocalPosition;
 flat in float fCrossfade;
 
+#ifdef MUTATE
+flat in vec4 fMutateColor;
+uniform sampler2D PerlinNoise;
+#endif
+
 uniform sampler2D TurbulentNoise;
 
 uniform float unHeightScale = 0.023;
@@ -40,7 +45,26 @@ void main() {
     float metallic;
     float roughness;
     getMaterialPixelInfo(fMaterialIndex, uv, color, normal, ao, metallic, roughness, fTint);
+    
+#ifdef MUTATE
+    float blend;
+    if (fCrossfade < 0.0) {
+        blend = -fCrossfade;
+    } else {
+        blend = 1.0 - fCrossfade;
+    }
+    float upperBlend = blend + 0.05;
+    float noiseSample = texture2D(PerlinNoise, uv).r;
+    float alpha = step(upperBlend, noiseSample);
+    
+    float sub = step(blend, noiseSample);
+    vec3 emissive = (alpha - sub) * fMutateColor.rgb;
+
+    tryDiscardTransparentPixel(color.a * alpha);
+    color.rgb += emissive;
+#else
     runAlphaTestWithCrossfade(color.a, fCrossfade);
+#endif
 	
 	// Normal to tangent space
     normal = normalize(fTBN * normal);

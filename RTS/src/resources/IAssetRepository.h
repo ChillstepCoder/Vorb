@@ -36,7 +36,7 @@ public:
     virtual void onAllAssetTypesRegistered() = 0;
     virtual void fixupAllRegisteredAssets() = 0;
     virtual bool renderImguiAssetActions(AssetMetadata& asset) { return false; }
-    virtual bool assetSourceIsDirty(AssetID id) { 
+    virtual bool assetSourceIsDirty(AssetID id) {
         return mAssetRegistry[id].mLoadedWriteTime < std::filesystem::last_write_time(mAssetRegistry[id].mFilePath.getStdPath());
     }
 
