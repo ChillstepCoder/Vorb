@@ -1,8 +1,9 @@
 //
-// ShaderParser.h
+// ShaderPreprocessor.h
 // Vorb Engine
 //
 // Created by Benjamin Arnold on 29 Mar 2015
+// Refactored on 9/15/2024
 // Copyright 2014 Regrowth Studios
 // MIT License
 //
@@ -30,14 +31,22 @@
 #include "Vorb/VorbPreDecl.inl"
 #include "Vorb/graphics/GLEnums.h"
 #include "Vorb/graphics/gtypes.h"
-#include <vector>
+
+using ShaderDefinesMap = std::unordered_map<nString, bool>;
 
 DECL_VIO(class IOManager);
+
+struct ShaderPreprocessError {
+    ShaderPreprocessError(const nString& m, const nString& c) : message(m), code(c) {}
+
+    nString message;
+    nString code;
+};
 
 namespace vorb {
     namespace graphics {
 
-        class ShaderParser {
+        class ShaderPreprocessor {
         public:
             /// Parses includes and semantics for a vertex shader
             /// @param inputCode: The input code to use for parsing
@@ -45,27 +54,18 @@ namespace vorb {
             /// @param attributeNames: The stored attribute names
             /// @param semantics: The stored semantics, 1 to 1 with attributeNames
             /// @param iom: Optional iomanager to use for include lookups
-            static void parseVertexShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom);
+            static void processVertexShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom, ShaderDefinesMap* definesMap);
             // Parses includes for a fragment shader
             /// @param inputCode: The input code to use for parsing
             /// @param resultCode: The stored resulting code after parse
             /// @param iom: Optional iomanager to use for include lookups
-            static void parseFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom);
+            static void processFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom, ShaderDefinesMap* definesMap);
             
-            static eventpp::CallbackList<void(const nString&)> onParseError; ///< Event that fires on a parsing error
+            static eventpp::CallbackList<void(const ShaderPreprocessError&)> onError; ///< Event that fires on a parsing error
         private:
-            /// Attempts to parse an #include line
-            /// @param s: The code to parse
-            /// @param i: Position in the s string
-            /// @return true if parse was successful
-            /// @post s may be resized with new included code
             static bool tryParseInclude(nString& s, size_t i);
-            /// Checks if there is a comment at a point in the string,
-            /// and sets the internal comment bools as well.
-            /// @param s: The code to check
-            /// @param i: Position in the code
-            /// @return true if comment was found
             static bool checkForComment(const cString s, size_t i);
+            static bool tryParseIfdef(nString& s, size_t& i, const ShaderDefinesMap& defines);
            
             static bool isComment() { return isBlockComment || isNormalComment; }
 

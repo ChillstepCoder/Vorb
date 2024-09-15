@@ -1,16 +1,16 @@
 #include "Vorb/stdafx.h"
-#include "Vorb/graphics/ShaderParser.h"
+#include "Vorb/graphics/ShaderPreprocessor.h"
 
 #include <sstream>
 
 #include "Vorb/io/IOManager.h"
 
 // Static definitions
-eventpp::CallbackList<void(const nString&)> vg::ShaderParser::onParseError;
-std::set<nString> vg::ShaderParser::m_parsedIncludes;
-bool vg::ShaderParser::isNormalComment = false;
-bool vg::ShaderParser::isBlockComment = false;
-vio::IOManager* vg::ShaderParser::ioManager;
+eventpp::CallbackList<void(const ShaderPreprocessError&)> vg::ShaderPreprocessor::onError;
+std::set<nString> vg::ShaderPreprocessor::m_parsedIncludes;
+bool vg::ShaderPreprocessor::isNormalComment = false;
+bool vg::ShaderPreprocessor::isBlockComment = false;
+vio::IOManager* vg::ShaderPreprocessor::ioManager;
 
 // Checks if c is a whitespace char
 inline bool isWhitespace(char c) {
@@ -25,7 +25,7 @@ inline bool isNumeric(char c) {
     return (c >= '0' && c <= '9');
 }
 
-void vg::ShaderParser::parseVertexShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom) {
+void vg::ShaderPreprocessor::processVertexShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom, ShaderDefinesMap* definesMap) {
     isNormalComment = false;
     isBlockComment = false;
     m_parsedIncludes.clear();
@@ -47,13 +47,15 @@ void vg::ShaderParser::parseVertexShader(const cString inputCode, OUT nString& r
             if (tryParseInclude(input, i)) {
                 i--;
                 continue;
+            } else if (definesMap && tryParseIfdef(input, i, *definesMap)) {
+                continue;
             }
         }
         resultCode += c;
     }
 }
 
-void vg::ShaderParser::parseFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom) {
+void vg::ShaderPreprocessor::processFragmentOrGeometryShader(const cString inputCode, OUT nString& resultCode, vio::IOManager& iom, ShaderDefinesMap* definesMap) {
     isNormalComment = false;
     isBlockComment = false;
     m_parsedIncludes.clear();
@@ -82,7 +84,7 @@ void vg::ShaderParser::parseFragmentOrGeometryShader(const cString inputCode, OU
     }
 }
 
-bool vg::ShaderParser::checkForComment(const cString s, size_t i) {
+bool vg::ShaderPreprocessor::checkForComment(const cString s, size_t i) {
     if (s[i] == '/' && s[i + 1] == '/') {
         isNormalComment = true;
         return true;
@@ -97,7 +99,7 @@ bool vg::ShaderParser::checkForComment(const cString s, size_t i) {
     return false;
 }
 
-bool vg::ShaderParser::tryParseInclude(nString& s, size_t i) {
+bool vg::ShaderPreprocessor::tryParseInclude(nString& s, size_t i) {
     size_t startI = i;
     static const char INCLUDE_STR[10] = "#include";
     // Check that #include is correct
@@ -113,8 +115,7 @@ bool vg::ShaderParser::tryParseInclude(nString& s, size_t i) {
     // Grab the include string
     char includePathBuffer[512];
     int includeStrIndex = 0;
-    nString include = "";
-    while (s[i] != '\"' && s[i] != '\n') {
+    while (s[i] != '\"' && s[i] != '\n' && includeStrIndex < 512) {
         // Check for invalid characters in path
         if (isWhitespace(s[i])) { return false; }
         includePathBuffer[includeStrIndex++] = s[i++];
@@ -128,7 +129,7 @@ bool vg::ShaderParser::tryParseInclude(nString& s, size_t i) {
 
         nString includePath(includePathSV);
         if (m_parsedIncludes.find(includePath) != m_parsedIncludes.end()) {
-            onParseError("Circular include detected: " + nString(includePathBuffer));
+            onError(ShaderPreprocessError("Circular include detected: " + nString(includePathBuffer), s.substr(0, i)));
             return false;
         }
         // Replace the include with the file contents
@@ -146,11 +147,56 @@ bool vg::ShaderParser::tryParseInclude(nString& s, size_t i) {
             m_parsedIncludes.insert(std::move(includePath));
             return true;
         } else {
-            onParseError("Failed to open file " + nString(includePathSV));
+            onError(ShaderPreprocessError("Failed to open file " + nString(includePathSV), s.substr(0, i)));
             m_parsedIncludes.insert(std::move(includePath));
             return false;
         }
 
     }
     return false;
+}
+
+bool vorb::graphics::ShaderPreprocessor::tryParseIfdef(nString& s, size_t& i, const ShaderDefinesMap& defines) {
+    size_t startI = i;
+    static const char IFDEF_STR[7] = "#ifdef";
+    for (int j = 0; IFDEF_STR[j] != '\0'; j++) {
+        if (s[i] == '\0') return false;
+        if (s[i++] != IFDEF_STR[j]) return false;
+    }
+
+    skipWhitespace(s, i);
+    if (s[i] == '\0') return false;
+
+    char defineNameBuffer[512];
+    int defineNameIndex = 0;
+    while (i < s.size() && !isWhitespace(s[i]) && defineNameIndex < 512) {
+        defineNameBuffer[defineNameIndex++] = s[i++];
+    }
+
+    const std::string_view defineSV(defineNameBuffer, defineNameIndex);
+    nString defineName(defineSV);
+
+    auto it = defines.find(defineName);
+    const bool defineExists = it != defines.end() && it->second;
+
+    // Find the matching #endif
+    size_t endifPos = s.find("#endif", i);
+    if (endifPos == nString::npos) {
+        onError(ShaderPreprocessError("Missing #endif for #ifdef " + defineName, s.substr(0, i)));
+        return false;
+    }
+
+    if (!defineExists) {
+        // Remove the entire #ifdef block if the define doesn't exist
+        s.erase(startI, endifPos + 6 - startI);
+        i = startI - 1;  // Reprocess from the start of the modified content
+    }
+    else {
+        // Remove just the #ifdef and #endif lines
+        s.erase(endifPos, 6);
+        s.erase(startI, i - startI);
+        i = startI - 1;  // Reprocess from the start of the modified content
+    }
+
+    return true;
 }

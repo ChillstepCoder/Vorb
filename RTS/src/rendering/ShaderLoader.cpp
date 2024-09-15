@@ -12,20 +12,20 @@ std::map<nString, vio::Path> ShaderLoader::sFragmentShaderNameToPath;
 std::map<nString, vio::Path> ShaderLoader::sGeometryShaderNameToPath;
 std::map<nString, vio::Path> ShaderLoader::sTessControlShaderNameToPath;
 std::map<nString, vio::Path> ShaderLoader::sTessEvalShaderNameToPath;
-typedef eventpp::ScopedRemover<eventpp::EventDispatcher<vg::SHADER_ERROR_EVENT_TYPE, void(const nString&)>> ScopedRemover;
+typedef eventpp::ScopedRemover<eventpp::EventDispatcher<vg::SHADER_ERROR_EVENT_TYPE, void(const vg::ProgramError&)>> ScopedRemover;
 
 namespace {
-    void printShaderError(const nString& n) {
+    void printShaderError(const vg::ProgramError& n) {
         puts("Shader Error: ");
-        puts(n.c_str());
+        puts(n.message.c_str());
     }
-    void printLinkError(const nString& n) {
+    void printLinkError(const vg::ProgramError& n) {
         puts("Link Error: ");
-        puts(n.c_str());
+        puts(n.message.c_str());
     }
-    void printFileIOError(const nString& n) {
+    void printFileIOError(const vg::ProgramError& n) {
         puts("FIle IO Error: ");
-        puts(n.c_str());
+        puts(n.message.c_str());
     }
 }
 
@@ -66,9 +66,9 @@ vg::GLProgram ShaderLoader::getOrCreateProgram(const nString& vertexShaderName, 
 CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& name, const vio::Path& vertPath, const vio::Path& fragPath, const vio::Path geometryPath /*= ""*/, const vio::Path tessControlPath /*= ""*/, const vio::Path tessEvalPath /*= ""*/,
     const cString defines /*= nullptr*/) {
     ScopedRemover events(vg::ShaderManager::errorDispatcher);
-    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::FileIOFailure, [](const nString& s) { printFileIOError(s); });
-    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, [](const nString& s) { printShaderError(s); });
-    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ProgramLinkError, [](const nString& s) { printLinkError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::FileIOFailure, [](const vg::ProgramError& s) { printFileIOError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, [](const vg::ProgramError& s) { printShaderError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ProgramLinkError, [](const vg::ProgramError& s) { printLinkError(s); });
     
     assert(!vg::ShaderManager::getProgram(name).isLinked());
 
@@ -106,9 +106,9 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgramFromFile(const nString& n
 
 CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, const cString vertSrc, const cString fragSrc, const cString defines /*= nullptr*/) {
     ScopedRemover events;
-    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::FileIOFailure, [](const nString& s) { printFileIOError(s); });
-    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, [](const nString& s) { printShaderError(s); });
-    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ProgramLinkError, [](const nString& s) { printLinkError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::FileIOFailure, [](const vg::ProgramError& s) { printFileIOError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, [](const vg::ProgramError& s) { printShaderError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ProgramLinkError, [](const vg::ProgramError& s) { printLinkError(s); });
 
     assert(!vg::ShaderManager::getProgram(name).isLinked());
 
@@ -131,9 +131,9 @@ CALLER_DELETE vg::GLProgram ShaderLoader::createProgram(const nString& name, con
 CALLER_DELETE vg::GLProgram ShaderLoader::createComputeProgramFromFile(const nString& name, const vio::Path& path)
 {
     ScopedRemover events(vg::ShaderManager::errorDispatcher);
-    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::FileIOFailure, [](const nString& s) { printFileIOError(s); });
-    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, [](const nString& s) { printShaderError(s); });
-    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ProgramLinkError, [](const nString& s) { printLinkError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::FileIOFailure, [](const vg::ProgramError& s) { printFileIOError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, [](const vg::ProgramError& s) { printShaderError(s); });
+    events.appendListener(vg::SHADER_ERROR_EVENT_TYPE::ProgramLinkError, [](const vg::ProgramError& s) { printLinkError(s); });
 
     assert(!vg::ShaderManager::getProgram(name).isLinked());
 

@@ -30,7 +30,9 @@
 #include "GLEnums.h"
 #include "ShaderInterface.h"
 
-typedef eventpp::CallbackList<void(const nString&)> GLProgramErrorCallbackList;
+#include "GLProgramError.h"
+
+typedef eventpp::CallbackList<void(const vg::ProgramError&)> GLProgramErrorCallbackList;
 
 #if defined(VORB_COMPILER_GCC) || defined(VORB_COMPILER_CLANG)
 #undef major
@@ -67,6 +69,8 @@ namespace vorb {
             ShaderLanguageVersion version; ///< Language version
             std::vector<const cString> sources; ///< Strings of shader source code awaiting concatenation
         };
+
+
 
         // Encapsulates a simple OpenGL program and its shaders
         class GLProgram {

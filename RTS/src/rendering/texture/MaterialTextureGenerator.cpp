@@ -136,8 +136,8 @@ MaterialTextureGenerator::~MaterialTextureGenerator() {
 
 }
 
-void onError(const nString& n) {
-    pError("Failed to load internal normal map generator shader with error " + n);
+void onError(const vg::ProgramError& n) {
+    pError("Failed to load internal normal map generator shader with error " + n.message);
 }
 
 void MaterialTextureGenerator::init() {
@@ -145,8 +145,8 @@ void MaterialTextureGenerator::init() {
     mNormalProgram = std::make_unique<vg::GLProgram>();
     eventpp::ScopedRemover<GLProgramErrorCallbackList> remover1(mNormalProgram->onShaderCompilationError);
     eventpp::ScopedRemover<GLProgramErrorCallbackList> remover2(mNormalProgram->onShaderCompilationError);
-    remover1.append([](const nString& s) { onError(s); });
-    remover2.append([](const nString& s) { onError(s); });
+    remover1.append([](const vg::ProgramError& s) { onError(s); });
+    remover2.append([](const vg::ProgramError& s) { onError(s); });
     // Normals
     mNormalProgram->init();
     mNormalProgram->addShader(vg::ShaderType::VERTEX_SHADER, NORMAL_VERT_SRC);

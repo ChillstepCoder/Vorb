@@ -50,7 +50,7 @@ void vg::GLProgram::dispose() {
 bool vg::GLProgram::addShader(const ShaderSource& data) {
     // Check current state
     if (isLinked() || !isCreated()) {
-        onShaderCompilationError("Cannot add a shader to a fully created or non-existent program");
+        onShaderCompilationError(vg::ProgramError("Cannot add a shader to a fully created or non-existent program", ""));
         return false;
     }
 
@@ -59,36 +59,36 @@ bool vg::GLProgram::addShader(const ShaderSource& data) {
         case ShaderType::VERTEX_SHADER:
         case ShaderType::COMPUTE_SHADER:
             if (m_idVS != 0) {
-                onShaderCompilationError("Attempting to add another vertex shader");
+                onShaderCompilationError(vg::ProgramError("Attempting to add another vertex shader", ""));
                 return false;
             }
             break;
         case ShaderType::FRAGMENT_SHADER:
             if (m_idFS != 0) {
-                onShaderCompilationError("Attempting to add another fragment shader");
+                onShaderCompilationError(vg::ProgramError("Attempting to add another fragment shader", ""));
                 return false;
             }
             break;
         case ShaderType::GEOMETRY_SHADER:
             if (m_idGS != 0) {
-                onShaderCompilationError("Attempting to add another fragment shader");
+                onShaderCompilationError(vg::ProgramError("Attempting to add another fragment shader", ""));
                 return false;
             }
             break;
         case ShaderType::TESS_CONTROL_SHADER:
             if (m_idTCS != 0) {
-                onShaderCompilationError("Attempting to add another TCS shader");
+                onShaderCompilationError(vg::ProgramError("Attempting to add another TCS shader", ""));
                 return false;
             }
             break;
         case ShaderType::TESS_EVALUATION_SHADER:
             if (m_idTES != 0) {
-                onShaderCompilationError("Attempting to add another TES shader");
+                onShaderCompilationError(vg::ProgramError("Attempting to add another TES shader", ""));
                 return false;
             }
             break;
         default:
-            onShaderCompilationError("Shader stage is not supported");
+            onShaderCompilationError(vg::ProgramError("Shader stage is not supported", ""));
             return false;
     }
 
@@ -119,7 +119,7 @@ bool vg::GLProgram::addShader(const ShaderSource& data) {
         glGetShaderiv(idS, GL_INFO_LOG_LENGTH, &infoLogLength);
         std::vector<char> FragmentShaderErrorMessage(infoLogLength);
         glGetShaderInfoLog(idS, infoLogLength, NULL, FragmentShaderErrorMessage.data());
-        onShaderCompilationError(FragmentShaderErrorMessage.data());
+        onShaderCompilationError(vg::ProgramError(FragmentShaderErrorMessage.data(), nString(data.sources[0])));
         glDeleteShader(idS);
         return false;
     }
@@ -335,5 +335,5 @@ void vg::GLProgram::linkError(const nString& s) {
     buf[len] = 0;
 
     nString s2 = s + ": " + buf;
-    onProgramLinkError(s2);
+    onProgramLinkError(vg::ProgramError(s2, ""));
 }

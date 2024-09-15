@@ -29,6 +29,7 @@
 #include "../io/Path.h"
 
 #include "../io/IOManager.h"
+#include "GLProgramError.h"
 
 
 namespace vorb {
@@ -114,10 +115,10 @@ namespace vorb {
             /// Gets the read only program map of cached programs
             static const GLProgramMap& getProgramCache() { return m_programMap; }
 
-            static eventpp::EventDispatcher<SHADER_ERROR_EVENT_TYPE, void(const nString&)> errorDispatcher;
+            static eventpp::EventDispatcher<SHADER_ERROR_EVENT_TYPE, void(const vg::ProgramError&)> errorDispatcher;
         private:
-            static void triggerShaderCompilationError(const nString& n); ///< Fires the onShaderCompilationError event
-            static void triggerProgramLinkError(const nString& n); ///< Fires the onProgramLinkError event
+            static void triggerShaderCompilationError(const ProgramError& n); ///< Fires the onShaderCompilationError event
+            static void triggerProgramLinkError(const ProgramError& n); ///< Fires the onProgramLinkError event
             static GLProgramMap m_programMap; ///< For globally caching programs
             static GLProgram m_nilProgram;
             static vio::IOManager mIoManager;

@@ -1,11 +1,13 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/graphics/ShaderManager.h"
 #include "Vorb/graphics/GLProgram.h"
-#include "Vorb/graphics/ShaderParser.h"
+#include "Vorb/graphics/ShaderPreprocessor.h"
 
-#include <errno.h>
+#include "Vorb/logging/Logger.h"
 
-eventpp::EventDispatcher<vg::SHADER_ERROR_EVENT_TYPE, void(const nString&)> vg::ShaderManager::errorDispatcher;
+#include <cctype>
+
+eventpp::EventDispatcher<vg::SHADER_ERROR_EVENT_TYPE, void(const vg::ProgramError&)> vg::ShaderManager::errorDispatcher;
 typedef eventpp::ScopedRemover<eventpp::EventDispatcher<vg::SHADER_ERROR_EVENT_TYPE, void(const nString&)>> ScopedRemover;
 vg::GLProgramMap vg::ShaderManager::m_programMap;
 vg::GLProgram vg::ShaderManager::m_nilProgram;
@@ -23,11 +25,11 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     GLProgram program(true);
     eventpp::ScopedRemover<GLProgramErrorCallbackList> shaderCompEvent(vg::GLProgram::onShaderCompilationError);
     eventpp::ScopedRemover<GLProgramErrorCallbackList> linkEvent(vg::GLProgram::onProgramLinkError);
-    shaderCompEvent.append([](const nString& s) { triggerShaderCompilationError(s); });
-    linkEvent.append([](const nString& s) { triggerProgramLinkError(s); });
+    shaderCompEvent.append([](const vg::ProgramError& s) { triggerShaderCompilationError(s); });
+    linkEvent.append([](const vg::ProgramError& s) { triggerProgramLinkError(s); });
 
     // Parse vertex shader code
-    ShaderParser::parseVertexShader(compSrc, parsedCompSrc, mIoManager);
+    ShaderPreprocessor::processVertexShader(compSrc, parsedCompSrc, mIoManager, nullptr);
 
     // Create vertex shader
     ShaderSource srcCompute;
@@ -61,11 +63,11 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     GLProgram program(true);
     eventpp::ScopedRemover<GLProgramErrorCallbackList> shaderCompEvent(vg::GLProgram::onShaderCompilationError);
     eventpp::ScopedRemover<GLProgramErrorCallbackList> linkEvent(vg::GLProgram::onProgramLinkError);
-    shaderCompEvent.append([](const nString& s) { triggerShaderCompilationError(s); });
-    linkEvent.append([](const nString& s) { triggerProgramLinkError(s); });
+    shaderCompEvent.append([](const vg::ProgramError& s) { triggerShaderCompilationError(s); });
+    linkEvent.append([](const vg::ProgramError& s) { triggerProgramLinkError(s); });
    
     // Parse vertex shader code
-    ShaderParser::parseVertexShader(vertSrc, parsedVertSrc, mIoManager);
+    ShaderPreprocessor::processVertexShader(vertSrc, parsedVertSrc, mIoManager, nullptr);
 
     // Create vertex shader
     ShaderSource srcVert;
@@ -78,7 +80,7 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     }
 
     // Parse fragment shader code
-    ShaderParser::parseFragmentOrGeometryShader(fragSrc, parsedFragSrc, mIoManager);
+    ShaderPreprocessor::processFragmentOrGeometryShader(fragSrc, parsedFragSrc, mIoManager, nullptr);
 
     // Create the fragment shader
     ShaderSource srcFrag;
@@ -112,11 +114,11 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     GLProgram program(true);
     eventpp::ScopedRemover<GLProgramErrorCallbackList> shaderCompEvent(vg::GLProgram::onShaderCompilationError);
     eventpp::ScopedRemover<GLProgramErrorCallbackList> linkEvent(vg::GLProgram::onProgramLinkError);
-    shaderCompEvent.append([](const nString& s) { triggerShaderCompilationError(s); });
-    linkEvent.append([](const nString& s) { triggerProgramLinkError(s); });
+    shaderCompEvent.append([](const vg::ProgramError& s) { triggerShaderCompilationError(s); });
+    linkEvent.append([](const vg::ProgramError& s) { triggerProgramLinkError(s); });
 
     // Parse vertex shader code
-    ShaderParser::parseVertexShader(vertSrc, parsedVertSrc, mIoManager);
+    ShaderPreprocessor::processVertexShader(vertSrc, parsedVertSrc, mIoManager, nullptr);
 
     // Create vertex shader
     ShaderSource srcVert;
@@ -129,7 +131,7 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     }
 
     // Parse fragment shader code
-    ShaderParser::parseFragmentOrGeometryShader(fragSrc, parsedFragSrc, mIoManager);
+    ShaderPreprocessor::processFragmentOrGeometryShader(fragSrc, parsedFragSrc, mIoManager, nullptr);
 
     // Create the fragment shader
     ShaderSource srcFrag;
@@ -142,7 +144,7 @@ vg::GLProgram vg::ShaderManager::createProgram(const cString vertSrc, const cStr
     }
 
     // Parse geometry shader code
-    ShaderParser::parseFragmentOrGeometryShader(geomSrc, parsedGeomSrc, mIoManager);
+    ShaderPreprocessor::processFragmentOrGeometryShader(geomSrc, parsedGeomSrc, mIoManager, nullptr);
 
     // Create the geometry shader
     ShaderSource srcGeom;
@@ -178,11 +180,11 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     GLProgram program(true);
     eventpp::ScopedRemover<GLProgramErrorCallbackList> shaderCompEvent(vg::GLProgram::onShaderCompilationError);
     eventpp::ScopedRemover<GLProgramErrorCallbackList> linkEvent(vg::GLProgram::onProgramLinkError);
-    shaderCompEvent.append([](const nString& s) { triggerShaderCompilationError(s); });
-    linkEvent.append([](const nString& s) { triggerProgramLinkError(s); });
+    shaderCompEvent.append([](const vg::ProgramError& s) { triggerShaderCompilationError(s); });
+    linkEvent.append([](const vg::ProgramError& s) { triggerProgramLinkError(s); });
 
     // Parse vertex shader code
-    ShaderParser::parseVertexShader(vertSrc, parsedVertSrc, mIoManager);
+    ShaderPreprocessor::processVertexShader(vertSrc, parsedVertSrc, mIoManager, nullptr);
 
     // Create vertex shader
     ShaderSource srcVert;
@@ -195,7 +197,7 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     }
 
     // Parse fragment shader code
-    ShaderParser::parseFragmentOrGeometryShader(fragSrc, parsedFragSrc, mIoManager);
+    ShaderPreprocessor::processFragmentOrGeometryShader(fragSrc, parsedFragSrc, mIoManager, nullptr);
 
     // Create the fragment shader
     ShaderSource srcFrag;
@@ -208,7 +210,7 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     }
 
     // Parse tcs shader code
-    ShaderParser::parseFragmentOrGeometryShader(tcsSrc, parsedTcsSrc, mIoManager);
+    ShaderPreprocessor::processFragmentOrGeometryShader(tcsSrc, parsedTcsSrc, mIoManager, nullptr);
 
     // Create the tcs shader
     ShaderSource srcTcs;
@@ -221,7 +223,7 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgram(const cSt
     }
 
     // Parse tes shader code
-    ShaderParser::parseFragmentOrGeometryShader(tesSrc, parsedTesSrc, mIoManager);
+    ShaderPreprocessor::processFragmentOrGeometryShader(tesSrc, parsedTesSrc, mIoManager, nullptr);
 
     // Create the tes shader
     ShaderSource srcTes;
@@ -261,7 +263,7 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(c
     // Load in the files with error checking
     mIoManager.setLocalDirectory(compSearchDir);
     if (!mIoManager.readFileToString(compPath, compSrc)) {
-        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, nString(strerror(errno)) + " : " + compPath.getString());
+        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, vg::ProgramError(nString(strerror(errno)) + " : " + compPath.getString(), ""));
         return m_nilProgram;
     }
 
@@ -284,12 +286,12 @@ vg::GLProgram vg::ShaderManager::createProgramFromFile(const vio::Path& vertPath
     // Load in the files with error checking
     mIoManager.setLocalDirectory(vertSearchDir);
     if (!mIoManager.readFileToString(vertPath, vertSrc)) {
-        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, nString(strerror(errno)) + " : " + vertPath.getString());
+        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, vg::ProgramError(nString(strerror(errno)) + " : " + vertPath.getString(), ""));
         return m_nilProgram;
     }
     mIoManager.setLocalDirectory(fragSearchDir);
     if (!mIoManager.readFileToString(fragPath, fragSrc)) {
-        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, nString(strerror(errno)) + " : " + fragPath.getString());
+        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, vg::ProgramError(nString(strerror(errno)) + " : " + fragPath.getString(), ""));
         return m_nilProgram;
     }
 
@@ -319,17 +321,17 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(
     // Load in the files with error checking
     mIoManager.setLocalDirectory(vertSearchDir);
     if (!mIoManager.readFileToString(vertPath, vertSrc)) {
-        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, nString(strerror(errno)) + " : " + vertPath.getString());
+        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, vg::ProgramError(nString(strerror(errno)) + " : " + vertPath.getString(), ""));
         return m_nilProgram;
     }
     mIoManager.setLocalDirectory(fragSearchDir);
     if (!mIoManager.readFileToString(fragPath, fragSrc)) {
-        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, nString(strerror(errno)) + " : " + fragPath.getString());
+        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, vg::ProgramError(nString(strerror(errno)) + " : " + fragPath.getString(), ""));
         return m_nilProgram;
     }
     mIoManager.setLocalDirectory(geomSearchDir);
     if (!mIoManager.readFileToString(geometryPath, geomSrc)) {
-        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, nString(strerror(errno)) + " : " + geometryPath.getString());
+        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, vg::ProgramError(nString(strerror(errno)) + " : " + geometryPath.getString(), ""));
         return m_nilProgram;
     }
 
@@ -361,22 +363,22 @@ vorb::graphics::GLProgram vorb::graphics::ShaderManager::createProgramFromFile(c
     // Load in the files with error checking
     mIoManager.setLocalDirectory(vertSearchDir);
     if (!mIoManager.readFileToString(vertPath, vertSrc)) {
-        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, nString(strerror(errno)) + " : " + vertPath.getString());
+        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, vg::ProgramError(nString(strerror(errno)) + " : " + vertPath.getString(), ""));
         return m_nilProgram;
     }
     mIoManager.setLocalDirectory(fragSearchDir);
     if (!mIoManager.readFileToString(fragPath, fragSrc)) {
-        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, nString(strerror(errno)) + " : " + fragPath.getString());
+        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, vg::ProgramError(nString(strerror(errno)) + " : " + fragPath.getString(), ""));
         return m_nilProgram;
     }
     mIoManager.setLocalDirectory(tcsSearchDir);
     if (!mIoManager.readFileToString(tessControlPath, tcsSrc)) {
-        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, nString(strerror(errno)) + " : " + tessControlPath.getString());
+        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, vg::ProgramError(nString(strerror(errno)) + " : " + tessControlPath.getString(), ""));
         return m_nilProgram;
     }
     mIoManager.setLocalDirectory(tesSearchDir);
     if (!mIoManager.readFileToString(tessEvalPath, tesSrc)) {
-        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, nString(strerror(errno)) + " : " + tessEvalPath.getString());
+        errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::FileIOFailure, vg::ProgramError(nString(strerror(errno)) + " : " + tessEvalPath.getString(), ""));
         return m_nilProgram;
     }
 
@@ -427,12 +429,94 @@ vg::GLProgram& vg::ShaderManager::getProgram(const nString& name) {
     return it->second;
 }
 
-void vg::ShaderManager::triggerShaderCompilationError(const nString& n) {
-    printf("Shader compilation error: %s\n", n.c_str());
-    errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, n);
+
+// Helper
+int findNumberInParentheses(const nString& str) {
+    bool inParentheses = false;
+    nString numberStr;
+
+    for (char c : str) {
+        if (c == '(') {
+            inParentheses = true;
+            numberStr.clear();
+        }
+        else if (c == ')') {
+            if (inParentheses && !numberStr.empty()) {
+                try {
+                    return std::stoi(numberStr);
+                }
+                catch (const std::invalid_argument&) {
+                    // Not a valid number
+                    return -1;
+                }
+                catch (const std::out_of_range&) {
+                    // Number is too large for int
+                    return -1;
+                }
+            }
+            inParentheses = false;
+        }
+        else if (inParentheses) {
+            if (std::isdigit(c)) {
+                numberStr += c;
+            }
+            else {
+                // Non-digit character inside parentheses
+                inParentheses = false;
+                numberStr.clear();
+            }
+        }
+    }
+
+    return -1; // No valid number in parentheses found
 }
 
-void vg::ShaderManager::triggerProgramLinkError(const nString& n) {
-    printf("Shader link error: %s\n", n.c_str());
-    errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::ProgramLinkError, n);
+// Helper
+nString insertLineNumbers(const nString& code, int errorLine) {
+    std::istringstream iss(code);
+    std::ostringstream oss;
+    nString line;
+    size_t lineNumber = 1;
+
+    while (std::getline(iss, line)) {
+        char fill = ' ';
+        if (lineNumber == errorLine) {
+            fill = '>';
+        }
+        oss << std::setw(6) << std::setfill(fill) << lineNumber << ": " << line << "\n";
+        ++lineNumber;
+    }
+
+    // Handle the case where the last line doesn't end with a newline
+    if (!code.empty() && code.back() != '\n') {
+        oss.seekp(-1, std::ios_base::end); // Remove the last newline we added
+    }
+
+    return oss.str();
+}
+
+void vg::ShaderManager::triggerShaderCompilationError(const vg::ProgramError& n) {
+
+    const int errorLine = findNumberInParentheses(n.message);
+
+    vg::ProgramError improvedError(n.message, insertLineNumbers(n.code, errorLine));
+
+    if (improvedError.code.size() > 0) {
+        VORB_LOG_DEBUG("Shader Code:\n {}", improvedError.code.c_str());
+    }
+    VORB_LOG_CRITICAL("Shader compilation error: {}", improvedError.message.c_str());
+    errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::ShaderCompilationError, improvedError);
+}
+
+void vg::ShaderManager::triggerProgramLinkError(const vg::ProgramError& n) {
+
+    const int errorLine = findNumberInParentheses(n.message);
+
+    vg::ProgramError improvedError(n.message, insertLineNumbers(n.code, errorLine));
+
+    if (improvedError.code.size() > 0) {
+        VORB_LOG_DEBUG("Shader Code:\n {}", improvedError.code.c_str());
+    }
+    VORB_LOG_CRITICAL("Shader link error: {}", improvedError.message.c_str());
+    errorDispatcher.dispatch(SHADER_ERROR_EVENT_TYPE::ProgramLinkError, improvedError);
 }
