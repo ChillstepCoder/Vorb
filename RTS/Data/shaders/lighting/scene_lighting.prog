@@ -1,5 +1,0 @@
-vert: pass_through.vert
-frag: scene_lighting.frag
-textures:
-  - name: sky_gradient
-    uniform: GradientTexture

@@ -8,6 +8,7 @@
 
 #include <imgui.h>
 #include "util/UniformTriangleSampler3D.h"
+#include "util/WindFormulas.h"
 
 
 #define MODULE_DATA static_cast<ModuleData*>(data)
@@ -1085,7 +1086,7 @@ void CPUPEM_MeshReproductionSource::refresh() {
                 case VertexType::STANDARD_MODEL: {
                     const StandardModelVertex* vertexData = reinterpret_cast<const StandardModelVertex*>(meshData.mVertsPtr);
                     UniformTriangleSampler3D sampler(vertexData[indices.x].pos, vertexData[indices.y].pos, vertexData[indices.z].pos);
-                    const f32v3 pos = sampler.generatePoint();
+                    f32v3 pos = sampler.generatePoint();
                     const f32v3 baryCoords = sampler.getBarycentricCoords(pos);
                     const f32v2 uv = baryCoords.x * UnpackUVs(vertexData[indices.x].uvsPacked) + 
                                      baryCoords.y * UnpackUVs(vertexData[indices.y].uvsPacked) +
@@ -1094,6 +1095,17 @@ void CPUPEM_MeshReproductionSource::refresh() {
                     const MaterialID materialId = meshInput.mModelDef->getMaterialForSubmesh(
                         variantIndex, submeshIndex, vertexData[indices.x].materialSlot % MATERIAL_SLOT_COUNT
                     );
+
+                    if (MODULE_DATA->mUseWind) {
+                        f32v3 transformedPos = pos * sourceScale;
+                        // Get the position as used in the shader
+                        transformedPos = emitter.getOrientation() * transformedPos;
+                        // We must inverse back because the shader is going to apply the orientation, we dont want to double transform
+                        pos += emitter.getInverseOrientation() * util::getModelWindOffset(
+                            transformedPos, emitter.getRootPosition(), e_cast(meshInput.mModelDef->mSubmeshData[submeshIndex].windType), sTotalTimeSeconds
+                        );
+                    }
+
                     emitter.setUIntVariable(ParticleEmitterVariableNameUInt::StartMaterial, particleID, materialId);
                     emitter.setVec3Variable(ParticleEmitterVariableNameVec3::MeshSourcePos, particleID, pos * sourceScale);
                     emitter.setVec2Variable(ParticleEmitterVariableNameVec2::MeshSourceUV, particleID, uv);
@@ -1120,18 +1132,25 @@ bool CPUPEM_MeshReproductionSource::updateAndRenderEditorControls(const Particle
     ImGui::Text("   Providing MeshSourcePos");
     changed |= updateAndRenderVariable(mModuleData.mScaleMult, "Scale Mult", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mScaleClamp, "Scale Clamp", parentEmitter);
+    ImGui::PushID((int)this);
+    changed |= ImGui::Checkbox("Use Wind", &mModuleData.mUseWind);
+    ImGui::PopID();
     return changed;
 }
 
 bool CPUPEM_MeshReproductionSource::loadFromYml(ryml::ConstNodeRef node) {
     LOAD_VAR(mScaleMult, "scale"sv);
     LOAD_VAR(mScaleClamp, "scale_clmp"sv);
+    if (node.has_child("wind")) {
+        node["wind"] >> mModuleData.mUseWind;
+    }
     return true;
 }
 
 void CPUPEM_MeshReproductionSource::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mScaleMult, "scale"sv);
     SAVE_VAR(mScaleClamp, "scale_clmp"sv);
+    node["wind"] << mModuleData.mUseWind;
 }
 
 void CPUPEM_MeshReproductionSource::addRequiredVariables(RequiredEmitterVariables& variables) const {
@@ -1209,11 +1228,27 @@ void CPUPEM_MeshReproductionTarget::refresh() {
                                     baryCoords.y * UnpackUVs(bestVertexData[bestIndices.y].uvsPacked) +
                                     baryCoords.z * UnpackUVs(bestVertexData[bestIndices.z].uvsPacked);
 
+
+                const f32 targetScale = emitter.getInputs()->getFloatInput(ParticleSystemInputName::FloatTargetScale);
+
+                if (MODULE_DATA->mUseWind) {
+
+                    f32v3 transformedPos = bestPos * targetScale;
+                    // Get the position as used in the shader
+                    transformedPos = emitter.getOrientation() * transformedPos;
+                    // We must inverse back because the shader is going to apply the orientation, we dont want to double transform
+                    bestPos += emitter.getInverseOrientation() * util::getModelWindOffset(
+                        transformedPos,
+                        emitter.getRootPosition(),
+                        e_cast(meshInput.mModelDef->mSubmeshData[submeshIndex].windType),
+                        sTotalTimeSeconds + std::get<f32>(MODULE_DATA->mWindTimeOffset.mVarData)
+                    );
+                }
+
                 // Scale based on size of triangle
                 const f32v2 scaleClamp = std::get<f32v2>(MODULE_DATA->mScaleClamp.mVarData);
                 const f32 scale = glm::clamp(bestSampler.getArea(), scaleClamp.x, scaleClamp.y) * std::get<f32>(MODULE_DATA->mScaleMult.mVarData);
 
-                const f32 targetScale = emitter.getInputs()->getFloatInput(ParticleSystemInputName::FloatTargetScale);
 
                 const MaterialID materialId = meshInput.mModelDef->getMaterialForSubmesh(
                     variantIndex, submeshIndex, bestVertexData[bestIndices.x].materialSlot % MATERIAL_SLOT_COUNT
@@ -1233,6 +1268,12 @@ bool CPUPEM_MeshReproductionTarget::updateAndRenderEditorControls(const Particle
     changed |= updateAndRenderVariable(mModuleData.mScaleMult, "Scale Mult", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mScaleClamp, "Scale Clamp", parentEmitter);
     changed |= updateAndRenderVariable(mModuleData.mFindClosestChecks, "Closest Checks", parentEmitter);
+    ImGui::PushID((int)this);
+    changed |= ImGui::Checkbox("Use Wind", &mModuleData.mUseWind);
+    if (mModuleData.mUseWind) {
+        changed |= updateAndRenderVariable(mModuleData.mWindTimeOffset, "Wind Time Offset", parentEmitter);
+    }
+    ImGui::PopID();
     mModuleData.mFindClosestChecks.mVarData = glm::clamp(std::get<ui32>(mModuleData.mFindClosestChecks.mVarData), 1u, MAX_CLOSEST_CHECKS);
     return changed;
 }
@@ -1241,6 +1282,10 @@ bool CPUPEM_MeshReproductionTarget::loadFromYml(ryml::ConstNodeRef node) {
     LOAD_VAR(mScaleMult, "scale"sv);
     LOAD_VAR(mScaleClamp, "scale_clmp"sv);
     LOAD_VAR(mFindClosestChecks, "find_close"sv);
+    LOAD_VAR(mWindTimeOffset, "wind_t_off"sv);
+    if (node.has_child("wind")) {
+        node["wind"] >> mModuleData.mUseWind;
+    }
     return true;
 }
 
@@ -1248,6 +1293,8 @@ void CPUPEM_MeshReproductionTarget::saveYmlData(ryml::NodeRef node) const {
     SAVE_VAR(mScaleMult, "scale"sv);
     SAVE_VAR(mScaleClamp, "scale_clmp"sv);
     SAVE_VAR(mFindClosestChecks, "find_close"sv);
+    SAVE_VAR(mWindTimeOffset, "wind_t_off"sv);
+    node["wind"] << mModuleData.mUseWind;
 }
 
 void CPUPEM_MeshReproductionTarget::addRequiredVariables(RequiredEmitterVariables& variables) const {

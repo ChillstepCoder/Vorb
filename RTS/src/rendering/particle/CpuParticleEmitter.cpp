@@ -42,12 +42,18 @@ CpuParticleEmitter::CpuParticleEmitter(
 CpuParticleEmitter::CpuParticleEmitter(
     const ParticleEmitterDef& def,
     const ParticleSystemInputs* inputs,
-    const ParticleSystemUserParameterMap* userParameters
+    const ParticleSystemUserParameterMap* userParameters,
+    f32v3 rootPosition,
+    const f32m3* systemOrientation,
+    const f32m3* inverseSystemOrientation
 ) :
     mShaderID(def.mShaderRef.getAssetID()),
     mInputs(inputs),
     mUserParameters(userParameters),
-    mMaterialAssetHandles(std::make_unique<AssetHandleBundle>())
+    mMaterialAssetHandles(std::make_unique<AssetHandleBundle>()),
+    mRootPosition(rootPosition),
+    mSystemOrientation(systemOrientation),
+    mInverseSystemOrientation(inverseSystemOrientation)
 {
     // TODO: some of this information could be cached in the definition to make for faster setup
 

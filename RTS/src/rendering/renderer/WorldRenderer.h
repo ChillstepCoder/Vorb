@@ -126,7 +126,6 @@ private:
     int mPassthroughRenderMode = 0;
     std::vector< AssetHandlePtr<MaterialShaderDef>> mPassthroughMaterials;
     AssetHandlePtr<MaterialShaderDef> mPassthroughMaterial;
-    AssetHandlePtr<MaterialShaderDef> mSceneLightingMaterial;
     AssetHandlePtr<MaterialShaderDef> mCopyDepthMaterial;
 
     // Event handles

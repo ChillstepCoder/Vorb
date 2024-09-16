@@ -25,23 +25,29 @@ struct ModelDamageZoneGPUData {
     vec2 radii;
 };
 
-layout(std430, binding = 7) readonly restrict buffer ModelDamageZoneBuffer {
-    ModelDamageZoneGPUData modelDamageZoneBuffer[];
-};
-
 #ifdef MUTATE
+
 struct MutationData {
     uint packedColor;
     float crossfade;
 };
+
 layout(std430, binding = 9) readonly restrict buffer MutateBuffer {
     MutationData mutationBuffer[];
 };
+
+
+flat out vec4 fMutateColor;
+
 #else
+
 layout(std430, binding = 9) readonly restrict buffer CrossfadeBuffer {
     float crossfadeBuffer[];
 };
+
 #endif
+
+#ifndef SMUDGE
 
 uint extractDamageZoneByte(ModelDamageZoneGPUData data, uint index) {
     if (index >= 32) {
@@ -58,20 +64,13 @@ uint extractDamageZoneByte(ModelDamageZoneGPUData data, uint index) {
     return byte;
 }
 
-out vec2 fUV;
-flat out uint fMaterialIndex;
-out vec4 fTint;
-out mat3 fTBN;
-out vec3 fViewTangent;
-out vec3 fFragPosTangent;
+layout(std430, binding = 7) readonly restrict buffer ModelDamageZoneBuffer {
+    ModelDamageZoneGPUData modelDamageZoneBuffer[];
+};
+
 out float fSnow;
 out float fDamage;
 out vec3 fLocalPosition;
-flat out float fCrossfade;
-
-#ifdef MUTATE
-flat out vec4 fMutateColor;
-#endif
 
 float damageTest(inout vec4 position, float damageValue) {
     vec2 offset = position.xy;
@@ -82,6 +81,16 @@ float damageTest(inout vec4 position, float damageValue) {
     return damageValue;
 }
 
+#endif
+
+out vec2 fUV;
+flat out uint fMaterialIndex;
+out vec4 fTint;
+out mat3 fTBN;
+out vec3 fViewTangent;
+out vec3 fFragPosTangent;
+flat out float fCrossfade;
+
 void main() {
     fTint = vTint;
     fUV = unpackUV(vUV);
@@ -91,10 +100,9 @@ void main() {
 
 	vec3 normal = normalize(vNormal);
 	vec3 tangent = normalize(vTangent);
+    vec4 adjustedPosition = vPosition;
     
 	fTBN = computeTbn(mat3(vModelMatrix), normal, tangent);
- 
-    fSnow = max(normal.z, 0.0) * unSnowLevel;
 
 #ifdef MUTATE
     MutationData mutateData = mutationBuffer[gl_DrawID];
@@ -107,10 +115,12 @@ void main() {
        fCrossfade = -0.0001; // Indicates fully rendered object
    }
 #endif
+
     
-//#ifndef SMUDGE
+#ifndef SMUDGE
     
-    vec4 adjustedPosition = vPosition;
+    fSnow = max(normal.z, 0.0) * unSnowLevel;
+    
   
     uint damageValue = extractDamageZoneByte(modelDamageZoneBuffer[vSubmeshIndexVariantIndexDamageModelIndex.z], vDamageZoneIndex);
     fDamage = float(damageValue) / 255.0;
@@ -122,7 +132,7 @@ void main() {
     // Snow
     adjustedPosition.z += fSnow * 0.25f;
     
-//#endif
+#endif
     
     vec4 trueWorldPos = (vModelMatrix * adjustedPosition);
     vec3 modelRoot = vModelMatrix[3].xyz;

@@ -62,7 +62,7 @@ constexpr int MAX_LOD_DITHER_TRANSITION_DRAWS = 2048;
 constexpr int MAX_MUTATION_TRANSITION_DRAWS = 512;
 constexpr int WORK_GROUP_SIZE = 64;
 constexpr f32 LOD_TRANSITION_SPEED = 1.0f; // Multiplied by elapsedSec. 1 = 1 second, 2 = 0.5 seconds
-constexpr f32 MUTATION_TRANSITION_SPEED = 0.5f; // Multiplied by elapsedSec. 1 = 1 second, 2 = 0.5 seconds
+constexpr f32 MUTATION_TRANSITION_SPEED = 0.35f; // Multiplied by elapsedSec. 1 = 1 second, 2 = 0.5 seconds
 // TODO: Read about advanced gpu driven rendering https://advances.realtimerendering.com/s2015/aaltonenhaar_siggraph2015_combined_final_footer_220dpi.pdf
 
 // Must be done or we will corrupt gpu memory :P
@@ -1063,13 +1063,14 @@ void InstancedStaticModelManager::updatePendingLooseModelInstances() {
 }
 
 color4 InstancedStaticModelManager::getMutationColor(TileMutationType type) {
+    // Alpha is emissive intensity
     switch (type) {
         case TileMutationType::BCorrupt:
             break;
         case TileMutationType::BPurify:
             break;
         case TileMutationType::CCorrupt:
-            return color4(38, 211, 255, 255);
+            return color4(62, 89, 221, 39);
         case TileMutationType::CPurify:
             break;
         case TileMutationType::Grow:

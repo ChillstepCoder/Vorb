@@ -42,7 +42,7 @@ vec3 PBR(vec3 worldPos, vec3 albedo, vec3 normal, float metallic, float roughnes
 //    }
     
     // Sunlight
-    const vec3  radiance = sunColor;
+    const vec3 radiance = sunColor;
     
     const vec3 L = sunDir;
     const vec3 brdf = cook_torrance_ggx(L, V, N, albedo, metallic, specular, roughness);

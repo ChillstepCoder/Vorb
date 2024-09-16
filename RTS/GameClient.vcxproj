@@ -638,6 +638,7 @@
     <ClCompile Include="src\util\ThreadIDs.cpp" />
     <ClCompile Include="src\util\Timing\ThreadUtilizationTimer.cpp" />
     <ClCompile Include="src\util\UniqueId64.cpp" />
+    <ClCompile Include="src\util\WindFormulas.cpp" />
     <ClCompile Include="src\weather\CloudMeshManager.cpp" />
     <ClCompile Include="src\weather\WeatherManager.cpp" />
     <ClCompile Include="src\world\biome\BiomeGrid.cpp" />
@@ -1224,6 +1225,7 @@
     <ClInclude Include="src\util\UniformTriangleSampler3D.h" />
     <ClInclude Include="src\util\Utils.h" />
     <ClInclude Include="src\util\UniqueId64.h" />
+    <ClInclude Include="src\util\WindFormulas.h" />
     <ClInclude Include="src\util\Winding.h" />
     <ClInclude Include="src\weather\CloudMeshManager.h" />
     <ClInclude Include="src\weather\WeatherManager.h" />

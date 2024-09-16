@@ -113,9 +113,9 @@ vg::GBuffer& vg::GBuffer::operator=(GBuffer&& o) noexcept {
     return *this;
 }
 
-void vg::GBuffer::clearAttachment(GBufferAttachmentIndex index, const f32v4& newColor /*= f32v4(0.0f)*/) {
+void vg::GBuffer::clearAttachment(GBufferAttachmentIndex index, f32v4 newColor /*= f32v4(0.0f)*/) {
     assert(mAttachments[int(index)].mTexture);
-    glClearNamedFramebufferfv(mFbo, GL_COLOR, (GLint)index, &const_cast<f32v4&>(newColor).x);
+    glClearNamedFramebufferfv(mFbo, GL_COLOR, (GLint)index, &newColor.x);
 }
 
 void vg::GBuffer::clearDepth(f32 newDepth /*= 1.0f*/) {

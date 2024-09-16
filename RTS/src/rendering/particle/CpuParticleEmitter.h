@@ -60,7 +60,14 @@ typedef std::function<void(class CpuParticleEmitter& emitter, CPUParticlesData& 
 class CpuParticleEmitter {
 public:
     CpuParticleEmitter(const ParticleUpdateFunction& updateFunction, ui32 maxParticles, BitFlags<ParticleComponentType> components, const MaterialShaderDef& shader, const ParticleSystemInputs* inputs, f32 lifetime = FLT_MAX);
-    CpuParticleEmitter(const ParticleEmitterDef& def, const ParticleSystemInputs* inputs, const ParticleSystemUserParameterMap* userParameters);
+    CpuParticleEmitter(
+        const ParticleEmitterDef& def,
+        const ParticleSystemInputs* inputs,
+        const ParticleSystemUserParameterMap* userParameters,
+        f32v3 rootPosition,
+        const f32m3* systemOrientation,
+        const f32m3* inverseSystemOrientation
+    );
     ~CpuParticleEmitter();
 
     VORB_NON_COPYABLE(CpuParticleEmitter);
@@ -99,6 +106,9 @@ public:
     MaterialID getParticleMaterial(ParticleID id) const noexcept { return mParticleData.mMaterials[id]; }
     CPUParticlesData& getParticleData() { return mParticleData; }
     BitFlags<ParticleComponentType> getComponents() const noexcept { return mComponents; }
+    f32v3 getRootPosition() const { return mRootPosition; }
+    const f32m3& getOrientation() const { return *mSystemOrientation; }
+    const f32m3& getInverseOrientation() const { return *mInverseSystemOrientation; }
 
     // Variables
     uint getUIntVariable(ParticleEmitterVariableNameUInt name, ParticleID id) const;
@@ -224,4 +234,8 @@ protected:
     // Determines which data streams we will use
     BitFlags<ParticleComponentType> mComponents;
     std::span<const ParticleEmitterShaderBinding> mShaderBindings;
+
+    f32v3 mRootPosition = f32v3(0.0f);
+    const f32m3* mSystemOrientation = nullptr;
+    const f32m3* mInverseSystemOrientation = nullptr;
 };

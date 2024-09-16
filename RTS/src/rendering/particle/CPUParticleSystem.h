@@ -51,4 +51,5 @@ private:
     f32v3 mRootPosition = f32v3(0.0f);
     f32 mLifetimeRemaining = 0.0f;
     f32m3 mOrientationMatrix = f32m3(1.0f);
+    f32m3 mInverseOrientationMatrix = f32m3(1.0f);
 };

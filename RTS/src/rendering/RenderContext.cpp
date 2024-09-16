@@ -219,6 +219,7 @@ RenderContext::RenderContext(const f32v2& screenResolution, SDL_Window* window) 
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::ALBEDO, vg::TextureInternalFormat::RGBA8); // Albedo + AO
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::NORMALS, vg::TextureInternalFormat::RGB10_A2); // Normal
         mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::TERTIARY1, vg::TextureInternalFormat::RG8); // Roughness + Metallic
+        mGBuffers[i]->initAttachment(vg::GBufferAttachmentIndex::TERTIARY2, vg::TextureInternalFormat::RGBA8); // Emissive
 #if USE_STENCIL == 1
         mGBuffers[i]->initDepthStencil();
 #else

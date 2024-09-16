@@ -32,6 +32,7 @@ private:
     // TODO: USE
     //const MaterialShaderDef* mCutoutShadowMapperShader = nullptr;
     const MaterialShaderDef* mSmudgeShader = nullptr;
+    const MaterialShaderDef* mSmudgeShaderMutate = nullptr;
     const MaterialShaderDef* mWaterShader = nullptr;
     AssetHandleBundle mShaderAssets;
     WeatherManager* mWeatherManager = nullptr;

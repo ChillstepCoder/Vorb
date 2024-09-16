@@ -22,10 +22,13 @@ emitters:
         - mesh_rep_src:
             scale: 4
             scale_clmp: [0.5,2]
+            wind: 1
         - mesh_rep_tgt:
             scale: 4
             scale_clmp: [0.5,2]
             find_close: 12
+            wind_t_off: 3
+            wind: 1
       p_update:
         - set_position:
             pos:
@@ -81,10 +84,13 @@ emitters:
         - mesh_rep_src:
             scale: 2
             scale_clmp: [0.3,5]
+            wind: 1
         - mesh_rep_tgt:
             scale: 1
             scale_clmp: [0.1,5]
             find_close: 12
+            wind_t_off: 4
+            wind: 1
       p_update:
         - set_position:
             pos:
@@ -148,10 +154,13 @@ emitters:
         - mesh_rep_src:
             scale: 1
             scale_clmp: [0.5,1]
+            wind: 1
         - mesh_rep_tgt:
             scale: 1
             scale_clmp: [0.5,5]
             find_close: 12
+            wind_t_off: 3
+            wind: 1
       p_update:
         - set_position:
             pos:

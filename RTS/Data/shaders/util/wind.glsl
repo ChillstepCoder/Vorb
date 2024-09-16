@@ -61,12 +61,14 @@ float norm( in float f )
 }
 
 
+// Keep parity with WindFormulas.cpp
 const float AMPLITUDE = 0.7;
 const float WIND_SPEED = 1.0;
 const float WIND_STRENGTH = 0.1;
 const float WORLD_SCALE = 0.2;
 
 // TODO: Optimize this
+// Keep parity with WindFormulas.cpp
 float getWindAtPosition(in float Time, in vec4 worldPos) {
     // Standard wind forces
     float windForce = fbm(vec2(worldPos.x + Time * 0.075, worldPos.y)) * AMPLITUDE;
@@ -82,6 +84,7 @@ float getWindAtPosition(in float Time, in vec4 worldPos) {
 	return windForce;
 }
 
+// Keep parity with WindFormulas.cpp
 void addModelWind(inout vec4 trueWorldPos, in vec3 modelRoot, int windType, float height) {
     float h = max(height, 0.001);
     if (windType == 1) { // Grass
@@ -93,7 +96,7 @@ void addModelWind(inout vec4 trueWorldPos, in vec3 modelRoot, int windType, floa
         // 2 == tree trunk
         // 3 == tree leaves
         float seed = Time * 0.65 - (modelRoot.x - modelRoot.y) * 0.15;
-        float windIntensity = (sin(seed * 0.5) * pow(h, 2.0)) * 0.005;
+        float windIntensity = (sin(seed * 0.5) * h * h) * 0.005;
         trueWorldPos.x += windIntensity;
         float bendDown = abs(windIntensity);
         trueWorldPos.z -= bendDown * bendDown * 0.1; // Simulate bend (See wolfram alpha graph -(pow(abs(sin(x)), 2.0)) from 0 to 2PI)

@@ -95,7 +95,7 @@ namespace vorb {
             void setSharedDepthTexture(CALLEE_DELETE VGTexture depthTexture);
             void setSharedDepthStencilTexture(CALLEE_DELETE VGTexture depthStencilTexture);
 
-            void clearAttachment(GBufferAttachmentIndex index, const f32v4& newColor = f32v4(0.0f));
+            void clearAttachment(GBufferAttachmentIndex index, f32v4 newColor = f32v4(0.0f));
             void clearDepth(f32 newDepth = 1.0f);
             void clearDepthStencil(f32 newDepth = 1.0f, GLint newStencil = 0);
 

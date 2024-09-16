@@ -1365,6 +1365,9 @@
     <ClCompile Include="src\definitions\ParticleEmitterDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\util\WindFormulas.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -3183,6 +3186,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\particle\ParticleSystemRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\WindFormulas.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

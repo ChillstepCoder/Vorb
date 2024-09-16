@@ -191,6 +191,7 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_MeshReproductionSource, e_cast(ParticleEmitte
     MODULE_DEF(
         CPUParticleEmitterParameter mScaleClamp = CPUParticleEmitterParameter(f32v2(0.1f, 5.0f));
         CPUParticleEmitterParameter mScaleMult = CPUParticleEmitterParameter(f32(1.0f));
+        bool mUseWind = true;
     );
 public:
     void addRequiredVariables(RequiredEmitterVariables& variables) const override;
@@ -201,6 +202,8 @@ BUILTIN_CPU_PARTICLE_MODULE(CPUPEM_MeshReproductionTarget, e_cast(ParticleEmitte
         CPUParticleEmitterParameter mScaleClamp = CPUParticleEmitterParameter(f32v2(0.1f, 5.0f));
         CPUParticleEmitterParameter mScaleMult = CPUParticleEmitterParameter(f32(1.0f));
         CPUParticleEmitterParameter mFindClosestChecks = CPUParticleEmitterParameter(ui32(1));
+        CPUParticleEmitterParameter mWindTimeOffset = CPUParticleEmitterParameter(f32(1.0f));
+        bool mUseWind = true;
     );
 public:
     void addRequiredVariables(RequiredEmitterVariables& variables) const override;

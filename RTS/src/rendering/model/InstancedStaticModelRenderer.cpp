@@ -35,6 +35,7 @@ InstancedStaticModelRenderer::InstancedStaticModelRenderer() {
     // TODO: USE
     //mCutoutShadowMapperShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("shadow_mapper_cutout"));
     mSmudgeShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("smudge_model"));
+    mSmudgeShaderMutate = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("smudge_model_mutate"));
     mWaterShader = AssetUtil::addAssetToBundleAndGetUnloaded<MaterialShaderDef>(mShaderAssets, CStrToken("water_model"));
 
     static_assert(e_count(MaterialRenderPassType) == 3);
@@ -255,7 +256,7 @@ void InstancedStaticModelRenderer::renderMutations(const InstancedStaticModelMan
             def = mStandardShaderMutate;
             break;
         case MaterialRenderPassType::Smudge:
-            def = mSmudgeShader;
+            def = mSmudgeShaderMutate;
             break;
         case MaterialRenderPassType::Water:
             break;

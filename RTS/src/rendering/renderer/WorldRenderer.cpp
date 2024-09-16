@@ -133,7 +133,6 @@ void WorldRenderer::initPostLoad() {
         }
     }
 
-    mSceneLightingMaterial = shaderRepo.getAssetHandle(CStrToken("scene_lighting"));
     mCopyDepthMaterial = shaderRepo.getAssetHandle(CStrToken("copy_depth"));
     mPassthroughMaterial = shaderRepo.getAssetHandle(CStrToken("pass_through"));
 }
@@ -167,6 +166,9 @@ void WorldRenderer::renderWorld(const Camera3D* camera, const GlobalRenderData& 
         return;
     }
     mCamera = camera;
+
+    // Clear emissive manually since not all materials write to it
+    activeGBuffer->clearAttachment(vg::GBufferAttachmentIndex::TERTIARY2, f32v4(0.0f));
 
     // Any per frame world render data
     const RenderableWorldIndex worldIndex = mActiveWorld->isEditorWorld() ? RenderableWorldIndex::Editor : RenderableWorldIndex::Game;

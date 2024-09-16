@@ -59,8 +59,10 @@ void LightRenderer::renderSunlight(vg::GBuffer& inputGBuffer, VGTexture shadowTe
         glBindTextureUnit(textureUnit++, inputGBuffer.getAlbedoTexture());
         glUniform1i(mSunlightMaterialPbr->getUniform("unTextureNormals"), textureUnit);
         glBindTextureUnit(textureUnit++, inputGBuffer.getNormalTexture());
-        glUniform1i(mSunlightMaterialPbr->getUniform("unTextureRoughness"), textureUnit);
+        glUniform1i(mSunlightMaterialPbr->getUniform("unTextureRoughMetal"), textureUnit);
         glBindTextureUnit(textureUnit++, inputGBuffer.getTertiaryTexture1());
+        glUniform1i(mSunlightMaterialPbr->getUniform("unTextureEmissive"), textureUnit);
+        glBindTextureUnit(textureUnit++, inputGBuffer.getTertiaryTexture2());
         glUniform1i(mSunlightMaterialPbr->getUniform("unTextureDepth"), textureUnit);
         glBindTextureUnit(textureUnit++, inputGBuffer.getDepthTexture());
         glUniform1i(mSunlightMaterialPbr->getUniform("unTextureShadow"), textureUnit);

@@ -21,7 +21,8 @@ CPUParticleSystem::CPUParticleSystem(const ParticleUpdateFunction& updateFunctio
 CPUParticleSystem::CPUParticleSystem(const ParticleSystemDef& def, f32v3 position, f32q orientation, ParticleSystemInputsPtr inputs) :
     mInputs(std::move(inputs)),
     mRootPosition(position),
-    mOrientationMatrix(glm::toMat3(orientation)
+    mOrientationMatrix(glm::toMat3(orientation)),
+    mInverseOrientationMatrix(glm::transpose(mOrientationMatrix) // Rotation is orthogonal, so inverse is transpose
 ) {
     if (mInputs == nullptr) {
         mInputs = def.mDefaultInputs;
@@ -31,7 +32,9 @@ CPUParticleSystem::CPUParticleSystem(const ParticleSystemDef& def, f32v3 positio
     mEmitters.reserve(def.mEmitters.size());
     for (auto&& emitterDef : def.mEmitters) {
         if (emitterDef.isValid()) [[likely]] {
-            mEmitters.emplace_back(std::make_unique<CpuParticleEmitter>(emitterDef, mInputs.get(), &def.mUserParameters));
+            mEmitters.emplace_back(
+                std::make_unique<CpuParticleEmitter>(emitterDef, mInputs.get(), &def.mUserParameters, mRootPosition, &mOrientationMatrix, &mInverseOrientationMatrix)
+            );
         }
         else {
             LOG_WARN("Emitter {} on {} is invalid", emitterDef.mEmitterName.toString(), def.getName().toString());

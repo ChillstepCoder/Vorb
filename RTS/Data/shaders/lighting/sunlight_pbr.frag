@@ -8,7 +8,8 @@
 
 uniform sampler2D unTextureAlbedo;
 uniform sampler2D unTextureNormals;
-uniform sampler2D unTextureRoughness;
+uniform sampler2D unTextureRoughMetal;
+uniform sampler2D unTextureEmissive;
 uniform sampler2D unTextureDepth;
 uniform sampler2D unTextureShadow;
 
@@ -23,6 +24,8 @@ uniform float unLightingSplit;
 
 in vec2 fUV;
 layout (location = 0) out vec3 oColor;
+
+const float EMISSIVE_SCALE = 3.0;
 
 vec3 getCurrentSunColor(int preset, vec3 sunColor, float sunIntensity) {
 	float sunIntensityAdjusted = max(sunIntensity * unSunIntensity[preset], 0.0);
@@ -42,7 +45,7 @@ void main() {
     albedoAo.rgb = gammaDecode(albedoAo.rgb, unGamma[preset]);
     vec3 normal = texture(unTextureNormals, fUV).rgb;
 	normal = normalize(normal * 2.0 - 1.0);
-    vec2 metallicRoughness = texture(unTextureRoughness, fUV).rg;
+    vec2 metallicRoughness = texture(unTextureRoughMetal, fUV).rg;
     float ao = albedoAo.a;
     
     // PBR
@@ -53,5 +56,7 @@ void main() {
     // Haze (TODO: Final tonemap?)
     vec3 hazeColor = texture(GradientTexture, vec2(0.5, max(SunHeight, 0.0))).rgb;
     oColor.rgb = applyHaze(oColor.rgb, worldPos, preset, hazeColor);
+    vec4 emissive = texture2D(unTextureEmissive, fUV).rgba;
+    oColor.rgb += emissive.rgb * EMISSIVE_SCALE * emissive.a;
     oColor.rgb = gammaEncode(oColor.rgb, unGamma[preset]);
 }
