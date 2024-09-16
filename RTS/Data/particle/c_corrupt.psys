@@ -2,7 +2,7 @@ emitters:
   - base:
       scale: [0.2,0.2]
       color: [255,255,255,255]
-      max_particles: 3000
+      max_particles: 2600
       lifetime: 3
       p_lifespan: 3
       looping: 1
@@ -12,8 +12,12 @@ emitters:
       e_update:
         - spawn_burst:
             delay: 0
-            spawn_count:
-              max_part: {}
+            spawn_count: 400
+        - spawn_rate:
+            emit_rate: 0
+            initial_delay: 0
+            spawn_count: 25
+            time_stop: 1.5
       p_init:
         - mesh_rep_src:
             scale: 4
@@ -63,7 +67,7 @@ emitters:
       color: [255,255,255,255]
       max_particles: 500
       lifetime: 3
-      p_lifespan: 3
+      p_lifespan: 4
       looping: 1
       blend: additive
       mat: dot_texture_06
@@ -123,8 +127,8 @@ emitters:
                 norm_input:
                   p_norm_life: {}
                 keys:
-                  - [0,56,255,255,32]
-                  - [1,56,255,255,0]
+                  - [0,50,139,255,32]
+                  - [1,142,44,255,0]
   - bigglow:
       scale: [30,30]
       color: [255,255,255,255]
@@ -190,8 +194,8 @@ emitters:
                 norm_input:
                   p_norm_life: {}
                 keys:
-                  - [0,56,255,255,32]
-                  - [1,56,255,255,0]
+                  - [0,33,98,211,32]
+                  - [1,50,173,255,0]
 lifetime: 10.17
 inputs:
   - FloatSourceScale: 1
