@@ -30,13 +30,19 @@ struct WorldGenerationData {
     f32 mContinentRadius = 14000.0f;
     f32 mContinentOutlineScale = SQ(20000.0f);
     i32 mDesiredRiverCount = 32; // 88
+
     // Constant
     f32 mContinentRadiusSq = SQ(mContinentRadius);
     char mSeed[MAX_WORLD_GEN_SEED_SIZE] = "default";
     f32 mSeedHashed = getSeedHash("default");
     ui32 mSeedInt = getSeedInt(getSeedHash("default"));
     i32v2 mCorruptSpawnCountRange = i32v2(300, 400);
-    i32 mBiomeGrowPassCount = 5; //32
+
+#ifdef DEBUG
+    i32 mBiomeGrowPassCount = 4;
+#else
+    i32 mBiomeGrowPassCount = 48;
+#endif
 
     static constexpr f32 getSeedHash(const char seed[MAX_WORLD_GEN_SEED_SIZE]) {
         int hash = 2047471739; // Starting value (Random huge prime)

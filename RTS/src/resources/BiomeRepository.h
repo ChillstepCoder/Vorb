@@ -2,9 +2,7 @@
 
 #include "resources/IAssetRepository.h"
 
-#include <gli/texture2d.hpp>
 #include "definitions/BiomeDef.h"
-
 
 class BiomeRepository : public IAssetRepository<BiomeDef> {
 public:

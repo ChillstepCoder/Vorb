@@ -18,7 +18,7 @@ void HostEffectContext::playParticleEffectAtPoint(
 }
 
 void HostEffectContext::playMutationEffect(
-    const f32m4& transform, ModelID startModel, ModelID endModel, TileMutationType mutationType, BitFlags<EffectCreateFlags> flags
+    const f32m4& transform, ModelID startModel, ModelID endModel, MutationType mutationType, BitFlags<EffectCreateFlags> flags
 ) {
 
     // TODO: Replicate to other clients

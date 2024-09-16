@@ -440,7 +440,7 @@ void EditorWorldInterfaceController::tryUpdateAndRenderInteractPopup() {
                 TileHandle* tileHandlePtr = new TileHandle(mSelectedTileHandle);
                 GameThreadTasks::getInstance().addGenericTask([tileHandlePtr]() {
                     TileContainer* container = tileHandlePtr->getMutableContainer();
-                    container->tryTransformTile(tileHandlePtr->tileIndex, TileMutationType::CCorrupt);
+                    container->tryTransformTile(tileHandlePtr->tileIndex, MutationType::CCorrupt);
                     delete tileHandlePtr;
                 });
             }

@@ -513,7 +513,7 @@
     <ClCompile Include="src\tile\TileContainerLoader.cpp" />
     <ClCompile Include="src\tile\TileDamageData.cpp" />
     <ClCompile Include="src\definitions\TileDef.cpp" />
-    <ClCompile Include="src\tile\TileMutationDef.cpp" />
+    <ClCompile Include="src\tile\MutationDef.cpp" />
     <ClCompile Include="src\ui\debugging\GameplayDebugger.cpp" />
     <ClCompile Include="src\ui\debugging\MovementDebugger.cpp" />
     <ClCompile Include="src\ui\debugging\PhysicsDebugger.cpp" />
@@ -1097,7 +1097,7 @@
     <ClInclude Include="src\tile\SimTileReservation.h" />
     <ClInclude Include="src\tile\TileContainerLoader.h" />
     <ClInclude Include="src\tile\TileDamageData.h" />
-    <ClInclude Include="src\tile\TileMutationDef.h" />
+    <ClInclude Include="src\tile\MutationDef.h" />
     <ClInclude Include="src\tile\TileType.h" />
     <ClInclude Include="src\tile\TileTypeDataVariant.h" />
     <ClInclude Include="src\ui\debugging\GameplayDebugger.h" />
@@ -1229,7 +1229,7 @@
     <ClInclude Include="src\util\Winding.h" />
     <ClInclude Include="src\weather\CloudMeshManager.h" />
     <ClInclude Include="src\weather\WeatherManager.h" />
-    <ClInclude Include="src\world\biome\BiomeCorruptions.h" />
+    <ClInclude Include="src\world\biome\BiomeMutations.h" />
     <ClInclude Include="src\world\biome\BiomeGrid.h" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkConst.h" />

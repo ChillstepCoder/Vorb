@@ -756,7 +756,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
         ModelID nextId;
         TileIndex tileIndex;
         ui8 nextVariant;
-        TileMutationType transformType;
+        MutationType transformType;
     };
     struct ModelEditEvents {
         TileContainerID containerId;
@@ -782,7 +782,7 @@ void InstancedStaticModelManager::onContainerEditEvent(const TileContainerEvent&
             for (ui32 i = 0; i < editEvent.editCount; ++i) {
                 TileContainerEditLayerEventData& edit = editEvent.changeLayerArray[i];
 
-                if (edit.mutationType != TileMutationType::COUNT) {
+                if (edit.mutationType != MutationType::COUNT) {
                     assert(edit.prevId != TILE_ID_NONE && edit.newId != TILE_ID_NONE);
                     editEvents.mutationEvents.emplace_back(ModelMutationEvent{ TileRepository::get().getTileModelID(edit.newId), edit.tileIndex, 0/*TODO: VARIANTS*/, edit.mutationType});
                     continue;
@@ -1062,29 +1062,29 @@ void InstancedStaticModelManager::updatePendingLooseModelInstances() {
     }
 }
 
-color4 InstancedStaticModelManager::getMutationColor(TileMutationType type) {
+color4 InstancedStaticModelManager::getMutationColor(MutationType type) {
     // Alpha is emissive intensity
     switch (type) {
-        case TileMutationType::BCorrupt:
+        case MutationType::BCorrupt:
             break;
-        case TileMutationType::BPurify:
+        case MutationType::BPurify:
             break;
-        case TileMutationType::CCorrupt:
+        case MutationType::CCorrupt:
             return color4(62, 89, 221, 39);
-        case TileMutationType::CPurify:
+        case MutationType::CPurify:
             break;
-        case TileMutationType::Grow:
+        case MutationType::Grow:
             break;
-        case TileMutationType::Decay:
+        case MutationType::Decay:
             break;
-        case TileMutationType::COUNT:
+        case MutationType::COUNT:
             assert(false);
             break;
         default:
             break;
     }
     return color4(255, 255, 255, 255);
-    static_assert(e_count(TileMutationType) == 6);
+    static_assert(e_count(MutationType) == 6);
 }
 
 void InstancedStaticModelManager::removeModelInstanceInternal(TileModelInstanceIndex instanceIndex) {

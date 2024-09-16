@@ -93,7 +93,7 @@ void WorldDataGenerator::beginGeneration(HostWorldData& worldData, const WorldGe
             Services::Threadpool::ref().addTask([this, &runningTasks, &biomePixelData, B_ROWS, start = i * B_ROWS, &biomeGrid, bWidth]() {
                 for (ui32 y = start; y < start + B_ROWS; ++y) {
                     for (ui32 x = 0; x < bWidth; ++x) {
-                        const BiomeUniqueID id = biomeGrid.getVertexForGenerationFromBlockPos(i32v2(x, y)).biomeUniqueId;
+                        const BiomeUniqueID id = biomeGrid.getVertexForGenerationFromBlockPos(BlockCoord(x, y)).biomeUniqueId;
                         biomePixelData[y * bWidth + x] = (ui8)id;
                         mMappedBiomes[y * bWidth + x] = (ui32)id;
                     }

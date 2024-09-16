@@ -3,7 +3,7 @@
 #include "rendering/model/MaterialRenderPassType.h"
 
 #include "tile/TileDamageData.h"
-#include "tile/TileMutationDef.h"
+#include "tile/MutationDef.h"
 
 #include "definitions/ModelDef.h"
 
@@ -113,7 +113,7 @@ private:
     void init();
     void updatePendingLooseModelInstances();
 
-    color4 getMutationColor(TileMutationType type);
+    color4 getMutationColor(MutationType type);
 
     void removeModelInstanceInternal(TileModelInstanceIndex instanceIndex);
 
@@ -154,7 +154,7 @@ private:
     struct MutationData {
         TileModelInstanceIndex fromIndex;
         TileModelInstanceIndex toIndex;
-        TileMutationType type;
+        MutationType type;
         bool isFrom; // If true, we are the fromIndex
     };
 

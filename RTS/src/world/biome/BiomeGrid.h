@@ -7,6 +7,8 @@
 #include "serialization/BitseryExt.h"
 #include "world/WorldConstants.h"
 
+#include "tile/MutationDef.h"
+
 constexpr int MAX_PRIMARY_RESOURCES_PER_BIOME = 4;
 
 enum class BiomeFlags : ui8 {
@@ -67,15 +69,19 @@ public:
     std::array<BiomeVertex, BIOME_PATCH_SIZE_VERTS>& getPatch(i32v2 cellXY) {
         return mGrid[mSpatialGrid.getIDfromGridXY(cellXY)];
     }
-    // template <bool THREAD_SAFE>
+    // Thread safe
     const BiomeDef* getBiomeDefAtPoint(i32v2 worldPos) const;
+    // Returns BiomeUniqueID::INVALID on fail
+    BiomeUniqueID tryMutateBiomeAtPoint(i32v2 worldPos, BiomeMutations type);
+    // Returns BiomeUniqueID::INVALID on fail
+    BiomeUniqueID tryMutateBiomeAtBlockPos(BlockCoord blockPos, BiomeMutations type);
 
     // We will manage the lifetime of the texture
     void setBiomeTexture(VGTexture biomeTexture) { mBiomeTexture = biomeTexture; }
     // Safe to call from render thread
     VGTexture getBiomeTexture() const { return mBiomeTexture; }
 
-    BiomeVertex& getVertexForGenerationFromBlockPos(i32v2 blockPos);
+    BiomeVertex& getVertexForGenerationFromBlockPos(BlockCoord blockPos);
     BiomePatch& getPatchForLoad(ui32 patchId) { return mGrid[patchId]; }
 
 private:
@@ -83,6 +89,7 @@ private:
 
     // ======================= Data =======================
     std::vector<BiomePatch> mGrid;
+    mutable std::mutex mGridMutex;
     std::unique_ptr<std::atomic_flag[]> mPatchSavesUpToDate;
     ui32 mWidthVerts = 0;
     SpatialGrid2D mSpatialGrid;

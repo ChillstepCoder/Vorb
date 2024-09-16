@@ -283,7 +283,7 @@ void BiomeEditorViewportPanel::initializeWorld() {
     worldData.biomeGrid = std::make_unique<BiomeGrid>(worldData.worldWidth);
     worldData.biomeGrid->setBiomeTexture(mBiomeTexture);
     for (int v = 0; v < worldData.biomeGrid->getTotalVertices(); ++v) {
-        const i32v2 pos(v % worldData.biomeGrid->getWidthVertices(), v / worldData.biomeGrid->getWidthVertices());
+        const BlockCoord pos(v % worldData.biomeGrid->getWidthVertices(), v / worldData.biomeGrid->getWidthVertices());
         worldData.biomeGrid->getVertexForGenerationFromBlockPos(pos).biomeUniqueId = def.uniqueId;
     }
 

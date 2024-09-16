@@ -28,16 +28,53 @@ const BiomeDef* BiomeGrid::getBiomeDefAtPoint(i32v2 worldPos) const {
     ui32 id = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos, cellOffset);
     cellOffset /= BIOME_VERTEX_STRIDE;
 
-    const BiomeUniqueID uniqueId = mGrid[id][cellOffset.y * BIOME_PATCH_WIDTH_VERTS + cellOffset.x].biomeUniqueId;
+    const BiomeVertex& vertex = mGrid[id][cellOffset.y * BIOME_PATCH_WIDTH_VERTS + cellOffset.x];
+    BiomeUniqueID uniqueId;
+    {
+        std::lock_guard lock(mGridMutex);
+        uniqueId = vertex.biomeUniqueId;
+    }
+
     if (uniqueId == BiomeUniqueID::INVALID) [[unlikely]] {
         return nullptr;
     }
     return &BiomeRepository::get().getBiomeFromUniqueID(uniqueId);
 }
 
-BiomeVertex& BiomeGrid::getVertexForGenerationFromBlockPos(i32v2 blockPos) {
+BiomeUniqueID BiomeGrid::tryMutateBiomeAtPoint(i32v2 worldPos, BiomeMutations type) {
+    if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWidthVerts * BIOME_VERTEX_STRIDE || worldPos.y >= mWidthVerts * BIOME_VERTEX_STRIDE) [[unlikely]] {
+        return BiomeUniqueID::INVALID;
+    }
+
     i32v2 cellOffset;
-    ui32 id = mSpatialGrid.getIDAndCellOffsetAtWorldPos(blockPos * BLOCK_WIDTH, cellOffset);
+    ui32 id = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos, cellOffset);
+    cellOffset /= BIOME_VERTEX_STRIDE;
+
+    BiomeVertex& vertex = mGrid[id][cellOffset.y * BIOME_PATCH_WIDTH_VERTS + cellOffset.x];
+    BiomeUniqueID uniqueId;
+    {
+        std::lock_guard lock(mGridMutex);
+        uniqueId = vertex.biomeUniqueId;
+        if (uniqueId == BiomeUniqueID::INVALID) [[unlikely]] {
+            return BiomeUniqueID::INVALID;
+        }
+        const BiomeDef& def = BiomeRepository::get().getBiomeFromUniqueID(uniqueId);
+        if (def.isCorruptable) {
+            vertex.biomeUniqueId = def.mutatedVersions[e_cast(type)]->uniqueId;
+            vertex.biomeFlags.clearBit(BiomeFlags::BASE_BIOME);
+            return vertex.biomeUniqueId;
+        }
+    }
+    return BiomeUniqueID::INVALID;
+}
+
+BiomeUniqueID BiomeGrid::tryMutateBiomeAtBlockPos(BlockCoord blockPos, BiomeMutations type) {
+    return tryMutateBiomeAtPoint(blockPos.v * BLOCK_WIDTH, type);
+}
+
+BiomeVertex& BiomeGrid::getVertexForGenerationFromBlockPos(BlockCoord blockPos) {
+    i32v2 cellOffset;
+    const ui32 id = mSpatialGrid.getIDAndCellOffsetAtWorldPos(blockPos.v * BLOCK_WIDTH, cellOffset);
     cellOffset /= BIOME_VERTEX_STRIDE;
 
     return mGrid[id][cellOffset.y * BIOME_PATCH_WIDTH_VERTS + cellOffset.x];

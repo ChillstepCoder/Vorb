@@ -3,7 +3,7 @@
 #include "world/WorldContextObject.h"
 #include "rendering/particle/ParticleSystemInputs.h"
 
-#include "tile/TileMutationDef.h"
+#include "tile/MutationDef.h"
 
 class Camera3D;
 
@@ -31,7 +31,7 @@ public:
         const f32m4& transform,
         ModelID startModel,
         ModelID endModel,
-        TileMutationType mutationType,
+        MutationType mutationType,
         BitFlags<EffectCreateFlags> flags
     ) = 0;
 

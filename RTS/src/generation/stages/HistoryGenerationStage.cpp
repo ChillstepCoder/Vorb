@@ -96,10 +96,10 @@ bool HistoryGenerationStage::update() {
 void HistoryGenerationStage::handleHistoryEvent(HistoryEvent& event) {
     switch (event.type) {
         case HistoryEventType::ChernobogSpawn:
-            handleCorruptSpawn(BiomeCorruptions::Chernobog);
+            handleCorruptSpawn(BiomeMutations::Chernobog);
             break;
         case HistoryEventType::BanshiraSpawn:
-            handleCorruptSpawn(BiomeCorruptions::Banshira);
+            handleCorruptSpawn(BiomeMutations::Banshira);
             break;
         default:
             panic("Unhandled history event type");
@@ -107,7 +107,7 @@ void HistoryGenerationStage::handleHistoryEvent(HistoryEvent& event) {
     assert(e_count(HistoryEventType) == 2);
 }
 
-void HistoryGenerationStage::handleCorruptSpawn(BiomeCorruptions type) {
+void HistoryGenerationStage::handleCorruptSpawn(BiomeMutations type) {
     // For now, generate a random coordinate and search for land
     RandomGenerator generator(mWorldSeedInt + 9853 + mTickCount);
     constexpr ui32 MAX_RETRY_COUNT = 16;
@@ -117,15 +117,12 @@ void HistoryGenerationStage::handleCorruptSpawn(BiomeCorruptions type) {
     do {
         ui32 x = generator.getRandomUIntInRange(widthVerts * .05, widthVerts * .95);
         ui32 y = generator.getRandomUIntInRange(widthVerts * .05, widthVerts * .95);
-        BiomeVertex& vert = mBiomeGrid->getVertexForGenerationFromBlockPos(i32v2(x, y));
-        const BiomeDef& def = repo.getBiomeFromUniqueID(vert.biomeUniqueId);
-        if (def.isCorruptable) {
-            vert.biomeUniqueId = def.corruptVersions[e_cast(type)]->uniqueId;
-            vert.biomeFlags.clearBit(BiomeFlags::BASE_BIOME);
-
+        
+        BiomeUniqueID newBiomeId = mBiomeGrid->tryMutateBiomeAtBlockPos(BlockCoord(x, y), type);
+        if (newBiomeId != BiomeUniqueID::INVALID) {
             // Update gpu data
-            glTextureSubImage2D(mBiomeTexture, 0, x, y, 1, 1, GL_RED, GL_UNSIGNED_BYTE, &vert.biomeUniqueId);
-            mMappedBiomes[y * widthVerts + x] = (ui32)vert.biomeUniqueId;
+            glTextureSubImage2D(mBiomeTexture, 0, x, y, 1, 1, GL_RED, GL_UNSIGNED_BYTE, &newBiomeId);
+            mMappedBiomes[y * widthVerts + x] = (ui32)newBiomeId;
             glFlushMappedNamedBufferRange(mBiomeSSBO, y * widthVerts + x, sizeof(ui32));
             checkGlError("HistoryGenerationStage::handleCorruptSpawn");
             return;
@@ -208,7 +205,7 @@ void HistoryGenerationStage::downloadBiomes() {
         const ui32 yStride = y * widthVerts;
         for (i32 x = 8 + ((y + isOdd) % 2); x < widthVerts - 8; x += 2) {
             const ui32 index = yStride + x;
-            BiomeVertex& vertex = mBiomeGrid->getVertexForGenerationFromBlockPos(i32v2(x, y));
+            BiomeVertex& vertex = mBiomeGrid->getVertexForGenerationFromBlockPos(BlockCoord(x, y));
             vertex.biomeUniqueId = BiomeUniqueID(mMappedBiomes[index]);
         }
     }

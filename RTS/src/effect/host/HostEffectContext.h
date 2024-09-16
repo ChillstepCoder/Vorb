@@ -22,7 +22,7 @@ public:
         const f32m4& transform,
         ModelID startModel,
         ModelID endModel,
-        TileMutationType mutationType,
+        MutationType mutationType,
         BitFlags<EffectCreateFlags> flags
     ) override;
 protected:

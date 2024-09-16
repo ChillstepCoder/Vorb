@@ -2,7 +2,7 @@
 
 #include "generation/NoiseFunction.hpp"
 
-#include "world/biome/BiomeCorruptions.h"
+#include "world/biome/BiomeMutations.h"
 #include "definitions/TileDistributionDef.h"
 
 // .biome file names should match exactly
@@ -137,8 +137,8 @@ public:
     // If a sub biome, this will be set by file. If corrupt, this will be set automatically
     BiomeAssetRef parentBiomeRef;
     BiomeDef* parentBiome = nullptr;
-    BiomeDef* corruptVersions[e_count(BiomeCorruptions)] = {};
-    BiomeCorruptions corruptType = BiomeCorruptions::COUNT;
+    BiomeDef* mutatedVersions[e_count(BiomeMutations)] = {};
+    BiomeMutations corruptType = BiomeMutations::COUNT;
     // Index in the color map texture array
     ui32 colorMapTextureIndex = 0;
     bool isCorruptable = false;

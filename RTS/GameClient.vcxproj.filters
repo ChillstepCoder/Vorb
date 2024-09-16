@@ -1341,7 +1341,7 @@
     <ClCompile Include="src\definitions\TileDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\tile\TileMutationDef.cpp">
+    <ClCompile Include="src\tile\MutationDef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\rendering\model\MaterialRenderPassType.cpp">
@@ -2612,7 +2612,7 @@
     <ClInclude Include="src\generation\stages\HistoryGenerationStage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\biome\BiomeCorruptions.h">
+    <ClInclude Include="src\world\biome\BiomeMutations.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\resources\DataAssetRepository.h">
@@ -3170,7 +3170,7 @@
     <ClInclude Include="src\rendering\particle\CpuParticleEmitterRenderList.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\tile\TileMutationDef.h">
+    <ClInclude Include="src\tile\MutationDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\rendering\particle\ParticleEmitterVariableName.h">

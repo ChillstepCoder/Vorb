@@ -40,7 +40,7 @@ struct TileContainerEditLayerEventData {
     TileID newId;
     ui8 newVariant;
     TileTypeDataVariant typeData;
-    TileMutationType mutationType = TileMutationType::COUNT;
+    MutationType mutationType = MutationType::COUNT;
 };
 
 struct TileContainerEditZPosEventData {

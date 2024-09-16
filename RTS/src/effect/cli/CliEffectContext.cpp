@@ -103,7 +103,7 @@ void CliEffectContext::playParticleEffectAtPoint(EffectAssetRef effectName, f32v
     }
 }
 
-void CliEffectContext::playMutationEffect(const f32m4& transform, ModelID startModel, ModelID endModel, TileMutationType mutationType, BitFlags<EffectCreateFlags> flags) {
+void CliEffectContext::playMutationEffect(const f32m4& transform, ModelID startModel, ModelID endModel, MutationType mutationType, BitFlags<EffectCreateFlags> flags) {
 
     ParticleSystemInputsPtr inputs = std::make_unique<ParticleSystemInputs>();
     f32v3 scale;
@@ -119,31 +119,31 @@ void CliEffectContext::playMutationEffect(const f32m4& transform, ModelID startM
     EffectAssetRef effectName;
 
     switch (mutationType) {
-        case TileMutationType::BCorrupt:
+        case MutationType::BCorrupt:
             assert(false);
             break;
-        case TileMutationType::BPurify:
+        case MutationType::BPurify:
             assert(false);
             break;
-        case TileMutationType::CCorrupt:
+        case MutationType::CCorrupt:
             effectName = CStrToken("c_corrupt");
             break;
-        case TileMutationType::CPurify:
+        case MutationType::CPurify:
             assert(false);
             break;
-        case TileMutationType::Grow:
+        case MutationType::Grow:
             assert(false);
             break;
-        case TileMutationType::Decay:
+        case MutationType::Decay:
             assert(false);
             break;
-        case TileMutationType::COUNT:
+        case MutationType::COUNT:
             break;
         default:
             assert(false);
 
     }
-    static_assert(e_count(TileMutationType) == 6, "Please update this switch statement");
+    static_assert(e_count(MutationType) == 6, "Please update this switch statement");
 
     playParticleEffectAtPoint(effectName, translation, rot, std::move(inputs), flags);
 }

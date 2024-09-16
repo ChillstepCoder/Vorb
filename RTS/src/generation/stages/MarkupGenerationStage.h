@@ -1,6 +1,6 @@
 #pragma once
 #include "IWorldGenerationStage.h"
-#include "world/biome/BiomeCorruptions.h"
+#include "world/biome/BiomeMutations.h"
 #include "world/World.h"
 #include <mutex>
 

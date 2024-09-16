@@ -159,7 +159,7 @@ void TileContainer::setTile(TileIndex i, TileID id, ui8 variant) {
     onTileChanged(i);
 }
 
-bool TileContainer::tryTransformTile(TileIndex i, TileMutationType type) {
+bool TileContainer::tryTransformTile(TileIndex i, MutationType type) {
     assert(isReady());
     Tile& tile = mTiles[i];
     const TileID prevId = tile.mainLayer;

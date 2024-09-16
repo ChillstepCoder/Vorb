@@ -1,7 +1,7 @@
 #pragma once
 
 #include "tile/TileHarvestable.h"
-#include "tile/TileMutationDef.h"
+#include "tile/MutationDef.h"
 
 // TODO: Do we need rendering here? (MaterialDesc)
 #include "rendering/material/MaterialDef.h"
@@ -94,8 +94,8 @@ public:
     ui8 navMask = 0xff; // Access bits mapped to Cartesian8 based on default (SOUTH) orientation
     VisibilityBlockerType visBlockerType = VisibilityBlockerType::NONE;
     TileType tileType = TileType::Default;
-    std::array<TileID, e_count(TileMutationType)> transformations;
-    std::vector<TileMutationDef> transformationDefs;
+    std::array<TileID, e_count(MutationType)> transformations;
+    std::vector<MutationDef> transformationDefs;
     union {
         struct {
             f32 heightOffsetSouth;

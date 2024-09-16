@@ -96,7 +96,7 @@ void TileRepository::fixupRegisteredAsset(AssetID id) {
 
     // Transformations
     for (auto& t : def.transformationDefs) {
-        assert(t.type != TileMutationType::COUNT);
+        assert(t.type != MutationType::COUNT);
         assert(def.transformations[e_cast(t.type)] == TILE_ID_NONE);
         def.transformations[e_cast(t.type)] = t.target.getAssetID();
     }
