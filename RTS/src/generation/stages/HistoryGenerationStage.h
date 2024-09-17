@@ -1,6 +1,6 @@
 #pragma once
 #include "IWorldGenerationStage.h"
-#include "world/biome/BiomeMutations.h"
+#include "world/biome/LivingBiomeType.h"
 
 struct SimThreadEntityRequest;
 class HostSimContext;
@@ -54,7 +54,7 @@ private:
 
     // History events
     void handleHistoryEvent(HistoryEvent& event);
-    void handleCorruptSpawn(BiomeMutations type);
+    void handleCorruptSpawn(LivingBiomeType type);
     
     void updateBiomes();
     void growBiomesStep();

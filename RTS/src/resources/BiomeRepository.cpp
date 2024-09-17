@@ -123,10 +123,10 @@ void BiomeRepository::linkCorruptedBiomes() {
     for (size_t uniqueId = 0; uniqueId < mUniqueIDMap.size(); ++uniqueId) {
         const AssetID assetId = mUniqueIDMap[uniqueId];
         BiomeDef& def = *mAssets[assetId];
-        static_assert(e_count(BiomeMutations) == 2);
+        static_assert(e_count(LivingBiomeType) == 2);
         if (def.isCorruptable) {
             std::string_view baseName = enumNameMap.at(BiomeUniqueID(uniqueId));
-            if (uniqueId + e_count(BiomeMutations) >= mUniqueIDMap.size()) {
+            if (uniqueId + e_count(LivingBiomeType) >= mUniqueIDMap.size()) {
                 panic("Bounds overflow in biome map with corruptable biomes when evaluating {}", baseName);
             }
             // Make sure we have both children in the enum
@@ -140,14 +140,14 @@ void BiomeRepository::linkCorruptedBiomes() {
             }
             BiomeDef& banshira = *mAssets[mUniqueIDMap[uniqueId + 1]];
             BiomeDef& chernobog = *mAssets[mUniqueIDMap[uniqueId + 2]];
-            def.mutatedVersions[e_cast(BiomeMutations::Banshira)] = mAssets[mUniqueIDMap[uniqueId + 1]].get();
-            def.mutatedVersions[e_cast(BiomeMutations::Chernobog)] = mAssets[mUniqueIDMap[uniqueId + 2]].get();
-            for (int i = 0; i < e_count(BiomeMutations); ++i) {
+            def.mutatedVersions[e_cast(LivingBiomeType::Banshira)] = mAssets[mUniqueIDMap[uniqueId + 1]].get();
+            def.mutatedVersions[e_cast(LivingBiomeType::Chernobog)] = mAssets[mUniqueIDMap[uniqueId + 2]].get();
+            for (int i = 0; i < e_count(LivingBiomeType); ++i) {
                 BiomeDef& child = *def.mutatedVersions[i];
                 assert(!child.parentBiomeRef.isValid() || child.parentBiomeRef.getAssetID() == def.getID());
                 child.parentBiomeRef.setAssetID(def.getID());
                 child.parentBiome = &def;
-                child.corruptType = BiomeMutations(i);
+                child.corruptType = LivingBiomeType(i);
             }
         }
     }
@@ -172,20 +172,20 @@ void BiomeRepository::generateBiomesGLSLFile() {
     for (size_t uniqueId = 0; uniqueId < mUniqueIDMap.size(); ++uniqueId) {
         const AssetID assetId = mUniqueIDMap[uniqueId];
         const BiomeDef& def = *mAssets[assetId];
-        fileData += "    " + nString(def.corruptType == BiomeMutations::COUNT ? "0" : std::to_string((int)def.corruptType + 1)) + nString(", // ") + nString(enumNameMap.at(BiomeUniqueID(uniqueId))) + "\n";
+        fileData += "    " + nString(def.corruptType == LivingBiomeType::COUNT ? "0" : std::to_string((int)def.corruptType + 1)) + nString(", // ") + nString(enumNameMap.at(BiomeUniqueID(uniqueId))) + "\n";
     }
     fileData += "};\n";
 
     // Write biome transforms
-    static_assert(e_count(BiomeMutations) == 2 && "Ensure this handles new corruption");
+    static_assert(e_count(LivingBiomeType) == 2 && "Ensure this handles new corruption");
     fileData += "\nconst uvec3 BIOME_TRANSFORM[" + std::to_string(mAssetRegistry.size()) + "] = {\n";
     for (size_t uniqueId = 0; uniqueId < mUniqueIDMap.size(); ++uniqueId) {
         const AssetID assetId = mUniqueIDMap[uniqueId];
         const BiomeDef& def = *mAssets[assetId];
         const nString idStr = std::to_string(e_cast(def.uniqueId));
         if (def.isCorruptable) {
-            const nString banshiraIdStr = std::to_string(e_cast(def.mutatedVersions[e_cast(BiomeMutations::Banshira)]->uniqueId));
-            const nString chernobogIdStr = std::to_string(e_cast(def.mutatedVersions[e_cast(BiomeMutations::Chernobog)]->uniqueId));
+            const nString banshiraIdStr = std::to_string(e_cast(def.mutatedVersions[e_cast(LivingBiomeType::Banshira)]->uniqueId));
+            const nString chernobogIdStr = std::to_string(e_cast(def.mutatedVersions[e_cast(LivingBiomeType::Chernobog)]->uniqueId));
             fileData += "    uvec3(" + idStr + "," + banshiraIdStr + "," + chernobogIdStr + "), // " + nString(enumNameMap.at(BiomeUniqueID(uniqueId))) + "\n";
         }
         else {

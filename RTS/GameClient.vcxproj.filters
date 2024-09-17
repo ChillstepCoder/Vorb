@@ -2612,7 +2612,7 @@
     <ClInclude Include="src\generation\stages\HistoryGenerationStage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\biome\BiomeMutations.h">
+    <ClInclude Include="src\world\biome\LivingBiomeType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\resources\DataAssetRepository.h">

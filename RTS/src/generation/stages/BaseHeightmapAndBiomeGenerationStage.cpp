@@ -50,8 +50,8 @@ bool BaseHeightmapAndBiomeGenerationStage::update()
         glBindImageTexture(1, mBiomeTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R8);
 
         HeightmapPatchID patchIdLeftmost = mNextRowToGenerate * mHeightGrid->getWidthPatches();
-        const f32v2 rootPos = mHeightGrid->getSpatialGrid2D().getWorldPosXYFromID(patchIdLeftmost);
-        const i32v2 vertXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchIdLeftmost) * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+        const f32v2 rootPos = mHeightGrid->getSpatialGrid2D().getPosFromID(patchIdLeftmost);
+        const i32v2 vertXY = mHeightGrid->getSpatialGrid2D().getCellCoordsFromID(patchIdLeftmost) * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
 
         glProgramUniform2fv(def->mProgram.getID(), def->getUniform("unPatchWorldPos"), 1, &rootPos.x);
         glProgramUniform1ui(def->mProgram.getID(), def->getUniform("unYStride"), mHeightGrid->getWidthPatches() * (ui32)HEIGHTMAP_VERT_WIDTH_PER_PATCH);
@@ -121,10 +121,10 @@ void BaseHeightmapAndBiomeGenerationStage::finishGeneration(PendingBaseHeightAnd
 
                 // Set height data
                 const HeightmapPatchID patchId = rowIndex * mHeightGrid->getWidthPatches() + x;
-                const i32v2 rootPos = mHeightGrid->getSpatialGrid2D().getWorldPosXYFromID(patchId);
+                const i32v2 rootPos = mHeightGrid->getSpatialGrid2D().getPosFromID(patchId);
                 const i32v2 rootVertXY = rootPos / HEIGHTMAP_QUAD_SIZE;
                 const ui32 totalWidthVerts = mHeightGrid->getWidthPatches() * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
-                const i32v2 terrainRootXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchId);
+                const i32v2 terrainRootXY = mHeightGrid->getSpatialGrid2D().getCellCoordsFromID(patchId);
                 HeightmapPatch& patch = mHeightGrid->getPatchForGeneration(patchId);
                 f32AABB3& aabb = patch.aabb;
                 aabb.dims.x = HEIGHTMAP_PATCH_WIDTH_TILES;

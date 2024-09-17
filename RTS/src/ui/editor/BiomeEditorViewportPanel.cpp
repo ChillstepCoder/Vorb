@@ -338,8 +338,8 @@ void BiomeEditorViewportPanel::generateHeightmap(HostWorldData& worldData)
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mHeightSSBO);
 
-    const f32v2 rootPos = heightGrid->getSpatialGrid2D().getWorldPosXYFromID(0);
-    const i32v2 vertXY = heightGrid->getSpatialGrid2D().getGridXYFromID(0) * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
+    const f32v2 rootPos = heightGrid->getSpatialGrid2D().getPosFromID(0);
+    const i32v2 vertXY = heightGrid->getSpatialGrid2D().getCellCoordsFromID(0) * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
 
     glProgramUniform2fv(def->mProgram.getID(), def->getUniform("unPatchWorldPos"), 1, &rootPos.x);
     glProgramUniform1ui(def->mProgram.getID(), def->getUniform("unYStride"), widthPatches * (ui32)HEIGHTMAP_VERT_WIDTH_PER_PATCH);

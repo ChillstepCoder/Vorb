@@ -76,7 +76,7 @@ void Chunk::dispose() {
 }
 
 const HeightmapPatchID Chunk::getHeightmapPatchID() const {
-    return mWorld->getHeightmapGrid().getSpatialGrid2D().getIDAtWorldPos(mAABB.pos);
+    return mWorld->getHeightmapGrid().getSpatialGrid2D().getIDAtPos(mAABB.pos);
 }
 
 TileHandle Chunk::getTileHandleAt(const TileIndex index) const {

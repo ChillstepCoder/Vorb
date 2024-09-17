@@ -1229,7 +1229,7 @@
     <ClInclude Include="src\util\Winding.h" />
     <ClInclude Include="src\weather\CloudMeshManager.h" />
     <ClInclude Include="src\weather\WeatherManager.h" />
-    <ClInclude Include="src\world\biome\BiomeMutations.h" />
+    <ClInclude Include="src\world\biome\LivingBiomeType.h" />
     <ClInclude Include="src\world\biome\BiomeGrid.h" />
     <ClInclude Include="src\world\Chunk.h" />
     <ClInclude Include="src\world\ChunkConst.h" />

@@ -63,9 +63,9 @@ void CloudMeshManager::init(i32 worldWidthChunks, const f32v2& loadCenter) {
 
     ScopedTimer timer("Cloud init");
 
-    const CloudID centerCloudID = mSpatialGrid2D.getIDAtWorldPos(loadCenter);
-    const i32v2 centerGridPos = mSpatialGrid2D.getGridXYFromID(centerCloudID);
-    const i32v2 centerWorldPos = mSpatialGrid2D.getWorldPosXYFromID(centerCloudID);
+    const CloudID centerCloudID = mSpatialGrid2D.getIDAtPos(loadCenter);
+    const i32v2 centerGridPos = mSpatialGrid2D.getCellCoordsFromID(centerCloudID);
+    const i32v2 centerWorldPos = mSpatialGrid2D.getPosFromID(centerCloudID);
 
     // Initial variables
     mLastCenterPosition = centerGridPos;
@@ -75,9 +75,9 @@ void CloudMeshManager::init(i32 worldWidthChunks, const f32v2& loadCenter) {
     // TODO: Optimize iteration
     // TODO: This wont generate clouds off map if we spawn at edge of world
     for (CloudID id = 0; id < WORLD_SIZE_CLOUD_BATCHES; ++id) {
-        const i32v2 worldPos = mSpatialGrid2D.getWorldPosXYFromID(id);
+        const i32v2 worldPos = mSpatialGrid2D.getPosFromID(id);
         if (glm::length2(f32v2(worldPos - centerWorldPos)) < CLOUD_LOAD_RANGE_SQ) {
-            const i32v2 gridPos = mSpatialGrid2D.getGridXYFromID(id);
+            const i32v2 gridPos = mSpatialGrid2D.getCellCoordsFromID(id);
             tryGenerateCloudBatchAt(gridPos);
             // See if this is a spawn position
             auto&& it = spawnLookup.find(gridPos.y);
@@ -86,7 +86,7 @@ void CloudMeshManager::init(i32 worldWidthChunks, const f32v2& loadCenter) {
             }
             else {
                 // We are leftmost
-                if (gridPos.x < mSpatialGrid2D.getGridXYFromID(it->second).x) {
+                if (gridPos.x < mSpatialGrid2D.getCellCoordsFromID(it->second).x) {
                     it->second = id;
                 }
             }
@@ -96,7 +96,7 @@ void CloudMeshManager::init(i32 worldWidthChunks, const f32v2& loadCenter) {
     // Build spawn positions
     mCloudSpawnOffsets.reserve(spawnLookup.size());
     for (auto&& id : spawnLookup) {
-        const i32v2 spawnPos = mSpatialGrid2D.getGridXYFromID(id.second);
+        const i32v2 spawnPos = mSpatialGrid2D.getCellCoordsFromID(id.second);
         const i32v2 offset(spawnPos.x - centerGridPos.x, spawnPos.y - centerGridPos.y);
         mCloudSpawnOffsets.push_back(offset);
     }

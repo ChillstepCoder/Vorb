@@ -173,7 +173,7 @@ protected:
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>
 HeightmapPatchID FlatQuadtree<MAX_DEPTH, TOTAL_WIDTH>::getHeightmapPatchID(ui32 patchIndex) const {
     const i32v2 pos = i32v2(PATCH_POSITIONS.data[patchIndex].xy);
-    return mHeightmapGrid.getSpatialGrid2D().getIDAtWorldPos(mWorldPos + pos);
+    return mHeightmapGrid.getSpatialGrid2D().getIDAtPos(mWorldPos + pos);
 }
 
 template<ui32 MAX_DEPTH, ui32 TOTAL_WIDTH>

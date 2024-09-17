@@ -1,6 +1,6 @@
 #pragma once
 
-enum class BiomeMutations : ui8 {
+enum class LivingBiomeType : ui8 {
     Banshira,
     Chernobog,
     COUNT

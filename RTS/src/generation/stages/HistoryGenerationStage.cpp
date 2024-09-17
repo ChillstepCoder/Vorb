@@ -96,10 +96,10 @@ bool HistoryGenerationStage::update() {
 void HistoryGenerationStage::handleHistoryEvent(HistoryEvent& event) {
     switch (event.type) {
         case HistoryEventType::ChernobogSpawn:
-            handleCorruptSpawn(BiomeMutations::Chernobog);
+            handleCorruptSpawn(LivingBiomeType::Chernobog);
             break;
         case HistoryEventType::BanshiraSpawn:
-            handleCorruptSpawn(BiomeMutations::Banshira);
+            handleCorruptSpawn(LivingBiomeType::Banshira);
             break;
         default:
             panic("Unhandled history event type");
@@ -107,7 +107,7 @@ void HistoryGenerationStage::handleHistoryEvent(HistoryEvent& event) {
     assert(e_count(HistoryEventType) == 2);
 }
 
-void HistoryGenerationStage::handleCorruptSpawn(BiomeMutations type) {
+void HistoryGenerationStage::handleCorruptSpawn(LivingBiomeType type) {
     // For now, generate a random coordinate and search for land
     RandomGenerator generator(mWorldSeedInt + 9853 + mTickCount);
     constexpr ui32 MAX_RETRY_COUNT = 16;
@@ -130,13 +130,14 @@ void HistoryGenerationStage::handleCorruptSpawn(BiomeMutations type) {
     } while (retryCount++ < MAX_RETRY_COUNT);
 }
 
-void HistoryGenerationStage::updateBiomes()
-{
+void HistoryGenerationStage::updateBiomes() {
     if (mCurBiomeGrowPass.sync) {
+        PreciseTimer timer;
         GLenum waitResult = glClientWaitSync(mCurBiomeGrowPass.sync, GL_SYNC_FLUSH_COMMANDS_BIT, 0);
         if (waitResult == GL_ALREADY_SIGNALED || waitResult == GL_CONDITION_SATISFIED) {
             glDeleteSync(mCurBiomeGrowPass.sync);
             mCurBiomeGrowPass.sync = 0;
+            timer.start();
             downloadBiomes();
         }
         else {

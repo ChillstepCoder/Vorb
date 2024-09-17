@@ -522,8 +522,8 @@ void WorldEditorPanel::updateTerrainEdit() {
                 IHeightmapGrid& heightGrid = task->activeWorld->getHeightmapGrid();
                 for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y + HEIGHTMAP_QUAD_SIZE; worldPos.y += HEIGHTMAP_QUAD_SIZE) {
                     for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x + HEIGHTMAP_QUAD_SIZE; worldPos.x += HEIGHTMAP_QUAD_SIZE) {
-                        HeightmapPatchID id = heightGrid.getSpatialGrid2D().getIDAtWorldPos(worldPos);
-                        const f32v2 terrainWorldPos = heightGrid.getSpatialGrid2D().getWorldPosXYFromID(id);
+                        HeightmapPatchID id = heightGrid.getSpatialGrid2D().getIDAtPos(worldPos);
+                        const f32v2 terrainWorldPos = heightGrid.getSpatialGrid2D().getPosFromID(id);
                         const f32v2 offset = worldPos - terrainWorldPos;
                         const DTileCoord vertexPos = DTileCoord(offset / (f32)HEIGHTMAP_QUAD_SIZE);
                         const f32v2 vertexPosWorld = f32v2(vertexPos.v) * (f32)HEIGHTMAP_QUAD_SIZE + terrainWorldPos;
@@ -582,8 +582,8 @@ void WorldEditorPanel::updateSurfaceEdit()
                 TerrainSurfaceGrid& roadGrid = task->activeWorld->getTerrainSurfaceGrid();
                 for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y + HEIGHTMAP_QUAD_SIZE; worldPos.y += HEIGHTMAP_QUAD_SIZE) {
                     for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x + HEIGHTMAP_QUAD_SIZE; worldPos.x += HEIGHTMAP_QUAD_SIZE) {
-                        HeightmapPatchID id = heightGrid.getSpatialGrid2D().getIDAtWorldPos(worldPos);
-                        const f32v2 terrainWorldPos = heightGrid.getSpatialGrid2D().getWorldPosXYFromID(id);
+                        HeightmapPatchID id = heightGrid.getSpatialGrid2D().getIDAtPos(worldPos);
+                        const f32v2 terrainWorldPos = heightGrid.getSpatialGrid2D().getPosFromID(id);
                         const f32v2 offset = worldPos - terrainWorldPos;
                         const DTileCoord vertexPos(offset / (f32)HEIGHTMAP_QUAD_SIZE);
                         const f32v2 vertexPosWorld = f32v2(vertexPos.v) * (f32)HEIGHTMAP_QUAD_SIZE + terrainWorldPos;
@@ -790,7 +790,7 @@ void WorldEditorPanel::editHeightVertex(HeightmapPatchID id, DTileCoord vertPos,
         }
 
         // Debug render
-        f32v2 chunkPos = heightmapGrid.getSpatialGrid2D().getWorldPosXYFromID(id);
+        f32v2 chunkPos = heightmapGrid.getSpatialGrid2D().getPosFromID(id);
         f32v2 dims(0.5f);
         f32v3 worldPos(chunkPos.x + vertPos.x * HEIGHTMAP_QUAD_SIZE - dims.x * 0.5f, chunkPos.y + vertPos.y * HEIGHTMAP_QUAD_SIZE - dims.y * 0.5f, heightmapGrid.getHeightAtVert(id, vertPos) + adjust);
         AM::DebugRenderer::drawWireQuadThreadSafe(worldPos, dims, color4(1.0f, 0.0f, 1.0f, abs(strength)), 3);

@@ -24,7 +24,7 @@ TerrainSurfacePoint TerrainSurfaceGrid::getSurfacePoint(DTileCoord worldPos) con
         return TerrainSurfacePoint();
     }
     i32v2 cellOffset;
-    const ui32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos.v, cellOffset);
+    const ui32 cellId = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v, cellOffset);
     Cell& cell = mRoadData[cellId];
     if constexpr (THREAD_SAFE) {
         std::shared_lock lock(cell.mutex);
@@ -46,7 +46,7 @@ void TerrainSurfaceGrid::setSurfacePoint(DTileCoord worldPos, TerrainSurfacePoin
         return;
     }
     i32v2 cellOffset;
-    const i32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos.v, cellOffset);
+    const i32 cellId = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v, cellOffset);
     Cell& cell = mRoadData[cellId];
     const i32 pointIndex = cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x;
 
@@ -63,7 +63,7 @@ void TerrainSurfaceGrid::setBaseSurfaceType(DTileCoord worldPos, TerrainSurfaceT
         return;
     }
     i32v2 cellOffset;
-    const i32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos.v, cellOffset);
+    const i32 cellId = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v, cellOffset);
     Cell& cell = mRoadData[cellId];
     const i32 pointIndex = cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x;
 
@@ -80,7 +80,7 @@ bool TerrainSurfaceGrid::setBaseSurfaceTypeIfEmpty(DTileCoord worldPos, TerrainS
         return false;
     }
     i32v2 cellOffset;
-    const i32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos.v, cellOffset);
+    const i32 cellId = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v, cellOffset);
     Cell& cell = mRoadData[cellId];
     const i32 pointIndex = cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x;
 
@@ -101,7 +101,7 @@ bool TerrainSurfaceGrid::trySetOverlaySurfaceType(DTileCoord worldPos, TerrainSu
         return false;
     }
     i32v2 cellOffset;
-    const i32 cellId = mSpatialGrid.getIDAndCellOffsetAtWorldPos(worldPos.v, cellOffset);
+    const i32 cellId = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v, cellOffset);
     Cell& cell = mRoadData[cellId];
     const i32 pointIndex = cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x;
 

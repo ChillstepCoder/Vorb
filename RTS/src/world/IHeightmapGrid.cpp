@@ -132,7 +132,7 @@ HeightmapPickResult IHeightmapGrid::pick(f32v3 rayStart, f32v3 rayEnd) {
 }
 
 const HeightmapPatch* IHeightmapGrid::getHeightDataAtWorldPos(const i32v2 worldPos) const {
-    return getHeightDataAt(mSpatialGrid2D.getIDAtWorldPos(worldPos));
+    return getHeightDataAt(mSpatialGrid2D.getIDAtPos(worldPos));
 }
 
 const HeightmapPatch* IHeightmapGrid::getHeightDataAt(HeightmapPatchID id) const {
@@ -163,13 +163,13 @@ void IHeightmapGrid::getPaddedHeightDataAt(HeightmapPatchID id, OUT const Height
 
 void IHeightmapGrid::setHeightAtChunkId(ChunkID id, i32 vertIndex, f32 height, TerrainHeightSetDirection dir/* = TerrainHeightSetDirection::ANY*/) {
     ASSERT_GAME_THREAD();
-    return setHeightAtPatch(mSpatialGrid2D.getIDAtWorldPos(mWorld->getChunkGrid().getWorldPosXYFromChunkID(id)), vertIndex, height, dir);
+    return setHeightAtPatch(mSpatialGrid2D.getIDAtPos(mWorld->getChunkGrid().getWorldPosXYFromChunkID(id)), vertIndex, height, dir);
 }
 
 void IHeightmapGrid::setHeightAtWorldPos(f32v2 worldPos, f32 height, TerrainHeightSetDirection dir /*= TerrainHeightSetDirection::ANY*/) {
     ASSERT_GAME_THREAD();
-    const HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(worldPos);
-    const i32v2 offset = i32v2(worldPos) - mSpatialGrid2D.getWorldPosXYFromID(id);
+    const HeightmapPatchID id = mSpatialGrid2D.getIDAtPos(worldPos);
+    const i32v2 offset = i32v2(worldPos) - mSpatialGrid2D.getPosFromID(id);
     const i32 vertX = offset.x / HEIGHTMAP_QUAD_SIZE;
     const i32 vertY = offset.y / HEIGHTMAP_QUAD_SIZE;
     const i32 vertIndex = vertX + vertY * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
@@ -226,7 +226,7 @@ void IHeightmapGrid::setHeightAtPatch(HeightmapPatchID patchId, i32 vertIndex, f
 
 void IHeightmapGrid::adjustHeightAtChunk(ChunkID id, i32 vertIndex, f32 adjust) {
     ASSERT_GAME_THREAD();
-    return adjustHeightAtPatch(mSpatialGrid2D.getIDAtWorldPos(mWorld->getChunkGrid().getWorldPosXYFromChunkID(id)), vertIndex, adjust);
+    return adjustHeightAtPatch(mSpatialGrid2D.getIDAtPos(mWorld->getChunkGrid().getWorldPosXYFromChunkID(id)), vertIndex, adjust);
 }
 
 void IHeightmapGrid::adjustHeightAtPatch(HeightmapPatchID id, i32 vertIndex, f32 adjust) {
@@ -238,7 +238,7 @@ void IHeightmapGrid::adjustHeightAtPatch(HeightmapPatchID id, i32 vertIndex, f32
 
 void IHeightmapGrid::markVertexDirty(HeightmapPatchID id, i32 vertIndex) {
     ASSERT_GAME_THREAD();
-    i32v2 worldPos = mSpatialGrid2D.getWorldPosXYFromID(id);
+    i32v2 worldPos = mSpatialGrid2D.getPosFromID(id);
     const i32 x = vertIndex % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
     const i32 y = vertIndex / HEIGHTMAP_VERT_WIDTH_PER_PATCH;
     worldPos.x += x * HEIGHTMAP_QUAD_SIZE;
@@ -253,9 +253,9 @@ void IHeightmapGrid::flattenAABB(const i32AABB2& aabb, f32 flattenHeight) {
     std::set<i32> dirtyChunks;
     for (i32 y = aabb.y; y <= aabb.y + aabb.dims.y; y += HEIGHTMAP_QUAD_SIZE) {
         for (i32 x = aabb.x; x <= aabb.x + aabb.dims.x; x += HEIGHTMAP_QUAD_SIZE) {
-            const HeightmapPatchID id = mSpatialGrid2D.getIDAtWorldPos(i32v2(x, y));
+            const HeightmapPatchID id = mSpatialGrid2D.getIDAtPos(i32v2(x, y));
             dirtyChunks.insert(id);
-            const i32v2 worldPosChunk = mSpatialGrid2D.getWorldPosXYFromID(id);
+            const i32v2 worldPosChunk = mSpatialGrid2D.getPosFromID(id);
             const i32v2 offset = i32v2(x, y) - worldPosChunk;
             const i32 vertIndex = (i32)offset.x / HEIGHTMAP_QUAD_SIZE + ((i32)offset.y / HEIGHTMAP_QUAD_SIZE) * HEIGHTMAP_VERT_WIDTH_PER_PATCH;
             setHeightAtPatch(id, vertIndex, flattenHeight);
@@ -268,7 +268,7 @@ f32 IHeightmapGrid::getHeightAtVert(DTileCoord vertPos) const {
    /* if constexpr (!THREAD_SAFE) {
         assert(IS_GAME_THREAD());
     }*/
-    HeightmapPatchID id = mSpatialGrid2D.getIDfromGridXY(vertPos.v / HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+    HeightmapPatchID id = mSpatialGrid2D.getIDfromCellCoords(vertPos.v / HEIGHTMAP_VERT_WIDTH_PER_PATCH);
     vertPos.x = vertPos.x % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
     vertPos.y = vertPos.y % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
     return mHeightData[id].getHeightAt<THREAD_SAFE>(vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x);
@@ -285,7 +285,7 @@ f32 IHeightmapGrid::getHeightAtVert(HeightmapPatchID id, DTileCoord vertPos) con
 template<bool THREAD_SAFE>
 CompressedHeight IHeightmapGrid::getCompressedHeightAtVert(DTileCoord vertPos) const {
     if constexpr (!THREAD_SAFE) ASSERT_GAME_THREAD();
-    HeightmapPatchID id = mSpatialGrid2D.getIDfromGridXY(vertPos.v / HEIGHTMAP_VERT_WIDTH_PER_PATCH);
+    HeightmapPatchID id = mSpatialGrid2D.getIDfromCellCoords(vertPos.v / HEIGHTMAP_VERT_WIDTH_PER_PATCH);
     vertPos.x = vertPos.x % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
     vertPos.y = vertPos.y % HEIGHTMAP_VERT_WIDTH_PER_PATCH;
     return mHeightData[id].getCompressedHeightAt<THREAD_SAFE>(vertPos.y * HEIGHTMAP_VERT_WIDTH_PER_PATCH + vertPos.x);
@@ -436,7 +436,7 @@ void IHeightmapGrid::initInternal() {
 void IHeightmapGrid::initChunkGridEvents() {
     mWorld->getChunkGrid().registerChunkGridListeners(mChunkGridListeners);
     mWorld->getChunkGrid().addBeginActivateListener(mChunkGridListeners, [this](ChunkGridEvent& evnt) {
-        i32 patchId = mSpatialGrid2D.getIDAtWorldPos(evnt.chunk.getWorldPosCenter2D());
+        i32 patchId = mSpatialGrid2D.getIDAtPos(evnt.chunk.getWorldPosCenter2D());
         HeightmapPatch& patch = mHeightData[patchId];
         if (++patch.mNumActiveChunksThisPatch == 1) {
             // Need to activate physics
@@ -444,7 +444,7 @@ void IHeightmapGrid::initChunkGridEvents() {
         }
     });
     mWorld->getChunkGrid().addDeactivatedListener(mChunkGridListeners, [this](ChunkGridEvent& evnt) {
-        i32 patchId = mSpatialGrid2D.getIDAtWorldPos(evnt.chunk.getWorldPosCenter2D());
+        i32 patchId = mSpatialGrid2D.getIDAtPos(evnt.chunk.getWorldPosCenter2D());
         HeightmapPatch& patch = mHeightData[patchId];
         assert(mHeightData[patchId].mNumActiveChunksThisPatch > 0);
         if (--mHeightData[patchId].mNumActiveChunksThisPatch == 0) {

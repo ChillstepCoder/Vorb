@@ -217,7 +217,7 @@ void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
         simGrid.onNewChunkAllocated();
     }
     SimChunkTileData& chunkData = *chunk.mTileData;
-    const i32v2 chunkPosWorld = mSpatialGrid->getWorldPosXYFromID(id);
+    const i32v2 chunkPosWorld = mSpatialGrid->getPosFromID(id);
 
     assert(chunkData.harvestables.empty());
     assert(chunkData.tileIndexToTileData.empty());

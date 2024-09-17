@@ -16,7 +16,7 @@ const WorldMarkupData* WorldMarkupGrid::getMarkupAtPoint(f32v2 worldPos) const {
     if (blVertex.x < 0 || blVertex.y < 0 || blVertex.x >= (i32)mSpatialGrid.getGridWidthCells() || blVertex.y >= (i32)mSpatialGrid.getGridWidthCells()) {
         return nullptr;
     }
-    return &mMarkup[mSpatialGrid.getIDfromGridXY(blVertex)];
+    return &mMarkup[mSpatialGrid.getIDfromCellCoords(blVertex)];
 }
 
 const WorldChunkMarkupData* WorldMarkupGrid::getChunkMarkupAtPoint(f32v2 worldPos) const {

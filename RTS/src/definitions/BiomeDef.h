@@ -1,9 +1,10 @@
 #pragma once
 
-#include "generation/NoiseFunction.hpp"
-
-#include "world/biome/BiomeMutations.h"
+#include "world/biome/LivingBiomeType.h"
 #include "definitions/TileDistributionDef.h"
+
+using LivingBiomeID = ui16;
+constexpr LivingBiomeID INVALID_LIVING_BIOME_ID = std::numeric_limits<LivingBiomeID>::max();
 
 // .biome file names should match exactly
 // Corrupt biomes should be _B and _C and always come
@@ -137,8 +138,8 @@ public:
     // If a sub biome, this will be set by file. If corrupt, this will be set automatically
     BiomeAssetRef parentBiomeRef;
     BiomeDef* parentBiome = nullptr;
-    BiomeDef* mutatedVersions[e_count(BiomeMutations)] = {};
-    BiomeMutations corruptType = BiomeMutations::COUNT;
+    BiomeDef* mutatedVersions[e_count(LivingBiomeType)] = {};
+    LivingBiomeType corruptType = LivingBiomeType::COUNT;
     // Index in the color map texture array
     ui32 colorMapTextureIndex = 0;
     bool isCorruptable = false;

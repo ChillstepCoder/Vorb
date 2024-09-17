@@ -457,9 +457,9 @@ void RiverGenerationStage::onPassFinished(RiverGenerationPass& pass) {
                 const ui32v2 heightmapXY = cellPos / ui32(HEIGHTMAP_VERT_WIDTH_PER_PATCH);
                 // Set height data
                 const HeightmapPatchID patchId = heightmapXY.y * mHeightGrid->getWidthPatches() + heightmapXY.x;
-                const i32v2 rootPos = mHeightGrid->getSpatialGrid2D().getWorldPosXYFromID(patchId);
+                const i32v2 rootPos = mHeightGrid->getSpatialGrid2D().getPosFromID(patchId);
                 const ui32 totalWidthVerts = mHeightGrid->getWidthPatches() * HEIGHTMAP_QUAD_WIDTH_PER_PATCH;
-                const i32v2 terrainRootXY = mHeightGrid->getSpatialGrid2D().getGridXYFromID(patchId);
+                const i32v2 terrainRootXY = mHeightGrid->getSpatialGrid2D().getCellCoordsFromID(patchId);
                 HeightmapPatch& patch = mHeightGrid->getPatchForGeneration(patchId);
                 f32AABB3& aabb = patch.aabb;
                
