@@ -6,6 +6,7 @@
 #include "world/host/HostWorldData.h"
 #include "generation/WorldGenerationData.h"
 #include "generation/WorldGenerationBlackboard.h"
+#include "resources/BiomeRepository.h"
 
 #include "rendering/MaterialShaderRepository.h"
 
@@ -165,6 +166,10 @@ void BaseHeightmapAndBiomeGenerationStage::finishGeneration(PendingBaseHeightAnd
                             const ui32 index = yPos * mBiomeGrid->getWidthVertices() + biomeRootXY.x + x;
                             BiomeVertex& vertex = mBiomeGrid->getVertexForGenerationFromBlockPos(BlockCoord(biomeRootXY.x + x, yPos));
                             vertex.biomeUniqueId = BiomeUniqueID(mMappedBiomes[index]);
+                            const BiomeDef& def = BiomeRepository::get().getBiomeFromUniqueID(vertex.biomeUniqueId);
+                            if (def.isCorruptable) {
+                                vertex.biomeFlags.setBit(BiomeFlags::Corruptable);
+                            }
                         }
                     }
                 }

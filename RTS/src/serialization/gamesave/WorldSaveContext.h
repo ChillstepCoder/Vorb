@@ -108,6 +108,8 @@ public:
      WorldSaveContext(World& world);
     ~WorldSaveContext();
 
+    // TODO: This is not thread safe for runtime save
+    // we need to for example lock and copy the biome data, it is written by sim thread
     void saveWorld(const fs::path& savePath);
     bool loadWorld(const fs::path& loadPath);
 

@@ -177,6 +177,7 @@ void WorldSaveContext::saveBiomes() {
     for (RegionID regionId = 0; regionId < regionCount; ++regionId) {
         ui32 pendingThisRegion = 0;
         forEachPatchInRegion(RegionType::Biome, regionId, [this, &biomeGrid, &pendingThisRegion](ui32 biomePatchId, RegionPatchID regionPatchId) {
+            // TODO: THIS IS NOT THREAD SAFE
             BiomePatch& patch = biomeGrid.mGrid[biomePatchId];
             if (biomeGrid.mPatchSavesUpToDate[biomePatchId].test_and_set() == false) {
                 const ui32 SSIZE = patch.size() * sizeof(BiomeVertex) + 4;

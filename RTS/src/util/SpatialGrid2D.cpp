@@ -6,11 +6,10 @@ i32 SpatialGrid2D::getIDAtPos(i32v2 worldPos) const {
     return (worldPos.y / mCellWidth) * mGridWidthCells + worldPos.x / mCellWidth;
 }
 
-i32 SpatialGrid2D::getIDAndCellOffsetAtPos(i32v2 worldPos, OUT i32v2& offsetIntoCell) const {
+std::pair<i32, i32v2> SpatialGrid2D::getIDAndCellOffsetAtPos(i32v2 worldPos) const {
     const i32v2 cellXY = worldPos / mCellWidth;
-    offsetIntoCell = worldPos - cellXY * mCellWidth;
     const i32 id = cellXY.y * mGridWidthCells + cellXY.x;
-    return id;
+    return std::make_pair(id, worldPos - cellXY * mCellWidth);
 }
 
 i32v2 SpatialGrid2D::getPosFromID(i32 id) const {

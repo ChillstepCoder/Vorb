@@ -11,7 +11,7 @@ public:
 
     i32 getIDAtPos(i32v2 worldPos) const;
     // Returns the ID and the offset into the cell
-    i32 getIDAndCellOffsetAtPos(i32v2 worldPos, OUT i32v2& offsetIntoCell) const;
+    std::pair<i32, i32v2> getIDAndCellOffsetAtPos(i32v2 worldPos) const;
     // Gets the true position of the cell at the given ID
     i32v2 getPosFromID(i32 id) const;
     i32 getSouthID(i32 id) const { return id - mGridWidthCells; }

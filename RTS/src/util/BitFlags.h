@@ -75,6 +75,7 @@ public:
 
     typename std::underlying_type<T>::type getBits() const noexcept { return mBits; }
     bool isBitSet(T bit) const noexcept { return (mBits & e_cast(bit)) != 0; }
+    bool isBitUnset(T bit) const noexcept { return (mBits & e_cast(bit)) == 0; }
 
     // Return true if all bits in the mask are set
     bool isMaskSet(typename std::underlying_type<T>::type mask) const noexcept { return (mBits & mask) == mask; }

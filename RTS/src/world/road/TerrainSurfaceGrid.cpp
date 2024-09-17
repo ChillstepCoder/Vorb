@@ -23,8 +23,7 @@ TerrainSurfacePoint TerrainSurfaceGrid::getSurfacePoint(DTileCoord worldPos) con
     if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorldWidthDTiles || worldPos.y >= mWorldWidthDTiles) [[unlikely]] {
         return TerrainSurfacePoint();
     }
-    i32v2 cellOffset;
-    const ui32 cellId = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v, cellOffset);
+    const auto [cellId, cellOffset] = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v);
     Cell& cell = mRoadData[cellId];
     if constexpr (THREAD_SAFE) {
         std::shared_lock lock(cell.mutex);
@@ -45,8 +44,7 @@ void TerrainSurfaceGrid::setSurfacePoint(DTileCoord worldPos, TerrainSurfacePoin
     if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorldWidthDTiles || worldPos.y >= mWorldWidthDTiles) [[unlikely]] {
         return;
     }
-    i32v2 cellOffset;
-    const i32 cellId = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v, cellOffset);
+    const auto [cellId, cellOffset] = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v);
     Cell& cell = mRoadData[cellId];
     const i32 pointIndex = cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x;
 
@@ -62,8 +60,7 @@ void TerrainSurfaceGrid::setBaseSurfaceType(DTileCoord worldPos, TerrainSurfaceT
     if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorldWidthDTiles || worldPos.y >= mWorldWidthDTiles) [[unlikely]] {
         return;
     }
-    i32v2 cellOffset;
-    const i32 cellId = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v, cellOffset);
+    const auto [cellId, cellOffset] = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v);
     Cell& cell = mRoadData[cellId];
     const i32 pointIndex = cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x;
 
@@ -79,8 +76,7 @@ bool TerrainSurfaceGrid::setBaseSurfaceTypeIfEmpty(DTileCoord worldPos, TerrainS
     if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorldWidthDTiles || worldPos.y >= mWorldWidthDTiles) [[unlikely]] {
         return false;
     }
-    i32v2 cellOffset;
-    const i32 cellId = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v, cellOffset);
+    const auto [cellId, cellOffset] = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v);
     Cell& cell = mRoadData[cellId];
     const i32 pointIndex = cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x;
 
@@ -100,8 +96,7 @@ bool TerrainSurfaceGrid::trySetOverlaySurfaceType(DTileCoord worldPos, TerrainSu
     if (worldPos.x < 0 || worldPos.y < 0 || worldPos.x >= mWorldWidthDTiles || worldPos.y >= mWorldWidthDTiles) [[unlikely]] {
         return false;
     }
-    i32v2 cellOffset;
-    const i32 cellId = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v, cellOffset);
+    const auto [cellId, cellOffset] = mSpatialGrid.getIDAndCellOffsetAtPos(worldPos.v);
     Cell& cell = mRoadData[cellId];
     const i32 pointIndex = cellOffset.y * ROAD_GRID_CELL_WIDTH_POINTS + cellOffset.x;
 
