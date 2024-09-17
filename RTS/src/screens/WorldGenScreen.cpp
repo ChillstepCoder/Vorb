@@ -286,7 +286,7 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
     ImGui::Text("Spawn Position (%.1f, %.1f)", playerSpawn.x, playerSpawn.y);
     if (mGenState == WorldGenScreenState::Done) {
         ImGui::Text("Height: %.1f", mWorldData->heightmapGrid->computeHeightAtPoint<true>(playerSpawn));
-        const BiomeDef* biome = mWorldData->biomeGrid->getBiomeDefAtPoint(playerSpawn);
+        const BiomeDef* biome = mWorldData->biomeGrid->getBiomeDefAtPoint(TileCoord(playerSpawn));
         if (biome) {
             ImGui::Text("Biome: %s", biome->displayName.c_str());
         }

@@ -229,7 +229,7 @@ void ChunkGenerator::generateSimChunk(SimChunk& chunk, World& world) {
         const TileCoord tilePosWorld(x + chunkPosWorld.x, y + chunkPosWorld.y);
         f32v3 normal;
         const f32 height = heightGrid.computeCenterHeightAndNormalAtTile<true>(tilePosWorld, &normal);
-        const BiomeDef* def = biomeGrid.getBiomeDefAtPoint(tilePosWorld.v);
+        const BiomeDef* def = biomeGrid.getBiomeDefAtPoint(tilePosWorld);
         assert(def);
         Tile tile = generateTileAtPos(tilePosWorld.v, height, normal, def);
 

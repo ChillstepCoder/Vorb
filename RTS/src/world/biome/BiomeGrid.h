@@ -73,9 +73,9 @@ public:
         return mGrid[mSpatialGrid.getIDfromCellCoords(cellXY)];
     }
     // Thread safe
-    const BiomeDef* getBiomeDefAtPoint(i32v2 worldPos) const;
+    const BiomeDef* getBiomeDefAtPoint(TileCoord worldPos) const;
     // Returns BiomeUniqueID::INVALID on fail
-    BiomeUniqueID tryMutateBiomeAtPoint(i32v2 worldPos, LivingBiomeType type);
+    BiomeUniqueID tryMutateBiomeAtTile(TileCoord worldPos, LivingBiomeType type);
     // Returns BiomeUniqueID::INVALID on fail
     BiomeUniqueID tryMutateBiomeAtBlockPos(BlockCoord blockPos, LivingBiomeType type);
 
