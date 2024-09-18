@@ -47,14 +47,6 @@ public:
     ui32* getMappedBiomes() { return mMappedBiomes; }
     WorldGenerationBlackboard& getBlackboard() { return *mBlackboard; }
 
-    // Caller takes ownership of the returned texture
-    VGTexture releaseBiomeTexture() {
-        assert(mBiomeTexture);
-        VGTexture tex = mBiomeTexture;
-        mBiomeTexture = 0;
-        return tex;
-    }
-
     World* tryGetWorld();
 
 private:

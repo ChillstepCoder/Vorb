@@ -35,9 +35,8 @@ WorldDataGenerator::~WorldDataGenerator() {
         mBiomeSSBO = 0;
 
         glDeleteTextures(1, &mHeightTexture);
-        if (mBiomeTexture) {
-            glDeleteTextures(1, &mBiomeTexture);
-        }
+        
+        // We explicitly dont delete mBiomeTexture as it is managed by BiomeGrid
     }
 }
 
@@ -267,6 +266,8 @@ void WorldDataGenerator::initResourcesIfNeeded(i32 resolution)
         const ui32 bWidth = biomeGrid->getWidthVertices();
         glTextureStorage2D(mBiomeTexture, 1, GL_R8, bWidth, bWidth);
         vg::sSamplerStates.POINT_CLAMP.setForTexture(mBiomeTexture);
+
+        biomeGrid->setBiomeTexture(mBiomeTexture);
     }
 }
 

@@ -9,7 +9,7 @@ class MaterialShaderDef;
 class World;
 
 #ifdef DEBUG
-constexpr ui64 HISTORY_GEN_DURATION_REAL_TIME_HOURS = 6; //48
+constexpr ui64 HISTORY_GEN_DURATION_REAL_TIME_HOURS = 48; //48
 #else
 constexpr ui64 HISTORY_GEN_DURATION_REAL_TIME_HOURS = 48; //48
 #endif
@@ -25,15 +25,8 @@ struct HistoryEvent {
     f32 time;
 };
 
-struct BiomeGrowPass {
-    ~BiomeGrowPass();
-    GLsync sync = 0;
-    bool isOdd;
-    int row;
-    ui32 numBlocks;
-};
-
-// Allocates the world and generates history
+// Allocates the world and generates history. While history generates,
+// the sim thread is simulating biome growth and characters
 class HistoryGenerationStage : public IWorldGenerationStage
 {
 public:
@@ -56,10 +49,8 @@ private:
     void handleHistoryEvent(HistoryEvent& event);
     void handleCorruptSpawn(LivingBiomeType type);
     
-    void updateBiomes();
-    void growBiomesStep();
-    void downloadBiomes();
-
+    // Old GPU Method
+    //void downloadBiomes();
 
     f32 mHistoryProgress = 0.0f; // [0,1]
     TimestampMs mHistoryDurationMS = HISTORY_GEN_DURATION_REAL_TIME_HOURS * 60 * 60 * MS_PER_SECOND;
@@ -67,12 +58,8 @@ private:
     ui32 mNextEventIndex = 0;
     // Sorted by time
     std::vector<HistoryEvent> mHistoryEvents;
-    bool allEventsTriggered = false;
-    BiomeGrowPass mCurBiomeGrowPass;
-    bool mGrowPassIsOdd = false;
-    int mGrowPassCount = 0;
-    int mGrowPassRowBlockIndex = 0;
-    int mGrowPassRowsPerPass = 0;
+
+    RandomGenerator mRandomGen;
 
     const std::unique_ptr<World>& mWorldPtr;
     HostSimContext* mHostSimContext = nullptr;

@@ -5,6 +5,7 @@
 #include "world/simulation/host/HostSimContext.h"
 #include "world/simulation/host/SimECS.h"
 #include "world/simulation/host/SimImmigrationManager.h"
+#include "world/biome/BiomeGrid.h"
 
 #include "options/DebugOptions.h"
 
@@ -118,6 +119,8 @@ void SimThread::tickSim(SimThreadState state) {
     mHostSimContext.mImmigrationManager->tickSimThread(mHostSimContext.mSimTime);
 
     mHostSimContext.mEntityTransitionManager->tickSimThread(mHostSimContext.mSimTime);
+
+    mWorld.getBiomeGrid().updateSimThread(mHostSimContext.mSimTime);
 
     //LOG_TRACE(" Sim thread {} ms", mThreadUtilizationTimer.getFrameTimeMS());
 }

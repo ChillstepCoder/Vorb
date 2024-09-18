@@ -292,7 +292,6 @@ void BiomeEditorViewportPanel::initializeWorld() {
     generateHeightmap(worldData);
 
     LOG_CRITICAL("Heightmap {}", timer.stop()); timer.start();
-    //mWorldData->biomeGrid->setBiomeTexture(mWorldGenerator->releaseBiomeTexture());
     mEditorWorld = std::make_unique<World>(WorldNetMode::Editor, &worldData);
 
     mEditorWorld->getTimeOfDayManager().setTimeOfDay(12.0f);

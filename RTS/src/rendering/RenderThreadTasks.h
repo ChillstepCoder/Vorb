@@ -28,7 +28,7 @@ public:
     void playOneShotAnimation(entt::entity characterEntity, ui32 animationId);
     //void addStaticMeshFromBuilder(StaticPhysicsMeshBuilder&& meshBuilder, Mesh* mesh);
     // TODO: Add cancel logic for if we destroy the threadpool so we can free data ptr?
-    void addGenericTask(RenderFunction func) { mRenderThreadProcs.enqueue(std::move(func)); }
+    void addGenericTask(std::function<void()> func) { mRenderThreadProcs.enqueue(std::move(func)); }
     void addShutdownTask(std::function<void()> func) { mShutdownTasks.enqueue(std::move(func)); }
 
     size_t getQueuedProcsApprox() const { return mRenderThreadProcs.size_approx(); }

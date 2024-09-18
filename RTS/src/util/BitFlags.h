@@ -73,6 +73,7 @@ public:
 
     // ============== Accessors ==============
 
+    typename std::underlying_type<T>::type& getBitsRef() noexcept { return mBits; }
     typename std::underlying_type<T>::type getBits() const noexcept { return mBits; }
     bool isBitSet(T bit) const noexcept { return (mBits & e_cast(bit)) != 0; }
     bool isBitUnset(T bit) const noexcept { return (mBits & e_cast(bit)) == 0; }

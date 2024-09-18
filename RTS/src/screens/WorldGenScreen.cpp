@@ -186,7 +186,6 @@ void WorldGenScreen::onExit(const vui::GameTime& gameTime) {
     else {
         // Initialize world
         assert(mWorldGenerator);
-        mWorldData->biomeGrid->setBiomeTexture(mWorldGenerator->releaseBiomeTexture());
         assert(sGameWorld);
         sGameWorld->setDefaultWorldSpawn(mWorldData->playerStart);
     }
@@ -388,9 +387,6 @@ void WorldGenScreen::draw(const vui::GameTime& gameTime)
         mIsDirty = true;
     }
     if (ImGui::SliderInt2("Corrupt Count Range", &mGenData.mCorruptSpawnCountRange.x, 0, 600)) {
-        mIsDirty = true;
-    }
-    if (ImGui::SliderInt("Biome Grow Passes", &mGenData.mBiomeGrowPassCount, 0, 128)) {
         mIsDirty = true;
     }
     if (ImGui::SliderFloat("Continent Radius", &mGenData.mContinentRadius, 1000.0f, 16000.0f, "%.1f")) {
