@@ -5,7 +5,7 @@
 class TilingVoronoiMap;
 class World;
 class Tile;
-class Chunk;
+class LocalChunk;
 class SpatialGrid2D;
 class SimChunk;
 class BiomeDef;
@@ -20,7 +20,7 @@ public:
 
     // Generate a chunk from the sim chunk, and rectify any invalid data such
     // as trees intersecting buildings, removing them from the simchunk
-    void generateChunkFromSimChunk(Chunk& chunk, const BitArray& buildingFootprint);
+    void generateChunkFromSimChunk(LocalChunk& chunk, const BitArray& buildingFootprint);
     // Generate a simulated chunk, may contain some invalid data such as trees intersecting
     // buildings, but such errors are fixed during full chunk generation
     void generateSimChunk(SimChunk& chunk, World& world);

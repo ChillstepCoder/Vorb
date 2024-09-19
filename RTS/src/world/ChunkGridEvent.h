@@ -1,13 +1,13 @@
 #pragma once
 
-class Chunk;
+class LocalChunk;
 class ChunkGrid;
 
 class ChunkGridEvent {
 public:
-    ChunkGridEvent(Chunk& chunk) : chunk(chunk) {}
+    ChunkGridEvent(LocalChunk& chunk) : chunk(chunk) {}
 
-    Chunk& chunk;
+    LocalChunk& chunk;
 };
 
 enum class CHUNK_GRID_EVENT_TYPE {

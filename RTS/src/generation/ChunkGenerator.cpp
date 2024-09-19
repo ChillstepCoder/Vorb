@@ -4,7 +4,7 @@
 #include "definitions/BiomeDef.h"
 
 #include "world/biome/BiomeGrid.h"
-#include "world/Chunk.h"
+#include "world/LocalChunk.h"
 
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
@@ -90,7 +90,7 @@ Tile ChunkGenerator::generateTileAtPos(i32v2 worldPos, f32 height, f32v3 normal,
 }
 
 
-void ChunkGenerator::generateChunkFromSimChunk(Chunk& chunk, const BitArray& buildingFootprint) {
+void ChunkGenerator::generateChunkFromSimChunk(LocalChunk& chunk, const BitArray& buildingFootprint) {
     World& world = chunk.getWorld();
     SimChunkGrid& simGrid = world.getSimChunkGrid();
     SimChunk& simData = simGrid.getChunkForGeneration(chunk.getChunkID());

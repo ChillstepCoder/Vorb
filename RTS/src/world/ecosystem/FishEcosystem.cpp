@@ -77,8 +77,8 @@ void FishEcosystem::tickGameThread(f32 elapsedSec) {
 }
 
 entt::entity FishEcosystem::getClosestIdleFishToPoint(f32v3 point, f32 maxRange) const {
-    const Chunk* closestChunks[4];
-    mWorld.getChunkGrid().getClosestChunksAtPosition(f32v2(point), closestChunks);
+    const LocalChunk* closestChunks[4];
+    mWorld.getLocalChunkGrid().getClosestChunksAtPosition(f32v2(point), closestChunks);
     entt::registry& registry = mWorld.getECS().mRegistry;
 
     f32 closestDistanceSq = SQ(maxRange);
@@ -86,7 +86,7 @@ entt::entity FishEcosystem::getClosestIdleFishToPoint(f32v3 point, f32 maxRange)
     entt::entity closestFish = INVALID_ENTITY;
     for (int i = 0; i < 4; ++i) {
         assert(closestChunks[i]);
-        const Chunk& chunk = *closestChunks[i];
+        const LocalChunk& chunk = *closestChunks[i];
         if (!chunk.isActivated()) {
             continue;
         }
@@ -168,7 +168,7 @@ void FishEcosystem::setFishCaught(entt::entity fishEntity, entt::entity catcher)
 }
 
 void FishEcosystem::initEventHandlers() {
-    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
+    LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkGridEventListeners);
     // We dont use the ready listener as IChunkGrid will directly call initChunkFish
 
@@ -179,7 +179,7 @@ void FishEcosystem::initEventHandlers() {
 
 }
 
-void FishEcosystem::initChunkFish(Chunk& chunk) {
+void FishEcosystem::initChunkFish(LocalChunk& chunk) {
     PROFILE_FUNCTION();
     FishChunkPtr newFishChunk = std::make_unique<FishChunk>();
     assert(chunk.getTileContainer());
@@ -235,7 +235,7 @@ void FishEcosystem::initChunkFish(Chunk& chunk) {
     }
 }
 
-void FishEcosystem::disposeChunkFish(Chunk& chunk) {
+void FishEcosystem::disposeChunkFish(LocalChunk& chunk) {
     PROFILE_FUNCTION();
 
     // If we are in generation list, make sure to remove
@@ -320,7 +320,7 @@ void FishEcosystem::updateActiveFish() {
             FishChunk& fishChunk = *activeFishChunkIter.second;
             if (glm::distance2(loadCenter, fishChunk.getWorldCenterF()) < RENDER_DISTANCE_SQ) {
                 const ChunkID chunkId = activeFishChunkIter.first;
-                TileContainer& container = *mWorld.getChunkGrid().getChunk(chunkId).getTileContainer();
+                TileContainer& container = *mWorld.getLocalChunkGrid().getChunk(chunkId).getTileContainer();
                 FishRenderState& renderState = chunkMap[container.getId()];
                 // Update render state and update fish
                 fishChunk.mInUpdateRange = true;

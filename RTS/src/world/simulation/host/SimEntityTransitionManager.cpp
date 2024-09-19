@@ -13,7 +13,7 @@
 #include "ecs/component/SimEntityTypeComponent.h"
 
 #include "gamethread/GameThreadTasks.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 
 void SimEntityTransitionManager::tickSimThread(TimestampMs simTime) {
     ASSERT_SIM_THREAD();
@@ -70,7 +70,7 @@ void SimEntityTransitionManager::initiateSimTransitions() {
     for (auto& [chunkId, data] : mQueuedFullTransitions) {
         auto dataPtr = std::make_shared<ChunkFullTransitionData>(std::move(data));
         GameThreadTasks::getInstance().addGenericTask([this, &ecs = mContext.getECS(), chunkId, dataPtr=std::move(dataPtr)]() mutable {
-            Chunk& chunk = ecs.mWorld.getChunkGrid().getChunk(chunkId);
+            LocalChunk& chunk = ecs.mWorld.getLocalChunkGrid().getChunk(chunkId);
             if (chunk.isActivated()) {
                 ecs.mWorld.getECS().createFullEntitiesFromSimEntities(chunk, *dataPtr);
             }

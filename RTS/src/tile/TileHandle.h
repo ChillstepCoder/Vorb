@@ -8,7 +8,7 @@ class World;
 class TileContainer;
 struct LiteTileHandle;
 class SimChunk;
-class Chunk;
+class LocalChunk;
 
 struct TileHandle {
 

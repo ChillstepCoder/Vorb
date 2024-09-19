@@ -18,7 +18,7 @@ public:
     TileContainerRepository(World& world);
     ~TileContainerRepository();
 
-    TileContainer* allocateChunkContainer(i32v2 rootPos, Chunk* owner);
+    TileContainer* allocateChunkContainer(i32v2 rootPos, LocalChunk* owner);
     // Instantly initialized and valid
     TileContainer* createNewEmptyBuildingContainer(i32AABB3 tileAABB, ui32 floorHeight, Building* owner);
 

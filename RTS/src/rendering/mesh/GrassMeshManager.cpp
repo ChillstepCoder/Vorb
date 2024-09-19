@@ -3,9 +3,9 @@
 
 #include "rendering/ChunkGrassQuadtree.h"
 
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 #include "world/World.h"
-#include "world/Chunk.h"
+#include "world/LocalChunk.h"
 
 #include "options/DebugOptions.h"
 
@@ -13,10 +13,10 @@ GrassMeshManager::GrassMeshManager(World& world) : mWorld(world) {
     ASSERT_GAME_THREAD(); // This is currently created on the game thread
     // TODO: LISTENERS!
     LOG_CRITICAL("Missing event listeners in GrassMeshManager::GrassMeshManager");
-    world.getChunkGrid().addActivatedListener([this](const ChunkGridEvent& evnt) {
+    world.getLocalChunkGrid().addActivatedListener([this](const ChunkGridEvent& evnt) {
         mChunkTrackChanges.enqueue(std::make_pair(evnt.chunk.getChunkID(), true));
     });
-    world.getChunkGrid().addDeactivatedListener([this](const ChunkGridEvent& evnt) {
+    world.getLocalChunkGrid().addDeactivatedListener([this](const ChunkGridEvent& evnt) {
         mChunkTrackChanges.enqueue(std::make_pair(evnt.chunk.getChunkID(), false));
     });
 }
@@ -82,7 +82,7 @@ void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
                     }
 
                     // Unregister for events
-                    Chunk& chunkNonConst = const_cast<Chunk&>(*trackedChunk.chunk);
+                    LocalChunk& chunkNonConst = const_cast<LocalChunk&>(*trackedChunk.chunk);
                     TileContainer* container = chunkNonConst.getTileContainer();
                     container->removeEditTilesListener(lookupData->eventHandle.first);
                     chunkNonConst.removeGrassEditListener(lookupData->eventHandle.second);
@@ -105,7 +105,7 @@ void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
                     lookupData->isActive = true;
                 }
                 // Register for edit events  // Const cast ~ get fucked
-                Chunk& chunkNonConst = const_cast<Chunk&>(*trackedChunk.chunk);
+                LocalChunk& chunkNonConst = const_cast<LocalChunk&>(*trackedChunk.chunk);
                 TileContainer* container = chunkNonConst.getTileContainer();
 
                 // We use the dimensions of the lowest LOD so we don't enqueue too many edits
@@ -140,7 +140,7 @@ void GrassMeshManager::frameUpdate(const f32v2& loadCenter, f32 elapsedSec) {
 }
 
 void GrassMeshManager::trackChunk(ChunkID chunkId) {
-    const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
+    const LocalChunk& chunk = mWorld.getLocalChunkGrid().getChunk(chunkId);
     std::lock_guard lock(mTrackedChunksMutex);
     auto&& it = mTrackedChunksLookup.find(chunkId);
     if (it == mTrackedChunksLookup.end()) {

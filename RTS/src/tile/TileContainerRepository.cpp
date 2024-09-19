@@ -2,14 +2,14 @@
 #include "TileContainerRepository.h"
 
 #include "world/World.h"
-#include "world/Chunk.h"
+#include "world/LocalChunk.h"
 
 #include "tile/TileContainer.h"
 
 TileContainerRepository::TileContainerRepository(World& world) : mWorld(world) {};
 TileContainerRepository::~TileContainerRepository() = default;
 
-TileContainer* TileContainerRepository::allocateChunkContainer(i32v2 rootPos, Chunk* owner) {
+TileContainer* TileContainerRepository::allocateChunkContainer(i32v2 rootPos, LocalChunk* owner) {
     owner->mTileContainer = allocateNewTileContainer(i32v3(rootPos.x, rootPos.y, 0), i32v3(CHUNK_WIDTH, CHUNK_WIDTH, 1), 1, owner);
     return owner->mTileContainer;
 }

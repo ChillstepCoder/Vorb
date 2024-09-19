@@ -9,7 +9,7 @@
 #include "pathfinding/NavThread.h"
 #include "pathfinding/NavPath.h"
 
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 
 #include "rendering/RenderThreadTasks.h"
 
@@ -215,7 +215,7 @@ void NavigationSystem::updateComponentCoarsePath(World& world, entt::entity enti
 					const ChunkID simEndChunk = navCmp.mCoarsePath->getSimChunkEndPoint();
 					if (simEndChunk != INVALID_CHUNK_ID) {
 						// Check if our target sim chunk is still a sim chunk or if we should re-path if its valid
-						if (world.getChunkGrid().getChunk(simEndChunk).isActivated()) {
+						if (world.getLocalChunkGrid().getChunk(simEndChunk).isActivated()) {
 							navCmp.requestCoarsePath(pos, navCmp.mCoarsePath->getTargetPosition(), navCmp.mTargetRadius);
 						}
 						else {

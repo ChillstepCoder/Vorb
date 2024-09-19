@@ -8,7 +8,7 @@
 #include "world/simulation/host/component/SimSettlementComponents.h"
 #include "world/simulation/host/settlement/SettlementPlanner.h"
 #include "world/simulation/host/SimECS.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 
 #include "world/World.h"
 #include "world/simulation/host/HostSimContext.h"
@@ -93,7 +93,7 @@ entt::entity SimSettlementSystem::createSettlementEntity(ChunkID rootChunk, entt
     mRegistry.emplace<SettlementHarvestableTrackerComponent>(settlementEntity);
     // TODO Adjacency
 
-    const i32v2 defaultHomePoint = world.getChunkGrid().getChunk(rootChunk).getWorldPosCenter2D();
+    const i32v2 defaultHomePoint = world.getLocalChunkGrid().getChunk(rootChunk).getWorldPosCenter2D();
 
     // Assign people
     SettlementPeopleComponent& peopleCmp = mRegistry.emplace<SettlementPeopleComponent>(settlementEntity);

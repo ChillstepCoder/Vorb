@@ -16,7 +16,7 @@
 
 #include <bitsery/ext/std_variant.h>
 
-class Chunk;
+class LocalChunk;
 
 enum class SimChunkState : ui8 {
     NONE,
@@ -152,7 +152,7 @@ public:
     SimChunkState getState() const { return mState; }
     bool isAllocated() const { return mState == SimChunkState::Allocated; }
 
-    void bindEditEventToChunkTileContainer(Chunk& chunk);
+    void bindEditEventToChunkTileContainer(LocalChunk& chunk);
     void unBindEditEventToChunkTileContainer();
 
     // Returns num reserved, set maxCount to 0 for infinite

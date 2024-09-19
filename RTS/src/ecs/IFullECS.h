@@ -34,9 +34,9 @@ public:
     // Client or server
     virtual void destroyEntity(entt::entity entity) = 0;
 
-    void addPendingEntitiesToChunk(Chunk& chunk, ChunkFullTransitionData&& data);
-    void createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransitionData& data);
-    ChunkSimTransitionData deactivateEntitiesForChunk(Chunk& chunk);
+    void addPendingEntitiesToChunk(LocalChunk& chunk, ChunkFullTransitionData&& data);
+    void createFullEntitiesFromSimEntities(LocalChunk& chunk, ChunkFullTransitionData& data);
+    ChunkSimTransitionData deactivateEntitiesForChunk(LocalChunk& chunk);
 
     // Returns true if the entity was destroyed
     bool onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunkID, ChunkID newChunkID);

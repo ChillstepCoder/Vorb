@@ -4,9 +4,9 @@
 #include "tile/TileContainerRepository.h"
 
 #include "world/World.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 
-#include "world/Chunk.h"
+#include "world/LocalChunk.h"
 
 
 TileRef::TileRef(TileContainer* container, TileIndex index) :
@@ -103,7 +103,7 @@ ChunkID TileHandle::getChunkIDAtPos() const
         return INVALID_CHUNK_ID;
     }
     const World& world = container->getWorld();
-    return world.getChunkGrid().getChunkIDFromWorldPos(getWorldPos2D());
+    return world.getLocalChunkGrid().getChunkIDFromWorldPos(getWorldPos2D());
 }
 
 World& TileHandle::getWorld() const { return container->getWorld(); }

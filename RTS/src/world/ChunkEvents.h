@@ -5,9 +5,9 @@ enum class ChunkEventType {
 };
 
 struct ChunkEvent {
-	Chunk& chunk;
+	LocalChunk& chunk;
 	ChunkEventType type;
 	TileIndex tileIndex;
 };
 
-EVENT_DISPATCHER_TYPE(Chunk, ChunkEventType, const ChunkEvent&);
+EVENT_DISPATCHER_TYPE(LocalChunk, ChunkEventType, const ChunkEvent&);

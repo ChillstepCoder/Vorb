@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "ItemStockpileRegistry.h"
 
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 #include "world/World.h"
 
 static ItemStockpileID sItemStockpileIdGen;
@@ -50,7 +50,7 @@ const std::vector<ItemStockpile*>* ItemStockpileRegistry::tryGetStockpilesAtTile
 void ItemStockpileRegistry::addTerrainStockpileToAreaLookup(ItemStockpile& stockpile) {
     // TODO: I think this is bad
     // Get all possible chunks
-    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
+    LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
     const i32AABB2& aabb = stockpile.getAABB();
     std::set<ChunkID> chunkPositions;
     chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos));
@@ -59,7 +59,7 @@ void ItemStockpileRegistry::addTerrainStockpileToAreaLookup(ItemStockpile& stock
     chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos + i32v2(aabb.width, aabb.depth)));
     int i = 0;
     for (auto&& id : chunkPositions) {
-        Chunk& chunk = chunkGrid.getChunk(id);
+        LocalChunk& chunk = chunkGrid.getChunk(id);
         if (chunk.getTileContainer()) {
             const TileContainerID chunkContainerId = chunk.getTileContainer()->getId();
             mAreaLookup[chunkContainerId].push_back(&stockpile);
@@ -74,7 +74,7 @@ void ItemStockpileRegistry::addTerrainStockpileToAreaLookup(ItemStockpile& stock
 void ItemStockpileRegistry::removeStockpileFromAreaLookup(ItemStockpile& stockpile) {
     // TODO: I think this is bad
     // Get all possible chunks
-    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
+    LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
     const i32AABB2& aabb = stockpile.getAABB();
     std::set<ChunkID> chunkPositions;
     chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos));
@@ -83,7 +83,7 @@ void ItemStockpileRegistry::removeStockpileFromAreaLookup(ItemStockpile& stockpi
     chunkPositions.insert(chunkGrid.getChunkIDFromWorldPos(aabb.pos + i32v2(aabb.width, aabb.depth)));
     int i = 0;
     for (auto&& id : chunkPositions) {
-        Chunk& chunk = chunkGrid.getChunk(id);
+        LocalChunk& chunk = chunkGrid.getChunk(id);
         assert(chunk.getTileContainer());
         const auto& it = mAreaLookup.find(chunk.getTileContainer()->getId());
         assert(it != mAreaLookup.end());

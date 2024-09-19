@@ -3,7 +3,7 @@
 
 #include "definitions/BiomeDef.h"
 
-class Chunk;
+class LocalChunk;
 class World;
 class EditorWorldInterfaceController;
 class HostWorldData;

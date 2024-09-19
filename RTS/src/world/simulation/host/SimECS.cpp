@@ -11,7 +11,7 @@
 #include "ecs/IFullECS.h"
 #include "ecs/component/FullEntityBindingComponent.h"
 #include "gamethread/GameThreadTasks.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 
 #include "ecs/component/SimEntityTypeComponent.h"
 #include "text/NameManager.h"

@@ -1,6 +1,6 @@
 #pragma once
 
-class Chunk;
+class LocalChunk;
 class GrassBillboardMeshBuilder;
 class HeightmapPatch;
 struct TileGrass;
@@ -11,7 +11,7 @@ namespace GrassMeshBuilderMethods
     // Return false on failure
     bool createGrassMesh(
         GrassBillboardMeshBuilder& grassMeshBuilder,
-        const Chunk& chunk,
+        const LocalChunk& chunk,
         const ui32v2& tilePosStart,
         ui32 lod
     );

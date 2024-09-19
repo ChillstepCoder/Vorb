@@ -6,7 +6,7 @@
 #include "physics/PhysicsWorld.h"
 
 #include "world/World.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 
 #include "util/BitArray.h"
 
@@ -163,7 +163,7 @@ void IHeightmapGrid::getPaddedHeightDataAt(HeightmapPatchID id, OUT const Height
 
 void IHeightmapGrid::setHeightAtChunkId(ChunkID id, i32 vertIndex, f32 height, TerrainHeightSetDirection dir/* = TerrainHeightSetDirection::ANY*/) {
     ASSERT_GAME_THREAD();
-    return setHeightAtPatch(mSpatialGrid2D.getIDAtPos(mWorld->getChunkGrid().getWorldPosXYFromChunkID(id)), vertIndex, height, dir);
+    return setHeightAtPatch(mSpatialGrid2D.getIDAtPos(mWorld->getLocalChunkGrid().getWorldPosXYFromChunkID(id)), vertIndex, height, dir);
 }
 
 void IHeightmapGrid::setHeightAtWorldPos(f32v2 worldPos, f32 height, TerrainHeightSetDirection dir /*= TerrainHeightSetDirection::ANY*/) {
@@ -226,7 +226,7 @@ void IHeightmapGrid::setHeightAtPatch(HeightmapPatchID patchId, i32 vertIndex, f
 
 void IHeightmapGrid::adjustHeightAtChunk(ChunkID id, i32 vertIndex, f32 adjust) {
     ASSERT_GAME_THREAD();
-    return adjustHeightAtPatch(mSpatialGrid2D.getIDAtPos(mWorld->getChunkGrid().getWorldPosXYFromChunkID(id)), vertIndex, adjust);
+    return adjustHeightAtPatch(mSpatialGrid2D.getIDAtPos(mWorld->getLocalChunkGrid().getWorldPosXYFromChunkID(id)), vertIndex, adjust);
 }
 
 void IHeightmapGrid::adjustHeightAtPatch(HeightmapPatchID id, i32 vertIndex, f32 adjust) {
@@ -434,8 +434,8 @@ void IHeightmapGrid::initInternal() {
 }
 
 void IHeightmapGrid::initChunkGridEvents() {
-    mWorld->getChunkGrid().registerChunkGridListeners(mChunkGridListeners);
-    mWorld->getChunkGrid().addBeginActivateListener(mChunkGridListeners, [this](ChunkGridEvent& evnt) {
+    mWorld->getLocalChunkGrid().registerChunkGridListeners(mChunkGridListeners);
+    mWorld->getLocalChunkGrid().addBeginActivateListener(mChunkGridListeners, [this](ChunkGridEvent& evnt) {
         i32 patchId = mSpatialGrid2D.getIDAtPos(evnt.chunk.getWorldPosCenter2D());
         HeightmapPatch& patch = mHeightData[patchId];
         if (++patch.mNumActiveChunksThisPatch == 1) {
@@ -443,7 +443,7 @@ void IHeightmapGrid::initChunkGridEvents() {
             mWorld->getPhysicsWorld().updateTerrainBody(patch);
         }
     });
-    mWorld->getChunkGrid().addDeactivatedListener(mChunkGridListeners, [this](ChunkGridEvent& evnt) {
+    mWorld->getLocalChunkGrid().addDeactivatedListener(mChunkGridListeners, [this](ChunkGridEvent& evnt) {
         i32 patchId = mSpatialGrid2D.getIDAtPos(evnt.chunk.getWorldPosCenter2D());
         HeightmapPatch& patch = mHeightData[patchId];
         assert(mHeightData[patchId].mNumActiveChunksThisPatch > 0);

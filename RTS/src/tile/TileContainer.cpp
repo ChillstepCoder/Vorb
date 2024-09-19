@@ -10,7 +10,7 @@
 
 #include "resources/TileRepository.h"
 #include "world/World.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 
 #include "ecs/factory/EntityFactory.h"
 
@@ -34,7 +34,7 @@ void TileContainer::init(TileContainerID id, ui32v3 rootPos, ui32v3 dims, ui32 f
     mTileSpatialGrid.init(rootPos, dims, floorHeight);
     mId = id;
     mOwner = owner;
-    if (std::holds_alternative<Chunk*>(owner)) {
+    if (std::holds_alternative<LocalChunk*>(owner)) {
         mOwnerType = TileContainerOwnerType::CHUNK;
         assert(dims.x == CHUNK_WIDTH && dims.y == CHUNK_WIDTH && dims.z == 1u);
     }
@@ -634,8 +634,8 @@ const Tile& TileContainer::getTileAt(ui32 offsetX, ui32 offsetY, ui32 offsetZ) c
     return mTiles[i];
 }
 
-Chunk* TileContainer::getOwnerChunk() const {
-    Chunk*const* chunk = std::get_if<Chunk*>(&mOwner);
+LocalChunk* TileContainer::getOwnerChunk() const {
+    LocalChunk*const* chunk = std::get_if<LocalChunk*>(&mOwner);
     if (chunk) {
         return *chunk;
     }
@@ -732,13 +732,13 @@ void TileContainer::onTileChanged(TileIndex tileIndex) {
     // TODO: Proper intersection
     // TODO: Only when the layer changes
     if (!isTerrain()) {
-        IChunkGrid& chunkGrid = mWorld.getChunkGrid();
+        LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
         const i32v3& rootPos = mTileSpatialGrid.getWorldPos();
         const i32v3 offset = mTileSpatialGrid.getTileXYZOffsetWithZScale(tileIndex);
         if (offset.z == 0) {
             const i32v2 worldPos2D(rootPos.x + offset.x, rootPos.y + offset.y);
 
-            Chunk& chunk = chunkGrid.getChunkAtPosition(worldPos2D);
+            LocalChunk& chunk = chunkGrid.getChunkAtPosition(worldPos2D);
             // Only notify chunk if it is activated
             // TODO: is it possible a building can change while under chunk is activated but not connected? Does it matter?
             if (chunk.isActivated()) {

@@ -8,7 +8,7 @@
 
 #include "tile/TileGrass.h"
 
-class Chunk;
+class LocalChunk;
 class BillboardMesh;
 class TBOBillboardMesh;
 class NavWorld;
@@ -55,27 +55,13 @@ public:
 };
 
 
-// TODO: Use
-class SimulatedChunk {
-public:
-
-	struct SimBiomeContents {
-		//BiomeUniqueID biomeId;
-		
-	};
-
-	//std::vector<ChunkHarvestableTile> mHarvestableTiles[e_cast(TileHarvestable::COUNT)];
-};
-
-
-// TODO: Chunks and structures both have base class "TileContainer" ???
-class Chunk {
+class LocalChunk {
 	friend class World;
 	friend class IWorldGrid;
 	friend class WorldEditorPanel;
 	friend class ChunkGenerator;
 	friend class ITileContainerMesher;
-    friend class IChunkGrid;
+    friend class LocalChunkGrid;
     friend class CliChunkGrid;
     friend class RenderContext; // For debug rendering of neighbors only
     friend class NavWorld;
@@ -85,8 +71,8 @@ class Chunk {
 	friend struct TileHandle;
 	friend struct TileRef;
 public:
-	Chunk();
-	~Chunk();
+	LocalChunk();
+	~LocalChunk();
 
     // =========== Main methods  ===========
 
@@ -121,10 +107,10 @@ public:
 	// Get neighbors starting from top left
     void getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) const;
     void getTileNeighbors4(const TileIndex index, OUT TileHandle neighbors[4]) const;
-	Chunk& getLeftNeighbor() const;
-	Chunk& getTopNeighbor() const;
-	Chunk& getRightNeighbor() const;
-	Chunk& getBottomNeighbor() const;
+	LocalChunk& getLeftNeighbor() const;
+	LocalChunk& getTopNeighbor() const;
+	LocalChunk& getRightNeighbor() const;
+	LocalChunk& getBottomNeighbor() const;
 
     // =========== State  ===========
 	bool isDeactivated() const { ASSERT_GAME_THREAD(); return mState == ChunkState::DEACTIVATED || mState == ChunkState::DESTROYING_ON_SIM; }
@@ -164,7 +150,7 @@ public:
 
 	World& getWorld() const { return *mWorld; }
 
-	EVENT_LISTENER_FUNCS(Chunk, GrassEdit, ChunkEventType::GrassEdit, const ChunkEvent&);
+	EVENT_LISTENER_FUNCS(LocalChunk, GrassEdit, ChunkEventType::GrassEdit, const ChunkEvent&);
 
 private:
 
@@ -183,7 +169,7 @@ private:
 	std::unique_ptr<ChunkTileContainersLookup> mTileContainersLookup;
 	std::atomic<ui32> mTileContainersLookupVersion = 0;
 
-	EVENT_DISPATCHER_DEF(Chunk);
+	EVENT_DISPATCHER_DEF(LocalChunk);
 };
 #ifdef DEBUG // Release has different size
 //static_assert(sizeof(Chunk) == 296, "These are permanently allocated, so keep small");

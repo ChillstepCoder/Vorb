@@ -144,7 +144,7 @@ void FishRenderer::debugRenderFishEcosystem(const World& world) {
         for (auto&& it : fishEcosystem.mActiveFishChunks) {
             ChunkID id = it.first;
             const FishChunk& fishChunk = *it.second;
-            const Chunk& chunk = world.getChunkGrid().getChunk(id);
+            const LocalChunk& chunk = world.getLocalChunkGrid().getChunk(id);
             if (fishChunk.mInUpdateRange) {
                 AM::DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color::Cyan, DEBUG_LIFETIME);
             }
@@ -187,7 +187,7 @@ void FishRenderer::debugRenderFishEcosystem(const World& world) {
         for (auto&& it : fishEcosystem.mDormantFishChunks) {
             ChunkID id = it.first;
             const DormantFishChunk& fishChunk = it.second;
-            const Chunk& chunk = world.getChunkGrid().getChunk(id);
+            const LocalChunk& chunk = world.getLocalChunkGrid().getChunk(id);
             AM::DebugRenderer::drawWireQuad(chunk.getWorldPos(), f32v2(CHUNK_WIDTH), color::Azure, DEBUG_LIFETIME);
         }
     }

@@ -201,7 +201,7 @@ ui32 TileInteractPanel::updateAndRenderTerrainTile() {
         }
         case UIInteractMenuState::SELECTED_STRUCTURE_LIST: {
             ImGui::Begin("Structures", nullptr, WINDOW_FLAGS);
-            Chunk* owner = mWorldObjectQuery->getTileContainer()->getOwnerChunk();
+            LocalChunk* owner = mWorldObjectQuery->getTileContainer()->getOwnerChunk();
             assert(owner);
             Building* structure = mWorld.tryGetStructureAtWorldPos(TileCoord(mWorldObjectQuery->getTilePos()));
             if (!structure) {

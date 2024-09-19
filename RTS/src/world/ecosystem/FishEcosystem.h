@@ -3,7 +3,7 @@
 class World;
 
 
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 
 #include "definitions/FishDef.h"
 
@@ -95,7 +95,7 @@ public:
 
     void tickGameThread(f32 elapsedSec);
 
-    void initChunkFish(Chunk& chunk);
+    void initChunkFish(LocalChunk& chunk);
 
     RenderStateManager<FishChunkRenderStateMap>& getRenderStateManager() const { assert(mRenderStateManager); return *mRenderStateManager; }
 
@@ -107,7 +107,7 @@ public:
     void setFishCaught(entt::entity fishEntity, entt::entity catcher);
 private:
     void initEventHandlers();
-    void disposeChunkFish(Chunk& chunk);
+    void disposeChunkFish(LocalChunk& chunk);
     void makeDormant(FishChunk& chunk, DormantFishChunk& dormantChunk);
     void makeUnDormant(FishChunk& chunk, DormantFishChunk& dormantChunk);
     bool trySpawnFish(const TileContainer& container, FishChunk& fishChunk, const FishDef& fishDef);

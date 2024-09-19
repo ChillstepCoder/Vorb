@@ -3,7 +3,7 @@
 
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 #include "world/chunk/SimChunkGrid.h"
 #include "ecs/component/FullEntityBindingComponent.h"
 #include "ecs/component/SimEntityTypeComponent.h"
@@ -87,7 +87,7 @@ void IFullECS::tickPhysics(f32 elapsedSec) {
 	mCharacterControlSystem.update(mWorld, mRegistry, elapsedSec);
 }
 
-void IFullECS::addPendingEntitiesToChunk(Chunk& chunk, ChunkFullTransitionData&& data) {
+void IFullECS::addPendingEntitiesToChunk(LocalChunk& chunk, ChunkFullTransitionData&& data) {
 
 	ASSERT_GAME_THREAD();
 	ChunkID chunkId = chunk.getChunkID();
@@ -117,7 +117,7 @@ void IFullECS::addPendingEntitiesToChunk(Chunk& chunk, ChunkFullTransitionData&&
 	}
 }
 
-void IFullECS::createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransitionData& data) {
+void IFullECS::createFullEntitiesFromSimEntities(LocalChunk& chunk, ChunkFullTransitionData& data) {
     ASSERT_GAME_THREAD();
 
     const IHeightmapGrid& heightGrid = mWorld.getHeightmapGrid();
@@ -185,7 +185,7 @@ void IFullECS::createFullEntitiesFromSimEntities(Chunk& chunk, ChunkFullTransiti
     tileCollapsedStacks.clear();
 }
 
-ChunkSimTransitionData IFullECS::deactivateEntitiesForChunk(Chunk& chunk) {
+ChunkSimTransitionData IFullECS::deactivateEntitiesForChunk(LocalChunk& chunk) {
     ASSERT_GAME_THREAD();
 	EntityVector& chunkEntities = mEntitiesByChunk[chunk.getChunkID()];
     ChunkSimTransitionData rv;
@@ -230,8 +230,8 @@ ChunkSimTransitionData IFullECS::deactivateEntitiesForChunk(Chunk& chunk) {
 bool IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunkID, ChunkID newChunkID) {
     ASSERT_GAME_THREAD();
 
-    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
-    Chunk& newChunk = chunkGrid.getChunk(newChunkID);
+    LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
+    LocalChunk& newChunk = chunkGrid.getChunk(newChunkID);
     if (newChunk.isActivated()) {
         mEntitiesByChunk[newChunkID].emplace_back(entity);
     }
@@ -430,13 +430,13 @@ i32 IFullECS::pickupDynamicItem(entt::entity picker, entt::entity itemEntity, i3
 }
 
 void IFullECS::initEvents() {
-    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
+    LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkEventListeners);
 
 	// Synchronously activate entities on chunk activated
     chunkGrid.addActivatedListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
-        Chunk& chunk = evnt.chunk;
+        LocalChunk& chunk = evnt.chunk;
         auto&& it = mPendingEntities.find(chunk.getChunkID());
 		if (it != mPendingEntities.end()) {
 			createFullEntitiesFromSimEntities(chunk, it->second);

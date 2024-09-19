@@ -2,7 +2,7 @@
 #include "WorldObjectQuery.h"
 
 #include "world/World.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 #include "building/Building.h"
 
 #include "gamethread/GameThreadTasks.h"
@@ -35,7 +35,7 @@ void WorldObjectQuery::query(const WorldObjectQueryPtr& ptr) {
 }
 
 void WorldObjectQuery::queryInternal() {
-    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
+    LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
 
     TileHandle handle;
     if (mLiteHandle.isValid()) {
@@ -50,7 +50,7 @@ void WorldObjectQuery::queryInternal() {
             return;
         }
 
-        Chunk* chunk = handle.container->getOwnerChunk();
+        LocalChunk* chunk = handle.container->getOwnerChunk();
         if (chunk->isActivated()) {
             assert(tilePos2D.x >= 0.0f && tilePos2D.y >= 0.0f);
             if (Building* structure = mWorld.tryGetStructureAtWorldPos(TileCoord(tilePos2D))) {

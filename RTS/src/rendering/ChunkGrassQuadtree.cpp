@@ -5,7 +5,7 @@
 #include "rendering/mesh/GrassMeshManager.h"
 #include "renderdata/WorldRenderDataManager.h"
 #include "world/World.h"
-#include "world/Chunk.h"
+#include "world/LocalChunk.h"
 #include "world/IHeightmapGrid.h"
 #include "camera/Camera3D.h"
 
@@ -58,7 +58,7 @@ void GrassMeshTaskData::operator delete(void* pointer, size_t size) {
     return grass_mesh_singleton_task_pool::free(pointer);
 }
 
-ChunkGrassQuadtree::ChunkGrassQuadtree(const Chunk& chunk) : mChunk(chunk), FlatQuadtree(chunk.getWorld().getHeightmapGrid(), chunk.getWorldPos(), GRASS_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mGrassSettings.lodDistanceOffset) {
+ChunkGrassQuadtree::ChunkGrassQuadtree(const LocalChunk& chunk) : mChunk(chunk), FlatQuadtree(chunk.getWorld().getHeightmapGrid(), chunk.getWorldPos(), GRASS_SUBDIVIDE_DISTANCES_SQ, sDebugOptions.mGrassSettings.lodDistanceOffset) {
 
 }
 

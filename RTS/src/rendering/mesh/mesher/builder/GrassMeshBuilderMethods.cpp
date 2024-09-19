@@ -4,7 +4,7 @@
 #include "rendering/GrassBillboardMesh.h"
 #include "rendering/ChunkGrassQuadtree.h"
 #include "world/World.h"
-#include "world/Chunk.h"
+#include "world/LocalChunk.h"
 #include "world/IHeightmapGrid.h"
 
 #include "generation/ChunkGenerator.h"
@@ -139,7 +139,7 @@ void addGrass(GrassBillboardMeshBuilder& grassMeshBuilder, const TileGrassDef& g
     );
 }
 
-bool GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMeshBuilder, const Chunk& chunk, const ui32v2& tilePosStart, ui32 lod) {
+bool GrassMeshBuilderMethods::createGrassMesh(GrassBillboardMeshBuilder& grassMeshBuilder, const LocalChunk& chunk, const ui32v2& tilePosStart, ui32 lod) {
     PROFILE_FUNCTION();
     TileGrassRepository& grassRepository = TileGrassRepository::get();
     const ui32v2& dims = (ui32v2&)ChunkGrassFlatQuadtree::LOD_DIMS[lod];

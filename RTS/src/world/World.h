@@ -12,8 +12,8 @@
 class HostWorldData;
 class Building;
 class Camera3D;
-class Chunk;
-class IChunkGrid;
+class LocalChunk;
+class LocalChunkGrid;
 class IFullECS;
 class IHeightmapGrid;
 class ItemStockpileRegistry;
@@ -87,7 +87,7 @@ public:
     SimChunkGrid& getSimChunkGrid() const { return *mSimChunkGrid; }
     WorldMarkupGrid& getMarkupGrid() const { return *mMarkupGrid; }
     OwnershipGrid& getOwnershipGrid() const { return *mOwnershipGrid; }
-    IChunkGrid& getChunkGrid() const { return *mChunkGrid; }
+    LocalChunkGrid& getLocalChunkGrid() const { return *mLocalChunkGrid; }
     PhysicsWorld& getPhysicsWorld() const { return *mPhysicsWorld; }
     IFullECS& getECS() const { /*ASSERT_GAME_THREAD();*/ return *mEcs; }//  TODO: GameThreadAssert should be on
     BuildingGrid& getBuildingGrid() const { return *mStructureGrid; }
@@ -118,7 +118,7 @@ public:
 
     // Queries
     bool terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable resource);
-    void efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func);
+    void efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(LocalChunk&, TileIndex)> func);
     
     // Structures TODO: Needs to be StructureRef so it isnt destroyed
     Building* tryGetStructureAtWorldPos(TileCoord worldPos) const;
@@ -160,7 +160,7 @@ private:
     ui32 mSeed = 0;
 
     // Chunks
-    std::unique_ptr<IChunkGrid> mChunkGrid;
+    std::unique_ptr<LocalChunkGrid> mLocalChunkGrid;
     // Tile containers
     std::unique_ptr<TileContainerRepository> mTileContainerRepository;
     // Loader

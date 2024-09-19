@@ -8,7 +8,7 @@
 #include "tile/TileContainerEvents.h"
 
 class World;
-class Chunk;
+class LocalChunk;
 class TileContainer;
 struct TileFineNavData;
 struct CoarseNavNode;

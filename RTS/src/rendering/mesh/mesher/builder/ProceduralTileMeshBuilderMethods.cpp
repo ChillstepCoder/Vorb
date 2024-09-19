@@ -6,7 +6,7 @@
 
 #include "tile/TileHandle.h"
 #include "tile/Stairs.h"
-#include "world/Chunk.h"
+#include "world/LocalChunk.h"
 
 #include "options/DebugOptions.h"
 

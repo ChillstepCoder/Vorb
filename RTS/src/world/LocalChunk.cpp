@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "Chunk.h"
+#include "LocalChunk.h"
 
 #include "rendering/mesh/Mesh.h"
 #include "rendering/ChunkGrassQuadtree.h"
@@ -19,18 +19,18 @@
 #include "item/ItemRepository.h"
 #include "item/ItemDef.h"
 
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 
 
-Chunk::Chunk() {
+LocalChunk::LocalChunk() {
     
 }
 
-Chunk::~Chunk() {
+LocalChunk::~LocalChunk() {
 	dispose();
 }
 
-void Chunk::init(World& world, ChunkID chunkId, i32v2 worldPos) {
+void LocalChunk::init(World& world, ChunkID chunkId, i32v2 worldPos) {
     mWorld = &world;
     mChunkId = chunkId;
     mAABB.x = worldPos.x;
@@ -42,7 +42,7 @@ void Chunk::init(World& world, ChunkID chunkId, i32v2 worldPos) {
     mAABB.height = 4;
 }
 
-void Chunk::allocateData() {
+void LocalChunk::allocateData() {
     assert(!mTileContainer);
     // We should only allocate at the beginning of a load cycle
     // This should be set by chunk grid
@@ -56,7 +56,7 @@ void Chunk::allocateData() {
     assert(mTileContainer);
 }
 
-void Chunk::freeData() {
+void LocalChunk::freeData() {
     if (mTileContainer) {
         std::lock_guard lock(mTileContainerLifetimeMutex);
         mTileContainer->getWorld().getTileContainerRepository().destroyTileContainer(mTileContainer);
@@ -69,82 +69,82 @@ void Chunk::freeData() {
     }
 }
 
-void Chunk::dispose() {
+void LocalChunk::dispose() {
     mFlags = 0;
     mState = ChunkState::DEACTIVATED;
     freeData();
 }
 
-const HeightmapPatchID Chunk::getHeightmapPatchID() const {
+const HeightmapPatchID LocalChunk::getHeightmapPatchID() const {
     return mWorld->getHeightmapGrid().getSpatialGrid2D().getIDAtPos(mAABB.pos);
 }
 
-TileHandle Chunk::getTileHandleAt(const TileIndex index) const {
+TileHandle LocalChunk::getTileHandleAt(const TileIndex index) const {
     return TileHandle(mTileContainer, index);
 }
 
-TileHandle Chunk::getLeftTileHandle(const TileIndex index) const {
+TileHandle LocalChunk::getLeftTileHandle(const TileIndex index) const {
     assert(mTileContainer);
     const i32v2 offset = mTileContainer->getTileSpatialGrid().getTileXYOffset(index);
     if (offset.x > 0) {
         return TileHandle(mTileContainer, index - 1);
     }
-    const Chunk& leftNeighbor = getLeftNeighbor();
+    const LocalChunk& leftNeighbor = getLeftNeighbor();
     if (leftNeighbor.isActivated()) {
         return TileHandle(leftNeighbor.getTileContainer(), index + CHUNK_WIDTH - 1);
     }
 	return TileHandle();
 }
 
-TileHandle Chunk::getRightTileHandle(const TileIndex index) const {
+TileHandle LocalChunk::getRightTileHandle(const TileIndex index) const {
     const i32v2 offset = mTileContainer->getTileSpatialGrid().getTileXYOffset(index);
     if (offset.x < CHUNK_WIDTH - 1) {
         return TileHandle(mTileContainer, index + 1);
     }
 
-    const Chunk& rightNeighbor = getRightNeighbor();
+    const LocalChunk& rightNeighbor = getRightNeighbor();
     if (rightNeighbor.isActivated()) {
         return TileHandle(rightNeighbor.getTileContainer(), index - CHUNK_WIDTH + 1);
     }
     return TileHandle();
 }
 
-TileHandle Chunk::getTopTileHandle(const TileIndex index) const {
+TileHandle LocalChunk::getTopTileHandle(const TileIndex index) const {
     const i32v2 offset = mTileContainer->getTileSpatialGrid().getTileXYOffset(index);
     if (offset.y < CHUNK_WIDTH - 1) {
         return TileHandle(mTileContainer, index + CHUNK_WIDTH);
     }
 
-    Chunk& topNeighbor = getTopNeighbor();
+    LocalChunk& topNeighbor = getTopNeighbor();
 	if (topNeighbor.isActivated()) {
         return TileHandle(topNeighbor.getTileContainer(), index + CHUNK_WIDTH - CHUNK_SIZE);
 	}
     return TileHandle();
 }
 
-TileHandle Chunk::getBottomTileHandle(const TileIndex index) const {
+TileHandle LocalChunk::getBottomTileHandle(const TileIndex index) const {
     const i32v2 offset = mTileContainer->getTileSpatialGrid().getTileXYOffset(index);
     if (offset.y > 0) {
         return TileHandle(mTileContainer, index - CHUNK_WIDTH);
     }
 
-    Chunk& bottomNeighbor = getBottomNeighbor();
+    LocalChunk& bottomNeighbor = getBottomNeighbor();
     if (bottomNeighbor.isActivated()) {
         return TileHandle(bottomNeighbor.getTileContainer(), index - CHUNK_WIDTH + CHUNK_SIZE);
     }
 	return TileHandle();
 }
 
-void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) const {
+void LocalChunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) const {
 
     // TODO: Branchless interior nodes? :thinkies:
 
-    IChunkGrid& chunkGrid = mWorld->getChunkGrid();
+    LocalChunkGrid& chunkGrid = mWorld->getLocalChunkGrid();
 
 	{ // Bottom 3
 		TileHandle bottom = getBottomTileHandle(index);
 		if (bottom.isValid()) {
-            Chunk& bottomChunk = chunkGrid.getChunkAtPosition(bottom.getWorldPos2D());
+            LocalChunk& bottomChunk = chunkGrid.getChunkAtPosition(bottom.getWorldPos2D());
 			neighbors[(int)NeighborIndex8::BOTTOM] = bottom.getTile();
 			TileHandle bottomLeft = bottomChunk.getLeftTileHandle(bottom.tileIndex);
             neighbors[(int)NeighborIndex8::BOTTOM_LEFT] = bottomLeft.getTile();
@@ -162,7 +162,7 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
     { // Top 3
         TileHandle top = getTopTileHandle(index);
         if (top.isValid()) {
-            Chunk& topChunk = chunkGrid.getChunk(chunkGrid.getChunkIDFromWorldPos(top.getWorldPos2D()));
+            LocalChunk& topChunk = chunkGrid.getChunk(chunkGrid.getChunkIDFromWorldPos(top.getWorldPos2D()));
             neighbors[(int)NeighborIndex8::TOP] = top.getTile();
             TileHandle topLeft = topChunk.getLeftTileHandle(top.tileIndex);
             neighbors[(int)NeighborIndex8::TOP_LEFT] = topLeft.getTile();
@@ -173,7 +173,7 @@ void Chunk::getTileNeighbors8(const TileIndex index, OUT Tile neighbors[8]) cons
 
 }
 
-void Chunk::getTileNeighbors4(const TileIndex index, OUT TileHandle neighbors[4]) const {
+void LocalChunk::getTileNeighbors4(const TileIndex index, OUT TileHandle neighbors[4]) const {
 
     neighbors[(int)NeighborIndex4::BOTTOM] = getBottomTileHandle(index);
     neighbors[(int)NeighborIndex4::LEFT] = getLeftTileHandle(index);
@@ -182,25 +182,25 @@ void Chunk::getTileNeighbors4(const TileIndex index, OUT TileHandle neighbors[4]
 
 }
 
-Chunk& Chunk::getLeftNeighbor() const {
-    return mWorld->getChunkGrid().getChunk(mChunkId - 1);
+LocalChunk& LocalChunk::getLeftNeighbor() const {
+    return mWorld->getLocalChunkGrid().getChunk(mChunkId - 1);
 }
 
-Chunk& Chunk::getTopNeighbor() const {
-    IChunkGrid& chunkGrid = mWorld->getChunkGrid();
+LocalChunk& LocalChunk::getTopNeighbor() const {
+    LocalChunkGrid& chunkGrid = mWorld->getLocalChunkGrid();
     return chunkGrid.getChunk(mChunkId + chunkGrid.getWidthChunks());
 }
 
-Chunk& Chunk::getRightNeighbor() const {
-    return mWorld->getChunkGrid().getChunk(mChunkId + 1);
+LocalChunk& LocalChunk::getRightNeighbor() const {
+    return mWorld->getLocalChunkGrid().getChunk(mChunkId + 1);
 }
 
-Chunk& Chunk::getBottomNeighbor() const {
-    IChunkGrid& chunkGrid = mWorld->getChunkGrid();
+LocalChunk& LocalChunk::getBottomNeighbor() const {
+    LocalChunkGrid& chunkGrid = mWorld->getLocalChunkGrid();
     return chunkGrid.getChunk(mChunkId - chunkGrid.getWidthChunks());
 }
 
-void Chunk::setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density) {
+void LocalChunk::setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density) {
     TileGrass& grass = mGrass[index];
     int lowestDensityIndex = 0;
     int lowestDensity = INT32_MAX;
@@ -234,21 +234,21 @@ void Chunk::setGrassAt(const TileIndex index, TileGrassID grassId, ui8 density) 
     dispatchGrassEdit(editEvent);
 }
 
-void Chunk::clearGrassAt(const TileIndex index) {
+void LocalChunk::clearGrassAt(const TileIndex index) {
     mGrass[index] = TileGrass();
 
     ChunkEvent editEvent{ *this, ChunkEventType::GrassEdit, index };
     dispatchGrassEdit(editEvent);
 }
 
-const ui8 Chunk::getGrassDensityAt(const TileIndex index, TileGrassID grassId) const
+const ui8 LocalChunk::getGrassDensityAt(const TileIndex index, TileGrassID grassId) const
 {
     ASSERT_GAME_THREAD();
     const TileGrass& grass = mGrass[index];
     return grass.getDensity(grassId);
 }
 
-bool Chunk::copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH]) const {
+bool LocalChunk::copyPaddedGrassDataWorkerThread(TileGrass outGrassData[PADDED_CHUNK_WIDTH][PADDED_CHUNK_WIDTH]) const {
     PROFILE_FUNCTION();
     assert(!IS_GAME_THREAD());
     { // Copy true data with lock

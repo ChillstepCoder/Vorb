@@ -1,7 +1,7 @@
 #pragma once
 
 #include "building/Building.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 
 class World;
 class BuildingBlueprint;
@@ -67,7 +67,7 @@ public:
 
     ui32 allBuildingsLoadedAtChunk(ChunkID chunkId) const;
     // For connecting loaded buildings to the active chunk
-    void connectBuildingsToChunk(Chunk& chunk);
+    void connectBuildingsToChunk(LocalChunk& chunk);
     // Main thread access only, if passing to worker thread, make a copy
     const BitArray& getBuildingFootprintAtChunk(ChunkID chunkId) const { return mChunkBuildingData[chunkId].getFootprint(); }
 
@@ -76,7 +76,7 @@ private:
     void initBuildingFootprint(Building& building);
     void initBuildingAsDisconnected(Building& building);
     void connectBuildingToChunks(Building& building);
-    void connectBuildingToChunk(Building& building, Chunk& chunk);
+    void connectBuildingToChunk(Building& building, LocalChunk& chunk);
     void onBuildingFinishedLoad(Building& building);
     void initEventHandlers();
     void removeBuildingFromDeactivateList(Building* building);

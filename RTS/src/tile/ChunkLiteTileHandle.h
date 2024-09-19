@@ -1,6 +1,6 @@
 #pragma once
 
-class Chunk;
+class LocalChunk;
 class World;
 class SimChunk;
 
@@ -14,7 +14,7 @@ struct ChunkLiteTileHandle {
     // Must be valid handle to call this
     i32v2 getWorldPosition2D(World& world) const;
     // Must be valid handle to call this
-    Chunk& getChunk(World& world) const;
+    LocalChunk& getChunk(World& world) const;
     // Must be valid handle to call this
     SimChunk& getSimChunk(World& world) const;
 

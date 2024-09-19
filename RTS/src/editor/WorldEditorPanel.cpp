@@ -4,8 +4,8 @@
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
 #include "world/HeightmapTerrainQuadtree.h"
-#include "world/Chunk.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunk.h"
+#include "world/LocalChunkGrid.h"
 #include "world/road/TerrainSurfaceGrid.h"
 #include "options/DebugOptions.h"
 #include "debugging/DebugRenderer.h"
@@ -54,29 +54,7 @@ WorldEditorPanel::WorldEditorPanel() {
         }
         else if (event.keyCode == VKEY_LEFT) {
             if (mCurrentBrushSettings) mCurrentBrushSettings->brushSize = glm::max(mCurrentBrushSettings->brushSize - 0.2f, MIN_BRUSH_SIZE);
-        }/*
-        else if (event.keyCode == VKEY_1) {
-            setEditMode(WorldEditorEditMode::TERRAIN);
         }
-        else if (event.keyCode == VKEY_2) {
-            setEditMode(WorldEditorEditMode::GRASS);
-        }
-        else if (event.keyCode == VKEY_3) {
-            setEditMode(WorldEditorEditMode::TILE);
-        }
-        else if (event.keyCode == VKEY_4) {
-            setEditMode(WorldEditorEditMode::ENTITY);
-        }
-        else if (event.keyCode == VKEY_5) {
-            setEditMode(WorldEditorEditMode::CITY);
-        }
-        else if (event.keyCode == VKEY_6) {
-            setEditMode(WorldEditorEditMode::BUILDING);
-        }
-        else if (event.keyCode == VKEY_7) {
-            setEditMode(WorldEditorEditMode::ROAD);
-        }*/
-        static_assert((int)WorldEditorEditMode::COUNT == 7);
        
     });
 
@@ -131,8 +109,17 @@ void WorldEditorPanel::update(World* world, const Camera3D& camera, const f32v3&
     else if (mEditMode == WorldEditorEditMode::ROAD) {
         updateSurfaceEdit();
     }
+    /*else if (mEditMode == WorldEditorEditMode::CITY) {
+        updateCityEdit();
+    }
+    else if (mEditMode == WorldEditorEditMode::BUILDING) {
+        updateBuildingEdit();
+    }*/
+    else if (mEditMode == WorldEditorEditMode::CORRUPTION) {
+        updateCorruptionEdit();
+    }
     // City edit and edit building runs on mouse up
-    static_assert((int)WorldEditorEditMode::COUNT == 7);
+    static_assert((int)WorldEditorEditMode::COUNT == 8);
 }
 
 void WorldEditorPanel::renderBrushDecals (const Camera3D& camera) const {
@@ -205,7 +192,12 @@ void WorldEditorPanel::renderUI(f32 ySize) const {
             renderBuildingEditUI();
             ImGui::EndTabItem();
         }
-        static_assert((int)WorldEditorEditMode::COUNT == 7);
+        if (ImGui::BeginTabItem("Corruption")) {
+            setEditMode(WorldEditorEditMode::CORRUPTION);
+            renderCorruptionEditUI();
+            ImGui::EndTabItem();
+        }
+        static_assert((int)WorldEditorEditMode::COUNT == 8);
 
         ImGui::EndTabBar();
     }
@@ -481,6 +473,10 @@ void WorldEditorPanel::renderBuildingEditUI() const {
     ImGui::DragInt2("Plot Dims (x,y)", &mPlotDimsDTile.x, 0.5f, selectedDef.widthRange.x, selectedDef.widthRange.y);
 }
 
+void WorldEditorPanel::renderCorruptionEditUI() const {
+
+}
+
 void WorldEditorPanel::updateTerrainEdit() {
 
     if (!mCurrentBrushSettings || !mCurrentBrushSettings->activeBrush) {
@@ -639,7 +635,7 @@ void WorldEditorPanel::updateGrassEdit() {
                     PROFILE_SCOPE("Edit Grass");
                     for (worldPos.y = worldPosBrushStart.y; worldPos.y <= worldPosBrushEnd.y; worldPos.y += 1.0f) {
                         for (worldPos.x = worldPosBrushStart.x; worldPos.x <= worldPosBrushEnd.x; worldPos.x += 1.0f) {
-                            IChunkGrid& chunkGrid = world->getChunkGrid();
+                            LocalChunkGrid& chunkGrid = world->getLocalChunkGrid();
                             const ChunkID id = chunkGrid.getChunkIDFromWorldPos(worldPos);
                             const TileContainer* tileContainer = chunkGrid.getChunk(id).getTileContainer();
                             if (tileContainer) {
@@ -665,7 +661,7 @@ void WorldEditorPanel::updateTileEdit() {
     static TileIndex prevTileIndex;
     if (mHitResult.didHit() && (vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT) && (mDragToPlace || !mDidPlaceTile))) {
         mDidPlaceTile = true;
-        const ChunkID chunkID = mActiveWorld->getChunkGrid().getChunkIDFromWorldPos(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y));
+        const ChunkID chunkID = mActiveWorld->getLocalChunkGrid().getChunkIDFromWorldPos(f32v2(mHitResult.mPosition.x, mHitResult.mPosition.y));
         const TileIndex tileIndex = (TileIndex)((ui32)mHitResult.mPosition.x % CHUNK_WIDTH + ((ui32)mHitResult.mPosition.y % CHUNK_WIDTH) * CHUNK_WIDTH);
 
         // Make sure while mouse is held we aren't spamming tiles in the same spot
@@ -677,7 +673,7 @@ void WorldEditorPanel::updateTileEdit() {
             TaskTuple* taskData = new TaskTuple(chunkID, tileIndex, mSelectedTile, mActiveWorld);
             GameThreadTasks::getInstance().addGenericTask([taskData]() {
                 ChunkID chunkId = std::get<0>(*taskData);
-                Chunk& chunk = std::get<3>(*taskData)->getChunkGrid().getChunk(chunkId);
+                LocalChunk& chunk = std::get<3>(*taskData)->getLocalChunkGrid().getChunk(chunkId);
                 if (chunk.isActivated()) {
                     TileIndex tileIndex = std::get<1>(*taskData);
                     const TileDef& data = TileRepository::get().getLoadedOrUnloadedAsset(std::get<2>(*taskData));
@@ -755,6 +751,10 @@ void WorldEditorPanel::updateBuildingEdit() {
         });
 
     }
+}
+
+void WorldEditorPanel::updateCorruptionEdit() {
+    assert(false);
 }
 
 void WorldEditorPanel::editHeightVertex(HeightmapPatchID id, DTileCoord vertPos, f32v2 offsetToVertex, const BrushSettings& brush, TerrainEditState editState) {
@@ -836,7 +836,7 @@ void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID gr
     f32 strength = getBrushStrengthAtPoint(brush, offsetToTile) * brush.brushStrength;
     //const f32 random = Random::getCachedRandomfSpecific(id.id * CHUNK_SIZE + tileIndex);
     //if (random < strength) {
-    float density = (float)mActiveWorld->getChunkGrid().getChunk(id).getGrassDensityAt(tileIndex, grassId);
+    float density = (float)mActiveWorld->getLocalChunkGrid().getChunk(id).getGrassDensityAt(tileIndex, grassId);
     if (editState == GrassEditState::RAISE) {
         density += strength * POWER;
     }
@@ -845,7 +845,7 @@ void WorldEditorPanel::editGrass(ChunkID id, TileIndex tileIndex, TileGrassID gr
     }
 
     ui8 densityUi8 = (ui8)glm::clamp(glm::round(density), 0.0f, 255.0f);
-    mActiveWorld->getChunkGrid().getChunk(id).setGrassAt(tileIndex, grassId, densityUi8);
+    mActiveWorld->getLocalChunkGrid().getChunk(id).setGrassAt(tileIndex, grassId, densityUi8);
 }
 
 f32 WorldEditorPanel::getBrushStrengthAtPoint(const BrushSettings& brush, const f32v2& brushOffsetToPoint) {
@@ -880,11 +880,12 @@ void WorldEditorPanel::setEditMode(WorldEditorEditMode mode) const {
         case WorldEditorEditMode::ENTITY:
         case WorldEditorEditMode::CITY:
         case WorldEditorEditMode::BUILDING:
+        case WorldEditorEditMode::CORRUPTION:
             mCurrentBrushSettings = nullptr;
             break;
         default:
             assert(false);
     }
-    static_assert((int)WorldEditorEditMode::COUNT == 7, "Update");
+    static_assert((int)WorldEditorEditMode::COUNT == 8, "Update");
 }
 

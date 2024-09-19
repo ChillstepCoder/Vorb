@@ -1,6 +1,6 @@
 #pragma once
 
-#include "world/Chunk.h"
+#include "world/LocalChunk.h"
 #include "world/IHeightmapGrid.h"
 #include "ChunkGridEvent.h"
 
@@ -18,25 +18,25 @@ struct ChunkActivateContext {
 
 class IWorldGrid;
 
-class IChunkGrid
+class LocalChunkGrid
 {
 public:
-    IChunkGrid();
-    virtual ~IChunkGrid();
+    LocalChunkGrid();
+    ~LocalChunkGrid();
 
     void onWorldBegin(const f32v2& loadCenter);
     void tick(const f32v2& loadCenter);
 
-    Chunk& getChunk(ChunkID id) { assert(id < mTotalChunks); return mChunks[id]; }
-    const Chunk& getChunk(ChunkID id) const { return mChunks[id]; }
+    LocalChunk& getChunk(ChunkID id) { assert(id < mTotalChunks); return mChunks[id]; }
+    const LocalChunk& getChunk(ChunkID id) const { return mChunks[id]; }
 
-    Chunk& getChunkAtPosition(const f32v2& worldPos);
-    const Chunk& getChunkAtPosition(const f32v2& worldPos) const;
-    void getClosestChunksAtPosition(const f32v2& worldPos, OUT const Chunk* chunks[4]) const;
-    Chunk& getChunkAtPosition(const i32v2& worldPos);
-    const Chunk& getChunkAtPosition(const i32v2& worldPos) const;
-    Chunk& getChunkAtChunkOffset(const i32v2& chunkOffset);
-    const Chunk& getChunkAtChunkOffset(const i32v2& chunkOffset) const;
+    LocalChunk& getChunkAtPosition(const f32v2& worldPos);
+    const LocalChunk& getChunkAtPosition(const f32v2& worldPos) const;
+    void getClosestChunksAtPosition(const f32v2& worldPos, OUT const LocalChunk* chunks[4]) const;
+    LocalChunk& getChunkAtPosition(const i32v2& worldPos);
+    const LocalChunk& getChunkAtPosition(const i32v2& worldPos) const;
+    LocalChunk& getChunkAtChunkOffset(const i32v2& chunkOffset);
+    const LocalChunk& getChunkAtChunkOffset(const i32v2& chunkOffset) const;
 
     ChunkID getChunkIDFromWorldPos(const i32v2& worldPos) const;
     ChunkID getChunkIDFromWorldPos(const f32v2& worldPos) const;
@@ -61,7 +61,7 @@ public:
 
     void setWorldAndAllocateChunks(World& world);
 protected:
-    virtual void updateActivatingChunks();
+    void updateActivatingChunks();
 
     bool isChunkXYInBounds(const i32v2& xy);
 
@@ -71,20 +71,20 @@ protected:
     void updateGridEdges(const f32v2& loadCenter);
     bool tryMarkChunkAlive(const ChunkID& chunkId);
     // List management
-    void addChunkToActiveList(Chunk& chunk);
-    void removeChunkFromActiveList(Chunk& chunk);
-    void addChunkToActivatingList(Chunk& chunk);
-    void addChunkToWantDeactivateList(Chunk& chunk);
-    void removeChunkFromWantDeactivateList(Chunk& chunk);
+    void addChunkToActiveList(LocalChunk& chunk);
+    void removeChunkFromActiveList(LocalChunk& chunk);
+    void addChunkToActivatingList(LocalChunk& chunk);
+    void addChunkToWantDeactivateList(LocalChunk& chunk);
+    void removeChunkFromWantDeactivateList(LocalChunk& chunk);
     // Loading
-    void onAllNeighborsAlive(Chunk& chunk);
+    void onAllNeighborsAlive(LocalChunk& chunk);
     // Ready
-    void activateChunk(Chunk& chunk);
+    void activateChunk(LocalChunk& chunk);
     
     // Chunk data
     ui32 mWidthChunks = 0;
     ui32 mTotalChunks = 0;
-    std::unique_ptr<Chunk[]> mChunks;
+    std::unique_ptr<LocalChunk[]> mChunks;
     std::unique_ptr<ui8[]> mNeighborBits;
     
     // Chunk grid data

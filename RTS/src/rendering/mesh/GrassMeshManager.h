@@ -11,11 +11,11 @@
 #include <boost/functional/hash.hpp> // For boost::hash_combine
 
 class ChunkGrassQuadtree;
-class Chunk;
+class LocalChunk;
 class World;
 class GrassMesh;
 
-typedef std::pair<TileContainerEventDispatcher::Handle, ChunkEventDispatcher::Handle> GrassEventPair;
+typedef std::pair<TileContainerEventDispatcher::Handle, LocalChunkEventDispatcher::Handle> GrassEventPair;
 
 inline size_t hash_value(const std::pair<ChunkID, i16v2>& o) {
     size_t seed = 0;
@@ -35,7 +35,7 @@ public:
 
     struct TrackedChunk {
         std::unique_ptr<ChunkGrassQuadtree> quadtree;
-        const Chunk* chunk;
+        const LocalChunk* chunk;
         f32v2 worldPosCenter;
     };
     void frameUpdate(const f32v2& loadCenter, f32 elapsedSec);

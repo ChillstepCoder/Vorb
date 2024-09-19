@@ -3,7 +3,7 @@
 
 #include "world/simulation/host/SimThread.h"
 #include "world/World.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 #include "world/simulation/host/SimECS.h"
 
 #include "world/simulation/host/StoryTeller.h"
@@ -99,7 +99,7 @@ RandomGenerator& HostSimContext::getSimRandomGenerator() const {
 }
 
 ui32 HostSimContext::getWidthChunks() const {
-    return mWorld.getChunkGrid().getWidthChunks();
+    return mWorld.getLocalChunkGrid().getWidthChunks();
 }
 
 bool HostSimContext::isChunkSimulating(ChunkID chunkId) const {
@@ -123,7 +123,7 @@ void HostSimContext::initBiomeEvents() {
 }
 
 void HostSimContext::initGameEvents() {
-    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
+    LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkEventListeners);
 
     // TODO: UPDATE THIS COMMENT
@@ -173,7 +173,7 @@ void HostSimContext::initGameEvents() {
 
     chunkGrid.addBeginActivateListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
-        Chunk& chunk = evnt.chunk;
+        LocalChunk& chunk = evnt.chunk;
         // We have guarantee that the chunk cannot be destroyed while we have this state
         assert(chunk.getState() == ChunkState::WAITING_SIM_RELEASE);
 
@@ -191,7 +191,7 @@ void HostSimContext::initGameEvents() {
 
     chunkGrid.addDeactivatedListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
-        Chunk& chunk = evnt.chunk;
+        LocalChunk& chunk = evnt.chunk;
         // Tells main thread not to activate until we are done
         chunk.setState(ChunkState::DESTROYING_ON_SIM);
         ChunkSimTransitionData* deactivateList = new ChunkSimTransitionData(mWorld.getECS().deactivateEntitiesForChunk(chunk));

@@ -194,7 +194,7 @@ ui32 BuildingGrid::allBuildingsLoadedAtChunk(ChunkID chunkId) const {
     return buildingData.getNumLoadingBuildings() == 0;
 }
 
-void BuildingGrid::connectBuildingsToChunk(Chunk& chunk) {
+void BuildingGrid::connectBuildingsToChunk(LocalChunk& chunk) {
     ASSERT_GAME_THREAD();
     const ChunkID chunkId = chunk.getChunkID();
     ChunkBuildingData& buildingData = mChunkBuildingData[chunkId];
@@ -282,9 +282,9 @@ Building* BuildingGrid::tryMakeNewBuildingInternal(const i32AABB3& tileAABB, std
     newBuilding->setBlueprint(std::move(bptr));
 
     // Hook up chunk dependencies
-    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
+    LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
     i32v2 worldXY;
-    boost::container::flat_set<Chunk*> chunkDependencies;
+    boost::container::flat_set<LocalChunk*> chunkDependencies;
     chunkDependencies.reserve(4);
     worldXY = i32v2(tileAABB.x, tileAABB.y);
     chunkDependencies.insert(&chunkGrid.getChunkAtPosition(worldXY));
@@ -397,7 +397,7 @@ void BuildingGrid::connectBuildingToChunks(Building& building) {
         ChunkBuildingData& buildingData = mChunkBuildingData[id];
         assert(buildingData.numLoadingBuildingsRef() > 0);
         --buildingData.numLoadingBuildingsRef();
-        Chunk& chunk = mWorld.getChunkGrid().getChunk(id);
+        LocalChunk& chunk = mWorld.getLocalChunkGrid().getChunk(id);
         // Check if we are in a state where we should instantly connect
         if (chunk.getState() == ChunkState::ACTIVATED || chunk.getState() == ChunkState::LOADING_MESH_PHYSICS_NAV) {
             connectBuildingToChunk(building, chunk);
@@ -417,7 +417,7 @@ void BuildingGrid::connectBuildingToChunks(Building& building) {
     }
 }
 
-void BuildingGrid::connectBuildingToChunk(Building& building, Chunk& chunk) {
+void BuildingGrid::connectBuildingToChunk(Building& building, LocalChunk& chunk) {
     ASSERT_GAME_THREAD();
     assert(building.mState == BuildingState::ACTIVE);
     const ChunkID chunkId = chunk.getChunkID();
@@ -431,7 +431,7 @@ void BuildingGrid::connectBuildingToChunk(Building& building, Chunk& chunk) {
     const i32v3 dims = tileSpatialGrid.getDims();
     const i32 floorStride = dims.x * dims.y;
 
-    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
+    LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
     const TileSpatialGrid& chunkTileSpatialGrid = chunk.getTileContainer()->getTileSpatialGrid();
     const i32v3& buildingWorldPos = tileSpatialGrid.getWorldPos();
     const i32 floorHeight = tileSpatialGrid.getFloorHeight();
@@ -500,11 +500,11 @@ void BuildingGrid::onBuildingFinishedLoad(Building& building) {
 }
 
 void BuildingGrid::initEventHandlers() {
-    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
+    LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkEventListeners);
     chunkGrid.addBeginLoadListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();
-        Chunk& chunk = evnt.chunk;
+        LocalChunk& chunk = evnt.chunk;
         ChunkBuildingData& buildingData = mChunkBuildingData[chunk.getChunkID()];
         assert(buildingData.getDisconnectedBuildings().size() == buildingData.buildings.size());
         const std::vector<Building*>& chunkBuildings = buildingData.buildings;
@@ -555,7 +555,7 @@ void BuildingGrid::initEventHandlers() {
     });
 
     chunkGrid.addDeactivatedListener(mChunkEventListeners, [this](ChunkGridEvent& evnt) {
-        Chunk& chunk = evnt.chunk;
+        LocalChunk& chunk = evnt.chunk;
         ASSERT_GAME_THREAD();
         // Move structures to simuation layer
         ChunkBuildingData& buildingData = mChunkBuildingData[chunk.getChunkID()];

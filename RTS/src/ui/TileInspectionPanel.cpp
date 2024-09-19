@@ -2,9 +2,9 @@
 #include "TileInspectionPanel.h"
 
 #include "tile/TileHandle.h"
-#include "world/Chunk.h"
+#include "world/LocalChunk.h"
 #include "world/World.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 #include "resources/TileRepository.h"
 
 #include "debugging/DebugRenderer.h"
@@ -110,7 +110,7 @@ void TileInspectionPanel::updateAndRender() {
     }
     static_assert(e_cast(TileContainerOwnerType::COUNT) == 2);
     ImGui::Text("TileContainerID: %u", container.getId());
-    ImGui::Text("ChunkID: %u", mWorld.getChunkGrid().getChunkIDFromWorldPos(worldPos2D));
+    ImGui::Text("ChunkID: %u", mWorld.getLocalChunkGrid().getChunkIDFromWorldPos(worldPos2D));
     ImGui::Text("Tile Index: %u", mTileHandle.tileIndex);
     ImGui::Text("Container Offset: <%u,%u,%u>", xyzOffset.x, xyzOffset.y, xyzOffset.z);
     ImGui::Text("Container Dims: <%u,%u,%u>", dims.x, dims.y, dims.z);

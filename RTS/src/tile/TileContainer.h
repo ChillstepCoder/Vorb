@@ -8,7 +8,7 @@
 #include "tile/TileWallContainer.h"
 #include "tile/TileDamageData.h"
 
-class Chunk;
+class LocalChunk;
 class Building;
 class World;
 
@@ -47,7 +47,7 @@ public:
     friend class BuildingBuilder; // ONLY FOR DEBUG GENERATION
     friend class NavThread; // TODO: Too many friends?
     friend class NavWorld; // TODO: Remove
-    friend class IChunkGrid;
+    friend class LocalChunkGrid;
     friend class PathFinder;
     TileContainer(World& world);
     ~TileContainer();
@@ -132,7 +132,7 @@ public:
     TileContainerOwnerType getOwnerType() const { return mOwnerType; }
     bool isTerrain() const { return mOwnerType == TileContainerOwnerType::CHUNK; }
     const VarTileContainerOwner& getOwnerVariant() const { return mOwner; }
-    Chunk* getOwnerChunk() const;
+    LocalChunk* getOwnerChunk() const;
     Building* getOwnerBuilding() const;
 
     bool isTileValid(TileIndex index) const { ASSERT_GAME_THREAD(); return !mTiles[index].isEmpty(); }
@@ -235,7 +235,7 @@ private:
     bool mDirtyData = false;
     bool mPendingDestroy = false;
     mutable bool mIsGeneratingNavmesh = false; // ONLY SET IN NAV THREAD
-    std::variant<Chunk*, Building*> mOwner;
+    std::variant<LocalChunk*, Building*> mOwner;
     TileContainerOwnerType mOwnerType = TileContainerOwnerType::COUNT;
     World& mWorld;
 

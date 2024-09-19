@@ -481,7 +481,7 @@ void WorldRenderer::renderDebug() {
     if (sDebugOptions.mShowNavGraph) {
         if (!wasRenderingNavGraph) {
             ScopedTimer timer("Debug Draw Navgraph");
-            AM::DebugRenderer::reserveLines(mActiveWorld->getChunkGrid().getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
+            AM::DebugRenderer::reserveLines(mActiveWorld->getLocalChunkGrid().getNumActiveChunks() * 1024, MAX_DEBUG_RENDER_LIFETIME, NAVGRAPH_ID);
             const auto& containers = mActiveWorld->getTileContainerRepository().getTileContainers();
             for (auto&& it : containers) {
                 const f32v3 containerCenter = it.second->getTileSpatialGrid().getWorldPosCenter();

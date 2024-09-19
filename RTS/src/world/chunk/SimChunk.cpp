@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "SimChunk.h"
 
-#include "world/Chunk.h"
+#include "world/LocalChunk.h"
 
 // Check for mismatches in harvestables and tiles
 #define ENABLE_DEBUG_VALIDATE 0
@@ -145,7 +145,7 @@ bool SimChunk::allocate() {
     return false;
 }
 
-void SimChunk::bindEditEventToChunkTileContainer(Chunk& chunk) {
+void SimChunk::bindEditEventToChunkTileContainer(LocalChunk& chunk) {
     TileContainer* chunkTileContainer = chunk.getTileContainer();
 
     assert(chunk.getTileContainer());

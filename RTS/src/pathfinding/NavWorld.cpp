@@ -2,8 +2,8 @@
 #include "NavWorld.h"
 
 #include "world/World.h"
-#include "world/Chunk.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunk.h"
+#include "world/LocalChunkGrid.h"
 #include "world/IHeightmapGrid.h"
 #include "debugging/DebugRenderer.h"
 #include "options/DebugOptions.h"
@@ -65,7 +65,7 @@ struct NavSpatialLookup {
     bgi::rtree<ContainerNavRegion, bgi::quadratic<16>> tree;
 };
 
-boost::container::flat_set<ChunkID> getChunkDependenciesForContainer(IChunkGrid& chunkGrid, const i32v2& pos, const i32v2& dims) {
+boost::container::flat_set<ChunkID> getChunkDependenciesForContainer(LocalChunkGrid& chunkGrid, const i32v2& pos, const i32v2& dims) {
     boost::container::flat_set<ChunkID> chunkDependencies;
     chunkDependencies.reserve(4);
     i32v2 worldXY = i32v2(pos.x, pos.y);
@@ -85,7 +85,7 @@ NavWorld::NavWorld(World& world) : mWorld(world) {
 
     // TODO: This is arbitrary
     mNavGraphs.reserve(100);
-    const ui32 totalChunks = mWorld.getChunkGrid().getTotalChunks();
+    const ui32 totalChunks = mWorld.getLocalChunkGrid().getTotalChunks();
     assert(totalChunks);
     mTerrainTileContainers = std::unique_ptr<TileContainerID[]>(new TileContainerID[totalChunks]);
     for (int i = 0; i < totalChunks; ++i) {
@@ -147,7 +147,7 @@ void NavWorld::updateNavThread()
         mNavGraphs.erase(containerData.id);
 
         if (!containerData.isTerrain) {
-            const boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), containerData.worldPos, containerData.dims); // TODO: boost::container::flat_set?
+            const boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getLocalChunkGrid(), containerData.worldPos, containerData.dims); // TODO: boost::container::flat_set?
             for (ChunkID chunkId : chunkDependencies) {
                 ChunkBuildingEdgeList& edgeList = mChunkBuildingEdges[chunkId];
                 for (int j = edgeList.size() - 1; j >= 0; --j) {
@@ -165,7 +165,7 @@ void NavWorld::updateNavThread()
         // Remove from spatial lookup
         const i32v2 worldPos2D(containerData.worldPos.x, containerData.worldPos.y);
         if (containerData.isTerrain) {
-            ChunkID chunkID = mWorld.getChunkGrid().getChunkIDFromWorldPos(containerData.worldPos);
+            ChunkID chunkID = mWorld.getLocalChunkGrid().getChunkIDFromWorldPos(containerData.worldPos);
             mTerrainTileContainers[chunkID] = INVALID_TILE_CONTAINER_ID;
         }
         else {
@@ -710,7 +710,7 @@ void NavWorld::buildNavGraphForContainer(const TileContainer& tileContainer, OPT
             worldPos += CARTESIAN_NORMALS_2D[e_cast(edge.second)];
             assert(worldPos.x >= 0 && worldPos.y >= 0);
 
-            ChunkID chunkId = mWorld.getChunkGrid().getChunkIDFromWorldPos(worldPos);
+            ChunkID chunkId = mWorld.getLocalChunkGrid().getChunkIDFromWorldPos(worldPos);
 
             // Chunk relative
             worldPos %= CHUNK_WIDTH;
@@ -766,7 +766,7 @@ void NavWorld::tryBeginNavmeshTaskForContainer(const TileContainer* container) {
         }
         else {
             // Increment dirty counts
-            const boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), container->getWorldPos(), container->getDims());
+            const boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getLocalChunkGrid(), container->getWorldPos(), container->getDims());
             for (ChunkID id : chunkDependencies) {
                 ++mChunkPendingBuildingNavmeshCounts[id];
             }
@@ -812,7 +812,7 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
     if (isNewContainer) {
         if (isTerrain) {
             i32v3 worldPos = spatialGrid.getWorldPos();
-            ChunkID chunkID = mWorld.getChunkGrid().getChunkIDFromWorldPos(i32v2(worldPos.x, worldPos.y));
+            ChunkID chunkID = mWorld.getLocalChunkGrid().getChunkIDFromWorldPos(i32v2(worldPos.x, worldPos.y));
             mTerrainTileContainers[chunkID] = taskData.container->getId();
         }
         else {
@@ -866,12 +866,12 @@ void NavWorld::finishNavGraphBuildTask(NavGraphBuildTaskData& taskData) {
 
     // Notify chunk deps that this building finished
     if (!isTerrain) {
-        const boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), taskData.container->getWorldPos(), taskData.container->getDims());
+        const boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getLocalChunkGrid(), taskData.container->getWorldPos(), taskData.container->getDims());
         for (ChunkID id : chunkDependencies) {
             assert(mChunkPendingBuildingNavmeshCounts[id] > 0);
             // If this chunk no longer has dependencies and we aren't about to remesh and add dependency back, renavmesh it
             if (--mChunkPendingBuildingNavmeshCounts[id] == 0 && !didRecreate) {
-                const Chunk& chunk = mWorld.getChunkGrid().getChunk(id);
+                const LocalChunk& chunk = mWorld.getLocalChunkGrid().getChunk(id);
                 if (chunk.tryAquireThreadSafe()) { // Inc ref
                     const TileContainer* container = chunk.getTileContainer();
                     if (container->mIsGeneratingNavmesh) {
@@ -1458,7 +1458,7 @@ LiteTileHandle NavWorld::getTileHandleAndNavDataAtWorldPos(i32v3 worldPos, OUT c
 
     // If we find no container, return valid chunk container position at this point
     // WORLD ORIGIN MUST be 0
-    const ui32 worldWidthChunks = mWorld.getChunkGrid().getWidthChunks();
+    const ui32 worldWidthChunks = mWorld.getLocalChunkGrid().getWidthChunks();
     const i32v2 chunkOffset(worldPos.x / CHUNK_WIDTH, worldPos.y / CHUNK_WIDTH);
     const ChunkID chunkId = chunkOffset.y * worldWidthChunks + chunkOffset.x;
     TileContainerID containerId = mTerrainTileContainers[chunkId];
@@ -1488,9 +1488,9 @@ void NavWorld::markContainerNavDirty(TileContainer* container) {
         didAdd = mDirtyChunkTileContainers.gameThreadTryDirtyObject(container);
     }
     else {
-        const boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getChunkGrid(), container->getWorldPos(), container->getDims()); // TODO: boost::container::flat_set?
+        const boost::container::flat_set<ChunkID> chunkDependencies = getChunkDependenciesForContainer(mWorld.getLocalChunkGrid(), container->getWorldPos(), container->getDims()); // TODO: boost::container::flat_set?
         for (ChunkID chunkId : chunkDependencies) {
-            const Chunk& chunk = mWorld.getChunkGrid().getChunk(chunkId);
+            const LocalChunk& chunk = mWorld.getLocalChunkGrid().getChunk(chunkId);
             // Valid will get marked dirty as well, as they depend on our external edges
             if (chunk.getState() >= ChunkState::CAN_GENERATE_NAV) {
                 if (mDirtyChunkTileContainers.gameThreadTryDirtyObject(chunk.getTileContainer())) {

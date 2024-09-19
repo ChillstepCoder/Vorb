@@ -21,13 +21,11 @@
 #include "tile/TileContainerLoader.h"
 #include "tile/TileHandle.h"
 #include "time/TimeOfDayManager.h"
-#include "world/Chunk.h"
-#include "world/cli/CliChunkGrid.h"
+#include "world/LocalChunk.h"
 #include "world/cli/CliHeightmapGrid.h"
 #include "world/HeightmapTerrainQuadtree.h"
-#include "world/IChunkGrid.h"
+#include "world/LocalChunkGrid.h"
 #include "world/IHeightmapGrid.h"
-#include "world/srv/SrvChunkGrid.h"
 #include "world/ecosystem/FishEcosystem.h"
 #include "world/host/HostWorldData.h"
 #include "world/simulation/host/HostSimContext.h"
@@ -78,7 +76,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mOwnershipGrid = hostWorldData->ownershipGrid;
             mTerrainSurfaceGrid = hostWorldData->terrainSurfaceGrid;
             mSimChunkGrid = hostWorldData->tileGrid;
-            mChunkGrid = std::make_unique<SrvChunkGrid>();
+            mLocalChunkGrid = std::make_unique<LocalChunkGrid>();
             mEcs = std::make_unique<CliFullECS>(*this);
             mEffectContext = std::make_unique<CliEffectContext>(*this);
             break;
@@ -90,7 +88,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mMarkupGrid = hostWorldData->markupGrid;
             mOwnershipGrid = hostWorldData->ownershipGrid;
             mTerrainSurfaceGrid = hostWorldData->terrainSurfaceGrid;
-            mChunkGrid = std::make_unique<CliChunkGrid>();
+            mLocalChunkGrid = std::make_unique<LocalChunkGrid>();
             mEcs = std::make_unique<CliFullECS>(*this);
             mEffectContext = std::make_unique<CliEffectContext>(*this);
             mFactionManager = std::make_unique<CliFactionManager>(*this);
@@ -104,7 +102,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
             mOwnershipGrid = hostWorldData->ownershipGrid;
             mTerrainSurfaceGrid = hostWorldData->terrainSurfaceGrid;
             mSimChunkGrid = hostWorldData->tileGrid;
-            mChunkGrid = std::make_unique<SrvChunkGrid>();
+            mLocalChunkGrid = std::make_unique<LocalChunkGrid>();
             mEcs = std::make_unique<HostFullECS>(*this);
             mEffectContext = std::make_unique<HostEffectContext>(*this);
             mHostSimContext = std::make_unique<HostSimContext>(*this);
@@ -144,7 +142,7 @@ World::World(WorldNetMode netMode, HostWorldData* hostWorldData) : mNetMode(netM
     LOG_DEBUG("Systems allocated in {}", timer.stop()); timer.start();
 
     // Initialize world data
-    mChunkGrid->setWorldAndAllocateChunks(*this);
+    mLocalChunkGrid->setWorldAndAllocateChunks(*this);
     mHeightmapGrid->setWorld(*this);
     if (mSimChunkGrid) {
         mSimChunkGrid->setWorld(this);
@@ -176,7 +174,7 @@ void World::onWorldBeginGame(const f32v2& loadCenter) {
     assert(!mDidBegin);
     mDidBegin = true;
     // Init chunks
-    mChunkGrid->onWorldBegin(loadCenter);
+    mLocalChunkGrid->onWorldBegin(loadCenter);
     {
         std::lock_guard lock(mLoadCenterMutex);
         mLoadCenter = loadCenter;
@@ -221,7 +219,7 @@ void World::tick(f32 elapsedSec) {
     AssetLoader::getInstance().update();
 
     // Chunkswd
-    mChunkGrid->tick(mLoadCenter);
+    mLocalChunkGrid->tick(mLoadCenter);
 
     // Structures
     mStructureGrid->tick();
@@ -286,7 +284,7 @@ void World::shutdown() {
     mFishEcosystem.reset();
     mWeatherManager.reset();
     mNavWorld.reset();
-    mChunkGrid.reset();
+    mLocalChunkGrid.reset();
     mHeightmapGrid.reset();
     mTileContainerRepository.reset();
 
@@ -323,7 +321,7 @@ void World::setWorldTimeMs(ui64 newTime) {
 }
 
 bool World::isChunkDeactivated(ChunkID id) const {
-    return mChunkGrid->getChunk(id).isDeactivated();
+    return mLocalChunkGrid->getChunk(id).isDeactivated();
 }
 
 SimECS* World::tryGetSimECS() const {
@@ -336,7 +334,7 @@ SimECS* World::tryGetSimECS() const {
 TileHandle World::getTileHandleAtWorldPos(const i32v3& worldPos) const {
     ASSERT_GAME_THREAD();
     i32v2 worldPos2D = worldPos;
-    const Chunk* chunk = &mChunkGrid->getChunkAtPosition(worldPos2D);
+    const LocalChunk* chunk = &mLocalChunkGrid->getChunkAtPosition(worldPos2D);
     if (chunk->isActivated()) {
         const ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         const ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
@@ -362,7 +360,7 @@ TileHandle World::getTileHandleAtWorldPos(const f32v3& worldPos) const {
 
 TileHandle World::getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const {
     TileHandle handle;
-    const Chunk* chunk = &mChunkGrid->getChunkAtPosition(worldPos);
+    const LocalChunk* chunk = &mLocalChunkGrid->getChunkAtPosition(worldPos);
     if (chunk->isActivated()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
@@ -373,7 +371,7 @@ TileHandle World::getTerrainTileHandleAtWorldPos(const f32v2& worldPos) const {
 
 TileHandle World::getTerrainTileHandleAtWorldPos(const i32v2& worldPos) const {
     TileHandle handle;
-    const Chunk* chunk = &mChunkGrid->getChunkAtPosition(worldPos);
+    const LocalChunk* chunk = &mLocalChunkGrid->getChunkAtPosition(worldPos);
     if (chunk->isActivated()) {
         ui32 x = (ui32)worldPos.x & (CHUNK_WIDTH - 1); // Fast modulus
         ui32 y = (ui32)worldPos.y & (CHUNK_WIDTH - 1); // Fast modulus
@@ -399,7 +397,7 @@ bool World::terrainTileHasHarvestable(const i32v2& worldPos, TileHarvestable res
 }
 
 //  TODO: No std function?
-void World::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk&, TileIndex)> func)
+void World::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(LocalChunk&, TileIndex)> func)
 {
     ASSERT_GAME_THREAD();
     // TODO: handle this without asserts
@@ -411,7 +409,7 @@ void World::efficientEnumTileAABB(const i32AABB2& aabb, std::function<void(Chunk
         for (worldPos.x = aabb.x; worldPos.x < aabb.x + aabb.depth;) {
             TileHandle cornerHandle = getTerrainTileHandleAtWorldPos(worldPos);
             assert(cornerHandle.container);
-            Chunk& chunk = mChunkGrid->getChunkAtPosition(cornerHandle.getWorldPos2D());
+            LocalChunk& chunk = mLocalChunkGrid->getChunkAtPosition(cornerHandle.getWorldPos2D());
             ui32v3 offset = cornerHandle.getContainerOffset();
             const i32 distFromRightEdge = CHUNK_WIDTH - offset.x;
             const i32 distFromTopEdge = CHUNK_WIDTH - offset.y;
@@ -557,7 +555,7 @@ void World::updateDebugRenderState(WorldRenderState& renderState) {
     renderState.mDebugQuads.clear();
     // Chunk debug rendering
     if (sDebugOptions.mChunkBoundaries) {
-        const IChunkGrid& chunkGrid = getChunkGrid();
+        const LocalChunkGrid& chunkGrid = getLocalChunkGrid();
         const auto& loadingChunks = chunkGrid.getActivatingChunks();
         const auto& activeChunks = chunkGrid.getActiveChunks();
         const auto& destroyingChunks = chunkGrid.getWantDeactivateChunks();
@@ -567,21 +565,21 @@ void World::updateDebugRenderState(WorldRenderState& renderState) {
 
         // Add loading chunks
         for (auto&& cid : loadingChunks) {
-            const Chunk& chunk = chunkGrid.getChunk(cid);
+            const LocalChunk& chunk = chunkGrid.getChunk(cid);
             BitFlags<DebugChunkFlags> flags;
             renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk.getChunkID(), chunk.getWorldPos(), chunk.getState(), DebugChunkListIndex::LOADING, (ui8)chunk.getRefCount(), flags };
         }
 
         // Add active chunks
         for (auto&& cid : activeChunks) {
-            const Chunk& chunk = chunkGrid.getChunk(cid);
+            const LocalChunk& chunk = chunkGrid.getChunk(cid);
             BitFlags<DebugChunkFlags> flags;
             renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk.getChunkID(), chunk.getWorldPos(), chunk.getState(), DebugChunkListIndex::ACTIVE, (ui8)chunk.getRefCount(), flags };
         }
 
         // Add destroying chunks
         for (auto&& cid : destroyingChunks) {
-            const Chunk& chunk = chunkGrid.getChunk(cid);
+            const LocalChunk& chunk = chunkGrid.getChunk(cid);
             BitFlags<DebugChunkFlags> flags;
             renderState.mDebugChunks[i++] = DebugChunkRenderState{ chunk.getChunkID(), chunk.getWorldPos(), chunk.getState(), DebugChunkListIndex::DESTROYING, (ui8)chunk.getRefCount(), flags };
         }

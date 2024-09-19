@@ -3,8 +3,8 @@
 
 #include "world/World.h"
 #include "world/IHeightmapGrid.h"
-#include "world/IChunkGrid.h"
-#include "world/Chunk.h"
+#include "world/LocalChunkGrid.h"
+#include "world/LocalChunk.h"
 #include "world/ecosystem/FishEcosystem.h"
 #include "building/building.h"
 #include "building/BuildingBlueprint.h"
@@ -139,7 +139,7 @@ void TileContainerLoader::loadBuildingFromBlueprintAsync(Building& building) con
 void TileContainerLoader::loadChunkFromSimChunkAsync(TileContainer& container) const
 {
     // TODO: Go from SimulatedChunk somehow (SimulatedChunk vs SimulatedStructure)
-    Chunk* chunk = container.getOwnerChunk();
+    LocalChunk* chunk = container.getOwnerChunk();
     assert(chunk);
 
     // Footprint must be copied
@@ -168,7 +168,7 @@ void TileContainerLoader::loadChunkFromSimChunkAsync(TileContainer& container) c
 }
 
 void TileContainerLoader::initEvents() {
-    IChunkGrid& chunkGrid = mWorld.getChunkGrid();
+    LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkGridListeners);
     chunkGrid.addBeginLoadListener(mChunkGridListeners, [this](ChunkGridEvent& evnt) {
         ASSERT_GAME_THREAD();

@@ -5,7 +5,7 @@
 #include "rendering/GrassBillboardMesh.h"
 
 class GrassBillboardMesh;
-class Chunk;
+class LocalChunk;
 class World;
 DECL_VG(class GLProgram);
 
@@ -16,7 +16,7 @@ using ChunkGrassFlatQuadtree = FlatQuadtree<GRASS_QUADTREE_MAX_LOD, CHUNK_WIDTH>
 class ChunkGrassQuadtree : public ChunkGrassFlatQuadtree
 {
 public:
-    ChunkGrassQuadtree(const Chunk& mChunk);
+    ChunkGrassQuadtree(const LocalChunk& mChunk);
     ~ChunkGrassQuadtree();
 
     void shutdown();
@@ -33,7 +33,7 @@ private:
     void finishMesh(GrassBillboardMeshBuilder& meshBuilder, ui32 patchIndex);
 
     // Flat for cache coherency, no allocations, and multithreading
-    const Chunk& mChunk;
+    const LocalChunk& mChunk;
     std::unique_ptr<GrassMesh> mMeshes[ChunkGrassFlatQuadtree::NODE_COUNT];
     ui32 mRefCount = 0;
 };
