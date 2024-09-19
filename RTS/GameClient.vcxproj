@@ -261,6 +261,7 @@
     <ClCompile Include="src\debugging\ValueTweaker.cpp" />
     <ClCompile Include="src\debugging\VisualLogger.cpp" />
     <ClCompile Include="src\definitions\AnimMachineDef.cpp" />
+    <ClCompile Include="src\definitions\BiomeUniqueID.cpp" />
     <ClCompile Include="src\definitions\EffectDef.cpp" />
     <ClCompile Include="src\definitions\ModelDef.cpp" />
     <ClCompile Include="src\definitions\ParticleEmitterDef.cpp" />
@@ -736,6 +737,7 @@
     <ClInclude Include="src\definitions\AnimMachineDef.h" />
     <ClInclude Include="src\definitions\AssetDefinitions.h" />
     <ClInclude Include="src\definitions\BiomeDef.h" />
+    <ClInclude Include="src\definitions\BiomeUniqueID.h" />
     <ClInclude Include="src\definitions\BrushDef.h" />
     <ClInclude Include="src\definitions\BuildingDef.h" />
     <ClInclude Include="src\definitions\BusinessDef.h" />

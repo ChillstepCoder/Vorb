@@ -288,6 +288,7 @@ void SimChunkGrid::initInternal() {
         (mTotalChunks * sizeof(SimChunk)) / 1024.f / 1024.f);
     for (ChunkID id = 0; id < mTotalChunks; ++id) {
         mChunkData[id].mChunkID = id;
+        mChunkData[id].mChunkCoord = ChunkCoord(id % mWidthChunks, id / mWidthChunks);
     }
 }
 

@@ -3,7 +3,6 @@
 #include "tile/TileContainerEvents.h"
 #include "tile/TileWallContainer.h"
 
-#include "util/BitArray.h"
 #include "util/FixedSizeVector.h"
 
 #include "resources/TileRepository.h"
@@ -12,6 +11,8 @@
 #include "tile/SimTileData.h"
 #include "item/SimChunkTileItemReservation.h"
 #include "item/ItemStack.h"
+
+#include "world/biome/LivingBiomeType.h"
 
 #include <bitsery/ext/std_variant.h>
 
@@ -166,6 +167,8 @@ public:
     // TODO: Variant?
     [[nodiscard]] TileID tryClearHarvestable(TileHarvestable expectedHarvestable, ChunkTileIndex tilePos);
 
+    void onBlockCorrupted(BlockCoord block, LivingBiomeType type);
+
     // Lock chunk mutex and get a copy of the current item data
     [[nodiscard]] FlatMap<ItemID, std::vector<TileItemStack>> getItemDataCopy() const;
 
@@ -195,6 +198,7 @@ private:
     std::unique_ptr<SimChunkTileData> mTileData;
     SimChunkState mState = SimChunkState::NONE;
     ChunkID mChunkID;
+    ChunkCoord mChunkCoord;
     mutable std::atomic_flag mIsSaveUpToDate = ATOMIC_FLAG_INIT;
     std::atomic_bool mIsSimulating = true;
     TileContainerEventDispatcher::Handle mEditTilesEventHandle;

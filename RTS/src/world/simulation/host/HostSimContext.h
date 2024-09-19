@@ -8,11 +8,8 @@
 
 #include "world/simulation/host/SimEntityTransitionManager.h"
 
-#include "tile/TileHarvestable.h"
-
 #include "util/BitArray.h"
-
-#include <Vorb/concurrentqueue.h>
+#include "world/biome/BiomeGridEvents.h"
 
 class SimThread;
 class StoryTeller;
@@ -64,9 +61,10 @@ public:
 
     // DEBUGGING
     void debugRender(f32v3 cameraPos) const;
-
+    
+    void initBiomeEvents();
 private:
-    void initEvents();
+    void initGameEvents();
     //ChunkSimulator mSimulator;
 
     // ==================== CHUNK DATA ====================
@@ -78,6 +76,7 @@ private:
     BitArray mChunkStates; // Pack SimChunkState into 2 bits per element
     BitArray mSimulatingChunks; // Chunks with SimChunkState = simulating for fast find first set bit
     // TODO: Flat set?
+    BiomeGridListeners mBiomeGridListeners;
     ChunkGridListeners mChunkEventListeners;
     IFullECSListeners mFullECSListeners;
 

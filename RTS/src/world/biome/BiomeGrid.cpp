@@ -57,6 +57,7 @@ void BiomeGrid::updateSimThread(TimestampMs simTime) {
             // We had an invalid one
             assert(pos.x >= 0 && pos.y >= 0 && pos.x < mWidthVerts && pos.y < mWidthVerts);
             ++livingBiome.mSizeBlocks;
+
             BiomeGridEvent event;
             event.blockPos = pos;
             event.livingBiomeType = livingBiome.mType;
@@ -79,7 +80,7 @@ void BiomeGrid::updateSimThread(TimestampMs simTime) {
         for (LivingBiomeInstance& biome : mLivingBiomes) {
             // Asymptotic probability, bigger we are, less chance of growth
             // https://www.desmos.com/calculator/oehxxadtfu
-            constexpr f32 probabilityFalloff = 0.02f; // Larger this is, faster probability decays with size
+            constexpr f32 probabilityFalloff = 0.04f; // Larger this is, faster probability decays with size
             const f32 sizep1 = biome.mSizeBlocks * probabilityFalloff + 1.f;
             const f32 growthChance = 2.f * sizep1 / (SQ(sizep1) + 1.f);
             if (mGrowthGen.getRandomFloatUnsigned() > growthChance) {
@@ -267,6 +268,13 @@ bool BiomeGrid::trySpawnLivingBiomeAtBlockPos(BlockCoord blockPos, LivingBiomeTy
         std::lock_guard biomeLock(mLivingBiomeMutex);
         mLivingBiomes.emplace_back(newId, type, 0, blockPos);
     }
+
+    BiomeGridEvent event;
+    event.blockPos = blockPos;
+    event.livingBiomeType = type;
+    event.biomeUniqueId = newBiome;
+    dispatchOnCorruption(event);
+
     assert(mBiomeTexture);
     RenderThreadTasks::getInstance().addGenericTask([this, blockPos, newBiome]() {
         glTextureSubImage2D(mBiomeTexture, 0, blockPos.x, blockPos.y, 1, 1, GL_RED, GL_UNSIGNED_BYTE, &newBiome);

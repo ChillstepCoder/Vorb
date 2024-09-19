@@ -49,5 +49,5 @@ SERIALIZABLE_IMGUI_CONTROLLED(TileDef,
     make_field(o.displayName, "name"),
     make_field(o.itemDrops, "item_drops"),
     make_field(o.recipeData, "recipe"),
-    make_field(o.transformationDefs, "transforms")
+    make_field(o.mutationDefs, "transforms")
 );

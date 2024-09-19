@@ -6,14 +6,12 @@
 #include "world/IChunkGrid.h"
 #include "world/simulation/host/SimECS.h"
 
-#include "world/simulation/host/component/SimCharacterComponents.h"
-#include "world/simulation/host/component/SimSettlementComponents.h"
 #include "world/simulation/host/StoryTeller.h"
 #include "world/simulation/host/SimImmigrationManager.h"
 #include "world/chunk/SimChunkGrid.h"
 #include "ecs/IFullECS.h"
 
-#include "gamethread/GameThreadTasks.h"
+#include "world/biome/BiomeGrid.h"
 
 HostSimContext::HostSimContext(World& world) :
     WorldContextObject(world),
@@ -27,6 +25,8 @@ HostSimContext::HostSimContext(World& world) :
     mSimulatingChunks.fill(true);
     mSimECS = std::make_unique<SimECS>(*this);
     mImmigrationManager = std::make_unique<SimImmigrationManager>(*this);
+
+    initBiomeEvents();
 }
 
 HostSimContext::~HostSimContext() {
@@ -36,7 +36,7 @@ HostSimContext::~HostSimContext() {
 void HostSimContext::beginHistorySimulation() {
 
     mImmigrationManager->init();
-    mAnalytics->setDesiredPopulation(3000); // 10000
+    mAnalytics->setDesiredPopulation(10); // 3000, 10000
 
     assert(!mSimThread);
     assert(!mSimulatingHistory);
@@ -61,7 +61,7 @@ void HostSimContext::onWorldBeginGame() {
     mSimThread->setTimeScale(1.0f);
     mSimThread->setState(SimThreadState::GameSim);
 
-    initEvents();
+    initGameEvents();
 }
 
 void HostSimContext::registerPlayer(ServerPlayerID playerId, f32v3 startPos) {
@@ -110,7 +110,19 @@ void HostSimContext::debugRender(f32v3 cameraPos) const {
     mSimECS->debugRender(cameraPos);
 }
 
-void HostSimContext::initEvents() {
+void HostSimContext::initBiomeEvents() {
+    BiomeGrid& biomeGrid = mWorld.getBiomeGrid();
+    biomeGrid.registerBiomeGridListeners(mBiomeGridListeners);
+
+    biomeGrid.addOnCorruptionListener(mBiomeGridListeners, [this](BiomeGridEvent& evnt) {
+        ASSERT_SIM_THREAD();
+        ChunkCoord chunkCoord(evnt.blockPos);
+        SimChunk& simChunk = mWorld.getSimChunkGrid().getChunk(chunkCoord.toGridIDType(mWorld.getWidthChunks()));
+        simChunk.onBlockCorrupted(evnt.blockPos, evnt.livingBiomeType);
+    });
+}
+
+void HostSimContext::initGameEvents() {
     IChunkGrid& chunkGrid = mWorld.getChunkGrid();
     chunkGrid.registerChunkGridListeners(mChunkEventListeners);
 
@@ -197,6 +209,7 @@ void HostSimContext::initEvents() {
         });
     });
 
+    // ECS
     IFullECS& fullEcs = mWorld.getECS();
     fullEcs.registerIFullECSListeners(mFullECSListeners);
 
@@ -216,4 +229,5 @@ void HostSimContext::initEvents() {
             delete transitionData;
         });
     });
+
 }

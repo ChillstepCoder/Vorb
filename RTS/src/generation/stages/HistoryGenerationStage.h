@@ -9,7 +9,7 @@ class MaterialShaderDef;
 class World;
 
 #ifdef DEBUG
-constexpr ui64 HISTORY_GEN_DURATION_REAL_TIME_HOURS = 48; //48
+constexpr ui64 HISTORY_GEN_DURATION_REAL_TIME_HOURS = 24; //48
 #else
 constexpr ui64 HISTORY_GEN_DURATION_REAL_TIME_HOURS = 48; //48
 #endif

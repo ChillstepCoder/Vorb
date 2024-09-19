@@ -1,5 +1,7 @@
 #pragma once
 
+#include "world/biome/LivingBiomeType.h"
+#include "definitions/BiomeUniqueID.h"
 
 class BiomeGrid;
 

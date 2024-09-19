@@ -1368,6 +1368,9 @@
     <ClCompile Include="src\util\WindFormulas.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\definitions\BiomeUniqueID.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -3192,6 +3195,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\biome\BiomeGridEvents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\definitions\BiomeUniqueID.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

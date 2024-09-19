@@ -20,6 +20,7 @@ enum class WorldEditorEditMode {
     ENTITY,
     CITY,
     BUILDING,
+    CORRUPTION,
     COUNT
 };
 
@@ -55,6 +56,13 @@ enum class BuildingEditState {
     COUNT
 };
 
+enum class CorruptionEditState {
+    CLEANSE,
+    CHERNOBOG,
+    BANSHIRA,
+    COUNT
+};
+
 struct BrushSettings {
     AssetHandlePtr<BrushDef> activeBrush;
     AssetID brushId;
@@ -85,6 +93,7 @@ private:
     void renderEntityEditUI() const;
     void renderCityEditUI() const;
     void renderBuildingEditUI() const;
+    void renderCorruptionEditUI() const;
 
     void updateTerrainEdit();
     void updateSurfaceEdit();
@@ -93,6 +102,7 @@ private:
     void updateEntityEdit();
     void updateCityEdit();
     void updateBuildingEdit();
+    void updateCorruptionEdit();
 
     void editHeightVertex(HeightmapPatchID id, DTileCoord vertPos, f32v2 offsetToVertex, const BrushSettings& brush, TerrainEditState editState);
     void editSurfaceVertex(i32v2 worldPos, f32v2 offsetToVertex, const BrushSettings& brush, SurfaceEditState editState);
@@ -107,6 +117,7 @@ private:
     mutable CityEditState mCityEditState = CityEditState::CREATE;
     mutable BuildingEditState mBuildingEditState = BuildingEditState::CREATE;
     mutable SurfaceEditState mRoadEditState = SurfaceEditState::ADD;
+    mutable CorruptionEditState mCorruptionEditState = CorruptionEditState::CLEANSE;
     // Brushes
     mutable BrushSettings mTerrainBrushSettings = { nullptr, UINT32_MAX, 5.0f, 0.1f };
     mutable BrushSettings mSurfaceBrushSettings = { nullptr, UINT32_MAX, 5.0f, 1.0f };

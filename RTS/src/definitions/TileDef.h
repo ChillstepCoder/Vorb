@@ -94,8 +94,8 @@ public:
     ui8 navMask = 0xff; // Access bits mapped to Cartesian8 based on default (SOUTH) orientation
     VisibilityBlockerType visBlockerType = VisibilityBlockerType::NONE;
     TileType tileType = TileType::Default;
-    std::array<TileID, e_count(MutationType)> transformations;
-    std::vector<MutationDef> transformationDefs;
+    std::array<TileID, e_count(MutationType)> mutations;
+    std::vector<MutationDef> mutationDefs;
     union {
         struct {
             f32 heightOffsetSouth;

@@ -64,6 +64,8 @@ void SimChunkTileData::changeTile(ChunkTileIndex pos, TileID id, ui8 variant) {
         if (existing.tileId != id) {
             onTileRemoved(existing.tileId, pos);
             if (id != TILE_ID_NONE) {
+                it->second.tileId = id;
+                it->second.variant = variant;
                 onTileAdded(id, pos);
             }
             else {
@@ -254,11 +256,38 @@ TileID SimChunk::tryClearHarvestable(TileHarvestable expectedHarvestable, ChunkT
     const TileID id = it->second.tileId;
     mTileData->decrementTileQuantity(id, 1);
 
+    // We dont call onTileRemoved here because we are handling the logic here
     mTileData->tileIndexToTileData.erase(it);
 
     mTileData->debugValidateHarvestables();
 
     return id;
+}
+
+void SimChunk::onBlockCorrupted(BlockCoord block, LivingBiomeType type) {
+    const BlockCoord localBlock = block - BlockCoord(mChunkCoord);
+    
+    const MutationType mutateType = LIVING_BIOME_MUTATION_TYPES[e_cast(type)];
+    
+    std::lock_guard writeLock(mMutex);
+    if (!mTileData) {
+        return;
+    }
+    for (auto it = mTileData->tileIndexToTileData.begin(); it != mTileData->tileIndexToTileData.end(); ++it) {
+        const ChunkTileIndex tileIndex = it->first;
+        const TileCoord tileCoord(tileIndex % CHUNK_WIDTH, tileIndex / CHUNK_WIDTH);
+        const BlockCoord blockCoord(tileCoord);
+        if (blockCoord == localBlock) {
+            const TileDef& tileDef = TileRepository::get().getLoadedOrUnloadedAsset(it->second.tileId);
+            const TileID mutationTileId = tileDef.mutations[e_cast(mutateType)];
+            if (mutationTileId != TILE_ID_NONE) {
+                mTileData->onTileRemoved(it->second.tileId, tileIndex);
+                it->second.tileId = mutationTileId;
+                it->second.variant = 0; // TODO: Proper variants?
+                mTileData->onTileAdded(it->second.tileId, tileIndex);
+            }
+        }
+    }
 }
 
 FlatMap<ItemID, std::vector<TileItemStack>> SimChunk::getItemDataCopy() const {

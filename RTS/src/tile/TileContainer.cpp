@@ -159,7 +159,7 @@ void TileContainer::setTile(TileIndex i, TileID id, ui8 variant) {
     onTileChanged(i);
 }
 
-bool TileContainer::tryTransformTile(TileIndex i, MutationType type) {
+bool TileContainer::tryMutateTile(TileIndex i, MutationType type) {
     assert(isReady());
     Tile& tile = mTiles[i];
     const TileID prevId = tile.mainLayer;
@@ -168,7 +168,7 @@ bool TileContainer::tryTransformTile(TileIndex i, MutationType type) {
     // TODO: real variant
     ui8 newVariant = 0;
 
-    const TileID newId = tileDef.transformations[e_cast(type)];
+    const TileID newId = tileDef.mutations[e_cast(type)];
     if (newId == TILE_ID_NONE) {
         return false;
     }

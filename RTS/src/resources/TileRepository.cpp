@@ -92,13 +92,13 @@ void TileRepository::fixupRegisteredAsset(AssetID id) {
         };
     }
 
-    std::fill(def.transformations.begin(), def.transformations.end(), TILE_ID_NONE);
+    std::fill(def.mutations.begin(), def.mutations.end(), TILE_ID_NONE);
 
     // Transformations
-    for (auto& t : def.transformationDefs) {
+    for (auto& t : def.mutationDefs) {
         assert(t.type != MutationType::COUNT);
-        assert(def.transformations[e_cast(t.type)] == TILE_ID_NONE);
-        def.transformations[e_cast(t.type)] = t.target.getAssetID();
+        assert(def.mutations[e_cast(t.type)] == TILE_ID_NONE);
+        def.mutations[e_cast(t.type)] = t.target.getAssetID();
     }
 
     // Nav bits

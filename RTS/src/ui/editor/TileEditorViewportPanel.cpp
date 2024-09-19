@@ -27,7 +27,7 @@ void TileEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize)
             if (updateAndRenderImguiControls(*mAssetData)) {
                 changed = true;
             }
-            if (ImguiUtil::ObjectVector<MutationDef>("Transformations", mAssetData->transformationDefs, [](MutationDef& o, ui32 i) {
+            if (ImguiUtil::ObjectVector<MutationDef>("Transformations", mAssetData->mutationDefs, [](MutationDef& o, ui32 i) {
                 return updateAndRenderImguiControls(o);
             }, true)) {
                 changed = true;
