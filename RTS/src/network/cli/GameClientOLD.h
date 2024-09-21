@@ -5,25 +5,25 @@
 #include "network/Message.h"
 
 class World;
-class CliAdapter;
+class CliAdapterOLD;
 struct PingMessage;
 
 namespace yojimbo {
     class BaseClient;
 }
 
-class GameClient
+class GameClientOLD
 {
 protected:
-    GameClient(ServerType connectionType, const yojimbo::Address& hostAddress);
-    ~GameClient();
+    GameClientOLD(ServerType connectionType, const yojimbo::Address& hostAddress);
+    ~GameClientOLD();
 
 public:
-    GameClient(GameClient& other) = delete;
-    void operator=(const GameClient&) = delete;
+    GameClientOLD(GameClientOLD& other) = delete;
+    void operator=(const GameClientOLD&) = delete;
 
-    static GameClient& initInstance(ServerType connectionType, const yojimbo::Address& hostAddress);
-    static GameClient& getInstance();
+    static GameClientOLD& initInstance(ServerType connectionType, const yojimbo::Address& hostAddress);
+    static GameClientOLD& getInstance();
     static void destroyInstance();
 
     void connect(const uint8_t privateKey[]);
@@ -59,7 +59,7 @@ private:
     World* mActiveWorld = nullptr;
 
     GameConnectionConfig mConnectionConfig;
-    std::unique_ptr<CliAdapter> mAdapter;
+    std::unique_ptr<CliAdapterOLD> mAdapter;
     std::unique_ptr<yojimbo::BaseClient> mClient = nullptr;
     ServerType mConnectionType = ServerType::NONE;
     yojimbo::Address mHostAddress;
@@ -67,7 +67,7 @@ private:
     f32 mCurrentPingMS = 666.0f; // Sentinal ping meaning we havent checked ping yet
     bool mIsJoined = false;
 
-    static GameClient* sInstance;
+    static GameClientOLD* sInstance;
 };
 
 

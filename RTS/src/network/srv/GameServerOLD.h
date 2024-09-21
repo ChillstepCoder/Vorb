@@ -3,7 +3,7 @@
 #include "network/GameConnectionConfig.h"
 #include "network/Message.h"
 
-class SrvAdapter;
+class SrvAdapterOLD;
 class World;
 
 struct PingMessage;
@@ -76,7 +76,7 @@ private:
     // MAINTAIN ORDER
     GameConnectionConfig mConnectionConfig;
     yojimbo::Address mServerAddress;
-    std::unique_ptr<SrvAdapter> mAdapter;
+    std::unique_ptr<SrvAdapterOLD> mAdapter;
     yojimbo::Server mServer;
     ClientBits mConnectedClientBits = 0;
     ClientList mConnectedClients;

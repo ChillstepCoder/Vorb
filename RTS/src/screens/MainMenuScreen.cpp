@@ -18,7 +18,7 @@
 #include <Vorb/graphics/BlendState.h>
 
 #include "screens/ScreenState.h"
-#include "network/cli/GameClient.h"
+#include "network/cli/GameClientOLD.h"
 
 #include "ui/UIContext.h"
 
@@ -190,7 +190,7 @@ void MainMenuScreen::attemptConnect(ServerType serverType) {
     // TODO: Assert well formatted IP
     LOG_DEBUG("Attempting to connect to {}", mTargetHostIP);
     mState = MainMenuState::WAITING_JOIN;
-    GameClient& gameClient = GameClient::initInstance(serverType, mTargetHostAddress);
+    GameClientOLD& gameClient = GameClientOLD::initInstance(serverType, mTargetHostAddress);
     gameClient.connect(DEFAULT_PRIVATE_KEY);
     mConnectingStart = yojimbo_time();
     mConnTimer = mConnectingStart;
@@ -365,7 +365,7 @@ void MainMenuScreen::drawWaitingJoinState() {
     ImGui::Text(buf);
     ImGui::Spacing();
     if (ImguiUtil::ButtonCenteredOnLine("Back", buttonSize)) {
-        GameClient::destroyInstance();
+        GameClientOLD::destroyInstance();
         mState = MainMenuState::JOIN;
         return;
     }
@@ -375,13 +375,13 @@ void MainMenuScreen::drawWaitingJoinState() {
     if (currentTime - mConnectingStart >= YOJIMBO_DEFAULT_TIMEOUT) {
         mErrorString = "Connection timed out";
         mState = MainMenuState::FAILED_TO_CONNECT;
-        GameClient::destroyInstance();
+        GameClientOLD::destroyInstance();
         return;
     }
 
     // Update client packets
     // TODO: We need to make sure our local IP is same protocol as host IP, i.e. ipv4 or ipv6
-    GameClient& client = GameClient::getInstance();
+    GameClientOLD& client = GameClientOLD::getInstance();
     double dt = currentTime - mConnTimer;
     client.update(dt);
     mConnTimer = currentTime;

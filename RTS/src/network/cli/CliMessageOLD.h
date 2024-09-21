@@ -3,7 +3,7 @@
 #include "network/Message.h"
 
 // Static class that sends messages
-class CliMessage
+class CliMessageOLD
 {
 public:
     static void sendClientReadyJoinMessage();

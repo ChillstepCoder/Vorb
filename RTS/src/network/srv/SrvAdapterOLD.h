@@ -3,11 +3,13 @@
 #include "network/NetworkConst.h"
 #include "network/Message.h"
 
+class GameServerOLD;
+
 // Network adapter for the game server
-class CliAdapter : public yojimbo::Adapter
+class SrvAdapterOLD : public yojimbo::Adapter
 {
-public:
-    explicit CliAdapter() {}
+public: 
+    explicit SrvAdapterOLD(GameServerOLD& gameServer) : mGameServer(gameServer) {}
 
     yojimbo::MessageFactory* CreateMessageFactory(yojimbo::Allocator& allocator) override {
         return YOJIMBO_NEW(allocator, GameMessageFactory, allocator);
@@ -17,5 +19,7 @@ public:
 
     void OnServerClientDisconnected(int clientIndex) override;
 
+private:
+    GameServerOLD& mGameServer;
 };
 

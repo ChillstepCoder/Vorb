@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
 #include "GameServerOLD.h"
-#include "SrvAdapter.h"
+#include "SrvAdapterOLD.h"
 
 #include "network/NetworkUtil.h"
 
@@ -34,7 +34,7 @@ GameServerOLD* GameServerOLD::sInstance = nullptr;
 
 GameServerOLD::GameServerOLD(World& world, ServerType serverType) :
     mWorld(world),
-    mAdapter(std::make_unique<SrvAdapter>(*this)),
+    mAdapter(std::make_unique<SrvAdapterOLD>(*this)),
     mServer(yojimbo::GetDefaultAllocator(), DEFAULT_PRIVATE_KEY, initServerAddress(serverType), mConnectionConfig, *mAdapter, 0.0),
     mServerType(serverType) {
 

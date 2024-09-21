@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "GameThread.h"
 
-#include "network/cli/GameClient.h"
+#include "network/cli/GameClientOLD.h"
 #include "network/srv/GameServerOLD.h"
 
 #include "world/World.h"
@@ -151,7 +151,7 @@ void GameThread::tickClient() {
     PROFILE_FUNCTION();
 
     // Update client
-    GameClient& client = GameClient::getInstance();
+    GameClientOLD& client = GameClientOLD::getInstance();
     if (!client.isConnected()) {
         pError("LOST CONNECTION!");
         assert(false);

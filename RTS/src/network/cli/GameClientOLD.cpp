@@ -1,19 +1,19 @@
 #include "stdafx.h"
-#include "GameClient.h"
+#include "GameClientOLD.h"
 
 #include "world/World.h"
 #include "ecs/cli/CliFullECS.h"
 #include "network/NetworkUtil.h"
 
-#include "network/cli/CliAdapter.h"
-#include "network/cli/CliMessage.h"
+#include "network/cli/CliAdapterOLD.h"
+#include "network/cli/CliMessageOLD.h"
 // TODO: use Yojimbo::NetworkSimulator
 
 constexpr f64 PING_INTERVAL_SEC = 0.1; // 100ms ping interval
 
-GameClient* GameClient::sInstance = nullptr;
+GameClientOLD* GameClientOLD::sInstance = nullptr;
 
-GameClient::GameClient(ServerType connectionType, const yojimbo::Address& hostAddress) : mAdapter(std::make_unique<CliAdapter>()), mConnectionType(connectionType), mHostAddress(hostAddress), mLastPingTimeS(yojimbo_time()) {
+GameClientOLD::GameClientOLD(ServerType connectionType, const yojimbo::Address& hostAddress) : mAdapter(std::make_unique<CliAdapterOLD>()), mConnectionType(connectionType), mHostAddress(hostAddress), mLastPingTimeS(yojimbo_time()) {
 
     switch (mConnectionType) {
         case ServerType::NONE:
@@ -38,35 +38,35 @@ GameClient::GameClient(ServerType connectionType, const yojimbo::Address& hostAd
     }
 }
 
-GameClient& GameClient::initInstance(ServerType connectionType, const yojimbo::Address& hostAddress) {
+GameClientOLD& GameClientOLD::initInstance(ServerType connectionType, const yojimbo::Address& hostAddress) {
     if (!sHasInitYojimbo) {
         sHasInitYojimbo = true;
         InitializeYojimbo();
     }
 
     assert(!sInstance);
-    sInstance = new GameClient(connectionType, hostAddress);
+    sInstance = new GameClientOLD(connectionType, hostAddress);
     return* sInstance;
 }
 
-GameClient& GameClient::getInstance() {
+GameClientOLD& GameClientOLD::getInstance() {
     return *sInstance;
 }
 
-void GameClient::destroyInstance() {
+void GameClientOLD::destroyInstance() {
     assert(sInstance);
     delete sInstance;
     sInstance = nullptr;
 }
 
-GameClient::~GameClient() {
+GameClientOLD::~GameClientOLD() {
     disconnect();
 }
 
 // To enable this we need to use a matcher service on a linux machine
 #define USE_SECURE_CONNECT 0 
 
-void GameClient::connect(const uint8_t privateKey[]) {
+void GameClientOLD::connect(const uint8_t privateKey[]) {
 
     switch (mConnectionType) {
         case ServerType::NONE: {
@@ -112,11 +112,11 @@ void GameClient::connect(const uint8_t privateKey[]) {
     }
 }
 
-void GameClient::disconnect() {
+void GameClientOLD::disconnect() {
     mClient->Disconnect();
 }
 
-void GameClient::update(double dtSec) {
+void GameClientOLD::update(double dtSec) {
 
     mClient->AdvanceTime(mClient->GetTime() + dtSec);
     mClient->ReceivePackets();
@@ -138,7 +138,7 @@ void GameClient::update(double dtSec) {
     mClient->SendPackets();
 }
 
-void GameClient::processMessages() {
+void GameClientOLD::processMessages() {
 
     for (int i = 0; i < mConnectionConfig.numChannels; i++) {
         yojimbo::Message* message = mClient->ReceiveMessage(i);
@@ -150,7 +150,7 @@ void GameClient::processMessages() {
     }
 }
 
-void GameClient::processMessage(yojimbo::Message* message) {
+void GameClientOLD::processMessage(yojimbo::Message* message) {
 
     switch (message->GetType()) {
         case (int)MessageTypes::PING:
@@ -173,18 +173,18 @@ void GameClient::processMessage(yojimbo::Message* message) {
     }
 }
 
-void GameClient::sendPingMessage(f64 timestamp) {
+void GameClientOLD::sendPingMessage(f64 timestamp) {
     mLastPingTimeS = timestamp;
     PingMessage* pingMessage = (PingMessage*)mClient->CreateMessage(e_cast(MessageTypes::PING));
     pingMessage->mTimeStamp = timestamp;
     mClient->SendMessage(e_cast(MESSAGE_CHANNELS[pingMessage->GetType()]), pingMessage);
 }
 
-void GameClient::processPingMessage(PingMessage* message) {
+void GameClientOLD::processPingMessage(PingMessage* message) {
     mCurrentPingMS = (f32)((yojimbo_time() - message->mTimeStamp) * MS_PER_SECOND_D);
 }
 
-void GameClient::processClientBeginMessage(ClientBeginMessage* message) {
+void GameClientOLD::processClientBeginMessage(ClientBeginMessage* message) {
     assert(mActiveWorld);
     CliFullECS& cliEcs = (CliFullECS&)mActiveWorld->getECS();
     assert(cliEcs.getLocalPlayer() == entt::null);
@@ -194,13 +194,13 @@ void GameClient::processClientBeginMessage(ClientBeginMessage* message) {
     mIsJoined = true;
 }
 
-void GameClient::processEntityCreateMessage(EntityCreateMessage* message) {
+void GameClientOLD::processEntityCreateMessage(EntityCreateMessage* message) {
     assert(mActiveWorld);
     CliFullECS& cliEcs = (CliFullECS&)mActiveWorld->getECS();
     cliEcs.createEntityFromSrv((entt::entity)message->mSrvEntityID, message->mPosition, message->mEntityToken);
 }
 
-void GameClient::processEntityTransformMessage(EntityTransformMessage* message) {
+void GameClientOLD::processEntityTransformMessage(EntityTransformMessage* message) {
     assert(mActiveWorld);
     CliFullECS& cliEcs = (CliFullECS&)mActiveWorld->getECS();
     entt::entity entity = cliEcs.getEntityFromSrvEntity((entt::entity)message->mSrvEntityID);
@@ -211,7 +211,7 @@ void GameClient::processEntityTransformMessage(EntityTransformMessage* message) 
     }
 }
 
-void GameClient::processCharacterStateMessage(CharacterStateMessage* message) {
+void GameClientOLD::processCharacterStateMessage(CharacterStateMessage* message) {
     assert(mActiveWorld);
     CliFullECS& cliEcs = (CliFullECS&)mActiveWorld->getECS();
     entt::entity entity = cliEcs.getEntityFromSrvEntity((entt::entity)message->mSrvEntityID);
@@ -225,13 +225,13 @@ void GameClient::processCharacterStateMessage(CharacterStateMessage* message) {
     }
 }
 
-void GameClient::replicatePlayerState() {
+void GameClientOLD::replicatePlayerState() {
     assert(mActiveWorld);
     CliFullECS& cliEcs = (CliFullECS&)mActiveWorld->getECS();
     entt::entity entity = cliEcs.getLocalPlayer();
     if (entity != entt::null) {
         PhysicsComponent& physicsCmp = cliEcs.mRegistry.get<PhysicsComponent>(entity);
         CharacterControlComponent& controlCmp = cliEcs.mRegistry.get<CharacterControlComponent>(entity);
-        CliMessage::sendPlayerStateMessage(physicsCmp.getBottomPosition(), physicsCmp.getLinearVelocity(), controlCmp.mControllerAngleRad, e_cast(controlCmp.mDesiredLocomotionMode));
+        CliMessageOLD::sendPlayerStateMessage(physicsCmp.getBottomPosition(), physicsCmp.getLinearVelocity(), controlCmp.mControllerAngleRad, e_cast(controlCmp.mDesiredLocomotionMode));
     }
 }

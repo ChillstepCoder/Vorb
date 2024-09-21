@@ -7,8 +7,8 @@
 #include "gamethread/GameThread.h"
 #include "input/InputDispatcher.h"
 #include "item/ItemStockpileRegistry.h"
-#include "network/cli/CliMessage.h"
-#include "network/cli/GameClient.h"
+#include "network/cli/CliMessageOLD.h"
+#include "network/cli/GameClientOLD.h"
 #include "network/srv/GameServerOLD.h"
 #include "options/DebugOptions.h"
 #include "physics/PhysicsWorld.h"
@@ -108,9 +108,9 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
         //Services::initCli();
 
         mState = GameplayScreenState::WAITING_JOIN_SERVER;
-        CliMessage::sendClientReadyJoinMessage();
+        CliMessageOLD::sendClientReadyJoinMessage();
         // Send the packet
-        GameClient::getInstance().update(0.0f);
+        GameClientOLD::getInstance().update(0.0f);
         mNetMode = WorldNetMode::Client;
     }
     else {
@@ -180,7 +180,7 @@ void GameplayScreen::update(const vui::GameTime& gameTime) {
     }
     else if (mState == GameplayScreenState::WAITING_JOIN_SERVER) {
         // Update client and wait for server response
-        GameClient& client = GameClient::getInstance();
+        GameClientOLD& client = GameClientOLD::getInstance();
         if (!client.isConnected()) {
             pError("LOST CONNECTION!");
             vui::InputDispatcher::onQuit();
@@ -246,7 +246,7 @@ void GameplayScreen::initWorldInterfaceController() {
 
 void GameplayScreen::updateClient(const vui::GameTime& gameTime) {
     // Update client
-    if (!GameClient::getInstance().isConnected()) {
+    if (!GameClientOLD::getInstance().isConnected()) {
         pError("LOST CONNECTION!");
         assert(false);
     }

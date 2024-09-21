@@ -1,13 +1,13 @@
 #include "stdafx.h"
-#include "CliAdapter.h"
+#include "CliAdapterOLD.h"
 
-void CliAdapter::OnServerClientConnected(int clientIndex)
+void CliAdapterOLD::OnServerClientConnected(int clientIndex)
 {
     // Only server implements these
     UNUSED(clientIndex);
 }
 
-void CliAdapter::OnServerClientDisconnected(int clientIndex)
+void CliAdapterOLD::OnServerClientDisconnected(int clientIndex)
 {
     // Only server implements these
     UNUSED(clientIndex);
