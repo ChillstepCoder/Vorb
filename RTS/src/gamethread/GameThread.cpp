@@ -86,13 +86,15 @@ void GameThread::mainFunc() {
     }
 
     initWorld();
+
+    mGameServer->start();
+
     initLocalPlayer();
+
 
     // Init time
     TimestepManager& TimestepManager = Services::TimestepManager::ref();
     TimestepManager.init(1.0 / SERVER_TICK_RATE_HZ, 2 /*maxFramesAhead*/);
-
-    // TODO: Load world data
 
     // World can begin
     mIsRunning = true;
@@ -103,9 +105,6 @@ void GameThread::mainFunc() {
         if (TimestepManager.tryTick(&sleepSec)) {
             mThreadUtilizationTimer.beginFrame();
             tick();
-            // Force a thread switch if anyone is waiting
-            // // TODO: Profile if this matters
-            // yojimbo_sleep(0);
         }
         else {
             // Try updating queues with sleepSec as a time budget?
@@ -186,9 +185,6 @@ void GameThread::tickHost() {
     // Notify server of player position
     IFullECS& ecs = mWorld.getECS();
     mGameServer->setLocalPlayerPosition(ecs.getLocalPlayerPosition());
-
-    mGameServer->tick(Services::TimestepManager::ref().getTimestepSec());
-
 }
 
 void GameThread::updateProcs()

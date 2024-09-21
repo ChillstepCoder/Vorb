@@ -2,6 +2,7 @@
 #include "GameServerNew.h"
 
 #include "server/ServerReportStateManager.h"
+#include "server/ServerThread.h"
 #include "world/srv/ServerChunkAuthorityManager.h"
 
 #include "options/DebugOptions.h"
@@ -10,8 +11,9 @@
 
 #include "world/World.h"
 
+#include "gamethread/GameThreadTasks.h"
+
 GameServerNew::GameServerNew(World& world) : mWorld(world) {
-    SERVER_THREAD_ID = std::this_thread::get_id();
     mPlayerManager = std::make_unique<ServerReportStateManager>(mWorld.getWidthChunks());
     mAuthorityManager = std::make_unique<ServerChunkAuthorityManager>(mWorld.getWidthChunks(), *mPlayerManager);
 
@@ -19,10 +21,10 @@ GameServerNew::GameServerNew(World& world) : mWorld(world) {
     mAuthorityManager->addPlayerGainAuthorityListener(mAuthorityManagerListeners, [this](const ServerChunkStateEvent& evnt) {
         ASSERT_SERVER_THREAD();
         if (evnt.playerId == mLocalPlayerId) {
-            LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
-            chunkGrid.setChunkActive(evnt.chunkId);
-
-            // TODO: Dispatch new authority to each player?
+            GameThreadTasks::getInstance().addGenericTask([this, chunkId = evnt.chunkId]() {
+                LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
+                chunkGrid.setChunkActive(chunkId);
+            });
         }
         else {
             // Dispatch message
@@ -32,8 +34,10 @@ GameServerNew::GameServerNew(World& world) : mWorld(world) {
     mAuthorityManager->addPlayerLoseAuthorityListener(mAuthorityManagerListeners, [this](const ServerChunkStateEvent& evnt) {
         ASSERT_SERVER_THREAD();
         if (evnt.playerId == mLocalPlayerId) {
-            LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
-            chunkGrid.setChunkInactive(evnt.chunkId);
+            GameThreadTasks::getInstance().addGenericTask([this, chunkId = evnt.chunkId]() {
+                LocalChunkGrid& chunkGrid = mWorld.getLocalChunkGrid();
+                chunkGrid.setChunkInactive(chunkId);
+            });
 
             // TODO: Dispatch new authority to each player?
         }
@@ -42,23 +46,37 @@ GameServerNew::GameServerNew(World& world) : mWorld(world) {
             assert(false);
         }
     });
+
 }
 
 GameServerNew::~GameServerNew() = default;
 
-void GameServerNew::tick(f64 deltaTime) {
-    PROFILE_FUNCTION();
-    ASSERT_SERVER_THREAD();
-    mPlayerManager->tick();
-    mAuthorityManager->tick(deltaTime);
+void GameServerNew::start() {
+    mServerThread = std::make_unique<ServerThread>(*this, mWorld);
+    mServerThreadProducerToken = mServerThread->getNewProducerToken();
+}
+
+void GameServerNew::stop() {
+    mServerThread.reset();
 }
 
 ServerPlayerID GameServerNew::initLocalPlayer(f32v3 position) {
+    ASSERT_GAME_THREAD();
+
     assert(mPlayerManager->hasHostPlayer() == false);
-    mLocalPlayerId = mPlayerManager->registerPlayer(position, sDebugOptions.mLoadRange / CHUNK_WIDTH);
-    return mLocalPlayerId;
+    mServerThread->addTask(*mServerThreadProducerToken, [this, position]() {
+        const ServerPlayerID id = mPlayerManager->registerPlayer(position, sDebugOptions.mLoadRange / CHUNK_WIDTH);
+        assert(id == 0);
+    });
+
+    // Always 0
+    return ServerPlayerID(0);
 }
 
 void GameServerNew::setLocalPlayerPosition(f32v3 position) {
-    mPlayerManager->setLocalPlayerPosition(position);
+    ASSERT_GAME_THREAD();
+
+    mServerThread->addTask(*mServerThreadProducerToken, [this, position]() {
+        mPlayerManager->setLocalPlayerPosition(position);
+    });
 }

@@ -5,6 +5,7 @@
 class ServerReportStateManager;
 class ServerChunkAuthorityManager;
 class World;
+class ServerThread;
 
 class GameServerNew {
 public:
@@ -12,9 +13,10 @@ public:
     GameServerNew(World& world);
     ~GameServerNew();
 
-    VORB_NON_COPYABLE(GameServerNew);
+    void start();
+    void stop();
 
-    void tick(f64 deltaTime);
+    VORB_NON_COPYABLE(GameServerNew);
 
     ServerPlayerID initLocalPlayer(f32v3 position);
     void setLocalPlayerPosition(f32v3 position);
@@ -22,12 +24,15 @@ public:
     ServerPlayerID getLocalPlayerId() const { return mLocalPlayerId; }
 
 private:
-    World& mWorld;
+    friend class ServerThread;
 
+    World& mWorld;
+    std::unique_ptr<ServerThread> mServerThread;
     std::unique_ptr<ServerReportStateManager> mPlayerManager;
     std::unique_ptr<ServerChunkAuthorityManager> mAuthorityManager;
     ServerPlayerID mLocalPlayerId;
 
     ServerChunkAuthorityManagerListeners mAuthorityManagerListeners;
+    std::unique_ptr<moodycamel::ProducerToken> mServerThreadProducerToken;
 };
 

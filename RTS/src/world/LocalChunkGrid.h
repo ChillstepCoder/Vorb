@@ -18,8 +18,7 @@ struct ChunkActivateContext {
 
 class IWorldGrid;
 
-class LocalChunkGrid
-{
+class LocalChunkGrid {
 public:
     LocalChunkGrid();
     ~LocalChunkGrid();
@@ -66,8 +65,6 @@ public:
 protected:
     void updateActivatingChunks();
 
-    bool isChunkXYInBounds(const i32v2& xy);
-
     // Events
     void onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions);
     // List management
@@ -90,7 +87,7 @@ protected:
     // Chunk lists
     std::vector<ChunkID> mWantActivateChunks;
     std::vector<ChunkID> mActivatingChunks;
-    std::vector<ChunkID> mActiveChunks; // TODO: Can we get rid of this list completely by making chunk nodes an internal doubly linked list?
+    std::vector<ChunkID> mActiveChunks;
     std::vector<ChunkID> mWantDeactivateChunks;
 
     // World

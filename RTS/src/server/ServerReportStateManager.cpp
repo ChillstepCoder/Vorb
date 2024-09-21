@@ -23,7 +23,6 @@ void ServerReportStateManager::tick() {
 }
 
 ServerPlayerID ServerReportStateManager::registerPlayer(f32v3 position, int desiredChunkLoadRange) {
-    ASSERT_SERVER_THREAD();
     if (mFreePlayerIds.empty()) {
         LOG_ERROR("No free player slots");
         return INVALID_SERVER_PLAYER_ID;

@@ -26,14 +26,14 @@ GameThreadTasks& GameThreadTasks::getInstance() {
 
 void GameThreadTasks::updateMainThread() {
     constexpr ui32 BULK_DEQUEUE_SIZE = 8;
-    GameFunction procsCapture[BULK_DEQUEUE_SIZE];
+    GameFunction procs[BULK_DEQUEUE_SIZE];
     PreciseTimer timer;
     // TODO: Use optik for profiling
     constexpr f32 BUDGET_MS = 3.0f;
     do {
-        if (const size_t count = mGameThreadFuncProcs.try_dequeue_bulk(mToken, procsCapture, BULK_DEQUEUE_SIZE)) {
+        if (const size_t count = mGameThreadFuncProcs.try_dequeue_bulk(mToken, procs, BULK_DEQUEUE_SIZE)) {
             for (size_t i = 0; i < count; ++i) {
-                procsCapture[i]();
+                procs[i]();
             }
         }
     } while (timer.stop() < BUDGET_MS);

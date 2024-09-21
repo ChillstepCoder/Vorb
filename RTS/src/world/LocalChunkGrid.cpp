@@ -341,10 +341,6 @@ void LocalChunkGrid::updateActivatingChunks() {
     }
 }
 
-bool LocalChunkGrid::isChunkXYInBounds(const i32v2& xy) {
-    return (xy.x >= 0 && xy.y >= 0 && xy.x < mWidthChunks && xy.y < mWidthChunks);
-}
-
 void LocalChunkGrid::onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions) {
     PROFILE_FUNCTION();
     UnorderedFlatMap<GridIdType, std::vector<TileCoord>> tilePositionsNeedingUpdate;

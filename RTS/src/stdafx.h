@@ -234,14 +234,11 @@ extern UNIT_SPACE(SECONDS) f32 sElapsedSecondsSinceLastFrame; ///< Elapsed time 
 
 // Thread
 inline void setThreadPriorityToMax() {
-#ifdef VORB_OS_WINDOWS
     SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
-#else
-    struct sched_param params;
+}
 
-    params.sched_priority = sched_get_priority_max(SCHED_FIFO);
-    pthread_setschedparam(pthread_self(), SCHED_FIFO, &params);
-#endif
+inline void setThreadPriorityToAboveNormal() {
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
 }
 
 // Literals

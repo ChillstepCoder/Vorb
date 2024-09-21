@@ -53,10 +53,6 @@ ServerChunkAuthorityManager::ServerChunkAuthorityManager(i32 worldWidthChunks, S
     });
 }
 
-void ServerChunkAuthorityManager::tick(f64 dt) {
-    ASSERT_SERVER_THREAD();
-}
-
 bool ServerChunkAuthorityManager::isChunkActive(ChunkID chunkId) const {
     return mReportStateManager.isChunkActive(chunkId);
 }

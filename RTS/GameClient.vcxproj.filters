@@ -1374,6 +1374,9 @@
     <ClCompile Include="src\server\GameServerNew.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\server\ServerThread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -3213,6 +3216,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\server\ServerConst.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\server\ServerThread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

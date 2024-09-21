@@ -508,6 +508,7 @@
     <ClCompile Include="src\serialization\GameSaveManager.cpp" />
     <ClCompile Include="src\serialization\gamesave\WorldSaveContext.cpp" />
     <ClCompile Include="src\server\GameServerNew.cpp" />
+    <ClCompile Include="src\server\ServerThread.cpp" />
     <ClCompile Include="src\text\LocText.cpp" />
     <ClCompile Include="src\text\NameManager.cpp" />
     <ClCompile Include="src\tile\ChunkLiteTileHandle.cpp" />
@@ -1095,6 +1096,7 @@
     <ClInclude Include="src\server\GameServerNew.h" />
     <ClInclude Include="src\server\ServerConst.h" />
     <ClInclude Include="src\server\ServerPlayerManagerEvents.h" />
+    <ClInclude Include="src\server\ServerThread.h" />
     <ClInclude Include="src\terrain\CompressedHeight.h" />
     <ClInclude Include="src\text\LocText.h" />
     <ClInclude Include="src\text\NameManager.h" />

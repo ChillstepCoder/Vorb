@@ -13,7 +13,8 @@
 
 constexpr int SIM_THREAD_IDLE_SLEEP_MS = 60;
 
-SimThread::SimThread(HostSimContext& simContext, World& world) : mWorld(world), mHostSimContext(simContext)
+SimThread::SimThread(HostSimContext& simContext, World& world) :
+    mWorld(world), mHostSimContext(simContext), mToken(mSimThreadProcs)
 {
 }
 
@@ -130,7 +131,7 @@ void SimThread::updateTasks() {
     constexpr size_t BULK_DEQUEUE_COUNT = 256;
     std::function<void()> funcs[BULK_DEQUEUE_COUNT];
 
-    if (size_t count = mSimThreadProcs.try_dequeue_bulk(funcs, BULK_DEQUEUE_COUNT)) {
+    if (size_t count = mSimThreadProcs.try_dequeue_bulk(mToken, funcs, BULK_DEQUEUE_COUNT)) {
         for (size_t i = 0; i < count; ++i) {
             funcs[i]();
         }

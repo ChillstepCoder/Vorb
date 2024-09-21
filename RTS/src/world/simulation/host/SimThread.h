@@ -63,5 +63,6 @@ private:
     std::unique_ptr<RandomGenerator> mRandomGenerator;
 
     moodycamel::ConcurrentQueue<std::function<void()>> mSimThreadProcs;
+    moodycamel::ConsumerToken mToken;
 };
 

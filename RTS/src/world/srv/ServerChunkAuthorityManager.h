@@ -11,8 +11,6 @@ class ServerChunkAuthorityManager {
 public:
     ServerChunkAuthorityManager(i32 worldWidthChunks, ServerReportStateManager& playerMgr);
 
-    void tick(f64 dt);
-
     bool isChunkActive(ChunkID chunkId) const;
 
     EVENT_LISTENER_FUNCS(ServerChunkAuthorityManager, PlayerGainAuthority, ServerChunkStateEventType::PlayerGainAuthority, ServerChunkStateEvent&);

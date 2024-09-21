@@ -11,6 +11,8 @@
 #include "pathfinding/NavThread.h"
 #include "gamethread/GameThread.h"
 
+#include "server/ServerThread.h"
+
 #include "debugging/VisualLogger.h"
 #include "rendering/CharacterRenderer.h"
 #include "rendering/TileContainerRenderer.h"
@@ -599,6 +601,12 @@ void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState&
                     mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, drawColor);
                     yOffset += GAP_SIZE;
                 }
+            }
+            // Server
+            if (const ServerThread* srvThread = ServerThread::tryGetInstance()) {
+                drawColor = sprintfThreadStats(srvThread->getThreadUtilizationTimer(), "ServerThread", buffer);
+                mSb->drawString(mSpriteFont.get(), buffer, f32v2(xPos, START_MULT * mScreenResolution.y + yOffset), scale, drawColor);
+                yOffset += GAP_SIZE;
             }
 
             yOffset += GAP_SIZE;
