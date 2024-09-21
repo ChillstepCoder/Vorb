@@ -12,10 +12,7 @@
 #include "services/Services.h"
 #include "pathfinding/NavWorld.h"
 
-#include "options/DebugOptions.h"
-
 constexpr ui8 ALL_NEIGHBORS_ALIVE = 0xff;
-
 
 // REFRESH MAIN THREAD(Update when load center moves N tiles from previous position)
 // IWORLD

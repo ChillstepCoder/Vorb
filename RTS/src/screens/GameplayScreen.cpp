@@ -4,7 +4,6 @@
 #include "App.h"
 
 #include "camera/CameraController.h"
-#include "ecs/IFullECS.h"
 #include "gamethread/GameThread.h"
 #include "input/InputDispatcher.h"
 #include "item/ItemStockpileRegistry.h"
@@ -12,7 +11,6 @@
 #include "network/cli/GameClient.h"
 #include "network/srv/GameServerOLD.h"
 #include "options/DebugOptions.h"
-#include "pathfinding/NavWorld.h"
 #include "physics/PhysicsWorld.h"
 #include "rendering/LoadScreenRenderer.h"
 #include "rendering/RenderContext.h"
@@ -104,7 +102,6 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
     mState = GameplayScreenState::INIT;
 
     GameplayScreenGlobalState::initDefaults();
-
 
     // Initialize services
     if (MainMenuScreenGlobalState::isClient()) {
