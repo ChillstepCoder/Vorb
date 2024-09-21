@@ -1,24 +1,24 @@
 cmake_minimum_required(VERSION 3.30)
 
-# Set the project name and version
+# The toolchain file setup should ideally be in a CMakePresets.json file,
+# but we'll keep it here for simplicity
+set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake"
+    CACHE STRING "Vcpkg toolchain file")
+
 project(AnimaMundi VERSION 1.0)
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Set the path to vcpkg
-set(VCPKG_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg")
-
-# Include vcpkg
-if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-        CACHE STRING "")
-endif()
-
-# Add vcpkg manifest mode
-set(VCPKG_MANIFEST_MODE ON)
-set(VCPKG_MANIFEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Vorb")
+# Find required packages
+find_package(tinyspline CONFIG REQUIRED)
+find_package(Bitsery CONFIG REQUIRED)
+find_package(zstd CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
+find_package(unofficial-joltphysics CONFIG REQUIRED)
+message(STATUS "JoltPhysics targets: ${unofficial-joltphysics_TARGETS}")
+find_package(Boost REQUIRED COMPONENTS container unordered pool circular_buffer heap geometry graph)
 
 # Vorb static library
 add_library(Vorb STATIC)
@@ -37,6 +37,23 @@ file(GLOB_RECURSE VORB_HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp"
 )
 target_sources(Vorb PRIVATE ${VORB_HEADERS})
+
+# Link Vorb with required libraries
+target_link_libraries(Vorb
+    PRIVATE
+    tinyspline::tinyspline
+    Bitsery::bitsery
+    zstd::libzstd
+    spdlog::spdlog
+    unofficial::joltphysics::Jolt
+    Boost::container
+    Boost::unordered
+    Boost::pool
+    Boost::circular_buffer
+    Boost::heap
+    Boost::geometry
+    Boost::graph
+)
 
 # Set configuration properties for Vorb
 if(MSVC)
@@ -69,11 +86,3 @@ if(MSVC)
 else()
     target_compile_options(GameClient PRIVATE -Wall -Wextra -Wpedantic)
 endif()
-
-# Add custom command to update vcpkg as a pre-build step for Vorb
-add_custom_command(
-    TARGET Vorb
-    PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo "Updating vcpkg..."
-    COMMAND "${VCPKG_ROOT}/vcpkg" update
-)
