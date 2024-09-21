@@ -30,7 +30,7 @@
 #include "world/simulation/host/SimThread.h"
 #include "gamethread/GameThreadTasks.h"
 #include "screens/ScreenState.h"
-#include "network/srv/GameServer.h"
+#include "network/srv/GameServerOLD.h"
 #include "debugging/DebugRenderer.h"
 
 #include "ui/UIContext.h"
@@ -679,7 +679,7 @@ void RenderContext::renderPassUI(const Camera3D& camera, const WorldRenderState&
         // If we are host, draw our server IP
         if (MainMenuScreenGlobalState::serverType != ServerType::NONE) {
             char buffer2[256];
-            yojimbo::Address address = GameServer::getInstance().getServerAddress();
+            yojimbo::Address address = GameServerOLD::getInstance().getServerAddress();
             yojimbo::Address addressNoPort;
             if (address.GetType() == yojimbo::ADDRESS_IPV4) {
                 addressNoPort = yojimbo::Address(address.GetAddress4());

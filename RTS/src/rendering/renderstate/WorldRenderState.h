@@ -48,7 +48,6 @@ public:
         mThreadSharedComponents.clear();
     }
 
-    const f32v2& getWorldLoadCenter() const { return mWorldLoadCenter; }
     const f32v3& getCameraOwningEntityPos() const { return mCameraOwningEntityPos; }
     bool isCameraOwned() const { return mIsCameraOwned; }
     const std::vector<DebugChunkRenderState>& getDebugChunks() const { return mDebugChunks; }
@@ -62,7 +61,6 @@ public:
 private:
     // ======================== Game State  ========================
     WorldID mWorldId = 0;
-    f32v2 mWorldLoadCenter;
     f32v3 mCameraOwningEntityPos;
     bool mIsCameraOwned;
     std::vector<CharacterRenderState> mCharacters;

@@ -365,7 +365,7 @@
     <ClCompile Include="src\network\cli\CliMessage.cpp" />
     <ClCompile Include="src\network\Cli\GameClient.cpp" />
     <ClCompile Include="src\network\NetworkUtil.cpp" />
-    <ClCompile Include="src\network\srv\GameServer.cpp" />
+    <ClCompile Include="src\network\srv\GameServerOLD.cpp" />
     <ClCompile Include="src\network\srv\SrvAdapter.cpp" />
     <ClCompile Include="src\network\srv\SrvMessage.cpp" />
     <ClCompile Include="src\options\DebugOptions.cpp" />
@@ -507,6 +507,7 @@
     <ClCompile Include="src\screens\WorldGenScreen.cpp" />
     <ClCompile Include="src\serialization\GameSaveManager.cpp" />
     <ClCompile Include="src\serialization\gamesave\WorldSaveContext.cpp" />
+    <ClCompile Include="src\server\GameServerNew.cpp" />
     <ClCompile Include="src\text\LocText.cpp" />
     <ClCompile Include="src\text\NameManager.cpp" />
     <ClCompile Include="src\tile\ChunkLiteTileHandle.cpp" />
@@ -674,6 +675,8 @@
     <ClCompile Include="src\world\simulation\host\system\SimSettlementSystem.cpp" />
     <ClCompile Include="src\world\simulation\ISimJob.cpp" />
     <ClCompile Include="src\world\simulation\ISimTask.cpp" />
+    <ClCompile Include="src\world\srv\ServerChunkAuthorityManager.cpp" />
+    <ClCompile Include="src\server\ServerReportStateManager.cpp" />
     <ClCompile Include="src\world\World.cpp" />
     <ClCompile Include="src\world\srv\HostHeightmapGrid.cpp" />
     <ClCompile Include="src\world\WorldContextObject.cpp" />
@@ -892,7 +895,7 @@
     <ClInclude Include="src\network\Message.h" />
     <ClInclude Include="src\network\NetworkConst.h" />
     <ClInclude Include="src\network\NetworkUtil.h" />
-    <ClInclude Include="src\network\srv\GameServer.h" />
+    <ClInclude Include="src\network\srv\GameServerOLD.h" />
     <ClInclude Include="src\network\srv\SrvAdapter.h" />
     <ClInclude Include="src\network\srv\SrvMessage.h" />
     <ClInclude Include="src\network\WorldNetMode.h" />
@@ -1089,6 +1092,9 @@
     <ClInclude Include="src\serialization\GameSaveManager.h" />
     <ClInclude Include="src\serialization\gamesave\WorldSaveContext.h" />
     <ClInclude Include="src\serialization\gamesave\WorldSaveEventType.h" />
+    <ClInclude Include="src\server\GameServerNew.h" />
+    <ClInclude Include="src\server\ServerConst.h" />
+    <ClInclude Include="src\server\ServerPlayerManagerEvents.h" />
     <ClInclude Include="src\terrain\CompressedHeight.h" />
     <ClInclude Include="src\text\LocText.h" />
     <ClInclude Include="src\text\NameManager.h" />
@@ -1279,6 +1285,9 @@
     <ClInclude Include="src\world\simulation\host\settlement\SimSettlementSystem.h" />
     <ClInclude Include="src\world\simulation\ISimJob.h" />
     <ClInclude Include="src\world\simulation\ISimTask.h" />
+    <ClInclude Include="src\world\srv\ServerChunkStateEvents.h" />
+    <ClInclude Include="src\world\srv\ServerChunkAuthorityManager.h" />
+    <ClInclude Include="src\server\ServerReportStateManager.h" />
     <ClInclude Include="src\world\World.h" />
     <ClInclude Include="src\world\srv\HostHeightmapGrid.h" />
     <ClInclude Include="src\world\TerrainConstants.h" />
@@ -1302,6 +1311,7 @@
     <None Include="src\ui\noesis\NoesisInputMappings.inl" />
     <None Include="src\world\settlement\SettlementDebugHelpers.inl" />
     <None Include="src\world\settlement\SettlementPlot" />
+    <None Include="src\world\srv\ServerChunkStateEvents" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

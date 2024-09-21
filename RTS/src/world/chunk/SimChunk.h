@@ -100,12 +100,12 @@ private:
     // SERIALIZED DATA
     SimTileDataMap tileIndexToTileData;
     TileWallContainer tileWalls; // Most chunks don't have walls
+    FlatMap<TileIndex, TileDamageDataPtr> mDamagedTiles; // TODO: SERIALIZE
+
     // NOT SERIALIZED
     FlatMap<TileID, ui32> tileQuantities;
     FlatMap<TileHarvestable, std::vector<ChunkTileIndex>> harvestables;
 };
-
-
 
 class SimChunkItemData {
     friend class SimChunkGrid;
@@ -128,7 +128,6 @@ private:
 
 private:
     BINARY_SERIALIZE() {
-        //s.ext(patches, bitsery::ext::PodStructVector{})
         s.container(itemStacks);
     }
 

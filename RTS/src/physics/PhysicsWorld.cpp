@@ -304,14 +304,13 @@ public:
 #endif
     }
 
-    JPH::Body& createBody(const JPH::BodyCreationSettings& createSettings, JPH::EActivation inActivationMode, CollisionShapeID shapeId) {
+    JPH::BodyID createBody(const JPH::BodyCreationSettings& createSettings, JPH::EActivation inActivationMode, CollisionShapeID shapeId) {
         ASSERT_GAME_THREAD();
         JPH::BodyInterface& bodyInterface = getBodyInterface();
-        JPH::Body* body = bodyInterface.CreateBody(createSettings);
-        if (body == nullptr) {
+        JPH::BodyID bodyId = bodyInterface.CreateAndAddBody(createSettings, inActivationMode);
+        if (bodyId.GetIndexAndSequenceNumber() == JPH::BodyID::cInvalidBodyID) {
             panic("Failed to create entity body with shape ID {}", (int)shapeId);
         }
-        bodyInterface.AddBody(body->GetID(), inActivationMode);
         ++mNewBodiesWithoutBroadphaseOptimize;
 
 #if ENABLE_PHYSICS_ANALYTICS == 1
@@ -321,8 +320,7 @@ public:
             mDirtyStaticDebugRender = true;
         }
 #endif
-
-        return *body;
+        return bodyId;
     }
 
     void removeBody(PhysBodyID id, bool shouldDestroy) {
@@ -689,9 +687,9 @@ void PhysicsWorld::updateProceduralTileContainerMeshFromBuilder(StaticPhysicsMes
                     PhysicsObjectLayer::DynamicSolid | PhysicsObjectLayer::DynamicItem // collideMaskBits
                 )
             );
-            JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, 434343 /*Cheeky mesh number for debug output*/);
-            body.SetUserData(PhysicsBodyUserData(meshBuilder.getOwnerTileContainerID()));
-            *staticMesh = body.GetID().GetIndexAndSequenceNumber();
+            createSettings.mUserData = PhysicsBodyUserData(meshBuilder.getOwnerTileContainerID());
+            JPH::BodyID bodyId = mContext->createBody(createSettings, JPH::EActivation::DontActivate, 434343 /*Cheeky mesh number for debug output*/);
+            *staticMesh = bodyId.GetIndexAndSequenceNumber();
         }
         else {
             mContext->updateShape(*staticMesh, shape, false, JPH::EActivation::DontActivate);
@@ -1042,6 +1040,20 @@ void PhysicsWorld::initEvents() {
         }
         static_assert(e_cast(TileContainerEditEventType::TERM) == BIT(4), "Update handler");
     });
+
+    tileContainerRepository.addDestroyListener(mTileContainerListeners, [this](const TileContainerEvent& evnt) {
+        ASSERT_GAME_THREAD();
+        auto it = mTileContainerPhysicsData.find(evnt.containerId);
+        if (it != mTileContainerPhysicsData.end()) {
+            for (auto& [key, physBodyID] : it->second->mTileKeyToPhysBodyID) {
+                removeBody(physBodyID, true);
+            }
+            if (it->second->mStaticMesh != INVALID_PHYS_BODY_ID) {
+                removeBody(it->second->mStaticMesh, true);
+            }
+            mTileContainerPhysicsData.erase(it);
+        }
+    });
 }
 
 JPH::ObjectLayer PhysicsWorld::makeObjectLayerMasked(JPH::ObjectLayer layerBits, JPH::ObjectLayer collideMaskBits) {
@@ -1073,8 +1085,8 @@ JPH::BodyCreationSettings PhysicsWorld::makeBodyCreateSettings(f32v3 position, C
 PhysBodyID PhysicsWorld::createEntityBody(const JPH::BodyCreationSettings& createSettings, entt::entity ownerEntity, CollisionShapeID shapeId) {
     ASSERT_GAME_THREAD();
     // Userdata set by caller
-    JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::Activate, shapeId);
-    return body.GetID().GetIndexAndSequenceNumber();
+    JPH::BodyID bodyId = mContext->createBody(createSettings, JPH::EActivation::Activate, shapeId);
+    return bodyId.GetIndexAndSequenceNumber();
 }
 
 PhysBodyID PhysicsWorld::createTileBody(TileContainerID containerId, TileIndex tileIndex, f32v3 position, f32q orientation, ModelID modelId, f32 scale) {
@@ -1095,8 +1107,8 @@ PhysBodyID PhysicsWorld::createTileBody(TileContainerID containerId, TileIndex t
     createSettings.mUserData = PhysicsBodyUserData(containerId, tileIndex);
     createSettings.mRotation = JPH::Quat(orientation.x, orientation.y, orientation.z, orientation.w);
 
-    JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, modelDef.mCollisionShapeID);
-    return body.GetID().GetIndexAndSequenceNumber();
+    JPH::BodyID bodyId = mContext->createBody(createSettings, JPH::EActivation::DontActivate, modelDef.mCollisionShapeID);
+    return bodyId.GetIndexAndSequenceNumber();
 }
 
 PhysBodyID PhysicsWorld::createTerrainBody(f32v3 position, JPH::Shape* terrainShape) {
@@ -1108,8 +1120,8 @@ PhysBodyID PhysicsWorld::createTerrainBody(f32v3 position, JPH::Shape* terrainSh
     );
     createSettings.mUserData = PhysicsBodyUserData(PhysicsBodyUserDataType::Terrain);
 
-    JPH::Body& body = mContext->createBody(createSettings, JPH::EActivation::DontActivate, 696969 /*Cheeky terrain number for debug output*/);
-    return body.GetID().GetIndexAndSequenceNumber();
+    JPH::BodyID bodyId = mContext->createBody(createSettings, JPH::EActivation::DontActivate, 696969 /*Cheeky terrain number for debug output*/);
+    return bodyId.GetIndexAndSequenceNumber();
 }
 
 JPH::MeshShapeSettings PhysicsWorld::createStaticMeshShapeSettings(std::span<f32v3> verts, std::span<ui32> indices) {

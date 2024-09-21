@@ -170,11 +170,10 @@ void World::onWorldBeginGame(const f32v2& loadCenter) {
         Services::NavThread::ref().init(*mNavWorld);
     }
 
-
     assert(!mDidBegin);
     mDidBegin = true;
     // Init chunks
-    mLocalChunkGrid->onWorldBegin(loadCenter);
+    mLocalChunkGrid->onWorldBegin();
     {
         std::lock_guard lock(mLoadCenterMutex);
         mLoadCenter = loadCenter;
@@ -187,11 +186,6 @@ void World::onWorldBeginGame(const f32v2& loadCenter) {
 
     // Notify everyone
     dispatchOnWorldBeginGameThread(*this);
-
-    // Initialize player last
-    if (!isEditorWorld()) {
-        mEcs->setLocalPlayer(mEcs->createEntity(getDefaultSpawn(), CStrToken("player"), true));
-    }
 
     mEcs->onWorldBeginGameThread();
 
@@ -470,7 +464,6 @@ void World::updateRenderState() {
 
     // Acquire render state
     renderState.mWorldId = mId;
-    renderState.mWorldLoadCenter = getLoadCenter();
     renderState.mCameraOwningEntityPos = cameraEntityPos;
 
     updateEntitiesRenderState(renderState);

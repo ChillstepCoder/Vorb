@@ -24,8 +24,8 @@ public:
     LocalChunkGrid();
     ~LocalChunkGrid();
 
-    void onWorldBegin(const f32v2& loadCenter);
-    void tick(const f32v2& loadCenter);
+    void onWorldBegin();
+    void tick(f32v2 localPlayerPosition);
 
     LocalChunk& getChunk(ChunkID id) { assert(id < mTotalChunks); return mChunks[id]; }
     const LocalChunk& getChunk(ChunkID id) const { return mChunks[id]; }
@@ -60,6 +60,9 @@ public:
     EVENT_LISTENER_FUNCS(ChunkGrid, Deactivated, CHUNK_GRID_EVENT_TYPE::Deactivated, ChunkGridEvent&);
 
     void setWorldAndAllocateChunks(World& world);
+
+    void setChunkActive(ChunkID chunkId);
+    void setChunkInactive(ChunkID chunkId);
 protected:
     void updateActivatingChunks();
 
@@ -67,17 +70,12 @@ protected:
 
     // Events
     void onTerrainModified(const boost::container::flat_set<i32v2>& modifiedPositions);
-    // Grid management
-    void updateGridEdges(const f32v2& loadCenter);
-    bool tryMarkChunkAlive(const ChunkID& chunkId);
     // List management
     void addChunkToActiveList(LocalChunk& chunk);
     void removeChunkFromActiveList(LocalChunk& chunk);
+    void removeChunkFromWantActivateList(LocalChunk& chunk);
     void addChunkToActivatingList(LocalChunk& chunk);
-    void addChunkToWantDeactivateList(LocalChunk& chunk);
     void removeChunkFromWantDeactivateList(LocalChunk& chunk);
-    // Loading
-    void onAllNeighborsAlive(LocalChunk& chunk);
     // Ready
     void activateChunk(LocalChunk& chunk);
     
@@ -85,15 +83,12 @@ protected:
     ui32 mWidthChunks = 0;
     ui32 mTotalChunks = 0;
     std::unique_ptr<LocalChunk[]> mChunks;
-    std::unique_ptr<ui8[]> mNeighborBits;
     
     // Chunk grid data
-    BitArray mAliveChunkBits; // Includes any chunk which is in range, but an "alive" chunk is not active until it loads, which triggers once 8 neighbors are alive
-    f32v2 mPrevLoadCenter = f32v2(0);
-    bool mForceUpdateEdgeChunks = true;
-    std::vector<ChunkID> mEdgeChunkPositions;
+    BitArray mAliveChunkBits; // Includes any chunk which is in range, but an "alive" chunk is not active until it loads
 
     // Chunk lists
+    std::vector<ChunkID> mWantActivateChunks;
     std::vector<ChunkID> mActivatingChunks;
     std::vector<ChunkID> mActiveChunks; // TODO: Can we get rid of this list completely by making chunk nodes an internal doubly linked list?
     std::vector<ChunkID> mWantDeactivateChunks;

@@ -112,12 +112,10 @@ void TileContainerMeshManager::frameUpdate()
             if (it != mTileContainerMeshData.end()) {
                 TileContainerMeshData& meshData = it->second;
                 removeMeshesForData(meshData);
-
-                // Notify instanced models to be removed
-                mInstancedStaticModelManager.removeTileInstancesFromContainer(containerId);
-
                 mTileContainerMeshData.erase(it);
             }
+            // Notify instanced models to be removed
+            mInstancedStaticModelManager.removeTileInstancesFromContainer(containerId);
         }
     }
 }

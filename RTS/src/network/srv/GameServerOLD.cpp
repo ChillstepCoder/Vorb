@@ -1,6 +1,6 @@
 #include "stdafx.h"
 
-#include "GameServer.h"
+#include "GameServerOLD.h"
 #include "SrvAdapter.h"
 
 #include "network/NetworkUtil.h"
@@ -30,9 +30,9 @@ void logSrv(const std::string& str) {
 constexpr int MAX_TICKS_IN_FRAME = 2;
 constexpr f32 SERVER_BACKLOG_FASTFORWARD_TIME_SEC = 0.6; // Time differential before we just fast forward to make up for it
 
-GameServer* GameServer::sInstance = nullptr;
+GameServerOLD* GameServerOLD::sInstance = nullptr;
 
-GameServer::GameServer(World& world, ServerType serverType) :
+GameServerOLD::GameServerOLD(World& world, ServerType serverType) :
     mWorld(world),
     mAdapter(std::make_unique<SrvAdapter>(*this)),
     mServer(yojimbo::GetDefaultAllocator(), DEFAULT_PRIVATE_KEY, initServerAddress(serverType), mConnectionConfig, *mAdapter, 0.0),
@@ -59,7 +59,7 @@ GameServer::GameServer(World& world, ServerType serverType) :
 
 }
 
-GameServer& GameServer::initInstance(World& world, ServerType serverType) {
+GameServerOLD& GameServerOLD::initInstance(World& world, ServerType serverType) {
 
     if (!sHasInitYojimbo) {
         sHasInitYojimbo = true;
@@ -67,26 +67,25 @@ GameServer& GameServer::initInstance(World& world, ServerType serverType) {
     }
 
     assert(!sInstance);
-    sInstance = new GameServer(world, serverType);
+    sInstance = new GameServerOLD(world, serverType);
     return *sInstance;
 }
 
-GameServer& GameServer::getInstance() {
+GameServerOLD& GameServerOLD::getInstance() {
     return *sInstance;
 }
 
-void GameServer::destroyInstance()
-{
+void GameServerOLD::destroyInstance() {
     assert(sInstance);
     delete sInstance;
     sInstance = nullptr;
 }
 
-GameServer::~GameServer() {
+GameServerOLD::~GameServerOLD() {
     mServer.Stop();
 }
 
-void GameServer::start() {
+void GameServerOLD::start() {
 
     // Loop
     mWantsStart = true;
@@ -94,7 +93,7 @@ void GameServer::start() {
 
 }
 
-int GameServer::tryTick() {
+int GameServerOLD::tryTick() {
 
     // We delay start until the first valid tick to avoid loading backlogs
     if (mWantsStart) {
@@ -118,23 +117,23 @@ int GameServer::tryTick() {
     return 0;
 }
 
-void GameServer::stop() {
+void GameServerOLD::stop() {
     mServer.Stop();
 }
 
-void GameServer::clientConnected(int clientIndex) {
+void GameServerOLD::clientConnected(int clientIndex) {
     char buffer[512];
     sprintf_s(buffer, "Client %d connected", clientIndex);
     logSrv(buffer);
 }
 
-void GameServer::clientDisconnected(int clientIndex) {
+void GameServerOLD::clientDisconnected(int clientIndex) {
     char buffer[512];
     sprintf_s(buffer, "Client %d disconnected", clientIndex);
     logSrv(buffer);
 }
 
-void GameServer::update() {
+void GameServerOLD::update() {
     ASSERT_GAME_THREAD();
     // stop if server is not running
     if (!mServer.IsRunning()) {
@@ -160,7 +159,7 @@ void GameServer::update() {
     mServer.SendPackets();
 }
 
-void GameServer::updateConnectedClientBits() {
+void GameServerOLD::updateConnectedClientBits() {
     ui16 connectedClientBits = 0;
     int numClients = mServer.GetNumConnectedClients();
     for (int i = 0; i < MAX_CLIENTS; ++i) {
@@ -180,7 +179,7 @@ void GameServer::updateConnectedClientBits() {
     mConnectedClientBits = connectedClientBits;
 }
 
-void GameServer::processMessages() {
+void GameServerOLD::processMessages() {
     for (int clientIndex = 0; clientIndex < MAX_CLIENTS; ++clientIndex) {
         if (mServer.IsClientConnected(clientIndex)) {
             for (int channelIndex = 0; channelIndex < mConnectionConfig.numChannels; ++channelIndex) {
@@ -195,7 +194,7 @@ void GameServer::processMessages() {
     }
 }
 
-void GameServer::processMessage(int clientIndex, yojimbo::Message* message) {
+void GameServerOLD::processMessage(int clientIndex, yojimbo::Message* message) {
     switch (message->GetType()) {
         case (int)MessageTypes::PING:
             processPingMessage(clientIndex, (PingMessage*)message);
@@ -211,7 +210,7 @@ void GameServer::processMessage(int clientIndex, yojimbo::Message* message) {
     }
 }
 
-void GameServer::processPingMessage(int clientIndex, PingMessage* message) {
+void GameServerOLD::processPingMessage(int clientIndex, PingMessage* message) {
     // Reply with same message so client can compute ping
     // TODO: Server also compute ping?
     PingMessage* pingMessage = (PingMessage*)mServer.CreateMessage(clientIndex, e_cast(MessageTypes::PING));
@@ -219,7 +218,7 @@ void GameServer::processPingMessage(int clientIndex, PingMessage* message) {
     mServer.SendMessage(clientIndex, e_cast(MESSAGE_CHANNELS[message->GetType()]), pingMessage);
 }
 
-void GameServer::processClientReadyJoinMessage(int clientIndex) {
+void GameServerOLD::processClientReadyJoinMessage(int clientIndex) {
     // If we haven't already processed this message, then begin the clients world and replicate all state
     for (size_t i = 0; i < mConnectedClients.size(); ++i) {
         if (mConnectedClients[i] == clientIndex) {
@@ -239,7 +238,7 @@ void GameServer::processClientReadyJoinMessage(int clientIndex) {
     }
 }
 
-void GameServer::processClientPlayerStateMessage(int clientIndex, ClientPlayerStateMessage* message) {
+void GameServerOLD::processClientPlayerStateMessage(int clientIndex, ClientPlayerStateMessage* message) {
     HostFullECS& srvEcs = (HostFullECS&)mWorld.getECS();
     entt::entity entity = mClientPlayerEntities[clientIndex];
     if (entity != entt::null) {
@@ -252,7 +251,7 @@ void GameServer::processClientPlayerStateMessage(int clientIndex, ClientPlayerSt
     }
 }
 
-yojimbo::Address GameServer::initServerAddress(ServerType serverType)
+yojimbo::Address GameServerOLD::initServerAddress(ServerType serverType)
 {
     if (serverType == ServerType::DEV) {
         return yojimbo::Address("127.0.0.1", DEFAULT_SERVER_PORT);
@@ -265,12 +264,12 @@ yojimbo::Address GameServer::initServerAddress(ServerType serverType)
     }
 }
 
-void GameServer::onClientConnected(int clientIndex) {
+void GameServerOLD::onClientConnected(int clientIndex) {
     mConnectedClients.emplace_back(clientIndex);
     mConnectedClientFlags.emplace_back();
 }
 
-void GameServer::onClientDisconnected(int clientIndex) {
+void GameServerOLD::onClientDisconnected(int clientIndex) {
     for (size_t i = 0; i < mConnectedClients.size(); ++i) {
         if (mConnectedClients[i] == clientIndex) {
             mConnectedClientFlags[i] = mConnectedClientFlags.back();
@@ -281,7 +280,7 @@ void GameServer::onClientDisconnected(int clientIndex) {
     }
 }
 
-void GameServer::replicateStartGameStateToClient(int clientIndex) {
+void GameServerOLD::replicateStartGameStateToClient(int clientIndex) {
     HostFullECS& ecs = ((HostFullECS&)mWorld.getECS());
 
     // Replicate all entites
@@ -295,7 +294,7 @@ void GameServer::replicateStartGameStateToClient(int clientIndex) {
     // TODO: Implement start state for other shit
 }
 
-void GameServer::replicateEntities() {
+void GameServerOLD::replicateEntities() {
     HostFullECS& ecs = ((HostFullECS&)mWorld.getECS());
 
     // Replicate all characters

@@ -10,7 +10,7 @@
 #include "item/ItemStockpileRegistry.h"
 #include "network/cli/CliMessage.h"
 #include "network/cli/GameClient.h"
-#include "network/srv/GameServer.h"
+#include "network/srv/GameServerOLD.h"
 #include "options/DebugOptions.h"
 #include "pathfinding/NavWorld.h"
 #include "physics/PhysicsWorld.h"
@@ -125,7 +125,7 @@ void GameplayScreen::onEntry(const vui::GameTime& gameTime) {
 
     // Initialize hosted server if needed
     if (MainMenuScreenGlobalState::serverType != ServerType::NONE) {
-        GameServer::initInstance(*sGameWorld, MainMenuScreenGlobalState::serverType);
+        GameServerOLD::initInstance(*sGameWorld, MainMenuScreenGlobalState::serverType);
     }
 
     // Always init the world

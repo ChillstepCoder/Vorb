@@ -24,17 +24,17 @@ enum class ClientFlags : ui8 {
 typedef std::vector<int> ClientList;
 typedef std::vector<BitFlags<ClientFlags>> ClientFlagsList;
 
-class GameServer {
+class GameServerOLD {
 protected:
-    GameServer(World& world, ServerType serverType);
-    ~GameServer();
+    GameServerOLD(World& world, ServerType serverType);
+    ~GameServerOLD();
 
 public:
-    GameServer(GameServer& other) = delete;
-    void operator=(const GameServer&) = delete;
+    GameServerOLD(GameServerOLD& other) = delete;
+    void operator=(const GameServerOLD&) = delete;
 
-    static GameServer& initInstance(World& world, ServerType serverType);
-    static GameServer& getInstance();
+    static GameServerOLD& initInstance(World& world, ServerType serverType);
+    static GameServerOLD& getInstance();
     static void destroyInstance();
     static bool exists() { return sInstance != nullptr; }
 
@@ -93,5 +93,5 @@ private:
     // TODO: SrvPlayerManager
     std::vector<entt::entity> mClientPlayerEntities;
 
-    static GameServer* sInstance;
+    static GameServerOLD* sInstance;
 };

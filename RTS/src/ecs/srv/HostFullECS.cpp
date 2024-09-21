@@ -5,7 +5,7 @@
 #include "ecs/component/ReplicationComponent.h"
 #include "ecs/component/EntityDetailsComponent.h"
 
-#include "network/srv/GameServer.h"
+#include "network/srv/GameServerOLD.h"
 #include "network/srv/SrvMessage.h"
 
 #include "ecs/system/FullAISystem.h"
@@ -31,7 +31,7 @@ entt::entity HostFullECS::createEntity(const f32v3& position, StrToken typeToken
     entt::entity newEntity = EntityFactory::createEntity(mWorld, position, typeToken);
     LOG_CRITICAL("Create Entity {} in {}", (int)newEntity, mRegistry.get<PositionComponent>(newEntity).chunkId);
 
-    if (shouldReplicate && GameServer::exists()) {
+    if (shouldReplicate && GameServerOLD::exists()) {
         mRegistry.emplace<ReplicationComponent>(newEntity);
         SrvMessage::sendEntityCreateMessageToAll(newEntity, typeToken, position, 0.0f);
         // Details are only used for replication right now
@@ -45,7 +45,7 @@ entt::entity HostFullECS::createPlayerEntity(int clientIndex, const f32v3& posit
     ASSERT_GAME_THREAD();
     entt::entity entity = EntityFactory::createEntity(mWorld, position, CStrToken("player"));
 
-    if (GameServer::exists()) {
+    if (GameServerOLD::exists()) {
         ReplicationComponent& repCmp = mRegistry.emplace<ReplicationComponent>(entity);
         SrvMessage::sendClientBeginMessageToAll(clientIndex, entity, position, 0.0f);
 

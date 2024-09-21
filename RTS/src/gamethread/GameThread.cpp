@@ -2,19 +2,21 @@
 #include "GameThread.h"
 
 #include "network/cli/GameClient.h"
-#include "network/srv/GameServer.h"
+#include "network/srv/GameServerOLD.h"
 
 #include "world/World.h"
 #include "world/WorldDestroyer.h"
 
 #include "ecs/IFullECS.h"
-#include "ecs/component/PhysicsComponent.h"
 
 #include "gamethread/GameThreadTasks.h"
 
 #include "time/TimeOfDayManager.h"
 
 #include "rendering/renderstate/GameRenderStateManager.h"
+
+// TODO: Move
+#include "server/GameServerNew.h"
 
 
 GameThread* GameThread::sInstance = nullptr;
@@ -79,7 +81,12 @@ void GameThread::mainFunc() {
     setThreadName("Game");
     setThreadPriorityToMax();
 
+    if (mNetMode == WorldNetMode::Host) {
+        mGameServer = std::make_unique<GameServerNew>(mWorld);
+    }
+
     initWorld();
+    initLocalPlayer();
 
     // Init time
     TimestepManager& TimestepManager = Services::TimestepManager::ref();
@@ -107,7 +114,6 @@ void GameThread::mainFunc() {
             mThreadUtilizationTimer.endSleep();
         }
     }
-
 }
 
 void GameThread::tick() {
@@ -169,19 +175,20 @@ void GameThread::tickHost() {
     PROFILE_FUNCTION();
 
     // TODO: We need to send packets at the end of the tick! We will accrue packets and we dont want to delay an entire frame
-    if (GameServer::exists()) {
+    /*if (GameServer::exists()) {
         GameServer::getInstance().tryTick();
-    }
+    }*/
+
 
     // Update world
     mWorld.tick(Services::TimestepManager::ref().getTimestepSec());
 
-    // Update editors
-    /*UIContext::getInstance().updateEditors(mCameraController->getOwnedCamera());
+    // Notify server of player position
+    IFullECS& ecs = mWorld.getECS();
+    mGameServer->setLocalPlayerPosition(ecs.getLocalPlayerPosition());
 
-    updateTilePicking();*/
+    mGameServer->tick(Services::TimestepManager::ref().getTimestepSec());
 
-    // hostWorld->frameUpdate(mCameraController->getOwnedCamera(), (f32)gameTime.elapsedSec);
 }
 
 void GameThread::updateProcs()
@@ -190,39 +197,21 @@ void GameThread::updateProcs()
     GameThreadTasks::getInstance().updateMainThread();
 }
 
-void GameThread::initWorld()
-{
-    //// Create player if hosting
-    //f32v3 playerPos(WorldData::WORLD_CENTER.x, WorldData::WORLD_CENTER.y, 20.0f);
-    //if (mWorldType == WorldType::HOST) {
-    //    //mWorld->getHeightmapGrid().tryComputeHeightAtPoint(playerPos, &playerPos.z);
-    //    SrvEntityComponentSystem& ecs = (SrvEntityComponentSystem&)mWorld->getECS();
-    //    ecs.setLocalPlayer(ecs.createPlayerEntity(CLIENT_INDEX_HOST, playerPos));
-
-    //   // initCamera();
-    //}
-
-    // Preload
-    //displayLoadScreen("Loading...", true);
-
+void GameThread::initWorld() {
+  
     // Starting time of day to noon
     mWorld.getTimeOfDayManager().setTimeOfDay(12.0f);
 
     // Begin world
-    // TODO: Better pos?
-    mWorld.onWorldBeginGame(mWorld.getWorldCenter());
+    mWorld.onWorldBeginGame(mWorld.getDefaultSpawn());
 
-    // Start world rendering
-    //mRenderContext->onWorldBegin();
 
-    // Hacky
-    //{
-    //    ScopedTimer timer("Main thread preload hack");
-    //    update(gameTime);
-    //    while (Services::Threadpool::ref().getTasksSizeApprox()) {
-    //        Sleep(1);
-    //        update(gameTime);
-    //        mRenderContext->updateMeshManagers(sWorld->getLoadCenter(), true /*forceUpdate*/);
-    //    }
-    //}
+}
+
+void GameThread::initLocalPlayer() {
+
+    // TODO: Load from file
+    ServerPlayerID playerId = mGameServer->initLocalPlayer(mWorld.getDefaultSpawn());
+    IFullECS& ecs = mWorld.getECS();
+    ecs.createLocalPlayer(mWorld.getDefaultSpawn(), playerId);
 }

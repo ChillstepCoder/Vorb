@@ -641,9 +641,7 @@ void InstancedStaticModelManager::addTileInstancesFromGatherer(InstancedStaticMo
     if (gatherer.mInstances.empty()) {
         return;
     }
-    // Remove all instances before we add new ones
-    // TODO: We should never do this as instead we should handle model changes directly
-    removeTileInstancesFromContainer(gatherer.mContainerID);
+    assert(!mTileContainerTrackedModels.contains(gatherer.mContainerID));
 
     ModelRepository& modelRepo = ModelRepository::get();
     for (auto&& it : gatherer.mInstances) {

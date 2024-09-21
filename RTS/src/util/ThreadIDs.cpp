@@ -7,6 +7,7 @@ std::thread::id RENDER_THREAD_ID = {};
 std::thread::id VISIBILITY_THREAD_ID = {};
 std::thread::id SIM_THREAD_ID = {};
 std::thread::id GENERATION_THREAD_ID = {};
+std::thread::id SERVER_THREAD_ID = {};
 
 UnorderedFlatMap<std::thread::id, nString> sThreadNames;
 static std::shared_mutex sThreadNameMutex;

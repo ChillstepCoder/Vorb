@@ -189,7 +189,8 @@ void GameClient::processClientBeginMessage(ClientBeginMessage* message) {
     CliFullECS& cliEcs = (CliFullECS&)mActiveWorld->getECS();
     assert(cliEcs.getLocalPlayer() == entt::null);
     entt::entity playerEntity = cliEcs.createEntityFromSrv((entt::entity)message->mSrvEntityID, message->mPosition, CStrToken("player"));
-    cliEcs.setLocalPlayer(playerEntity);
+    assert(false);// Need player ID and stuff
+    //cliEcs.createLocalPlayer(playerEntity);
     mIsJoined = true;
 }
 

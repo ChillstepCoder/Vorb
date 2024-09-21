@@ -42,6 +42,7 @@ typedef ui32 FactionID;
 constexpr ui32 INVALID_FACTION_ID = std::numeric_limits<FactionID>::max();
 
 typedef ui32 ServerPlayerID;
+constexpr ServerPlayerID INVALID_SERVER_PLAYER_ID = std::numeric_limits<ServerPlayerID>::max();
 
 typedef ui64 TimestampMs;
 

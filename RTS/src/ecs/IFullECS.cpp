@@ -300,21 +300,16 @@ bool IFullECS::onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunkID, C
     return false;
 }
 
-entt::entity IFullECS::getLocalPlayerThreadSafe() const {
-	std::lock_guard lock(mPlayerEntityMutex);
-    return mLocalPlayerEntity;
-}
-
-void IFullECS::setLocalPlayer(entt::entity playerEntity)
-{
+entt::entity IFullECS::createLocalPlayer(f32v3 position, ServerPlayerID playerId) {
     ASSERT_GAME_THREAD();
-	if (mLocalPlayerEntity != entt::null) {
-		mRegistry.remove<PlayerControlComponent>(mLocalPlayerEntity);
-	}
-    mRegistry.emplace<PlayerControlComponent>(playerEntity);
+    entt::entity entity = createEntity(mWorld.getDefaultSpawn(), CStrToken("player"), true);
 
-	std::lock_guard lock(mPlayerEntityMutex);
-    mLocalPlayerEntity = playerEntity;
+    mRegistry.emplace<PlayerControlComponent>(entity);
+    mRegistry.emplace<ServerPlayerID>(entity, playerId);
+    mRegistry.emplace<LocalPlayerComponent>(entity);
+
+    mLocalPlayerEntity = entity;
+    return entity;
 }
 
 f32v3 IFullECS::getLocalPlayerPosition() {

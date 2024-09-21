@@ -5,6 +5,9 @@
 
 #include "util/Timing/ThreadUtilizationTimer.h"
 
+// TODO: Move
+#include "server/GameServerNew.h"
+
 class World;
 
 class GameThread
@@ -36,6 +39,10 @@ private:
     void tickHost();
     void updateProcs();
     void initWorld();
+    void initLocalPlayer();
+
+    // TODO: Move
+    std::unique_ptr<GameServerNew> mGameServer;
 
     std::mutex mActiveEditorWorldMutex;
     World* mActiveEditorWorld = nullptr;

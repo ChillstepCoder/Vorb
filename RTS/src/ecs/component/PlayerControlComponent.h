@@ -13,6 +13,10 @@ enum class PlayerControlFlags : ui8 {
 	StowKeyHeld = BIT(1),
 };
 
+struct LocalPlayerComponent {
+	// Empty
+};
+
 struct PlayerControlComponent {
 	BitFlags<PlayerControlFlags> mPlayerControlFlags;
 	ui8 mInputLockCount = 0; // TODO: LockHandle RAII so we never leak locks

@@ -363,7 +363,7 @@
     <ClCompile Include="src\network\Cli\GameClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\network\srv\GameServer.cpp">
+    <ClCompile Include="src\network\srv\GameServerOLD.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\network\srv\SrvAdapter.cpp">
@@ -1365,6 +1365,15 @@
     <ClCompile Include="src\definitions\BiomeUniqueID.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\world\srv\ServerChunkAuthorityManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\server\ServerReportStateManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\server\GameServerNew.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ecs\component\PhysicsComponent.h">
@@ -1853,7 +1862,7 @@
     <ClInclude Include="src\network\GameConnectionConfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\network\srv\GameServer.h">
+    <ClInclude Include="src\network\srv\GameServerOLD.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\network\srv\SrvAdapter.h">
@@ -3188,6 +3197,24 @@
     <ClInclude Include="src\definitions\BiomeUniqueID.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\world\srv\ServerChunkAuthorityManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\server\ServerReportStateManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\server\GameServerNew.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\server\ServerPlayerManagerEvents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\srv\ServerChunkStateEvents.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\server\ServerConst.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\item\ItemReservation" />
@@ -3220,5 +3247,6 @@
     <None Include="src\resources\RuntimeModelSerializationContext.inl">
       <Filter>Header Files</Filter>
     </None>
+    <None Include="src\world\srv\ServerChunkStateEvents" />
   </ItemGroup>
 </Project>

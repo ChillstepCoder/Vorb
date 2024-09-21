@@ -42,8 +42,7 @@ public:
     bool onEntityEnterNewChunk(entt::entity entity, ChunkID prevChunkID, ChunkID newChunkID);
 
     entt::entity getLocalPlayer() const { ASSERT_GAME_THREAD(); return mLocalPlayerEntity; }
-    entt::entity getLocalPlayerThreadSafe() const;
-    void setLocalPlayer(entt::entity playerEntity);
+    entt::entity createLocalPlayer(f32v3 position, ServerPlayerID playerId);
     f32v3 getLocalPlayerPosition();
 
     // DEBUG:
@@ -94,7 +93,6 @@ protected:
     WorldListeners mWorldEventListeners;
     PhysicsWorldListeners mPhysicsWorldListeners;
 
-    mutable std::mutex mPlayerEntityMutex;
     entt::entity mLocalPlayerEntity = entt::null;
 
 

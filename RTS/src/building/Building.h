@@ -1,8 +1,6 @@
 #pragma once
 
-#include "tile/TileFlags.h"
 #include "tile/TileContainer.h"
-#include "tile/TileHandle.h"
 
 #include "util/BitArray.h"
 

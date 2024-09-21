@@ -76,7 +76,7 @@ private:
     Cartesian orientation : 2;
     ui8 variant : 4 = {};
 };
-static_assert(sizeof(Tile) == 12, "Keep small");
+static_assert(sizeof(Tile) == 16, "Keep small");
 
 // TODO: We have to include tile wall container because of these
 // All meshable (and visibility) data from a container, copied to prevent race conditions or mutex locks

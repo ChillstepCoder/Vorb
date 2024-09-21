@@ -4,7 +4,8 @@
 
 enum class SimTileDataFlags : ui8 {
     Reserved = BIT(0),
-    Blocking = BIT(1)
+    Blocking = BIT(1),
+    Damaged = BIT(2)
 };
 
 struct SimTileData {
@@ -13,9 +14,8 @@ struct SimTileData {
     BitFlags<SimTileDataFlags> flags;
     TileTypeDataVariant typeData;
     static_assert(e_count(TileType) == 2, "Tile type data can be stored in typeData");
-    //ui8 padding; // TODO: use for something?
 
     auto operator<=>(const SimTileData&) const = default;
     bool isNull() const { return tileId == TILE_ID_NONE && flags.getBits() == 0; }
 };
-static_assert(sizeof(SimTileData) == 8);
+static_assert(sizeof(SimTileData) == 10);

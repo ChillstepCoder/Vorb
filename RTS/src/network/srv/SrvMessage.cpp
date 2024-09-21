@@ -1,11 +1,11 @@
 #include "stdafx.h"
 #include "SrvMessage.h"
 
-#include "network/srv/GameServer.h"
+#include "network/srv/GameServerOLD.h"
 
 void SrvMessage::sendEntityTransformMessage(int clientIndex, entt::entity srvEntity, const f32v3& pos, f32 rotation) {
 
-    GameServer& server = GameServer::getInstance();
+    GameServerOLD& server = GameServerOLD::getInstance();
     EntityTransformMessage* message = (EntityTransformMessage*)server.createMessage(clientIndex, e_cast(MessageTypes::ENTITY_TRANSFORM));
     message->mSrvEntityID = (ui32)srvEntity;
     message->mPosition = pos;
@@ -15,7 +15,7 @@ void SrvMessage::sendEntityTransformMessage(int clientIndex, entt::entity srvEnt
 
 void SrvMessage::sendEntityCreateMessage(int clientIndex, entt::entity srvEntity, StrToken entityToken, const f32v3& startPos, f32 rotation) {
 
-    GameServer& server = GameServer::getInstance();
+    GameServerOLD& server = GameServerOLD::getInstance();
     EntityCreateMessage* message = (EntityCreateMessage*)server.createMessage(clientIndex, e_cast(MessageTypes::ENTITY_CREATE));
     message->mSrvEntityID = (ui32)srvEntity;
     message->mPosition = startPos;
@@ -26,7 +26,7 @@ void SrvMessage::sendEntityCreateMessage(int clientIndex, entt::entity srvEntity
 
 void SrvMessage::sendEntityCreateMessageToAll(entt::entity srvEntity, StrToken entityToken, const f32v3& startPos, f32 rotation) {
 
-    GameServer& server = GameServer::getInstance();
+    GameServerOLD& server = GameServerOLD::getInstance();
     const ClientList& clients = server.getClients();
     for (int clientIndex : clients) {
         sendEntityCreateMessage(clientIndex, srvEntity, entityToken, startPos, rotation);
@@ -35,10 +35,10 @@ void SrvMessage::sendEntityCreateMessageToAll(entt::entity srvEntity, StrToken e
 
 void SrvMessage::sendEntityDestroyMessageToAll(entt::entity srvEntity) {
 
-    GameServer& server = GameServer::getInstance();
+    GameServerOLD& server = GameServerOLD::getInstance();
     const ClientList& clients = server.getClients();
     for (int clientIndex : clients) {
-        GameServer& server = GameServer::getInstance();
+        GameServerOLD& server = GameServerOLD::getInstance();
         EntityDestroyMessage* message = (EntityDestroyMessage*)server.createMessage(clientIndex, e_cast(MessageTypes::ENTITY_DESTROY));
         message->mSrvEntityID = (ui32)srvEntity;
         server.sendMessage(clientIndex, message);
@@ -47,7 +47,7 @@ void SrvMessage::sendEntityDestroyMessageToAll(entt::entity srvEntity) {
 
 void SrvMessage::sendClientBeginMessageToAll(int playerClientIndex, entt::entity srvPlayerEntity, const f32v3& startPos, f32 rotation) {
 
-    GameServer& server = GameServer::getInstance();
+    GameServerOLD& server = GameServerOLD::getInstance();
     const ClientList& clients = server.getClients();
     for (int clientIndex : clients) {
         if (clientIndex == playerClientIndex) {
@@ -74,7 +74,7 @@ void SrvMessage::sendClientBeginMessageToAll(int playerClientIndex, entt::entity
 
 void SrvMessage::sendCharacterStateMessage(int clientIndex, entt::entity srvEntity, const f32v3& pos, const f32v3& velocity, f32 controlAngle, ui32 mDesiredLocomotionMode) {
 
-    GameServer& server = GameServer::getInstance();
+    GameServerOLD& server = GameServerOLD::getInstance();
     CharacterStateMessage* message = (CharacterStateMessage*)server.createMessage(clientIndex, e_cast(MessageTypes::CHARACTER_STATE));
     message->mSrvEntityID = (ui32)srvEntity;
     message->mPosition = pos;

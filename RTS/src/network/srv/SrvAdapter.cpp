@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "SrvAdapter.h"
 
-#include "GameServer.h"
+#include "GameServerOLD.h"
 
 void SrvAdapter::OnServerClientConnected(int clientIndex) {
     mGameServer.clientConnected(clientIndex);
