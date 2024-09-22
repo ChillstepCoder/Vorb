@@ -18,6 +18,12 @@
     "boost-heap",
     "boost-geometry",
     "boost-foreach",
-    "boost-graph"
+    "boost-graph",
+    "glm",
+    "glew",
+    "eventpp",
+    "sdl2",
+    "sdl2-ttf",
+    "entt"
   ]
 }

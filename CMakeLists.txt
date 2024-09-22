@@ -85,14 +85,16 @@ target_link_libraries(Vorb
 
 # Set configuration properties for Vorb
 if(MSVC)
-    target_compile_options(Vorb PRIVATE /W3)
+    target_compile_options(Vorb PRIVATE /W3
+)
 else()
-    target_compile_options(Vorb PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(Vorb PRIVATE -Wall -Wextra -Wpedantic) #Arbitrary.. we currently only use MSVC
 endif()
 
 # RapidYAML
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/rapidyaml)
-set_target_properties(ryml PROPERTIES FOLDER "Dependencies")
+set_target_properties(ryml PROPERTIES FOLDER "ryml")
+set_target_properties(ryml-uninstall PROPERTIES FOLDER "ryml")
 
 # Ozz-Animation
 set(ozz_build_tests OFF CACHE BOOL "")
@@ -100,11 +102,12 @@ set(ozz_build_gltf OFF CACHE BOOL "")
 set(ozz_build_samples OFF CACHE BOOL "")
 set(ozz_build_howtos OFF CACHE BOOL "")
 set(ozz_build_tests OFF CACHE BOOL "")
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/ozz-animation)
-set_target_properties(ozz PROPERTIES FOLDER "Dependencies")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/ozz-animation "bin/ozz-animation/")
 
 # GameClient executable
 add_executable(GameClient)
+# Set GameClient as the startup project
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT GameClient)
 
 # GameClient sources and headers
 file(GLOB_RECURSE GAMECLIENT_SOURCES
@@ -125,19 +128,57 @@ target_include_directories(GameClient
 target_precompile_headers(GameClient PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/GameClient/src/stdafx.h")
 
 # Gameclient libraries
-target_link_libraries(GameClient PUBLIC
+target_link_libraries(GameClient PRIVATE
     Vorb
     EnTT::EnTT
     PRIVATE ryml
-    PRIVATE ozz
+    PRIVATE ozz_animation
+)
+
+# Noesis GUI
+target_include_directories(GameClient 
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisgui/Include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisgui/Src/Packages/App/Providers/Include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisgui/Src/Packages/App/Theme/Include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisgui/Src/Packages/App/ApplicationLauncher/Include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisgui/Src/Packages/App/MediaElement/Include
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/GameClient/src/ui/noesis/vendor/Interactivity/Include # Custom interactivity
+)
+add_library(Noesis SHARED IMPORTED)
+set_target_properties(Noesis PROPERTIES
+    INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisgui"
+)
+# Set the IMPORTED_LOCATION and IMPORTED_IMPLIB for each configuration
+set_target_properties(Noesis PROPERTIES
+    IMPORTED_LOCATION_DEBUG "${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisguiBin/windows_x86_64/Noesis.dll"
+    IMPORTED_IMPLIB_DEBUG "${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisgui/Lib/windows_x86_64/Noesis.lib"
+    IMPORTED_LOCATION_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisgui/Bin/windows_x86_64/Noesis.dll"
+    IMPORTED_IMPLIB_RELEASE "${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisgui/Lib/windows_x86_64/Noesis.lib"
+    IMPORTED_LOCATION_MINSIZEREL "${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisgui/Bin/windows_x86_64/Noesis.dll"
+    IMPORTED_IMPLIB_MINSIZEREL "${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisgui/Lib/windows_x86_64/Noesis.lib"
+    IMPORTED_LOCATION_RELWITHDEBINFO "${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisgui/Bin/windows_x86_64/Noesis.dll"
+    IMPORTED_IMPLIB_RELWITHDEBINFO "${CMAKE_CURRENT_SOURCE_DIR}/GameClient/dependencies/noesisgui/Lib/windows_x86_64/Noesis.lib"
+)
+target_link_libraries(GameClient
+    PRIVATE Noesis
+    PRIVATE NoesisApp
 )
 
 # Set configuration properties for GameClient
 if(MSVC)
-    target_compile_options(GameClient PRIVATE /W3)
+    target_compile_options(GameClient PRIVATE
+    /W3
+    /bigobj
+    /Zc:__cplusplus
+)
 else()
     target_compile_options(GameClient PRIVATE -Wall -Wextra -Wpedantic)
 endif()
+
+# Group our stuff into a folder
+set_target_properties(Vorb PROPERTIES FOLDER "_Game")
+set_target_properties(GameClient PROPERTIES FOLDER "_Game")
+
 
 # Enable solution folders
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
