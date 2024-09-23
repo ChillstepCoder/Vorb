@@ -14,6 +14,8 @@
 #include <SDL2/SDL.h>
 //#endif
 
+#include <Windows.h>
+
 typedef std::chrono::milliseconds ms;
 
 const f64 MS_PER_SECOND = 1000.0;
@@ -209,4 +211,23 @@ ScopedTimer::ScopedTimer(const char* label, int indentLevel) : PreciseTimer(), m
 
 ScopedTimer::~ScopedTimer() {
     LOG_TRACE("{:{}} finished in {:.6} ms", mLabel, mIndentLevel, stop());
+}
+
+// Based on yojimbo::time from glenn fielders yojimbo_platform.cpp
+f64 precise_time_sec() {
+    static thread_local bool timer_initialized = false;
+    static thread_local LARGE_INTEGER timer_frequency;
+    static thread_local LARGE_INTEGER timer_start;
+
+    if (!timer_initialized) [[unlikely]]
+    {
+        QueryPerformanceFrequency(&timer_frequency);
+        QueryPerformanceCounter(&timer_start);
+        timer_initialized = true;
+    }
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+    if (now.QuadPart < timer_start.QuadPart)
+        now.QuadPart = timer_start.QuadPart;
+    return double(now.QuadPart - timer_start.QuadPart) / double(timer_frequency.QuadPart);
 }

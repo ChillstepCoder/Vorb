@@ -1,7 +1,6 @@
 {
   "name": "anima-mundi",
   "version-string": "0.1.0",
-  "builtin-baseline": "000d1bda1ffa95a73e0b40334fa4103d6f4d3d48",
   "dependencies": [
     "tinyspline",
     "bitsery",
@@ -24,6 +23,10 @@
     "eventpp",
     "sdl2",
     "sdl2-ttf",
-    "entt"
+    "entt",
+    "gli",
+    "meshoptimizer",
+    "cgal",
+    "libpng"
   ]
 }

@@ -4,14 +4,9 @@
 #include "Vorb/io/filesystem.h"
 
 #if defined(VORB_IMPL_FONT_SDL)
-//#if defined(VORB_OS_WINDOWS)
-//#include <TTF/SDL_ttf.h>
-//#else
-#include <SDL_ttf/SDL_ttf.h>
-//#endif
+#include <SDL_ttf.h>
 #endif
 
-#include "Vorb/graphics/OLDGraphicsDevice.h"
 #include "Vorb/graphics/SpriteBatch.h"
 #include "Vorb/utils.h"
 #include <iostream>
@@ -244,7 +239,7 @@ void vg::SpriteFont::getInstalledFonts(std::map<nString, nString>& fontFileDicti
         dirIter++;
     }
 #ifdef DEBUG
-    printf("Found %d System Fonts Out Of %d Files\nTime Spent: %d ms\n", fontFileDictionary.size(), searchCount, SDL_GetTicks() - startTime);
+    printf("Found %d System Fonts Out Of %d Files\nTime Spent: %d ms\n", (int)fontFileDictionary.size(), (int)searchCount, int(SDL_GetTicks() - startTime));
 #endif // DEBUG
     return;
 }

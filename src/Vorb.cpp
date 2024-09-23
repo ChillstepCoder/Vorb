@@ -5,11 +5,7 @@
 
 //#include <FreeImage.h>
 #if defined(VORB_IMPL_FONT_SDL)
-//#if defined(VORB_OS_WINDOWS)
-//#include <TTF/SDL_ttf.h>
-//#else
-#include <SDL_ttf/SDL_ttf.h>
-//#endif
+#include <SDL_ttf.h>
 #else
 // TODO: FreeType?
 #endif

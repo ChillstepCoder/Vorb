@@ -28,7 +28,6 @@
 #include "../Vorb.h"
 #include "gtypes.h"
 #include "GLEnums.h"
-#include "ShaderInterface.h"
 
 #include "GLProgramError.h"
 

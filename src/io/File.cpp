@@ -11,11 +11,7 @@
 
 namespace vorb {
     namespace io {
-        #if VORB_USE_FILESYSTEM == 0
-            namespace system = boost::system;
-        #else
-            namespace system = std;
-        #endif
+        namespace system = std;
     }
 }
 

@@ -202,4 +202,6 @@ private:
     f32 m_maxFPS = DEFAULT_MAX_FPS;
 };
 
+extern f64 precise_time_sec();
+
 #endif // !Vorb_Timing_h__
