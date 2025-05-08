@@ -38,6 +38,12 @@
     CLASS(const CLASS& o) = delete; \
     CLASS& operator=(const CLASS& o) = delete
 
+#define VORB_NON_COPYABLE_BUT_MOVABLE(CLASS) \
+    CLASS(const CLASS& o) = delete; \
+    CLASS& operator=(const CLASS& o) = delete; \
+    CLASS(CLASS&& o) = default; \
+    CLASS& operator=(CLASS&& o) = default;
+
 /*! @brief Declaration for a copy constructor and operator overload. It may be used as an inline definition too.
  */
 #define VORB_COPYABLE_DECL(CLASS) \
@@ -65,5 +71,9 @@
  */
 #define VORB_MOVABLE_DEF(CLASS, VAR_NAME) \
     CLASS& CLASS::operator=(CLASS&& VAR_NAME)
+
+#define VORB_MOVABLE(CLASS) \
+    CLASS(CLASS&& o) = default; \
+    CLASS& operator=(CLASS&& o) = default;
 
 #endif // !Vorb_decorators_h__

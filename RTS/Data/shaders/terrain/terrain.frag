@@ -1,0 +1,366 @@
+//#include "util/hsv.glsl"
+#include "MaterialData.glsl"
+#include "GlobalUbo.glsl"
+
+#include "terrain/biome_util.glsl"
+#include "util/triplanar.glsl"
+
+uniform sampler2D GreyNoise;
+uniform sampler2D GrassTexture;
+uniform sampler2D CliffTexture;
+uniform sampler2D CliffNormal;
+uniform vec3 WaterColor = vec3(0.0 / 255.0, 100.0 / 255.0, 155.0 / 255.0);
+uniform vec3 StoneColor = vec3(255.0 / 255.0, 255.0 / 255.0, 255.0 / 255.0);
+
+uniform sampler2D unSurfaceDataTexture;
+uniform sampler2DArray unSurfaceDensityGradientMaps;
+
+struct SurfaceMaterialData {
+    int materialId;
+    float uvScale;
+};
+
+layout(std430, binding = 5) restrict readonly buffer SurfaceMaterials {
+	SurfaceMaterialData surfaceMaterialData[];
+};
+layout(std430, binding = 6) restrict readonly buffer SurfaceOverlayMaterials {
+	SurfaceMaterialData surfaceMaterialOverlayData[];
+};
+
+uniform int unSurfaceTextureMaterials[256];
+
+uniform float unHeightMult = 0.191;
+uniform float unWavyMult = 0.167;
+uniform float unSquaresIntensity = 0.5;
+uniform float unSquaresPeriod = 0.187;
+uniform float unBlendMult = 0.037;
+uniform float unColorMapScale = 0.005;
+uniform float unCliffBlendHardness = 80.0;
+uniform float unCliffAmount = 0.2;
+uniform float unCliffZMult = 1.2;
+
+// Config
+uniform int unDebugLines = 0;
+
+const float DISTANT_COLOR_EXP = 0.6;
+const float DISTANT_COLOR_INTENSITY = 0.75;
+
+in float fHeight;
+in vec3 fPosition;
+in vec2 fBiomeUV;
+in vec2 fUV;
+in mat3 fTBN;
+in float fSnow;
+in vec3 fNormal;
+in vec3 fFragPosTangent;
+in vec2 fSurfaceUV;
+
+uniform float unCrossfadeAlpha = 0.0;
+uniform float unCrossfadeDirection = 1.0; // Either 0.0 (out) or 1.0 (in)
+
+// Debug colors
+const vec3 BIOME_COLORS[4] = {
+    vec3(1.0, 0.0, 0.0), // PLAINS
+    vec3(1.0, 0.0, 1.0), // MOUNTAINS
+    vec3(0.0, 1.0, 0.0), // FOREST
+    vec3(0.0, 1.0, 1.0), // HOT SPRINGS
+};
+
+layout (location = 0) out vec4 oColor;
+layout (location = 1) out vec3 oNormal;
+layout (location = 2) out vec2 oMetallicRoughness;
+
+
+float InvSmoothStep(float x) {
+    return x + (x - (x * x * (3.0 - 2.0 * x)));
+}
+
+const int NUM_COLORS = 12;
+
+const vec3 GRASS_COLOR = vec3(179.0 / 255.0, 155.0 / 255.0, 112.0 / 255.0);
+
+const vec3 COLORS[NUM_COLORS] = {
+    vec3(128.0 / 255.0, 95.0 / 255.0, 106.0 / 255.0),
+    vec3(113.0 / 255.0, 79.0 / 255.0, 96.0 / 255.0),
+    vec3(188.0 / 255.0, 165.0 / 255.0, 131.0 / 255.0),
+    vec3(74.0 / 255.0, 157.0 / 255.0, 139.0 / 255.0),
+    vec3(155.0 / 255.0, 141.0 / 255.0, 138.0 / 255.0),
+    GRASS_COLOR, // Grass Flat
+    GRASS_COLOR, // Grass Mid
+    GRASS_COLOR * 0.8, // Grass Steep
+    vec3(66.0 / 255.0, 63.0 / 255.0, 56.0 / 255.0),
+    vec3(130.0 / 255.0, 145.0 / 255.0, 126.0 / 255.0),
+    vec3(160.0 / 255.0, 169.0 / 255.0, 152.0 / 255.0),
+    vec3(86.0 / 255.0, 81.0 / 255.0, 75.0 / 255.0),
+};
+
+float triangularWave(float val) {
+    val = mod(val, 4.0);
+    if (val <= 1.0) {
+        return val;
+    } else if (val <= 3.0) {
+        return 2.0 - val;
+    } else {
+        return val - 4.0;
+    }
+}
+
+void computeCrossfade() {
+    
+    // TODO: Render crossfading with separate material
+    vec4 screenPos = (VP * vec4(fPosition, 1.0));
+    vec2 screenUV = (screenPos.xy / vec2(screenPos.w));
+	float noiseVal = texture(GreyNoise, screenUV * 3.0).r;
+    float alpha = unCrossfadeAlpha * 0.05 + noiseVal * unCrossfadeAlpha + 0.4;
+	alpha = InvSmoothStep(alpha);
+	alpha = min(mix(1.0 - alpha, alpha, unCrossfadeDirection), 1.0);
+	alpha = clamp(alpha, 0.0, 1.0);
+	
+	if (alpha <= 0.5) {
+        discard;
+    }
+}
+
+vec3 computeNormal() {
+    // TODO: NORMAL MAPPING
+    return normalize(fTBN[2]);
+}
+
+float getTerrainDistanceFactor(float distance) {
+    return min(distance * 0.001, 1.0);
+}
+
+
+//	A blurring kernel
+const vec3 BLUR_KERNEL[3] = {
+   vec3(0.0625, 0.125, 0.0625),
+   vec3(0.125, 0.25, 0.125),
+   vec3(0.0625, 0.125, 0.0625)
+};
+
+
+
+vec3 getTerrainColor(vec2 terrainUvs, int biome) {
+    // We use the same screen space dither for transparency in order to offset the
+    // uvs diagonally, creating a sort of smudgy sparkly blend
+    const float DITHER_INTENSITY = 0.0005;
+    float blendOffset = (getAlphaTestTransparencyModifier() * 2.0 - 1.0) * DITHER_INTENSITY;
+    float detailValue = texture(GrassTexture, terrainUvs * 10.0).r * unDetailTextureStrength;
+    float u = getBiomeColorGradientUCoord(terrainUvs + vec2(blendOffset));
+    float v = detailValue;
+    vec2 uv = vec2(u, v);
+    
+    return texture(unBiomeColorMapsTexture, vec3(uv, float(biomeColorMapLookup[biome]))).rgb;
+}
+
+vec3 heightblend(vec3 input1, float height1, vec3 input2, float height2) {
+    float BLEND_FACTOR = 0.4;
+    float height_start = max(height1, height2) - BLEND_FACTOR;
+    float level1 = max(height1 - height_start, 0);
+    float level2 = max(height2 - height_start, 0);
+    return ((input1 * level1) + (input2 * level2)) / (level1 + level2);
+}
+
+// ================================= MAIN =================================
+void main() {
+	
+    // Turbulent noise is from biome_util.glsl
+    const float rawTurb = texture(TurbulentNoise, fUV * 4.0).r;
+    const float noiseBlend = (rawTurb * 2.0 - 1.0) * 4.0;
+    
+    vec2 surfaceUV = fSurfaceUV + vec2(noiseBlend) * 0.001;
+    // R = base terrain
+    // G = base terrain density
+    // B = overlay terrain
+    // A - overlay terrain density
+    vec4 surfaceData = texture(unSurfaceDataTexture, surfaceUV).rgba;
+    
+    // ================================= Crossfade =================================
+    computeCrossfade();
+    
+    // ================================= Normals =================================
+    vec3 surfaceNormal = computeNormal();
+    
+    // ================================= Biome =================================
+    int biome = getBiome(fBiomeUV);
+
+    // ================================= Terrain Color =================================
+    float distance = length(fPosition.xy);
+    float distanceFactor = getTerrainDistanceFactor(distance);
+    oColor.rgb = getTerrainColor(fUV, biome);
+    
+    // ================================= Cliff color =================================
+    const float CLOSE_MULT = 10.0;
+    const float FAR_MULT = 3.0;
+    vec2 xyUVClose = fUV.xy * CLOSE_MULT;
+    vec2 xyUVFar = fUV.xy * FAR_MULT;
+    float heightV = fHeight * unColorMapScale * unCliffZMult;
+    float heightVClose = heightV * CLOSE_MULT;
+    float heightVFar = heightV * FAR_MULT;
+    vec3 xSampleClose = texture(CliffTexture, vec2(xyUVClose.y, heightVClose)).rgb;
+    vec3 ySampleClose = texture(CliffTexture, vec2(xyUVClose.x, heightVClose)).rgb;
+    
+    // Far
+    vec3 xSampleFar = texture(CliffTexture, vec2(xyUVFar.y, heightVFar)).rgb;
+    vec3 ySampleFar = texture(CliffTexture, vec2(xyUVFar.x, heightVFar)).rgb;
+    
+    
+    vec3 weights = computeTriPlanarBlend(surfaceNormal.rgb, getLuminance(xSampleClose), getLuminance(ySampleClose), noiseBlend, unCliffAmount, unCliffBlendHardness);
+    vec3 cliffClose = weights.x * xSampleClose + weights.y * ySampleClose;
+    vec3 cliffFar = weights.x * xSampleFar + weights.y * ySampleFar;
+    float cliffDistFactor = min(distance * 0.01, 1.0);
+    oColor.rgb = oColor.rgb * weights.z + mix(cliffClose, cliffFar, cliffDistFactor);
+    
+    // ================================= Output Normals =================================
+    vec3 normalClose = computeTriplanarNormal(surfaceNormal, CliffNormal, vec2(xyUVClose.y, heightVClose), vec2(xyUVClose.x, heightVClose), weights);
+    vec3 normalFar = computeTriplanarNormal(surfaceNormal, CliffNormal, vec2(xyUVFar.y, heightVFar), vec2(xyUVFar.x, heightVFar), weights);
+    vec3 finalNormal = mix(normalClose, normalFar, cliffDistFactor);
+    finalNormal = mix(finalNormal, surfaceNormal, min(fSnow, 1.0));
+
+	//oNormal.rgb = oNormal.rgb * 0.00001 + (surfaceNormal + 1.0) * 0.5;
+    
+    // ================================= Distance stylized color =================================
+    float FLAT_REDUCE_MULT = 1.0;
+    float GRANULARITY_MULT = unWavyMult;
+    float GRANULARITY = 12.0 * GRANULARITY_MULT * (1.0 - surfaceNormal.z * FLAT_REDUCE_MULT);
+    float UV_MOD_MULT = unSquaresPeriod;
+    float uvMod = 0.5 + (triangularWave(fUV.x * UV_MOD_MULT) + triangularWave(fUV.y * UV_MOD_MULT)) * unSquaresIntensity * 2.0;
+    float HEIGHT_ADD = (fHeight * uvMod) * 0.024 * unHeightMult * 2.0;
+    surfaceNormal = vec3(abs(surfaceNormal.x) * GRANULARITY + HEIGHT_ADD, abs(surfaceNormal.y) * GRANULARITY + HEIGHT_ADD, surfaceNormal.z * GRANULARITY);
+    
+    float totalNormal = surfaceNormal.x + surfaceNormal.y;
+    
+    float lowIndex = round(totalNormal);
+    //float lowIndex = floor(totalNormal);
+    float highIndex = ceil(totalNormal);
+    //int index = int(round(totalNormal));
+    int index = int(lowIndex + 5) % NUM_COLORS;
+    int index2 = int(highIndex + 5) % NUM_COLORS;
+    
+    float lerpVal = mod(totalNormal, 1.0);
+    // Shorten the transition
+    lerpVal = (lerpVal - 0.3) * 12.0 * unBlendMult;
+    lerpVal = clamp(lerpVal, 0.0, 1.0);
+    vec3 distanceColor = mix(COLORS[index], COLORS[index2], lerpVal); // PRETTY RAINBOW + 0.5 * vec3((cos(fUV.x * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1) + 1.0) * 0.5, (cos(fUV.y * 0.1 - fUV.x * 0.1) + 1.0) * 0.5);
+    oColor.rgb = mix(oColor.rgb, distanceColor, pow(distanceFactor, DISTANT_COLOR_EXP) * DISTANT_COLOR_INTENSITY);
+        
+    // ================================= Wet Soil =================================
+    // Shift warmer
+    float wetnessMult = clamp(-fHeight * 10.0 + 0.01, 0.0, 1.0);
+    oColor.rgb = mix(oColor.rgb, oColor.rgb * 0.6 * vec3(1.2, 1.1, 1.0), wetnessMult);
+    
+    // === Roughness + metallic ===
+    oMetallicRoughness.r = 0.0; // Metallic
+	oMetallicRoughness.g = 1.0 - texture(GreyNoise, fUV * 16.0).r * 0.3; // Roughness
+    // TODO: Cosine curve so only shore is wet?
+    oMetallicRoughness.g = max(oMetallicRoughness.g - wetnessMult * 0.3, 0.0);
+    // Increase total roughness (talia request)
+    oMetallicRoughness.g = min(oMetallicRoughness.g + 0.5, 1.0);
+    
+    oColor.a = 1.0; // AO?
+
+    
+    const float HALF_TEXEL_SIZE = 0.00381679389; // (1/131)/2
+    
+    
+    
+    // ================================= Surface Texture Overlays =================================
+      // Get UV for this tile
+    const vec2 scaledSurfaceUV = surfaceUV * 131.0;
+    const vec2 densityUV = fract(scaledSurfaceUV);
+    // Manually calculate LOD to fix issue of mipmapping crack due to fract dicontinuity
+    const vec2 densityLodInfo = textureQueryLod(unSurfaceDensityGradientMaps, scaledSurfaceUV);
+    vec2 dispUVOffset = vec2(0.0);
+    float dispUVScale = 1.0;
+    if (surfaceData.r != 0.0) {
+        SurfaceMaterialData surfaceMaterial = surfaceMaterialData[int(surfaceData.r * 255.0)];
+        const float baseSurfaceDensity = textureLod(unSurfaceDensityGradientMaps, vec3(densityUV, round(surfaceData.g * 255.0)), densityLodInfo.x).r;
+        
+        vec2 uv = fUV * surfaceMaterial.uvScale;
+      
+        // Disp
+        MaterialData mtl = inMaterials[surfaceMaterial.materialId];
+        if (mtl.displacementMap > 0) {
+            dispUVScale = surfaceMaterial.uvScale;
+            // Aggresively curve out the displacement as we fade out
+            float heightScale = 0.33 * pow(baseSurfaceDensity, 2.0);
+            vec3 tangentViewDir = normalize(/*vec3(0.0,0.0,0.0)*/ - fFragPosTangent); // Camera is at 0!
+            vec2 newUV = dispMapping(uv, sampler2D(unpackUint2x32(mtl.displacementMap)), tangentViewDir, heightScale);
+            dispUVOffset = newUV - uv; // Cache offset to apply to other textures
+            uv = newUV;
+        }
+        
+        vec3 normal;
+        vec4 albedo;
+        float ao, metallic, roughness;
+        getMaterialPixelInfo(surfaceMaterial.materialId, uv, albedo, normal, ao, metallic, roughness, vec4(1.0,1.0,1.0,1.0));
+        
+        const float blendFactor = pow(baseSurfaceDensity, 0.5) * albedo.a;
+        
+        oColor.rgb = heightblend(oColor.rgb, 1.0 - blendFactor, albedo.rgb, blendFactor);
+       
+        // Normal map
+        vec3 roadNormal = fTBN * normal;
+        finalNormal = mix(finalNormal, roadNormal, blendFactor);
+       
+        // Roughness metallic
+        oMetallicRoughness.rg = mix(oMetallicRoughness.rg, vec2(metallic, roughness), blendFactor); 
+       
+        // Ambient occlusion
+        oColor.a = mix(oColor.a, ao, blendFactor); 
+       
+       // Uncomment to debug weird negative frag pos issue
+       // if (-fFragPosTangent.z < 0.0) {
+       //     oColor.r = 1.0;
+       // }
+    }
+    if (surfaceData.b != 0.0) {
+        SurfaceMaterialData surfaceMaterial = surfaceMaterialOverlayData[int(surfaceData.b * 255.0)];
+        const float overlaySurfaceDensity = textureLod(unSurfaceDensityGradientMaps, vec3(densityUV, round(surfaceData.a * 255.0)), densityLodInfo.x).r;
+
+        vec2 uv = fUV * surfaceMaterial.uvScale + dispUVOffset * (surfaceMaterial.uvScale / dispUVScale);
+        
+        vec3 normal;
+        vec4 albedo;
+        float ao, metallic, roughness;
+        getMaterialPixelInfo(surfaceMaterial.materialId, uv, albedo, normal, ao, metallic, roughness, vec4(1.0,1.0,1.0,1.0));
+        
+        const float blendFactor = pow(overlaySurfaceDensity, 0.5) * albedo.a;
+        
+        oColor.rgb = heightblend(oColor.rgb, 1.0 - blendFactor, albedo.rgb, blendFactor);
+       
+        // Normal map
+        vec3 roadNormal = fTBN * normal;
+        finalNormal = mix(finalNormal, roadNormal, blendFactor);
+       
+        // Roughness metallic
+        oMetallicRoughness.rg = mix(oMetallicRoughness.rg, vec2(metallic, roughness), blendFactor); 
+       
+        // Ambient occlusion
+        oColor.a = mix(oColor.a, ao, blendFactor); 
+    }
+    
+    // ================================= Snow =================================
+    oColor.rgb = mix(oColor.rgb, vec3(1.0), min(fSnow * 6.0, 1.0));
+    
+    // Debug biome colors 
+    // if (biome < 4) oColor.rgb = mix(oColor.rgb, BIOME_COLORS[biome], 1.0);
+    
+    // Debug draw cell noise
+    //oColor.rgb = 0.0001 * oColor.rgb + vec3(cellNoiseColor, cellNoiseColor, cellNoiseColor);
+    
+    // Debug distance lerp
+    //oColor.rgb = oColor.rgb * 0.0001 + vec3(distanceFactor, 0.0, 0.0);
+       
+    if (unDebugLines == 1)
+    {
+        vec2 scaledUV = fUV * 0.3;
+        vec2 uv = vec2(fract(scaledUV.x), fract(scaledUV.y));
+        if (uv.x > 0.9 || uv.y > 0.9) {
+            oColor.rgb = vec3(0.0);
+        }
+    }
+    //oColor.rgb = 0.0001 * oColor.rgb + oNormal.rgb;//fNormal.rgb * 0.5 + 0.5;
+    
+    oNormal.rgb = (finalNormal + 1.0) * 0.5;
+}

@@ -1,0 +1,6 @@
+model: banshira_growth_01.fbx
+rig: ''
+machine: ''
+scale: 0.4
+shadow_detail: low
+force_normals_up: 0

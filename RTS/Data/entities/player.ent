@@ -1,0 +1,16 @@
+character_model:
+  model: erra
+character:
+  speed: 6.2
+physics:
+  shape: capsule
+  half_dims: [0.24, 0.24, 0.55]
+  disable_xy_rot: true
+  mass: 80
+inventory:
+character_details:
+  name: Player
+skills:
+  skill_names: [
+    player_basic_attack
+  ]

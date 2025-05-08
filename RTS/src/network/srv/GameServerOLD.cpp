@@ -1,0 +1,314 @@
+#include "stdafx.h"
+
+#include "GameServerOLD.h"
+#include "SrvAdapterOLD.h"
+
+#include "network/NetworkUtil.h"
+
+#include "ecs/srv/HostFullECS.h"
+
+#include "world/World.h"
+
+#include "network/srv/SrvMessage.h"
+
+#include "ecs/component/ReplicationComponent.h"
+#include "ecs/component/EntityDetailsComponent.h"
+
+
+// TODO fix these things, figure out unicode
+void logSrv(const wchar_t* str) {
+    //OutputDebugString(str);
+    wprintf(str);
+}
+
+void logSrv(const std::string& str) {
+    std::wstring wstr;
+    wstr.assign(str.begin(), str.end());
+    wprintf(wstr.data());
+}
+
+constexpr int MAX_TICKS_IN_FRAME = 2;
+constexpr f32 SERVER_BACKLOG_FASTFORWARD_TIME_SEC = 0.6; // Time differential before we just fast forward to make up for it
+
+GameServerOLD* GameServerOLD::sInstance = nullptr;
+
+GameServerOLD::GameServerOLD(World& world, ServerType serverType) :
+    mWorld(world),
+    mAdapter(std::make_unique<SrvAdapterOLD>(*this)),
+    mServer(yojimbo::GetDefaultAllocator(), DEFAULT_PRIVATE_KEY, initServerAddress(serverType), mConnectionConfig, *mAdapter, 0.0),
+    mServerType(serverType) {
+
+    // start the server
+    mServer.Start(MAX_CLIENTS);
+    if (!mServer.IsRunning()) {
+        char buffer[256];
+        mServerAddress.ToString(buffer, sizeof(buffer));
+        throw std::runtime_error("Could not start server " + std::string(buffer));
+    }
+
+    // Cache this after starting
+    mServerAddress = mServer.GetAddress();
+
+    // print the port we got in case we used port 0
+    char buffer[256];
+    mServerAddress.ToString(buffer, sizeof(buffer));
+    printf("Server initializing with address %s\n", buffer);
+
+    // TODO: PlayerManager?
+    mClientPlayerEntities.resize(MAX_CLIENTS);
+
+}
+
+GameServerOLD& GameServerOLD::initInstance(World& world, ServerType serverType) {
+
+    if (!sHasInitYojimbo) {
+        sHasInitYojimbo = true;
+        InitializeYojimbo();
+    }
+
+    assert(!sInstance);
+    sInstance = new GameServerOLD(world, serverType);
+    return *sInstance;
+}
+
+GameServerOLD& GameServerOLD::getInstance() {
+    return *sInstance;
+}
+
+void GameServerOLD::destroyInstance() {
+    assert(sInstance);
+    delete sInstance;
+    sInstance = nullptr;
+}
+
+GameServerOLD::~GameServerOLD() {
+    mServer.Stop();
+}
+
+void GameServerOLD::start() {
+
+    // Loop
+    mWantsStart = true;
+    mRunning = true;
+
+}
+
+int GameServerOLD::tryTick() {
+
+    // We delay start until the first valid tick to avoid loading backlogs
+    if (mWantsStart) {
+        mWantsStart = false;
+        mTimeSec = yojimbo_time();
+    }
+
+    constexpr float fixedDtSec = 1.0f / SERVER_TICK_RATE_HZ;
+    mTickTimer.startFrame();
+    int tickCount = 0;
+    while (mTickTimer.tryTick()) {
+        update();
+        mTimeSec += fixedDtSec;
+    }
+    double currentTime = yojimbo_time();
+    if (currentTime - mTimeSec >= SERVER_BACKLOG_FASTFORWARD_TIME_SEC) {
+        LOG_CRITICAL("Massive server time backlog detected! {} {}", mTimeSec, currentTime);
+        mTimeSec = currentTime; // Fast forward
+        return 1;
+    }
+    return 0;
+}
+
+void GameServerOLD::stop() {
+    mServer.Stop();
+}
+
+void GameServerOLD::clientConnected(int clientIndex) {
+    char buffer[512];
+    sprintf_s(buffer, "Client %d connected", clientIndex);
+    logSrv(buffer);
+}
+
+void GameServerOLD::clientDisconnected(int clientIndex) {
+    char buffer[512];
+    sprintf_s(buffer, "Client %d disconnected", clientIndex);
+    logSrv(buffer);
+}
+
+void GameServerOLD::update() {
+    ASSERT_GAME_THREAD();
+    // stop if server is not running
+    if (!mServer.IsRunning()) {
+        mRunning = false;
+        return;
+    }
+
+    // Update our connected clients list
+    updateConnectedClientBits();
+
+    // update server and process messages
+    mServer.AdvanceTime(mTimeSec);
+    mServer.ReceivePackets();
+    processMessages();
+
+    // Replication
+    replicateEntities();
+
+    // ... process client inputs ...
+    // ... update game ...
+    // ... send game state to clients ...
+
+    mServer.SendPackets();
+}
+
+void GameServerOLD::updateConnectedClientBits() {
+    ui16 connectedClientBits = 0;
+    int numClients = mServer.GetNumConnectedClients();
+    for (int i = 0; i < MAX_CLIENTS; ++i) {
+        // TODO: We can make IsClientConnected more efficient with a custom yojimbo server implementation
+        // that avoids redundant checks
+        const ui16 bit = (ui16)(1 << i);
+        if (mServer.IsClientConnected(i)) {
+            connectedClientBits |= bit;
+            if ((mConnectedClientBits & bit) == 0) {
+                onClientConnected(i);
+            }
+        }
+        else if (mConnectedClientBits & bit) {
+            onClientDisconnected(i);
+        }
+    }
+    mConnectedClientBits = connectedClientBits;
+}
+
+void GameServerOLD::processMessages() {
+    for (int clientIndex = 0; clientIndex < MAX_CLIENTS; ++clientIndex) {
+        if (mServer.IsClientConnected(clientIndex)) {
+            for (int channelIndex = 0; channelIndex < mConnectionConfig.numChannels; ++channelIndex) {
+                yojimbo::Message* message = mServer.ReceiveMessage(clientIndex, channelIndex);
+                while (message != nullptr) {
+                    processMessage(clientIndex, message);
+                    mServer.ReleaseMessage(clientIndex, message);
+                    message = mServer.ReceiveMessage(clientIndex, channelIndex);
+                }
+            }
+        }
+    }
+}
+
+void GameServerOLD::processMessage(int clientIndex, yojimbo::Message* message) {
+    switch (message->GetType()) {
+        case (int)MessageTypes::PING:
+            processPingMessage(clientIndex, (PingMessage*)message);
+            break;
+        case (int)MessageTypes::CLIENT_READY_JOIN:
+            processClientReadyJoinMessage(clientIndex);
+            break;
+        case (int)MessageTypes::CLIENT_PLAYER_STATE:
+            processClientPlayerStateMessage(clientIndex, (ClientPlayerStateMessage*)message);
+            break;
+        default:
+            break;
+    }
+}
+
+void GameServerOLD::processPingMessage(int clientIndex, PingMessage* message) {
+    // Reply with same message so client can compute ping
+    // TODO: Server also compute ping?
+    PingMessage* pingMessage = (PingMessage*)mServer.CreateMessage(clientIndex, e_cast(MessageTypes::PING));
+    pingMessage->mTimeStamp = message->mTimeStamp;
+    mServer.SendMessage(clientIndex, e_cast(MESSAGE_CHANNELS[message->GetType()]), pingMessage);
+}
+
+void GameServerOLD::processClientReadyJoinMessage(int clientIndex) {
+    // If we haven't already processed this message, then begin the clients world and replicate all state
+    for (size_t i = 0; i < mConnectedClients.size(); ++i) {
+        if (mConnectedClients[i] == clientIndex) {
+            // Don't let a client spam us with join requests
+            if (!mConnectedClientFlags[i].isBitSet(ClientFlags::JOINED)) {
+                mConnectedClientFlags[i].setBit(ClientFlags::JOINED);
+
+                // Replicate start game state to new client
+                replicateStartGameStateToClient(clientIndex);
+
+                // Create client entity post state replicate. Ecs will handle the entity replicate and begin message
+                // TODO: Save spawn point
+                mClientPlayerEntities[clientIndex] = ((HostFullECS&)mWorld.getECS()).createPlayerEntity(clientIndex, mWorld.getDefaultSpawn());
+            }
+            break;
+        }
+    }
+}
+
+void GameServerOLD::processClientPlayerStateMessage(int clientIndex, ClientPlayerStateMessage* message) {
+    HostFullECS& srvEcs = (HostFullECS&)mWorld.getECS();
+    entt::entity entity = mClientPlayerEntities[clientIndex];
+    if (entity != entt::null) {
+        PhysicsComponent& physCmp = srvEcs.mRegistry.get<PhysicsComponent>(entity);
+        CharacterControlComponent& controlCmp = srvEcs.mRegistry.get<CharacterControlComponent>(entity);
+        physCmp.teleportBottomToPoint(message->mPosition);
+        physCmp.setLinearVelocity(message->mVelocity);
+        controlCmp.mControllerAngleRad = message->mControlAngle;
+        controlCmp.mDesiredLocomotionMode = (CharacterLocomotionMode)message->mDesiredLocomotionMode;
+    }
+}
+
+yojimbo::Address GameServerOLD::initServerAddress(ServerType serverType)
+{
+    if (serverType == ServerType::DEV) {
+        return yojimbo::Address("127.0.0.1", DEFAULT_SERVER_PORT);
+    }
+    else if (serverType == ServerType::LAN) {
+        return yojimbo::Address(NetworkUtil::getLocalIP().c_str(), DEFAULT_SERVER_PORT);
+    }
+    else {
+        return NetworkUtil::getExternalIP(DEFAULT_SERVER_PORT, true /*ipv6*/);
+    }
+}
+
+void GameServerOLD::onClientConnected(int clientIndex) {
+    mConnectedClients.emplace_back(clientIndex);
+    mConnectedClientFlags.emplace_back();
+}
+
+void GameServerOLD::onClientDisconnected(int clientIndex) {
+    for (size_t i = 0; i < mConnectedClients.size(); ++i) {
+        if (mConnectedClients[i] == clientIndex) {
+            mConnectedClientFlags[i] = mConnectedClientFlags.back();
+            mConnectedClients[i] = mConnectedClients.back();
+            mConnectedClientFlags.pop_back();
+            mConnectedClients.pop_back();
+        }
+    }
+}
+
+void GameServerOLD::replicateStartGameStateToClient(int clientIndex) {
+    HostFullECS& ecs = ((HostFullECS&)mWorld.getECS());
+
+    // Replicate all entites
+    auto view = ecs.mRegistry.view<PhysicsComponent, ReplicationComponent, EntityDetailsComponent>();
+    for (auto entity : view) {
+        PhysicsComponent& physicsCmp = view.get<PhysicsComponent>(entity);
+        EntityDetailsComponent& detailsCmp = view.get<EntityDetailsComponent>(entity);
+        SrvMessage::sendEntityCreateMessage(clientIndex, entity, detailsCmp.mEntityToken, physicsCmp.getBottomPosition(), 0.0f /*TODO: Character control rotation???*/);
+    }
+
+    // TODO: Implement start state for other shit
+}
+
+void GameServerOLD::replicateEntities() {
+    HostFullECS& ecs = ((HostFullECS&)mWorld.getECS());
+
+    // Replicate all characters
+    auto view = ecs.mRegistry.view<PhysicsComponent, ReplicationComponent, CharacterControlComponent>();
+    for (auto entity : view) {
+        ReplicationComponent& repCmp = view.get<ReplicationComponent>(entity);
+        PhysicsComponent& physicsCmp = view.get<PhysicsComponent>(entity);
+        CharacterControlComponent& controlCmp = view.get<CharacterControlComponent>(entity);
+
+        for (int clientIndex : mConnectedClients) {
+            if (repCmp.shouldReplicateTo(clientIndex)) {
+                //SrvMessage::sendEntityTransformMessage(clientIndex, entity, physicsCmp.getPosition(), physicsCmp.getRotation());
+                SrvMessage::sendCharacterStateMessage(clientIndex, entity, physicsCmp.getBottomPosition(), physicsCmp.getLinearVelocity(), controlCmp.mControllerAngleRad, e_cast(controlCmp.mDesiredLocomotionMode));
+            }
+        }
+    }
+}

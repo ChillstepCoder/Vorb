@@ -18,6 +18,13 @@ build/
 bld/
 [Bb]in/
 [Oo]bj/
+RTS/dependencies/noesisgui/
+RTS/dependencies/CGAL/
+RTS/dependencies/lzma/
+RTS/dependencies/boost/
+RTS/dependencies/lib/
+RTS/dependencies/*.h
+RTS/PACKAGE
 
 # Roslyn cache directories
 *.ide/
@@ -39,7 +46,6 @@ dlldata.c
 *_p.c
 *_i.h
 *.ilk
-*.meta
 *.pch
 *.pdb
 *.pgc
@@ -188,3 +194,13 @@ docs/
 UnitTester/app.config
 
 .vscode/
+RTS/errorlog.txt
+RTS/libgmp-10.dll
+RTS/libmpfr-4.dll
+RTS/assimp-vc142-mtd.dll
+RTS/imgui.ini
+RTS/errorlog.txt
+RTS/saves/
+include/vendor/imgui
+_cache/
+vcpkg_installed/

@@ -1,0 +1,24 @@
+model: wood_log_2.fbx
+rig: ''
+machine: ''
+scale: 2
+lod_dst_0: 45
+lod_dst_1: 90
+lod_dst_2: 180
+lod_dst_3: 360
+bound_sphere: 10
+shadow_detail: none
+force_normals_up: 0
+dmg_spline:
+  - [0,0,0]
+  - [0,0,8]
+variants:
+  - name: new_variant
+    submesh_mats:
+      - [log_set_1,'','','']
+collider:
+  shapes:
+    - angles: [0,0,1.5707964]
+      offset: [0.001,0,0]
+      shape: capsule
+      dims: [0.161,0.674,0.5]

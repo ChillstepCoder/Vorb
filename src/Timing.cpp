@@ -1,8 +1,11 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/Timing.h"
 
+#include <iostream> // TODO: Remove
+
 #ifndef VORB_USING_PCH
 #include "Vorb/compat.h"
+#include "Vorb/logging/Logger.h"
 #endif // !VORB_USING_PCH
 
 //#if defined(VORB_OS_WINDOWS)
@@ -11,18 +14,20 @@
 #include <SDL2/SDL.h>
 //#endif
 
+#include <Windows.h>
+
 typedef std::chrono::milliseconds ms;
 
 const f64 MS_PER_SECOND = 1000.0;
+const f64 SECONDS_PER_MS = 0.001;
 
+// TODO: Steady clock?
 void PreciseTimer::start() {
-    m_timerRunning = true;
     m_start = std::chrono::high_resolution_clock::now();
 }
 
 // Returns time in ms
 f64 PreciseTimer::stop() {
-    m_timerRunning = false;
     std::chrono::duration<f64> duration = std::chrono::high_resolution_clock::now() - m_start;
     return duration.count() * MS_PER_SECOND;
 }
@@ -63,7 +68,7 @@ void AccumulationTimer::printAll(bool averages) {
 }
 
 void MultiplePreciseTimer::start(const nString& tag) {
-    if (m_timer.isRunning()) stop();
+    //if (m_timer.m_timerRunning) stop();
     if (m_index >= m_intervals.size()) {
         m_intervals.push_back(Interval(tag));
     } else {
@@ -76,7 +81,7 @@ void MultiplePreciseTimer::stop() {
     m_intervals[m_index++].time += m_timer.stop();
 }
 void MultiplePreciseTimer::end(const bool& print) {
-    if (m_timer.isRunning()) m_timer.stop();
+    //if (m_timer.m_timerRunning) m_timer.stop();
     if (m_intervals.empty()) return;
     if (m_samples == m_desiredSamples) {
         if (print) {
@@ -135,4 +140,94 @@ f32 FpsLimiter::endFrame() {
     }
 
     return m_fps;
+}
+
+TickingTimer::TickingTimer(f64 msPerTick, f64 maxMSPerFrame) :
+    mMsPerTick(msPerTick),
+    mMaxMsPerFrame(maxMSPerFrame) {
+    // If unspecified, we will never buffer ticks
+    if (mMaxMsPerFrame <= 0.0) mMaxMsPerFrame = mMsPerTick;
+    // This will delay a tick at the start
+    mCurrTime = std::chrono::high_resolution_clock::now();
+}
+
+void TickingTimer::startFrame()
+{
+    TimePoint newTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<f64, std::milli> frameTime = newTime - mCurrTime;
+    mCurrTime = newTime;
+    if (frameTime.count() > mMaxMsPerFrame) { // Clamp
+        frameTime = std::chrono::duration<f64, std::milli>(mMaxMsPerFrame);
+    }
+
+    mAccumulator += frameTime.count();
+}
+
+bool TickingTimer::tryTick() {
+    if (mAccumulator >= mMsPerTick) {
+        mAccumulator -= mMsPerTick;
+        if (mAccumulator >= mMsPerTick) { // If we're more than one tick behind, we need to catch up
+            mAccumulator -= f64(ui64(mAccumulator / mMsPerTick)) * mMsPerTick;
+        }
+        return true;
+    }
+    return false;
+}
+
+ResumeTimer::ResumeTimer(f64 timeInSeconds) {
+    mStart = std::chrono::high_resolution_clock::now();
+}
+
+bool ResumeTimer::tryResume() {
+    TimePoint now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<f64> timeSinceStart = now - mStart;
+    // compute how many ticks behind we are
+    mStart = now;
+    return timeSinceStart.count() > mMsUntilResume;
+}
+
+TickCounter::TickCounter(ui32 tickPeriod, bool tickAtStart)
+    : mTickPeriod(tickPeriod) {
+
+    mCurTick = tickAtStart ? tickPeriod : 0;
+}
+
+bool TickCounter::tryTick() {
+    if (++mCurTick >= mTickPeriod) {
+        mCurTick = 0;
+        return true;
+    }
+    return false;
+}
+
+void TickCounter::reset() {
+    mCurTick = 0;
+}
+
+ScopedTimer::ScopedTimer(const char* label, int indentLevel) : PreciseTimer(), mLabel(label), mIndentLevel(indentLevel)
+{
+
+}
+
+ScopedTimer::~ScopedTimer() {
+    LOG_TRACE("{:{}} finished in {:.6} ms", mLabel, mIndentLevel, stop());
+}
+
+// Based on yojimbo::time from glenn fielders yojimbo_platform.cpp
+f64 precise_time_sec() {
+    static thread_local bool timer_initialized = false;
+    static thread_local LARGE_INTEGER timer_frequency;
+    static thread_local LARGE_INTEGER timer_start;
+
+    if (!timer_initialized) [[unlikely]]
+    {
+        QueryPerformanceFrequency(&timer_frequency);
+        QueryPerformanceCounter(&timer_start);
+        timer_initialized = true;
+    }
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+    if (now.QuadPart < timer_start.QuadPart)
+        now.QuadPart = timer_start.QuadPart;
+    return double(now.QuadPart - timer_start.QuadPart) / double(timer_frequency.QuadPart);
 }

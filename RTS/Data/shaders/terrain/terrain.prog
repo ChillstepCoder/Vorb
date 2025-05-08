@@ -1,0 +1,15 @@
+vert: terrain.vert
+frag: terrain.frag
+textures:
+  - name: grey_noise
+    uniform: GreyNoise
+  - name: grass_terrain
+    uniform: GrassTexture
+  - name: cell_noise
+    uniform: CellNoise
+  - name: turbulent_noise
+    uniform: TurbulentNoise
+  - name: cliff_base
+    uniform: CliffTexture
+  - name: cliff_base_n
+    uniform: CliffNormal

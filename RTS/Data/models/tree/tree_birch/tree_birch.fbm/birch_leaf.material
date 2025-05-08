@@ -1,0 +1,4 @@
+albedo: birch_leaf_albedo
+normal: birch_leaf_normal
+sampler_state: LINEAR_CLAMP_MIPMAP
+render_pass: smudge

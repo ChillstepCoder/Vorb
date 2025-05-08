@@ -1,0 +1,5 @@
+albedo: tree_pine_albedo
+normal: tree_pine_norm
+ao: tree_pine_ao
+rough: tree_pine_rough
+sampler_state: LINEAR_CLAMP_MIPMAP

@@ -27,20 +27,86 @@
 
 #include <chrono>
 
+// TODO: Instead use steady_clock?
+typedef std::chrono::time_point<std::chrono::high_resolution_clock> TimePoint;
+
+// Inteded for use inside the game loop to deterministically count ticks for updates
+class TickCounter {
+public:
+    // For tickPeriod 1 == 0
+    TickCounter() = default;
+    TickCounter(ui32 tickPeriod, bool tickAtStart);
+
+    // Returns true on the tick period
+    // Only call this once per gameplay tick per counter
+    bool tryTick();
+    void reset();
+
+    f32 getTickDelta() const { return (f32)mCurTick / mTickPeriod; }
+
+protected:
+    ui32 mTickPeriod = 0;
+    ui32 mCurTick = 0;
+};
+
+// Used to synchronize update rates for objects with time
+class TickingTimer {
+public:
+    TickingTimer(f64 msPerTick, f64 maxMSPerFrame = 0.0);
+
+    void setMsPerTick(f64 msPerTick) { mMsPerTick = msPerTick; }
+    void startFrame();
+    // Returns true while we should be ticking
+    bool tryTick();
+    void reset() { mAccumulator = 0; }
+
+    f32 getFrameAlpha() { return (f32)(mAccumulator / mMsPerTick); }
+    TimePoint getCurrTime() const { return mCurrTime; }
+
+    f64 getMsPerTick() const { return mMsPerTick; }
+    f64 getSecPerTick() const { return mMsPerTick / 1000.0; }
+
+protected:
+    TimePoint mCurrTime = {};
+    f64 mAccumulator = 0.0;
+    f64 mMsPerTick;
+    f64 mMaxMsPerFrame;
+};
+
+// Used for delaying a specific event for a period of time. Intended for single use timers
+class ResumeTimer {
+public:
+    ResumeTimer(f64 timeInSeconds);
+
+    bool tryResume();
+
+protected:
+    f64 mMsUntilResume;
+    TimePoint mStart;
+};
+
 class PreciseTimer {
+    friend class MultiplePreciseTimer;
 public:
     PreciseTimer() {
         start();
     }
     void start();
+    /// Returns time in MS
     f64 stop();
+    f64 elapsedMs() { return stop(); }
+protected:
+    TimePoint m_start;
+};
 
-    const bool& isRunning() const {
-        return m_timerRunning;
-    }
+class ScopedTimer : public PreciseTimer {
+public:
+    ScopedTimer(const char* label, int indentLevel = 0);
+    ~ScopedTimer();
 private:
+    const char* mLabel;
+    int mIndentLevel = 0;
     bool m_timerRunning = false;
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
 };
 
 class AccumulationTimer {
@@ -62,7 +128,7 @@ private:
     };
 
     bool m_timerRunning = false;
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_start;
+    TimePoint m_start;
     std::map<nString, AccumNode> m_accum;
     std::map<nString, AccumNode>::iterator m_it;
 };
@@ -135,5 +201,7 @@ public:
 private:
     f32 m_maxFPS = DEFAULT_MAX_FPS;
 };
+
+extern f64 precise_time_sec();
 
 #endif // !Vorb_Timing_h__

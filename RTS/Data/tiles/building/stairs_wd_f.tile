@@ -1,0 +1,7 @@
+materials:
+  - big_beam_0
+texture_method: world_tiling
+layer: 1
+recipe:
+  - item: wood_log
+    count: 2

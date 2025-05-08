@@ -89,7 +89,7 @@ inline void convertWToMBString(const cwString ws, nString& resultString) {
 }
 inline const std::wstring convertMBToWString(const cString s) {
     size_t l = strlen(s);
-    std::wstring resultString = new wchar_t[l + 1];
+    std::wstring resultString;
     resultString.resize(l + 1);
     size_t numConverted = 0;
 #if defined(__APPLE__) || defined(__linux__)
@@ -102,232 +102,284 @@ inline const std::wstring convertMBToWString(const cString s) {
     return resultString;
 }
 
-/************************************************************************/
-/* Interpolation Utilities                                              */
-/************************************************************************/
-template<typename T, typename R>
-inline T lerp(const T& v0, const T& v1, const R& r) {
-    return (T)((v1 - v0) * r + v0);
-}
-template<typename T, typename R>
-inline T bilerp(const T& v00, const T& v01, const T& v10, const T& v11, const R& r1, const R& r2) {
-    T v0 = lerp(v00, v01, r2);
-    T v1 = lerp(v10, v11, r2);
-    return lerp(v0, v1, r1);
-}
-template<typename T, typename R>
-inline T trilerp(const T& v000, const T& v001, const T& v010, const T& v011, const T& v100, const T& v101, const T& v110, const T& v111, const R& r1, const R& r2, const R& r3) {
-    T v0 = bilerp(v000, v001, v010, v011, r2, r3);
-    T v1 = bilerp(v100, v101, v110, v111, r2, r3);
-    return lerp(v0, v1, r1);
-}
-template<size_t D, typename T, size_t N>
-inline T upSampleArray(size_t i, T (&data)[N]) {
-    f64 r = (f64)(i % D) / (f64)D;
-    i /= D;
-    return lerp(data[i], data[i + 1], r);
-}
-template<size_t D1, size_t D2, typename T, size_t N1, size_t N2>
-inline T upSampleArray(size_t i1, size_t i2, T(&data)[N1][N2]) {
-    f64 r1 = (f64)(i1 % D1) / (f64)D1;
-    f64 r2 = (f64)(i2 % D2) / (f64)D2;
-    i1 /= D1;
-    i2 /= D2;
-    return bilerp(
-        data[i1][i2],
-        data[i1][i2 + 1],
-        data[i1 + 1][i2],
-        data[i1 + 1][i2 + 1],
-        r1, r2
-        );
-}
-template<size_t D1, size_t D2, size_t D3, typename T, size_t N1, size_t N2, size_t N3>
-inline T upSampleArray(size_t i1, size_t i2, size_t i3, T (&data)[N1][N2][N3]) {
-    f64 r1 = (f64)(i1 % D1) / (f64)D1;
-    f64 r2 = (f64)(i2 % D2) / (f64)D2;
-    f64 r3 = (f64)(i3 % D3) / (f64)D3;
-    i1 /= D1;
-    i2 /= D2;
-    i3 /= D3;
-    return trilerp(
-        data[i1][i2][i3],
-        data[i1][i2][i3 + 1],
-        data[i1][i2 + 1][i3],
-        data[i1][i2 + 1][i3 + 1],
-        data[i1 + 1][i2][i3],
-        data[i1 + 1][i2][i3 + 1],
-        data[i1 + 1][i2 + 1][i3],
-        data[i1 + 1][i2 + 1][i3 + 1],
-        r1, r2, r3
-        );
-}
+namespace util {
 
-/// Simple hermite interpolater for smoothing the range 0-1
-template<typename T>
-inline T hermite(const T& v) { return static_cast<T>(3.0) * (v * v) - static_cast<T>(2.0) * (v * v * v); }
+    /************************************************************************/
+    /* Interpolation Utilities                                              */
+    /************************************************************************/
+    template<typename T, typename R>
+    inline T lerp(const T v0, const T v1, const R r) noexcept {
+        return (T)((v1 - v0) * r + v0);
+    }
 
-/************************************************************************/
-/* Quaternion Utilities                                                 */
-/************************************************************************/
-/// Finds the shortest arc rotation quat between two directions
-/// @param v1: Starting direction
-/// @param v2: End direction
-/// @pre: v1 and v2 are normalized
-/// @pre: v1 != -v2
-inline f64q quatBetweenVectors(const f64v3& v1, const f64v3& v2) {
-    f64q q;
-    f64v3 a = glm::cross(v1, v2);
-    q.x = a.x;
-    q.y = a.y;
-    q.z = a.z;
-    q.w = 1.0 + glm::dot(v1, v2);
-    return glm::normalize(q);
-}
-/// Finds the shortest arc rotation quat between two directions
-/// @param v1: Starting direction
-/// @param v2: End direction
-/// @pre: v1 and v2 are normalized
-/// @pre: v1 != -v2
-inline f32q quatBetweenVectors(const f32v3& v1, const f32v3& v2) {
-    f32q q;
-    f32v3 a = glm::cross(v1, v2);
-    q.x = a.x;
-    q.y = a.y;
-    q.z = a.z;
-    f32 l1 = glm::length(v1);
-    f32 l2 = glm::length(v2);
-    q.w = sqrt((l1 * l1) * (l2 * l2)) + glm::dot(v1, v2);
-    return glm::normalize(q);
-}
-/************************************************************************/
-/* Clip utilities                                                       */
-/************************************************************************/
-/*! @brief Computes clipping of a rect.
- * 
- * @param clipRect: The clipping rectangle
- * @param position: The rectangle position to check. Will be clipped. 
- * @param position: The rectangle size to check. Will be clipped.
- * @param uvRect: The rectangle UVs. Will be clipped.
- * @return true if it clipped.
- */
-inline bool computeClipping(const f32v4& clipRect, f32v2& position, f32v2& size, f32v4& uvRect) {
-    bool rv = false;
-    if (position.x < clipRect.x) {
-        f32 t = clipRect.x - position.x;
-        uvRect.x += uvRect.z * (t / size.x);
-        uvRect.z *= 1.0f - (t / size.x);
-        position.x = clipRect.x;
-        size.x -= t;
-        rv = true;
+    template<>
+    inline color4 lerp(const color4 v0, const color4 v1, const f32 r) noexcept {
+        color4 newColor;
+        newColor.r = ui8((v1.r - v0.r) * r + (f32)v0.r);
+        newColor.g = ui8((v1.g - v0.g) * r + (f32)v0.g);
+        newColor.b = ui8((v1.b - v0.b) * r + (f32)v0.b);
+        newColor.a = ui8((v1.a - v0.a) * r + (f32)v0.a);
+        return newColor;
     }
-    if (position.x + size.x > clipRect.x + clipRect.z) {
-        f32 t = position.x + size.x - (clipRect.x + clipRect.z);
-        uvRect.z *= 1.0f - (t / size.x);
-        size.x -= t;
-        rv = true;
+
+    template<typename T, typename R>
+    inline T bilerp(const T& v00, const T& v01, const T& v10, const T& v11, const R& r1, const R& r2) noexcept {
+        T v0 = lerp(v00, v01, r2);
+        T v1 = lerp(v10, v11, r2);
+        return lerp(v0, v1, r1);
     }
-    if (position.y < clipRect.y) {
-        f32 t = clipRect.y - position.y;
-        uvRect.y += uvRect.w * (t / size.y);
-        uvRect.w *= 1.0f - (t / size.y);
-        position.y = clipRect.y;
-        size.y -= t;
-        rv = true;
+    template<typename T, typename R>
+    inline T trilerp(const T& v000, const T& v001, const T& v010, const T& v011, const T& v100, const T& v101, const T& v110, const T& v111, const R& r1, const R& r2, const R& r3) noexcept {
+        T v0 = bilerp(v000, v001, v010, v011, r2, r3);
+        T v1 = bilerp(v100, v101, v110, v111, r2, r3);
+        return lerp(v0, v1, r1);
     }
-    if (position.y + size.y > clipRect.y + clipRect.w) {
-        f32 t = position.y + size.y - (clipRect.y + clipRect.w);
-        uvRect.w *= 1.0f - (t / size.y);
-        size.y -= t;
-        rv = true;
+    template<size_t D, typename T, size_t N>
+    inline T upSampleArray(size_t i, T(&data)[N]) {
+        f64 r = (f64)(i % D) / (f64)D;
+        i /= D;
+        return lerp(data[i], data[i + 1], r);
     }
-    return rv;
-}
-inline bool computeClipping(const f32v4& clipRect, f32v2& position, f32v2& size) {
-    bool rv = false;
-    if (position.x < clipRect.x) {
-        f32 t = clipRect.x - position.x;
-        position.x = clipRect.x;
-        size.x -= t;
-        rv = true;
+    template<size_t D1, size_t D2, typename T, size_t N1, size_t N2>
+    inline T upSampleArray(size_t i1, size_t i2, T(&data)[N1][N2]) {
+        f64 r1 = (f64)(i1 % D1) / (f64)D1;
+        f64 r2 = (f64)(i2 % D2) / (f64)D2;
+        i1 /= D1;
+        i2 /= D2;
+        return bilerp(
+            data[i1][i2],
+            data[i1][i2 + 1],
+            data[i1 + 1][i2],
+            data[i1 + 1][i2 + 1],
+            r1, r2
+        );
     }
-    if (position.x + size.x > clipRect.x + clipRect.z) {
-        f32 t = position.x + size.x - (clipRect.x + clipRect.z);
-        size.x -= t;
-        rv = true;
+    template<size_t D1, size_t D2, size_t D3, typename T, size_t N1, size_t N2, size_t N3>
+    inline T upSampleArray(size_t i1, size_t i2, size_t i3, T(&data)[N1][N2][N3]) {
+        f64 r1 = (f64)(i1 % D1) / (f64)D1;
+        f64 r2 = (f64)(i2 % D2) / (f64)D2;
+        f64 r3 = (f64)(i3 % D3) / (f64)D3;
+        i1 /= D1;
+        i2 /= D2;
+        i3 /= D3;
+        return trilerp(
+            data[i1][i2][i3],
+            data[i1][i2][i3 + 1],
+            data[i1][i2 + 1][i3],
+            data[i1][i2 + 1][i3 + 1],
+            data[i1 + 1][i2][i3],
+            data[i1 + 1][i2][i3 + 1],
+            data[i1 + 1][i2 + 1][i3],
+            data[i1 + 1][i2 + 1][i3 + 1],
+            r1, r2, r3
+        );
     }
-    if (position.y < clipRect.y) {
-        f32 t = clipRect.y - position.y;
-        position.y = clipRect.y;
-        size.y -= t;
-        rv = true;
+
+    /// Simple hermite interpolater for smoothing the range 0-1
+    template<typename T>
+    inline T hermite(const T& v) noexcept { return static_cast<T>(3.0) * (v * v) - static_cast<T>(2.0) * (v * v * v); }
+
+    /************************************************************************/
+    /* Quaternion Utilities                                                 */
+    /************************************************************************/
+    /// Finds the shortest arc rotation quat between two directions
+    /// @param v1: Starting direction
+    /// @param v2: End direction
+    /// @pre: v1 and v2 are normalized
+    /// @pre: v1 != -v2
+    inline f64q quatBetweenVectors(const f64v3& v1, const f64v3& v2) {
+        f64q q;
+        f64v3 a = glm::cross(v1, v2);
+        q.x = a.x;
+        q.y = a.y;
+        q.z = a.z;
+        q.w = 1.0 + glm::dot(v1, v2);
+        return glm::normalize(q);
     }
-    if (position.y + size.y > clipRect.y + clipRect.w) {
-        f32 t = position.y + size.y - (clipRect.y + clipRect.w);
-        size.y -= t;
-        rv = true;
+    /// Finds the shortest arc rotation quat between two directions
+    /// @param v1: Starting direction
+    /// @param v2: End direction
+    /// @pre: v1 and v2 are normalized
+    /// @pre: v1 != -v2
+    inline f32q quatBetweenVectors(const f32v3& v1, const f32v3& v2) {
+        f32q q;
+        f32v3 a = glm::cross(v1, v2);
+        q.x = a.x;
+        q.y = a.y;
+        q.z = a.z;
+        f32 l1 = glm::length(v1);
+        f32 l2 = glm::length(v2);
+        q.w = sqrt((l1 * l1) * (l2 * l2)) + glm::dot(v1, v2);
+        return glm::normalize(q);
     }
-    return rv;
-}
-inline bool computeClipping(f32 clipPos, f32 clipWidth, f32& position, f32& width) {
-    bool rv = false;
-    if (position < clipPos) {
-        f32 t = clipPos - position;
-        position = clipPos;
-        width -= t;
-        rv = true;
+    /************************************************************************/
+    /* Clip utilities                                                       */
+    /************************************************************************/
+    /*! @brief Computes clipping of a rect.
+     *
+     * @param clipRect: The clipping rectangle
+     * @param position: The rectangle position to check. Will be clipped.
+     * @param position: The rectangle size to check. Will be clipped.
+     * @param uvRect: The rectangle UVs. Will be clipped.
+     * @return true if it clipped.
+     */
+    inline bool computeClipping(const f32v4& clipRect, f32v2& position, f32v2& size, f32v4& uvRect) {
+        bool rv = false;
+        if (position.x < clipRect.x) {
+            f32 t = clipRect.x - position.x;
+            uvRect.x += uvRect.z * (t / size.x);
+            uvRect.z *= 1.0f - (t / size.x);
+            position.x = clipRect.x;
+            size.x -= t;
+            rv = true;
+        }
+        if (position.x + size.x > clipRect.x + clipRect.z) {
+            f32 t = position.x + size.x - (clipRect.x + clipRect.z);
+            uvRect.z *= 1.0f - (t / size.x);
+            size.x -= t;
+            rv = true;
+        }
+        if (position.y < clipRect.y) {
+            f32 t = clipRect.y - position.y;
+            uvRect.y += uvRect.w * (t / size.y);
+            uvRect.w *= 1.0f - (t / size.y);
+            position.y = clipRect.y;
+            size.y -= t;
+            rv = true;
+        }
+        if (position.y + size.y > clipRect.y + clipRect.w) {
+            f32 t = position.y + size.y - (clipRect.y + clipRect.w);
+            uvRect.w *= 1.0f - (t / size.y);
+            size.y -= t;
+            rv = true;
+        }
+        return rv;
     }
-    if (position + width > clipPos + clipWidth) {
-        f32 t = position + width - (clipPos + clipWidth);
-        width -= t;
-        rv = true;
+    inline bool computeClipping(const f32v4& clipRect, f32v2& position, f32v2& size) {
+        bool rv = false;
+        if (position.x < clipRect.x) {
+            f32 t = clipRect.x - position.x;
+            position.x = clipRect.x;
+            size.x -= t;
+            rv = true;
+        }
+        if (position.x + size.x > clipRect.x + clipRect.z) {
+            f32 t = position.x + size.x - (clipRect.x + clipRect.z);
+            size.x -= t;
+            rv = true;
+        }
+        if (position.y < clipRect.y) {
+            f32 t = clipRect.y - position.y;
+            position.y = clipRect.y;
+            size.y -= t;
+            rv = true;
+        }
+        if (position.y + size.y > clipRect.y + clipRect.w) {
+            f32 t = position.y + size.y - (clipRect.y + clipRect.w);
+            size.y -= t;
+            rv = true;
+        }
+        return rv;
     }
-    return rv;
+    inline bool computeClipping(f32 clipPos, f32 clipWidth, f32& position, f32& width) {
+        bool rv = false;
+        if (position < clipPos) {
+            f32 t = clipPos - position;
+            position = clipPos;
+            width -= t;
+            rv = true;
+        }
+        if (position + width > clipPos + clipWidth) {
+            f32 t = position + width - (clipPos + clipWidth);
+            width -= t;
+            rv = true;
+        }
+        return rv;
+    }
+
 }
 /************************************************************************/
 /* Hash functions                                                       */
 /************************************************************************/
+// https://stackoverflow.com/a/12996028
 template <>
 struct std::hash<i32v3> {
     size_t operator()(const i32v3& k) const {
-        std::hash<i32> h;
+        std::size_t seed = 0x9e3779b9; // Initial seed value
 
-        // Compute individual hash values for first,
-        // second and third and combine them using XOR
-        // and bit shifting:
-        return ((h(k.x) ^ (h(k.y) << 1)) >> 1) ^ (h(k.z) << 1);
+        std::size_t hash[3] = { (std::size_t)k.x, (std::size_t)k.y, (std::size_t)k.z };
+        for (int i = 0; i < 3; ++i) {
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = (hash[i] >> 16) ^ hash[i];
+            seed ^= hash[i] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
     }
 };
 template <>
 struct std::hash<i32v2> {
     size_t operator()(const i32v2& k) const {
-        std::hash<i32> h;
+        std::size_t seed = 0x9e3779b9;
 
-        // Compute individual hash values for first,
-        // second and third and combine them using XOR
-        // and bit shifting:
-        return ((h(k.x) ^ (h(k.y) << 1)) >> 1);
+        std::size_t hash[2] = { (std::size_t)k.x, (std::size_t)k.y };
+        for (int i = 0; i < 2; ++i) {
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = (hash[i] >> 16) ^ hash[i];
+            seed ^= hash[i] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
+    }
+};
+template <>
+struct std::hash<i16v2> {
+    size_t operator()(const i16v2& k) const {
+        std::size_t seed = 0x9e3779b9;
+
+        std::size_t hash[2] = { (std::size_t)k.x, (std::size_t)k.y };
+        for (int i = 0; i < 2; ++i) {
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = (hash[i] >> 16) ^ hash[i];
+            seed ^= hash[i] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
     }
 };
 template <>
 struct std::hash<ui32v3> {
     size_t operator()(const ui32v3& k) const {
-        std::hash<ui32> h;
+        std::size_t seed = 0x9e3779b9;
 
-        // Compute individual hash values for first,
-        // second and third and combine them using XOR
-        // and bit shifting:
-        return ((h(k.x) ^ (h(k.y) << 1)) >> 1) ^ (h(k.z) << 1);
+        std::size_t hash[3] = { (std::size_t)k.x, (std::size_t)k.y, (std::size_t)k.z };
+        for (int i = 0; i < 2; ++i) {
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = (hash[i] >> 16) ^ hash[i];
+            seed ^= hash[i] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
     }
 };
 template <>
 struct std::hash<ui32v2> {
     size_t operator()(const ui32v2& k) const {
-        std::hash<ui32> h;
+        std::size_t seed = 0x9e3779b9;
 
-        // Compute individual hash values for first,
-        // second and third and combine them using XOR
-        // and bit shifting:
-        return ((h(k.x) ^ (h(k.y) << 1)) >> 1);
+        std::size_t hash[2] = { (std::size_t)k.x, (std::size_t)k.y };
+        for (int i = 0; i < 2; ++i) {
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = ((hash[i] >> 16) ^ hash[i]) * 0x45d9f3b;
+            hash[i] = (hash[i] >> 16) ^ hash[i];
+            seed ^= hash[i] + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+
+        return seed;
     }
 };
 

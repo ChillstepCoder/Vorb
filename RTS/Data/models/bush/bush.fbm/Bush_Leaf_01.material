@@ -1,0 +1,4 @@
+albedo: Bush_Leaf_Diffuse_01
+normal: Bush_Leaf_Normal_01
+sampler_state: LINEAR_CLAMP_MIPMAP
+render_pass: smudge

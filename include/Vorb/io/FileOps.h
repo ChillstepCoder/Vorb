@@ -27,6 +27,9 @@
 namespace vorb {
     namespace io {
         bool buildDirectoryTree(const Path& path, bool omitEnd = false);
+        bool containsSubpath(const Path& path, const char* subPath);
+        std::string getLeafNameFromFilePathNoExtension(const vio::Path& path);
+        std::string getStringNoExtension(const vio::Path& path);
     }
 }
 namespace vio = vorb::io;

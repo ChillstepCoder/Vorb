@@ -1,0 +1,4 @@
+rig: erra
+model: erra_origin_noface.fbx
+machine: erra
+opt_thresh: 0

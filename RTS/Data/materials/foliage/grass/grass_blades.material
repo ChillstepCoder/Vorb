@@ -1,0 +1,3 @@
+albedo: grass_blades
+normal: GENERATE
+sampler_state: LINEAR_CLAMPV_MIPMAP

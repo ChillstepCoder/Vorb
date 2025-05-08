@@ -1,86 +1,327 @@
 #include "stdafx.h"
-#include <glm/gtx/rotate_vector.hpp>
 #include "NavigationComponent.h"
 
-#include "EntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 
-#include "World.h"
+#include "debugging/DebugRenderer.h"
 
-const float MIN_DISTANCE = 0.2f;
-const float ACCELERATION = 0.013f;
-constexpr int QUADRANTS = 5; //bad name
+#include "options/DebugOptions.h"
+#include "pathfinding/NavThread.h"
+#include "pathfinding/NavPath.h"
 
-const std::string& NavigationComponentTable::NAME = "navigation";
+#include "world/LocalChunkGrid.h"
 
-inline void updateComponent(vecs::EntityID entity, NavigationComponent& cmp, EntityComponentSystem& ecs, World& world) {
-	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
-	const f32v2& offset = cmp.mTargetPos - myPhysCmp.getPosition();
-	const float distance2 = glm::length2(offset);
-	if (distance2 < MIN_DISTANCE) {
-		cmp.mHasTarget = false;
-		myPhysCmp.mFrictionEnabled = true;
+#include "rendering/RenderThreadTasks.h"
+
+#include <glm/gtx/rotate_vector.hpp>
+
+#include "world/World.h"
+
+constexpr int RAYCHECK_INTERVAL_FRAMES = 4;
+constexpr float MIN_DISTANCE = 0.5f; // TODO: This used to be 0.9, extra large to account for steering to steer around obstacles
+//constexpr int QUADRANTS = 5; //bad name
+
+bool NavigationSystem::updateComponentSimpleLinear(entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos) {
+	const f32v2 offset2d = navCmp.mTargetPosition - pos;
+    const float distance2 = glm::length2(offset2d);
+    if (distance2 <= SQ(MIN_DISTANCE)) {
+		motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::IDLE;
+        return true;
+    }
+
+	// TODO: Allow variable pathing urgency
+    motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::SPRINT;
+	motionCmp.mMoveDirection = (offset2d / std::sqrt(distance2));
+	return false;
+}
+
+NavigationSystem::PathStatus NavigationSystem::updateComponentFinePath(World& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos) {
+
+	if (!navCmp.mFinePath->finishedGenerating.load()) {
+		return PathStatus::IN_PROGRESS;
 	}
 	else {
+		navCmp.mTargetPosition = navCmp.mFinePath->getTargetPosition();
+	}
 
+    const ui32 numPoints = navCmp.mFinePath->getNumPoints();
+	if (numPoints == 0) {
+		return PathStatus::FAIL;
+	}
 
-		f32v2 targetVelocity = (offset / std::sqrt(distance2)) * cmp.mSpeed/* * (cmp.mColliding ? 0.2f : 1.0f)*/;
-		const f32v2 targetDir = glm::normalize(targetVelocity); // TODO: Get rid of normalize
-		myPhysCmp.mDir = targetDir;
+    if (navCmp.mCurrentFinePoint >= numPoints) {
+		return PathStatus::SUCCESS;
+	}
 
-		const float ARC_LENGTH = DEG_TO_RAD(175.0f);
+	const f32v3* points = navCmp.mFinePath->getPoints();
+	const f32v3 nextPoint = points[navCmp.mCurrentFinePoint];
+	
 
-		// Look for undead allies
-		std::vector<EntityDistSortKey> actors = world.queryActorsInArc(myPhysCmp.getPosition(), 5.0f, targetDir, ARC_LENGTH, ACTORTYPE_UNDEAD, true, QUADRANTS, entity);
-		float closest[5] = { FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX, FLT_MAX };
-		vecs::EntityID closestEnt[QUADRANTS];
-		for (auto&& it : actors) {
-			if (it.first.dist < closest[it.first.quadrant]) {
-				closest[it.first.quadrant] = it.first.dist;
-				closestEnt[it.first.quadrant] = it.second;
+	// Check for stuck on new tile/jump
+	const TileHandle tileHandle = world.getTileHandleAtWorldPos(nextPoint);
+	if (tileHandle.isValid()) {
+        const f32 baseZ = tileHandle.getTile().getGroundZOffset();
+        if (baseZ >= pos.z + 0.1f /*1.1*/) {
+            // Climb
+			motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::JUMPING;
+        }
+	}
+
+	// TODO: This will struggle in buildings potentially as it is a 2d check and stairs are 3d
+	const f32v2 offset2d = nextPoint - pos;
+	const float distance2 = glm::length2(offset2d);
+	if (distance2 <= SQ(MIN_DISTANCE)) {
+        ++navCmp.mCurrentFinePoint;
+        if (navCmp.mCurrentFinePoint >= numPoints) {
+			// Target reached
+			if (navCmp.mFinePath->getSimChunkEndPoint() != INVALID_CHUNK_ID) {
+				assert(false); // HANDLE THIS
+            }
+            navCmp.mFinePath = nullptr;
+			return PathStatus::SUCCESS;
+		}
+	}
+
+	motionCmp.mMoveDirection = (offset2d / std::sqrt(distance2)) /* * (cmp.mColliding ? 0.2f : 1.0f)*/;
+    // TODO: Allow variable pathing urgency
+    motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::SPRINT;
+	    
+	return PathStatus::IN_PROGRESS;
+}
+
+void NavigationSystem::onPathingFinished(NavigationComponent& navCmp, CharacterControlComponent& motionCmp, bool success) {
+	// Target reached
+	motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::IDLE;
+	motionCmp.mMoveDirection = f32v2(0.0f);
+    if (success) {
+		if (navCmp.mTargetPosition == f32v3(0.0f)) {
+			if (navCmp.mFinePath) {
+				navCmp.mTargetPosition = navCmp.mFinePath->getTargetPosition();
+			}
+			else if (navCmp.mCoarsePath) {
+                navCmp.mTargetPosition = navCmp.mCoarsePath->getTargetPosition();
 			}
 		}
-		 const int sequence[QUADRANTS] = { 2, 1, 3, 0, 4 }; // QUADRANTS 5
-		// const int sequence[QUADRANTS] = { 1, 0, 3 }; // QUADRANTS 3
-		int best = 1;
-		float furthestDist = 0.0f;
-		for (int i : sequence) {
-			// Find the biggest gap prioritizing center
-			if (closest[i] > furthestDist) {
-				furthestDist = closest[i];
-				best = i;
-			}
-		}
-		// Flow into our selected gap
-		// TODO: (remove branching?)
-		if (best != 1) {
-			const float SEGMENT_LENGTH = ARC_LENGTH / QUADRANTS;
-			const float angles[QUADRANTS] = { -2 * SEGMENT_LENGTH, -SEGMENT_LENGTH, 0, SEGMENT_LENGTH, 2 * SEGMENT_LENGTH }; // QUADRANTS 5
-			// const float angles[QUADRANTS] = { -SEGMENT_LENGTH, 0, SEGMENT_LENGTH }; // QUADRANTS 2
-			targetVelocity = glm::rotate(targetVelocity, angles[best]);
-		}
+		assert(navCmp.mTargetPosition != f32v3(0.0f));
+		navCmp.mStatus = NavigationStatus::SUCCESS;
+	}
+    else {
+		navCmp.mStatus = NavigationStatus::FAIL;
+    }
+    navCmp.mFinePath = nullptr;
+    navCmp.mCoarsePath = nullptr;
+    navCmp.mNavigationType = NavigationType::INVALID;
+}
 
-		// Disable friction while we are navigating
-		//myPhysCmp.mFrictionEnabled = false;
-		f32v2 velocityOffset = targetVelocity - myPhysCmp.getLinearVelocity();
-		float velocityDist = glm::length(velocityOffset);
-		// TODO: DELTATIME
-		//myPhysCmp.mBody->ApplyForce(reinterpret_cast<const b2Vec2&>(targetVelocity * 0.025f), myPhysCmp.mBody->GetWorldCenter(), true);
-		if (velocityDist <= ACCELERATION) {
-			myPhysCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(targetVelocity));
-		}
-		else {
-			const f32v2& currentLinearVelocity = reinterpret_cast<const f32v2&>(myPhysCmp.mBody->GetLinearVelocity());
-			velocityOffset = (velocityOffset / velocityDist) * ACCELERATION + currentLinearVelocity;
-			myPhysCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(velocityOffset));
-		}
+void NavigationSystem::requestFinePathToPoint(World& world, NavigationComponent& navCmp, f32v3 start, f32v3 goal, f32 targetRadius) {
+	assert(glm::length(start - goal) <= 64.0f);
+    navCmp.mPendingFinePath = std::make_shared<NavPath>();
+	if (sDebugOptions.mShowPaths) {
+		// Make sure we dont free this path before it is rendered
+        assert(Services::isUsingNav());
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, targetRadius, [pathHandle = navCmp.mPendingFinePath, &world]() {
+
+			std::vector<f32v3>* pointsHandle = new std::vector<f32v3>(std::move(pathHandle->convertToWorldPoints(world.getHeightmapGrid())));
+
+			RenderThreadTasks::getInstance().addGenericTask([pointsHandle]() {
+				AM::DebugRenderer::drawPath(*pointsHandle, color4(1.0f, 0.0f, 1.0f), 200);
+				delete pointsHandle;
+			});
+		});
+	}
+    else {
+        assert(Services::isUsingNav());
+		Services::NavThread::ref().addPathfindTask(navCmp.mPendingFinePath, start, goal, false /*isCoarse*/, targetRadius, nullptr);
 	}
 }
 
-void NavigationComponentTable::update(EntityComponentSystem& ecs, World& world) {
-	// Update components
-	for (auto&& cmp : *this) {
-		if (isValid(cmp) && cmp.second.mHasTarget) {
-			updateComponent(cmp.first, cmp.second, ecs, world);
-		}
+bool NavigationSystem::isPathStatusDone(PathStatus pathStatus)
+{
+    return pathStatus > PathStatus::IN_PROGRESS;
+    static_assert(e_cast(PathStatus::COUNT) == 3);
+}
+
+void NavigationSystem::updateComponentCoarsePath(World& world, entt::entity entity, NavigationComponent& navCmp, CharacterControlComponent& motionCmp, f32v3 pos) {
+
+    if (!navCmp.mCoarsePath->finishedGenerating.load()) {
+        return;
 	}
+
+	const ui32 numPoints = navCmp.mCoarsePath->getNumPoints();
+    if (numPoints == 0) {
+        onPathingFinished(navCmp, motionCmp, false /*success*/);
+        return;
+	}
+
+    // Lazy initialize the coarse point to a look-ahead position for better pathing
+    if (navCmp.mCurrentCoarsePoint == 0) {
+		if (numPoints > 2) {
+			navCmp.mCurrentCoarsePoint = 2;
+		}
+        else if (numPoints > 0) {
+            navCmp.mCurrentCoarsePoint = numPoints - 1;
+		}
+    }
+
+    if (navCmp.mCurrentCoarsePoint >= numPoints) {
+		onPathingFinished(navCmp, motionCmp, true /*success*/);
+        return;
+    }
+
+	const f32v3* points = navCmp.mCoarsePath->getPoints();
+
+	f32v3 nextCoarseTilePos = points[navCmp.mCurrentCoarsePoint] + f32v3(0.5f, 0.5f, 0.0f);
+
+	const bool hasFinePath = navCmp.mPendingFinePath || navCmp.mFinePath;
+
+    if (!hasFinePath) {
+        // We need a path
+        navCmp.mCurrentFinePoint = 0;
+		requestFinePathToPoint(world, navCmp, pos, nextCoarseTilePos, navCmp.mTargetRadius);
+
+    }
+    else {
+		// Our fine path finished generating
+		if (navCmp.mPendingFinePath && navCmp.mPendingFinePath->finishedGenerating) {
+			navCmp.mCurrentFinePoint = 0;
+			navCmp.mFinePath = std::move(navCmp.mPendingFinePath);
+			navCmp.mPendingFinePath.reset();
+		}
+
+		if (navCmp.mFinePath) {
+			bool requestNextPath = false;
+			f32v3 nextPathStartPos;
+			assert(navCmp.mFinePath->finishedGenerating.load());
+			const PathStatus fineStatus = updateComponentFinePath(world, entity, navCmp, motionCmp, pos);
+			if (fineStatus == PathStatus::SUCCESS) {
+                navCmp.mFinePath = nullptr;
+				requestNextPath = true;
+				nextPathStartPos = pos;
+			}
+			else if (fineStatus == PathStatus::FAIL) {
+                onPathingFinished(navCmp, motionCmp, false /*success*/);
+			}
+			else if ((navCmp.mCurrentCoarsePoint < numPoints - 1) && navCmp.mCurrentFinePoint >= navCmp.mFinePath->getNumPoints() - 5) {
+				// Close enough to last point, we start generating next path
+				if (glm::length2(navCmp.mFinePath->getTargetPosition() - pos) < SQ(5.0f)) {
+					requestNextPath = true;
+					nextPathStartPos = navCmp.mFinePath->getTargetPosition();
+				}
+			}
+
+			if (requestNextPath && !navCmp.mPendingFinePath) {
+                ++navCmp.mCurrentCoarsePoint;
+                if (navCmp.mCurrentCoarsePoint >= numPoints) {
+					const ChunkID simEndChunk = navCmp.mCoarsePath->getSimChunkEndPoint();
+					if (simEndChunk != INVALID_CHUNK_ID) {
+						// Check if our target sim chunk is still a sim chunk or if we should re-path if its valid
+						if (world.getLocalChunkGrid().getChunk(simEndChunk).isActivated()) {
+							navCmp.requestCoarsePath(pos, navCmp.mCoarsePath->getTargetPosition(), navCmp.mTargetRadius);
+						}
+						else {
+							navCmp.setSimpleLinearTargetPoint(navCmp.mCoarsePath->getTargetPosition());
+						}
+					}
+					else {
+						onPathingFinished(navCmp, motionCmp, true /*success*/);
+					}
+					return;
+                }
+                else {
+					// Path forward
+                    nextCoarseTilePos = points[navCmp.mCurrentCoarsePoint];
+                    requestFinePathToPoint(world, navCmp, nextPathStartPos, nextCoarseTilePos, navCmp.mTargetRadius);
+                }
+			}
+		}
+		// TODO: Check LOS issues
+    }
+}
+
+void NavigationSystem::update(World& world, entt::registry& registry) {
+	// Update components
+    auto view = registry.view<NavigationComponent, PositionComponent, CharacterControlComponent>();
+
+
+    for (auto entity : view) {
+		auto& navCmp = view.get<NavigationComponent>(entity);
+        auto& posCmp = view.get<PositionComponent>(entity);
+        auto& controlCmp = view.get<CharacterControlComponent>(entity);
+		const f32v3 position = posCmp.mPosition;
+
+        switch (navCmp.mNavigationType) {
+			case NavigationType::FINE_PATH: {
+				const PathStatus fineStatus = updateComponentFinePath(world, entity, navCmp, controlCmp, position);
+				if (isPathStatusDone(fineStatus)) {
+					onPathingFinished(navCmp, controlCmp, fineStatus == PathStatus::SUCCESS ? true : false);
+				}
+				break;
+			}
+            case NavigationType::COARSE_PATH:
+				// TODO: Are these checks pointless?
+				updateComponentCoarsePath(world, entity, navCmp, controlCmp, position);
+                break;
+            case NavigationType::SIMPLE_LINEAR:
+                if (updateComponentSimpleLinear(entity, navCmp, controlCmp, position)) {
+                    onPathingFinished(navCmp, controlCmp, true /*success*/);
+				}
+                break;
+            default:
+				continue;
+		}
+		static_assert((int)NavigationType::INVALID == 3, "Update for new nav");
+	}
+}
+
+void NavigationComponent::setSimpleLinearTargetPoint(f32v3 targetPoint) {
+    mNavigationType = NavigationType::SIMPLE_LINEAR;
+	mTargetPosition = targetPoint;
+	mStatus = NavigationStatus::IN_PROGRESS;
+
+    mCoarsePath.reset();
+	mFinePath.reset();
+
+	if (sDebugOptions.mShowPaths) {
+		AM::DebugRenderer::drawWireQuadThreadSafe(targetPoint, f32v2(1.0f), color4(1.0f, 0.0f, 1.0f, 0.8f), 50);
+	}
+}
+
+NavPathID NavigationComponent::requestCoarsePath(f32v3 start, f32v3 goal, f32 targetRadius) {
+    mNavigationType = NavigationType::COARSE_PATH;
+    mFinePath.reset();
+	mTargetPosition = goal;
+	mTargetRadius = targetRadius;
+    mCoarsePath = std::shared_ptr<NavPath>(new NavPath());
+    assert(Services::isUsingNav());
+	mStatus = NavigationStatus::IN_PROGRESS;
+    mCurrentFinePoint = 0;
+    mCurrentCoarsePoint = 0; // Always skip ahead two coarse points for better path
+    Services::NavThread::ref().addPathfindTask(mCoarsePath, start, goal, true /*isCoarse*/, targetRadius, nullptr);
+    return incrementNavPathID();
+}
+
+NavPathID NavigationComponent::requestCoarsePathToHarvestable(f32v3 start, TileHarvestable harvestable, f32 maxDistance) {
+    mNavigationType = NavigationType::COARSE_PATH;
+    mFinePath.reset();
+    mTargetPosition = f32v3(0.0f);
+    mCoarsePath = std::shared_ptr<NavPath>(new NavPath());
+    assert(Services::isUsingNav());
+	mStatus = NavigationStatus::IN_PROGRESS;
+    mCurrentFinePoint = 0;
+    mCurrentCoarsePoint = 0; // Always skip ahead two coarse points for better path
+    Services::NavThread::ref().addPathfindToHarvestableTask(mCoarsePath, start, harvestable, maxDistance, nullptr);
+	return incrementNavPathID();
+}
+
+void NavigationComponent::abort(CharacterControlComponent& motionCmp) {
+    motionCmp.mDesiredLocomotionMode = CharacterLocomotionMode::IDLE;
+    mStatus = NavigationStatus::IN_PROGRESS;
+    mTargetPosition = f32v3(0.0f);
+	mFinePath.reset();
+}
+
+NavPathID NavigationComponent::incrementNavPathID() {
+    ++mCurrentNavPathID;
+    if (mCurrentNavPathID == INVALID_NAV_PATH_ID) mCurrentNavPathID = 1;
+    return mCurrentNavPathID;
 }

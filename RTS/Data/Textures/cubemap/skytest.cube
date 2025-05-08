@@ -1,0 +1,6 @@
+posx: right.png
+negx: left.png
+posy: front.png
+negy: back.png
+posz: top.png
+negz: bottom.png

@@ -1,0 +1,8 @@
+model: small_bush.fbx
+rig: ''
+machine: ''
+scale: 1
+shadow_detail: medium
+force_normals_up: 0
+submesh_data:
+  - wind: grass

@@ -1,0 +1,3 @@
+vert: shadow_mapper_instd.vert
+frag: shadow_mapper.frag
+geom: shadow_mapper.geom

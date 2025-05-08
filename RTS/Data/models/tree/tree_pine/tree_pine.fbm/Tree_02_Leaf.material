@@ -1,0 +1,4 @@
+albedo: tree_pine_leaf_alb
+normal: tree_pine_leaf_norm
+sampler_state: LINEAR_CLAMP_MIPMAP
+render_pass: smudge

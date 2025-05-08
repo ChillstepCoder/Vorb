@@ -1,0 +1,6 @@
+alpha_masks: grass_blades
+num_textures: 6
+size: [4.625, 1.0]
+lean_variance: 1.0
+height_variance: [0.2, 0.8]
+density: 12

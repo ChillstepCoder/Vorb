@@ -1,0 +1,6 @@
+albedo: moss
+disp: moss_disp
+ao: moss_ao
+normal: moss_norm
+rough: moss_rough
+sampler_state: LINEAR_CLAMP_MIPMAP

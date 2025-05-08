@@ -1,0 +1,21 @@
+#pragma once
+
+#include "rendering/material/MaterialDef.h"
+#include "definitions/rendering/TextureDef.h"
+
+namespace ImguiAssetThumbnails {
+    template <typename T>
+    std::function<void(AssetID, f32v2)> getThumbnailFunction() {
+        return nullptr;
+    }
+
+    std::function<void(AssetID, f32v2)> getThumbnailFunction(AssetType assetType);
+
+    // Specialize for each asset type
+    template<>
+    std::function<void(AssetID, f32v2)> getThumbnailFunction<MaterialDef>();
+    template<>
+    std::function<void(AssetID, f32v2)> getThumbnailFunction<TextureDef>();
+
+    static_assert(e_count(AssetType) == 22);
+};

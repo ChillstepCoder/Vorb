@@ -1,0 +1,3 @@
+name: Chernobog Hot Springs
+col_map: hotsprings_c_cmap
+dbg_col: [0, 128, 255]

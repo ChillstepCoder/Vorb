@@ -1,0 +1,74 @@
+#pragma once
+
+// STRTOKEN
+YML_WRITE_DEF(StrToken) {
+    ryml::NodeRef& nr = *n;
+    nr << o.toString();
+}
+YML_READ_DEF(StrToken) {
+    c4::csubstr str;
+    n >> str;
+    if (str.size() > MAX_CHARS_IN_STRTOKEN) {
+        panic("Invalid string token length (max 20) {} {}", str.size(), str.data());
+    };
+    *target = StrToken(str.data(), str.size());
+    return true;
+}
+
+// VARIANT ASSET REFERENCE
+YML_WRITE_DEF(VariantAssetRef) {
+    ryml::NodeRef& nr = *n;
+    nr << o.name.toString();
+}
+YML_READ_DEF(VariantAssetRef) {
+    c4::csubstr str;
+    n >> str;
+    if (str.size() > MAX_CHARS_IN_STRTOKEN) {
+        panic("Invalid asset reference strtoken length (max 20) {} {}", str.size(), str.data());
+    };
+    target->name = StrToken(str.data(), str.size());
+    return true;
+}
+
+// ASSET ID REFERENCE
+template <AssetType ASSET_TYPE>
+YML_WRITE_DEF(LiteAssetRef<ASSET_TYPE>) {
+    ryml::NodeRef& nr = *n;
+    nr << o.getAssetName().toString();
+}
+template <AssetType ASSET_TYPE>
+YML_READ_DEF(LiteAssetRef<ASSET_TYPE>) {
+    c4::csubstr str;
+    n >> str;
+    if (str.size() > MAX_CHARS_IN_STRTOKEN) {
+        panic("Invalid asset reference strtoken length (max 20) {} {}", str.size(), str.data());
+    };
+    target->setAssetName(StrToken(str.data(), str.size()));
+    return true;
+}
+
+SERIALIZABLE_ENUM_SAME_NAME(AssetType,
+    ENUM_FIELD_SIMPLE(AssetType, Tile),
+    ENUM_FIELD_SIMPLE(AssetType, ParticleSystem),
+    ENUM_FIELD_SIMPLE(AssetType, Effect),
+    ENUM_FIELD_SIMPLE(AssetType, Entity),
+    ENUM_FIELD_SIMPLE(AssetType, Texture),
+    ENUM_FIELD_SIMPLE(AssetType, Cubemap),
+    ENUM_FIELD_SIMPLE(AssetType, Brush),
+    ENUM_FIELD_SIMPLE(AssetType, Material),
+    ENUM_FIELD_SIMPLE(AssetType, Rig),
+    ENUM_FIELD_SIMPLE(AssetType, Animation),
+    ENUM_FIELD_SIMPLE(AssetType, AnimMachine),
+    ENUM_FIELD_SIMPLE(AssetType, Blendspace1D),
+    ENUM_FIELD_SIMPLE(AssetType, Model),
+    ENUM_FIELD_SIMPLE(AssetType, Skill),
+    ENUM_FIELD_SIMPLE(AssetType, Item),
+    ENUM_FIELD_SIMPLE(AssetType, Fish),
+    ENUM_FIELD_SIMPLE(AssetType, MaterialShader),
+    ENUM_FIELD_SIMPLE(AssetType, TileGrass),
+    ENUM_FIELD_SIMPLE(AssetType, Biome),
+    ENUM_FIELD_SIMPLE(AssetType, TileDistribution),
+    ENUM_FIELD_SIMPLE(AssetType, Building),
+    ENUM_FIELD_SIMPLE(AssetType, Room),
+);
+static_assert(e_count(AssetType) == 22);

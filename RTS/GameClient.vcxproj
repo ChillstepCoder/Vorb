@@ -1,0 +1,1321 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="DebugFast|Win32">
+      <Configuration>DebugFast</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="DebugFast|x64">
+      <Configuration>DebugFast</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{8B878656-0581-4265-982E-06B883DA2493}</ProjectGuid>
+    <RootNamespace>RTS</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>GameClient</ProjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugFast|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugFast|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugFast|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='DebugFast|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Debug;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugFast|Win32'">
+    <LibraryPath>C:\SoA\Vorb\RTS\dependencies\box2d\build\src\Debug;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LibraryPath>C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(SolutionDir)..\RTS\dependencies\noesisgui\Lib\windows_x86_64;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugFast|x64'">
+    <LibraryPath>$(SolutionDir)..\RTS\dependencies\bullet\bin;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\debug;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LibraryPath>C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\lib;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\lib\vs2019\x64\release;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\lib;$(SolutionDir)..\RTS\dependencies\noesisgui\Lib\windows_x86_64;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <VcpkgInstalledDir>
+    </VcpkgInstalledDir>
+    <VcpkgConfiguration>Debug</VcpkgConfiguration>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;C:\SoA\Vorb\build\..\RTS\dependencies\entt\src;C:\SoA\Vorb\RTS\dependencies;C:\SoA\Vorb\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\SDL2d.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\glewd.lib;opengl32.lib;-BASE:0x62AA0000;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\enetd.lib;winmm.lib;Ws2_32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\pngd.lib;Kernel32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\zlibd.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;box2d.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugFast|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;C:\SoA\Vorb\build\..\RTS\dependencies\entt\src;C:\SoA\Vorb\RTS\dependencies;C:\SoA\Vorb\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\SDL_ttfd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\SDL2maind.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\SDL2d.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\freetyped.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\bz2d.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\glewd.lib;opengl32.lib;-BASE:0x62AA0000;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\enetd.lib;winmm.lib;Ws2_32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\libyaml-cppmdd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\lua_libd.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\pngd.lib;Kernel32.lib;C:\Users\Ben\.hunter\_Base\0b88baa\a129513\7c572b2\Install\lib\zlibd.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;box2d.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level2</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor;$(SolutionDir)..\RTS\dependencies\noesisgui\Include;$(SolutionDir)..\RTS\dependencies\noesisgui\Src\Packages\App\Providers\Include;$(SolutionDir)..\RTS\dependencies\noesisgui\Src\Packages\App\Theme\Include;$(SolutionDir)..\RTS\dependencies\noesisgui\Src\Packages\App\ApplicationLauncher\Include;$(ProjectDir)..\RTS\src\ui\noesis\vendor\Interactivity\Include;$(SolutionDir)..\RTS\dependencies\noesisgui\Src\Packages\App\MediaElement\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;NS_LICENSE_NAME="taliaspencer1@gmail.com - Project Kiwi";NS_LICENSE_KEY="3IyLy6OMicvEbQduZKfQ8E/8nJNBmlGD4wvfOe1jRUkEyc6X";NS_XAML_RELOAD_ENABLED=1;NS_APP_INTERACTIVITY_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <AdditionalOptions>/bigobj /Bt /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlibd.lib;SDL_ttfd.lib;SDL2maind.lib;SDL2d.lib;libyaml-cppmdd.lib;lua_libd.lib;pngd.lib;freetyped.lib;bz2d.lib;glewd.lib;enetd.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\base\Debug\*_d.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Debug\yojimbo.lib;$(SolutionDir)..\RTS\dependencies\meshoptimizer\Debug\meshoptimizer.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\build\Debug\ryml.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\build\Debug\c4core.lib;Noesis.lib;NoesisApp.lib</AdditionalDependencies>
+    </Link>
+    <PreLinkEvent>
+      <Command>
+      </Command>
+    </PreLinkEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugFast|x64'">
+    <ClCompile>
+      <WarningLevel>Level2</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\bullet\src;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\spdlog\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;BT_USE_DOUBLE_PRECISION;BT_EULER_DEFAULT_ZYX;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>..\build\debug\vorbd.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlibd.lib;SDL_ttfd.lib;SDL2maind.lib;SDL2d.lib;libyaml-cppmdd.lib;lua_libd.lib;pngd.lib;freetyped.lib;bz2d.lib;glewd.lib;enetd.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Debug\*_d.lib;..\RTS\dependencies\ozz-animation\src\base\Debug\*_d.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;BulletDynamics_vs2010_x64_debug.lib;BulletCollision_vs2010_x64_debug.lib;LinearMath_vs2010_x64_debug.lib;Bullet3Common_vs2010_x64_debug.lib;Bullet3Dynamics_vs2010_x64_debug.lib;Bullet3Geometry_vs2010_x64_debug.lib;Bullet3Collision_vs2010_x64_debug.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Debug\yojimbo.lib;$(SolutionDir)..\RTS\dependencies\meshoptimizer\Debug\meshoptimizer.lib</AdditionalDependencies>
+    </Link>
+    <PreLinkEvent>
+      <Command>
+      </Command>
+    </PreLinkEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <AdditionalIncludeDirectories>C:\SoA\Vorb\include;C:\SoA\Vorb\deps;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\333d7d4\86db238\Install\include\freetype2;C:\SoA\Vorb\RTS\src;C:\SoA\Vorb\RTS;C:\SoA\Vorb\RTS\dependencies\box2d\include</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>vorb.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level2</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\include;$(ProjectDir)..\deps;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\SDL2;C:\Users\Ben\.hunter\_Base\0b88baa\225aff0\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\src;$(SolutionDir)..\RTS;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\SDL2;C:\Users\chill\.hunter\_Base\0b88baa\0716041\86db238\Install\include\freetype2;$(SolutionDir)..\RTS\dependencies\entt\src;$(SolutionDir)..\RTS\dependencies;$(SolutionDir)..\RTS\dependencies\ozz-animation\include;C:\Program Files\Autodesk\FBX\FBX SDK\2020.2.1\include;$(SolutionDir)..\RTS\dependencies\eventpp\include;$(SolutionDir)..\RTS\dependencies\meshoptimizer\src;$(SolutionDir)..\RTS\dependencies\gli;$(SolutionDir)..\RTS\dependencies\rapidyaml\src;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\src;$(ProjectDir)..\include\vendor\imgui;$(ProjectDir)..\include\vendor;$(SolutionDir)..\RTS\dependencies\noesisgui\Include;$(SolutionDir)..\RTS\dependencies\noesisgui\Src\Packages\App\Providers\Include;$(SolutionDir)..\RTS\dependencies\noesisgui\Src\Packages\App\Theme\Include;$(SolutionDir)..\RTS\dependencies\noesisgui\Src\Packages\App\ApplicationLauncher\Include;$(ProjectDir)..\RTS\src\ui\noesis\vendor\Interactivity\Include;$(SolutionDir)..\RTS\dependencies\noesisgui\Src\Packages\App\MediaElement\Include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <PreprocessorDefinitions>_SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING;JPH_DOUBLE_PRECISION;JPH_FLOATING_POINT_EXCEPTIONS_ENABLED;JPH_PROFILE_ENABLED;JPH_DEBUG_RENDERER;NS_LICENSE_NAME="taliaspencer1@gmail.com - Project Kiwi";NS_LICENSE_KEY="3IyLy6OMicvEbQduZKfQ8E/8nJNBmlGD4wvfOe1jRUkEyc6X";NS_APP_INTERACTIVITY_API=;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <AdditionalOptions>/bigobj /Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>..\build\release\vorb.lib;user32.lib;gdi32.lib;imm32.lib;ole32.lib;oleaut32.lib;version.lib;uuid.lib;dinput8.lib;opengl32.lib;-BASE:0x62AA0000;winmm.lib;Ws2_32.lib;Kernel32.lib;kernel32.lib;winspool.lib;shell32.lib;comdlg32.lib;advapi32.lib;..\RTS\dependencies\lib\gmp.lib;..\RTS\dependencies\lib\zlib.lib;..\RTS\dependencies\lib\bz2.lib;..\RTS\dependencies\lib\lzma.lib;..\RTS\dependencies\lib\mpfr.lib;..\RTS\dependencies\lib\zstd.lib;zlib.lib;SDL_ttf.lib;SDL2main.lib;SDL2.lib;libyaml-cppmd.lib;lua_lib.lib;png.lib;freetype.lib;bz2.lib;glew.lib;enet.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\animation\runtime\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\animation\offline\fbx\Release\*_r.lib;..\RTS\dependencies\ozz-animation\src\base\Release\*_r.lib;libfbxsdk-md.lib;libxml2-md.lib;zlib-md.lib;$(SolutionDir)..\RTS\dependencies\yojimbo\bin\x64\Release\yojimbo.lib;$(SolutionDir)..\RTS\dependencies\meshoptimizer\Release\meshoptimizer.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\build\Release\ryml.lib;$(SolutionDir)..\RTS\dependencies\rapidyaml\ext\c4core\build\Release\c4core.lib;Noesis.lib;NoesisApp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\ai\EntityActions.cpp" />
+    <ClCompile Include="src\ai\jobs\ConstructBuildingSimJob.cpp" />
+    <ClCompile Include="src\ai\jobs\SimTaskHandle.cpp" />
+    <ClCompile Include="src\ai\tasks\BuildBlueprintTask.cpp" />
+    <ClCompile Include="src\ai\tasks\ConstructBuildingSimTask.cpp" />
+    <ClCompile Include="src\ai\tasks\GatherTask.cpp" />
+    <ClCompile Include="src\ai\tasks\MoveToPointSimTask.cpp" />
+    <ClCompile Include="src\ai\tasks\PathToTargetTask.cpp" />
+    <ClCompile Include="src\App.cpp" />
+    <ClCompile Include="src\building\Building.cpp" />
+    <ClCompile Include="src\building\BuildingBlueprint.cpp" />
+    <ClCompile Include="src\building\BuildingBlueprintGenerationContext.cpp" />
+    <ClCompile Include="src\building\BuildingBlueprintGenerator.cpp" />
+    <ClCompile Include="src\building\BuildingGrammar.cpp" />
+    <ClCompile Include="src\building\BuildingGrid.cpp" />
+    <ClCompile Include="src\building\BuildingRepository.cpp" />
+    <ClCompile Include="src\camera\Camera3D.cpp" />
+    <ClCompile Include="src\camera\CameraController.cpp" />
+    <ClCompile Include="src\camera\OrthoCamera.cpp" />
+    <ClCompile Include="src\camera\SimpleCamera.cpp" />
+    <ClCompile Include="src\city\BuildingBuilder.cpp" />
+    <ClCompile Include="src\city\CityBusinessManager.cpp" />
+    <ClCompile Include="src\city\CityQuartermaster.cpp" />
+    <ClCompile Include="src\city\contracts\ContractManager.cpp" />
+    <ClCompile Include="src\city\contracts\IContract.cpp" />
+    <ClCompile Include="src\combat\Attack.cpp" />
+    <ClCompile Include="src\combat\CombatContext.cpp" />
+    <ClCompile Include="src\crafting\CraftingRepository.cpp" />
+    <ClCompile Include="src\data_structure\FlatQuadtree.cpp" />
+    <ClCompile Include="src\debugging\DebugMesh.cpp" />
+    <ClCompile Include="src\debugging\DebugRenderer.cpp" />
+    <ClCompile Include="src\debugging\ValueTweaker.cpp" />
+    <ClCompile Include="src\debugging\VisualLogger.cpp" />
+    <ClCompile Include="src\definitions\AnimMachineDef.cpp" />
+    <ClCompile Include="src\definitions\BiomeUniqueID.cpp" />
+    <ClCompile Include="src\definitions\EffectDef.cpp" />
+    <ClCompile Include="src\definitions\ModelDef.cpp" />
+    <ClCompile Include="src\definitions\ParticleEmitterDef.cpp" />
+    <ClCompile Include="src\definitions\rendering\CubemapDef.cpp" />
+    <ClCompile Include="src\definitions\RigDef.cpp" />
+    <ClCompile Include="src\definitions\SkillDef.cpp" />
+    <ClCompile Include="src\ecs\business\BusinessComponent.cpp" />
+    <ClCompile Include="src\ecs\business\BusinessRepository.cpp" />
+    <ClCompile Include="src\ecs\ChunkFullTransitionData.cpp" />
+    <ClCompile Include="src\ecs\cli\CliFullECS.cpp" />
+    <ClCompile Include="src\ecs\component\DualAttributesComponent.cpp" />
+    <ClCompile Include="src\ecs\component\CameraAttachComponent.cpp" />
+    <ClCompile Include="src\ecs\component\CharacterDetailsComponent.cpp" />
+    <ClCompile Include="src\ecs\component\DynamicModelComponent.cpp" />
+    <ClCompile Include="src\ecs\component\EmployeeComponent.cpp" />
+    <ClCompile Include="src\ecs\component\FishingComponent.cpp" />
+    <ClCompile Include="src\ecs\component\DualInventoryComponent.cpp" />
+    <ClCompile Include="src\ecs\component\CharacterControlComponent.cpp" />
+    <ClCompile Include="src\ecs\component\FullBrainComponent.cpp" />
+    <ClCompile Include="src\ecs\component\CombatComponent.cpp" />
+    <ClCompile Include="src\ecs\component\CorpseComponent.cpp" />
+    <ClCompile Include="src\ecs\component\DynamicLightComponent.cpp" />
+    <ClCompile Include="src\ecs\component\NavigationComponent.cpp" />
+    <ClCompile Include="src\ecs\component\ObjectPickupComponent.cpp" />
+    <ClCompile Include="src\ecs\component\PhysicsComponent.cpp" />
+    <ClCompile Include="src\ecs\component\PlayerControlComponent.cpp" />
+    <ClCompile Include="src\ecs\component\ProfessionComponent.cpp" />
+    <ClCompile Include="src\ecs\component\ProjectileComponent.cpp" />
+    <ClCompile Include="src\ecs\component\SkillsComponent.cpp" />
+    <ClCompile Include="src\ecs\component\StatsComponent.cpp" />
+    <ClCompile Include="src\ecs\component\ThreadSharedComponent.cpp" />
+    <ClCompile Include="src\ecs\component\TimedTileInteractComponent.cpp" />
+    <ClCompile Include="src\ecs\IFullECS.cpp" />
+    <ClCompile Include="src\ecs\EntityRepository.cpp" />
+    <ClCompile Include="src\ecs\factory\EntityFactory.cpp" />
+    <ClCompile Include="src\ecs\srv\HostFullECS.cpp" />
+    <ClCompile Include="src\ecs\system\FullAISystem.cpp" />
+    <ClCompile Include="src\ecs\AttachedEntityUpdater.cpp" />
+    <ClCompile Include="src\ecs\system\PlayerInteractSystem.cpp" />
+    <ClCompile Include="src\editor\BrushRepository.cpp" />
+    <ClCompile Include="src\editor\EditorResources.cpp" />
+    <ClCompile Include="src\editor\WorldEditorPanel.cpp" />
+    <ClCompile Include="src\effect\cli\CliEffectContext.cpp" />
+    <ClCompile Include="src\effect\host\HostEffectContext.cpp" />
+    <ClCompile Include="src\effect\IEffectContext.cpp" />
+    <ClCompile Include="src\extern\bc7enc\bc7decomp.cpp" />
+    <ClCompile Include="src\extern\bc7enc\bc7decomp_ref.cpp" />
+    <ClCompile Include="src\extern\bc7enc\bc7enc.cpp" />
+    <ClCompile Include="src\extern\bc7enc\ert.cpp" />
+    <ClCompile Include="src\extern\bc7enc\lodepng.cpp" />
+    <ClCompile Include="src\extern\bc7enc\rdo_bc_encoder.cpp" />
+    <ClCompile Include="src\extern\bc7enc\rgbcx.cpp" />
+    <ClCompile Include="src\extern\bc7enc\utils.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\crude_json.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\imgui_canvas.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\imgui_node_editor.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\imgui_node_editor_api.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\utilities\builders.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\utilities\drawing.cpp" />
+    <ClCompile Include="src\extern\imgui-node-editor\utilities\widgets.cpp" />
+    <ClCompile Include="src\faction\CliFactionManager.cpp" />
+    <ClCompile Include="src\faction\HostFactionManager.cpp" />
+    <ClCompile Include="src\faction\IFactionManager.cpp" />
+    <ClCompile Include="src\filesystem\FileSystem.cpp" />
+    <ClCompile Include="src\gamethread\GameThread.cpp" />
+    <ClCompile Include="src\gamethread\GameThreadTasks.cpp" />
+    <ClCompile Include="src\generation\stages\BaseHeightmapAndBiomeGenerationStage.cpp" />
+    <ClCompile Include="src\generation\stages\HistoryGenerationStage.cpp" />
+    <ClCompile Include="src\generation\stages\IWorldGenerationStage.cpp" />
+    <ClCompile Include="src\generation\stages\MarkupGenerationStage.cpp" />
+    <ClCompile Include="src\generation\stages\RiverGenerationStage.cpp" />
+    <ClCompile Include="src\generation\TileDistributionPreviewTexture.cpp" />
+    <ClCompile Include="src\generation\TileDistributionSampler.cpp" />
+    <ClCompile Include="src\generation\WorldDataGenerator.cpp" />
+    <ClCompile Include="src\generation\WorldGenerationBlackboard.cpp" />
+    <ClCompile Include="src\generation\WorldGenerationData.cpp" />
+    <ClCompile Include="src\generation\ChunkGenerator.cpp" />
+    <ClCompile Include="src\input\InputDispatcher.cpp" />
+    <ClCompile Include="src\input\KeyboardEventManager.cpp" />
+    <ClCompile Include="src\input\MouseEventManager.cpp" />
+    <ClCompile Include="src\instrumentation\instrumentor.cpp" />
+    <ClCompile Include="src\io\PngLoader.cpp" />
+    <ClCompile Include="src\item\ArmorItem.cpp" />
+    <ClCompile Include="src\item\ItemDef.cpp" />
+    <ClCompile Include="src\item\ItemRepository.cpp" />
+    <ClCompile Include="src\item\ItemReservation.cpp" />
+    <ClCompile Include="src\item\ItemStack.cpp" />
+    <ClCompile Include="src\item\ItemStockpile.cpp" />
+    <ClCompile Include="src\item\ItemStockpileRegistry.cpp" />
+    <ClCompile Include="src\item\ItemTradeManager.cpp" />
+    <ClCompile Include="src\item\ShieldItem.cpp" />
+    <ClCompile Include="src\item\SimChunkTileItemReservation.cpp" />
+    <ClCompile Include="src\item\SimpleItemReservation.cpp" />
+    <ClCompile Include="src\item\WeaponItem.cpp" />
+    <ClCompile Include="src\logging\ErrorLogging.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\MainGame.cpp" />
+    <ClCompile Include="src\math\Noise.cpp" />
+    <ClCompile Include="src\math\Random.cpp" />
+    <ClCompile Include="src\network\cli\CliAdapter.cpp" />
+    <ClCompile Include="src\network\cli\CliMessage.cpp" />
+    <ClCompile Include="src\network\Cli\GameClient.cpp" />
+    <ClCompile Include="src\network\NetworkUtil.cpp" />
+    <ClCompile Include="src\network\srv\GameServerOLD.cpp" />
+    <ClCompile Include="src\network\srv\SrvAdapter.cpp" />
+    <ClCompile Include="src\network\srv\SrvMessage.cpp" />
+    <ClCompile Include="src\options\DebugOptions.cpp" />
+    <ClCompile Include="src\options\LightingOptions.cpp" />
+    <ClCompile Include="src\pathfinding\NavWorld.cpp" />
+    <ClCompile Include="src\pathfinding\NavPath.cpp" />
+    <ClCompile Include="src\pathfinding\NavThread.cpp" />
+    <ClCompile Include="src\pathfinding\PathFinder.cpp" />
+    <ClCompile Include="src\physics\CollisionShapeRepository.cpp" />
+    <ClCompile Include="src\physics\CollisionShapes.cpp" />
+    <ClCompile Include="src\physics\PhysicsWorld.cpp" />
+    <ClCompile Include="src\physics\PhysicsBodyUserData.cpp" />
+    <ClCompile Include="src\physics\PhysicsDebugRenderer.cpp" />
+    <ClCompile Include="src\physics\PhysicsJobSystem.cpp" />
+    <ClCompile Include="src\physics\StaticPhysicsMeshBuilder.cpp" />
+    <ClCompile Include="src\rendering\animation\AnimMachineInstance.cpp" />
+    <ClCompile Include="src\rendering\animation\Blendspace1DPlayer.cpp" />
+    <ClCompile Include="src\rendering\CharacterModel.cpp" />
+    <ClCompile Include="src\rendering\CharacterRenderer.cpp" />
+    <ClCompile Include="src\rendering\ChunkGrassQuadtree.cpp" />
+    <ClCompile Include="src\rendering\CloudRenderer.cpp" />
+    <ClCompile Include="src\rendering\ECSRenderer.cpp" />
+    <ClCompile Include="src\rendering\fish\FishRenderer.cpp" />
+    <ClCompile Include="src\rendering\GLExtensions.cpp" />
+    <ClCompile Include="src\rendering\gl\GL.cpp" />
+    <ClCompile Include="src\rendering\gl\GLAPITrace.cpp" />
+    <ClCompile Include="src\rendering\gl\GLObjects.cpp" />
+    <ClCompile Include="src\rendering\gl\GpuStreamingDataBuffer.cpp" />
+    <ClCompile Include="src\rendering\ItemRenderer.cpp" />
+    <ClCompile Include="src\rendering\LightData.cpp" />
+    <ClCompile Include="src\rendering\LightRenderer.cpp" />
+    <ClCompile Include="src\rendering\LoadScreenRenderer.cpp" />
+    <ClCompile Include="src\rendering\MaterialShaderDef.cpp" />
+    <ClCompile Include="src\rendering\MaterialShaderRepository.cpp" />
+    <ClCompile Include="src\rendering\MaterialRenderer.cpp" />
+    <ClCompile Include="src\rendering\MaterialUtils.cpp" />
+    <ClCompile Include="src\rendering\material\BrdfLUT.cpp" />
+    <ClCompile Include="src\rendering\mesh\AxisAlignedQuadMesh.cpp" />
+    <ClCompile Include="src\rendering\mesh\LineMesh.cpp" />
+    <ClCompile Include="src\rendering\mesh\MeshDrawer.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\builder\BillboardMeshBuilder.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\builder\ContainerMeshBuilders.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\builder\GrassMeshBuilderMethods.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\builder\MeshBuilderCommon.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\builder\ModelMeshBuilder.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\builder\ProceduralMeshBuilder.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\builder\ProceduralMeshHelpers.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\builder\TerrainMeshBuilder.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\builder\TextMeshBuilder.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\builder\ProceduralTileMeshBuilderMethods.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\BuildingMesher.cpp" />
+    <ClCompile Include="src\rendering\mesh\mesher\ITileContainerMesher.cpp" />
+    <ClCompile Include="src\rendering\mesh\MeshOperations.cpp" />
+    <ClCompile Include="src\rendering\mesh\PrimitiveShapeMeshes.cpp" />
+    <ClCompile Include="src\rendering\mesh\FBXRawModel.cpp" />
+    <ClCompile Include="src\rendering\mesh\GrassMeshManager.cpp" />
+    <ClCompile Include="src\rendering\mesh\Mesh.cpp" />
+    <ClCompile Include="src\rendering\mesh\TerrainMeshManager.cpp" />
+    <ClCompile Include="src\rendering\mesh\TileContainerMeshManager.cpp" />
+    <ClCompile Include="src\rendering\mesh\Vertex.cpp" />
+    <ClCompile Include="src\rendering\model\InstancedDynamicModelRenderer.cpp" />
+    <ClCompile Include="src\rendering\model\InstancedStaticModelGatherer.cpp" />
+    <ClCompile Include="src\rendering\model\InstancedStaticModelManager.cpp" />
+    <ClCompile Include="src\rendering\model\InstancedStaticModelRenderer.cpp" />
+    <ClCompile Include="src\rendering\model\MaterialRenderPassType.cpp" />
+    <ClCompile Include="src\rendering\mesh\MeshConst.cpp" />
+    <ClCompile Include="src\rendering\model\ModelBatch.cpp" />
+    <ClCompile Include="src\rendering\model\ModelImpostorManager.cpp" />
+    <ClCompile Include="src\rendering\model\ModelImpostorRenderer.cpp" />
+    <ClCompile Include="src\rendering\model\ModelHighlightRenderer.cpp" />
+    <ClCompile Include="src\rendering\model\ModelSubmeshData.cpp" />
+    <ClCompile Include="src\rendering\model\skeletal\AnimTransitionConditionDef.cpp" />
+    <ClCompile Include="src\rendering\model\skeletal\SkeletalAnimator.cpp" />
+    <ClCompile Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.cpp" />
+    <ClCompile Include="src\rendering\particle\CpuParticleEmitter.cpp" />
+    <ClCompile Include="src\rendering\particle\CPUParticleEmitterModule.cpp" />
+    <ClCompile Include="src\rendering\particle\CPUParticleEmitterOperation.cpp" />
+    <ClCompile Include="src\rendering\particle\CPUParticleSystem.cpp" />
+    <ClCompile Include="src\rendering\particle\ParticleEnumTypes.cpp" />
+    <ClCompile Include="src\rendering\particle\ParticleSystemInputs.cpp" />
+    <ClCompile Include="src\rendering\particle\ParticleSystemRenderer.cpp" />
+    <ClCompile Include="src\rendering\post_process\AmbientOcclusionPostProcess.cpp" />
+    <ClCompile Include="src\rendering\post_process\DepthOfFieldPostProcess.cpp" />
+    <ClCompile Include="src\rendering\post_process\ShadowDetail.cpp" />
+    <ClCompile Include="src\rendering\post_process\ShadowRenderer.cpp" />
+    <ClCompile Include="src\rendering\GrassBillboardMesh.cpp" />
+    <ClCompile Include="src\rendering\post_process\SmudgeRenderer.cpp" />
+    <ClCompile Include="src\rendering\post_process\TonemapRenderer.cpp" />
+    <ClCompile Include="src\rendering\renderstate\DynamicModelInstanceState.cpp" />
+    <ClCompile Include="src\rendering\renderdata\WorldRenderDataManager.cpp" />
+    <ClCompile Include="src\rendering\renderer\GrassRenderer.cpp" />
+    <ClCompile Include="src\rendering\renderer\OverlayRenderer.cpp" />
+    <ClCompile Include="src\rendering\renderer\RoadRenderer.cpp" />
+    <ClCompile Include="src\rendering\renderer\WorldRenderer.cpp" />
+    <ClCompile Include="src\rendering\renderstate\GameRenderStateManager.cpp" />
+    <ClCompile Include="src\rendering\renderstate\RenderStateManager.cpp" />
+    <ClCompile Include="src\rendering\texture\GLTexture.cpp" />
+    <ClCompile Include="src\rendering\texture\TextureConvert.cpp" />
+    <ClCompile Include="src\rendering\text\WorldTextRenderer.cpp" />
+    <ClCompile Include="src\rendering\TileContainerMeshData.cpp" />
+    <ClCompile Include="src\rendering\TileContainerRenderer.cpp" />
+    <ClCompile Include="src\rendering\RenderContext.cpp" />
+    <ClCompile Include="src\rendering\RenderStats.cpp" />
+    <ClCompile Include="src\rendering\RenderThreadTasks.cpp" />
+    <ClCompile Include="src\rendering\ShaderLoader.cpp" />
+    <ClCompile Include="src\rendering\Skybox.cpp" />
+    <ClCompile Include="src\rendering\texture\MaterialTextureGenerator.cpp" />
+    <ClCompile Include="src\rendering\TerrainRenderer.cpp" />
+    <ClCompile Include="src\rendering\UboHelpers.cpp" />
+    <ClCompile Include="src\resources\AnimationRepository.cpp" />
+    <ClCompile Include="src\resources\AnimMachineRepository.cpp" />
+    <ClCompile Include="src\resources\AssetLoader.cpp" />
+    <ClCompile Include="src\resources\asset\LiteAssetRef.cpp" />
+    <ClCompile Include="src\resources\asset\VariantAssetRef.cpp" />
+    <ClCompile Include="src\resources\BiomeRepository.cpp" />
+    <ClCompile Include="src\resources\Blendspace1DRepository.cpp" />
+    <ClCompile Include="src\resources\CubemapRepository.cpp" />
+    <ClCompile Include="src\resources\DataAssetRepository.cpp" />
+    <ClCompile Include="src\resources\EffectRepository.cpp" />
+    <ClCompile Include="src\resources\FishRepository.cpp" />
+    <ClCompile Include="src\resources\FontRepository.cpp" />
+    <ClCompile Include="src\resources\IAsset.cpp" />
+    <ClCompile Include="src\resources\IAssetRepository.cpp" />
+    <ClCompile Include="src\resources\MaterialRepository.cpp" />
+    <ClCompile Include="src\resources\ModelRepository.cpp" />
+    <ClCompile Include="src\resources\ParticleSystemRepository.cpp" />
+    <ClCompile Include="src\resources\ResourceManager.cpp" />
+    <ClCompile Include="src\resources\ResourceOperations.cpp" />
+    <ClCompile Include="src\resources\RigRepository.cpp" />
+    <ClCompile Include="src\resources\SkillRepository.cpp" />
+    <ClCompile Include="src\resources\TextureRepository.cpp" />
+    <ClCompile Include="src\resources\TileDistributionRepository.cpp" />
+    <ClCompile Include="src\resources\TileGrassRepository.cpp" />
+    <ClCompile Include="src\resources\TileRepository.cpp" />
+    <ClCompile Include="src\screens\EditorOnlyScreen.cpp" />
+    <ClCompile Include="src\screens\GameplayScreen.cpp" />
+    <ClCompile Include="src\screens\MainMenuScreen.cpp" />
+    <ClCompile Include="src\screens\ScreenState.cpp" />
+    <ClCompile Include="src\screens\WorldGenScreen.cpp" />
+    <ClCompile Include="src\serialization\GameSaveManager.cpp" />
+    <ClCompile Include="src\serialization\gamesave\WorldSaveContext.cpp" />
+    <ClCompile Include="src\server\GameServerNew.cpp" />
+    <ClCompile Include="src\server\ServerThread.cpp" />
+    <ClCompile Include="src\text\LocText.cpp" />
+    <ClCompile Include="src\text\NameManager.cpp" />
+    <ClCompile Include="src\tile\ChunkLiteTileHandle.cpp" />
+    <ClCompile Include="src\tile\SimTileReservation.cpp" />
+    <ClCompile Include="src\tile\TileContainerLoader.cpp" />
+    <ClCompile Include="src\tile\TileDamageData.cpp" />
+    <ClCompile Include="src\definitions\TileDef.cpp" />
+    <ClCompile Include="src\tile\MutationDef.cpp" />
+    <ClCompile Include="src\ui\debugging\GameplayDebugger.cpp" />
+    <ClCompile Include="src\ui\debugging\MovementDebugger.cpp" />
+    <ClCompile Include="src\ui\debugging\PhysicsDebugger.cpp" />
+    <ClCompile Include="src\ui\editor\AnimMachineEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\Blendspace1DEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\CollisionEditor.cpp" />
+    <ClCompile Include="src\ui\editor\NodeGraph.cpp" />
+    <ClCompile Include="src\ui\editor\TileDistributionEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\TileEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\GameWindow.cpp" />
+    <ClCompile Include="src\ui\noesis\code_behind\SackContainerPanel.cpp" />
+    <ClCompile Include="src\ui\noesis\interactivity\EventTriggerWithModifier.cpp" />
+    <ClCompile Include="src\ui\noesis\inventory\InventoryItemViewModel.cpp" />
+    <ClCompile Include="src\ui\noesis\NoesisGLRenderDevice.cpp" />
+    <ClCompile Include="src\ui\noesis\NoesisGuiContext.cpp" />
+    <ClCompile Include="src\ui\noesis\NoesisLocalFontProvider.cpp" />
+    <ClCompile Include="src\ui\noesis\NoesisTextureProvider.cpp" />
+    <ClCompile Include="src\ui\noesis\NoesisPanelManager.cpp" />
+    <ClCompile Include="src\ui\noesis\PanelViewModelBase.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\App.Interactivity.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\AttachableObject.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\BackgroundEffectBehavior.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\Behavior.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\BehaviorCollection.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\ChangePropertyAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\CollectionFilterBehavior.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\CollectionSortBehavior.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\ComparisonCondition.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\ComparisonLogic.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\ConditionalExpression.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\ConditionBehavior.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\ControlStoryboardAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\DataBindingHelper.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\DataEventTrigger.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\DataTrigger.Interactivity.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\EventTrigger.Interactivity.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\EventTriggerBase.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\FilterPredicate.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\GamepadTrigger.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\GoToStateAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\Interaction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\InvokeCommandAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\KeyTrigger.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\LaunchUriOrFileAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\LineDecorationBehavior.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\LoadContentAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\MediaActions.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\MouseDragElementBehavior.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\MoveFocusAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\PlaySoundAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\PropertyChangedTrigger.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\RemoveElementAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\SelectAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\SelectAllAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\SetFocusAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\SortComparer.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\StoryboardAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\StoryboardCompletedTrigger.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\StoryboardTrigger.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\StringFilterPredicate.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\StringSortComparer.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\StyleInteraction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\TargetedTriggerAction.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\TimerTrigger.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\TranslateZoomRotateBehavior.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\TriggerAction.Interactivity.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\TriggerActionCollection.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\TriggerBase.Interactivity.cpp" />
+    <ClCompile Include="src\ui\noesis\vendor\Interactivity\Src\TriggerCollection.cpp" />
+    <ClCompile Include="src\ui\ScreenList.cpp" />
+    <ClCompile Include="src\util\FixedSizeVector.cpp" />
+    <ClCompile Include="src\util\RollTable.cpp" />
+    <ClCompile Include="src\util\TilingVoronoiMap.cpp" />
+    <ClCompile Include="src\services\Services.cpp" />
+    <ClCompile Include="src\stdafx.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="src\tile\TileContainerRepository.cpp" />
+    <ClCompile Include="src\tile\TileSpatialGrid.cpp" />
+    <ClCompile Include="src\tile\Tile.cpp" />
+    <ClCompile Include="src\tile\TileContainer.cpp" />
+    <ClCompile Include="src\tile\TileContainerHarvestableRegistry.cpp" />
+    <ClCompile Include="src\tile\TileHandle.cpp" />
+    <ClCompile Include="src\tile\TileHarvestable.cpp" />
+    <ClCompile Include="src\tile\TileUtil.cpp" />
+    <ClCompile Include="src\tile\TileWallContainer.cpp" />
+    <ClCompile Include="src\time\TimestepManager.cpp" />
+    <ClCompile Include="src\time\TimeOfDayManager.cpp" />
+    <ClCompile Include="src\ui\DebugTweakerPanel.cpp" />
+    <ClCompile Include="src\ui\editor\AssetEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\AssetEditorViewportPanelBase.cpp" />
+    <ClCompile Include="src\ui\editor\BiomeEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\ContentBrowserPanel.cpp" />
+    <ClCompile Include="src\ui\editor\ContentBrowser\ContentBrowserItem.cpp" />
+    <ClCompile Include="src\ui\editor\EditorRoot.cpp" />
+    <ClCompile Include="src\ui\editor\FishingEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\FoliageEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\IEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\ImguiAssetThumbnails.cpp" />
+    <ClCompile Include="src\ui\editor\ItemEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\MaterialEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\ModelEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\ParticleSystemEditorViewportPanel.cpp" />
+    <ClCompile Include="src\ui\editor\Selection\EditorSelectionManager.cpp" />
+    <ClCompile Include="src\ui\editor\AssetSelectPanel.cpp" />
+    <ClCompile Include="src\ui\ImguiUtil.cpp" />
+    <ClCompile Include="src\ui\minigame\FishingMinigame.cpp" />
+    <ClCompile Include="src\ui\minigame\LocalMinigameContext.cpp" />
+    <ClCompile Include="src\ui\PauseMenuPanel.cpp" />
+    <ClCompile Include="src\ui\TileInspectionPanel.cpp" />
+    <ClCompile Include="src\ui\UIContext.cpp" />
+    <ClCompile Include="src\ui\TileInteractPanel.cpp" />
+    <ClCompile Include="src\util\ArbitraryObjectArray.cpp" />
+    <ClCompile Include="src\util\BitArray.cpp" />
+    <ClCompile Include="src\util\GridEdgeFinder.cpp" />
+    <ClCompile Include="src\util\IntersectionUtil.cpp" />
+    <ClCompile Include="src\util\RandomPointFromShape.cpp" />
+    <ClCompile Include="src\util\SpatialGrid2D.cpp" />
+    <ClCompile Include="src\util\StringUtils.cpp" />
+    <ClCompile Include="src\util\StrToken.cpp" />
+    <ClCompile Include="src\util\ThreadIDs.cpp" />
+    <ClCompile Include="src\util\Timing\ThreadUtilizationTimer.cpp" />
+    <ClCompile Include="src\util\UniqueId64.cpp" />
+    <ClCompile Include="src\util\WindFormulas.cpp" />
+    <ClCompile Include="src\weather\CloudMeshManager.cpp" />
+    <ClCompile Include="src\weather\WeatherManager.cpp" />
+    <ClCompile Include="src\world\biome\BiomeGrid.cpp" />
+    <ClCompile Include="src\world\LocalChunk.cpp" />
+    <ClCompile Include="src\world\chunk\SimChunk.cpp" />
+    <ClCompile Include="src\world\chunk\SimChunkGrid.cpp" />
+    <ClCompile Include="src\world\cli\CliHeightmapGrid.cpp" />
+    <ClCompile Include="src\world\controller\EditorWorldInterfaceController.cpp" />
+    <ClCompile Include="src\world\controller\IWorldInterfaceController.cpp" />
+    <ClCompile Include="src\world\ecosystem\FishEcosystem.cpp" />
+    <ClCompile Include="src\world\LocalChunkGrid.cpp" />
+    <ClCompile Include="src\world\IHeightmapGrid.cpp" />
+    <ClCompile Include="src\world\HeightmapTerrainQuadtree.cpp" />
+    <ClCompile Include="src\world\markup\WorldMarkupGrid.cpp" />
+    <ClCompile Include="src\world\ownership\OwnershipGrid.cpp" />
+    <ClCompile Include="src\world\road\TerrainSurfaceGrid.cpp" />
+    <ClCompile Include="src\world\settlement\SettlementLayoutManager.cpp" />
+    <ClCompile Include="src\world\settlement\SettlementPlotManager.cpp" />
+    <ClCompile Include="src\world\settlement\SettlementRoadNetwork.cpp" />
+    <ClCompile Include="src\world\simulation\host\component\CharacterGroupComponents.cpp" />
+    <ClCompile Include="src\world\simulation\host\component\SimSettlementComponents.cpp" />
+    <ClCompile Include="src\world\simulation\host\HostSimContext.cpp" />
+    <ClCompile Include="src\world\simulation\host\settlement\SettlementPlanner.cpp" />
+    <ClCompile Include="src\world\simulation\host\settlement\SimSettlementCharacterInterface.cpp" />
+    <ClCompile Include="src\world\simulation\host\SimECS.cpp" />
+    <ClCompile Include="src\world\simulation\host\SimEntityTransitionManager.cpp" />
+    <ClCompile Include="src\world\simulation\host\SimImmigrationManager.cpp" />
+    <ClCompile Include="src\world\simulation\host\SimThread.cpp" />
+    <ClCompile Include="src\world\simulation\host\SimWorldAnalytics.cpp" />
+    <ClCompile Include="src\world\simulation\host\StoryTeller.cpp" />
+    <ClCompile Include="src\world\simulation\host\system\SimAISystem.cpp" />
+    <ClCompile Include="src\world\simulation\host\system\SimSettlementSystem.cpp" />
+    <ClCompile Include="src\world\simulation\ISimJob.cpp" />
+    <ClCompile Include="src\world\simulation\ISimTask.cpp" />
+    <ClCompile Include="src\world\srv\ServerChunkAuthorityManager.cpp" />
+    <ClCompile Include="src\server\ServerReportStateManager.cpp" />
+    <ClCompile Include="src\world\World.cpp" />
+    <ClCompile Include="src\world\srv\HostHeightmapGrid.cpp" />
+    <ClCompile Include="src\world\WorldContextObject.cpp" />
+    <ClCompile Include="src\world\WorldDestroyer.cpp" />
+    <ClCompile Include="src\world\WorldObjectQuery.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\Vorb\graphics\BlendState.h" />
+    <ClInclude Include="src\actor\ActorTypes.h" />
+    <ClInclude Include="src\ai\EntityActions.h" />
+    <ClInclude Include="src\ai\gpt\GptApi.h" />
+    <ClInclude Include="src\ai\jobs\BuildContextTargetData.h" />
+    <ClInclude Include="src\ai\jobs\ConstructBuildingSimJob.h" />
+    <ClInclude Include="src\ai\jobs\SimTaskHandle.h" />
+    <ClInclude Include="src\ai\tasks\BuildBlueprintTask.h" />
+    <ClInclude Include="src\ai\tasks\ConstructBuildingSimTask.h" />
+    <ClInclude Include="src\ai\tasks\GatherTask.h" />
+    <ClInclude Include="src\ai\tasks\IAgentTask.h" />
+    <ClInclude Include="src\ai\tasks\MoveToPointSimTask.h" />
+    <ClInclude Include="src\ai\tasks\PathToTargetTask.h" />
+    <ClInclude Include="src\App.h" />
+    <ClInclude Include="src\building\Building.h" />
+    <ClInclude Include="src\building\BuildingBlueprint.h" />
+    <ClInclude Include="src\building\BuildingBlueprintFlags.h" />
+    <ClInclude Include="src\building\BuildingBlueprintGenerationContext.h" />
+    <ClInclude Include="src\building\BuildingBlueprintGenerator.h" />
+    <ClInclude Include="src\building\BuildingGrammar.h" />
+    <ClInclude Include="src\building\BuildingGrid.h" />
+    <ClInclude Include="src\building\BuildingRepository.h" />
+    <ClInclude Include="src\camera\Camera3D.h" />
+    <ClInclude Include="src\camera\Camera3DGameThreadData.h" />
+    <ClInclude Include="src\camera\CameraController.h" />
+    <ClInclude Include="src\camera\CameraMode.h" />
+    <ClInclude Include="src\camera\OrthoCamera.h" />
+    <ClInclude Include="src\camera\SimpleCamera.h" />
+    <ClInclude Include="src\camera\ICamera.h" />
+    <ClInclude Include="src\character\CharacterLocomotionMode.h" />
+    <ClInclude Include="src\city\business_jobs\IBusinessJob.h" />
+    <ClInclude Include="src\city\BuildingBuilder.h" />
+    <ClInclude Include="src\city\CityBusinessManager.h" />
+    <ClInclude Include="src\city\CityConst.h" />
+    <ClInclude Include="src\city\CityQuartermaster.h" />
+    <ClInclude Include="src\city\contracts\ContractManager.h" />
+    <ClInclude Include="src\city\contracts\IContract.h" />
+    <ClInclude Include="src\city\contracts\ItemShipmentContract.h" />
+    <ClInclude Include="src\city\RoomGenNode.h" />
+    <ClInclude Include="src\combat\Attack.h" />
+    <ClInclude Include="src\combat\CombatContext.h" />
+    <ClInclude Include="src\crafting\CraftingConst.h" />
+    <ClInclude Include="src\crafting\CraftingRepository.h" />
+    <ClInclude Include="src\data_structure\FlatQuadtree.h" />
+    <ClInclude Include="src\data_structure\QuadtreeSettings.h" />
+    <ClInclude Include="src\debugging\DebugMesh.h" />
+    <ClInclude Include="src\debugging\DebugRenderer.h" />
+    <ClInclude Include="src\debugging\ValueTweaker.h" />
+    <ClInclude Include="src\debugging\SimpleMesh.h" />
+    <ClInclude Include="src\debugging\VisualLogger.h" />
+    <ClInclude Include="src\definitions\AnimationDef.h" />
+    <ClInclude Include="src\definitions\AnimMachineDef.h" />
+    <ClInclude Include="src\definitions\AssetDefinitions.h" />
+    <ClInclude Include="src\definitions\BiomeDef.h" />
+    <ClInclude Include="src\definitions\BiomeUniqueID.h" />
+    <ClInclude Include="src\definitions\BrushDef.h" />
+    <ClInclude Include="src\definitions\BuildingDef.h" />
+    <ClInclude Include="src\definitions\BusinessDef.h" />
+    <ClInclude Include="src\definitions\EffectDef.h" />
+    <ClInclude Include="src\definitions\EntityDef.h" />
+    <ClInclude Include="src\definitions\FishDef.h" />
+    <ClInclude Include="src\definitions\ModelDef.h" />
+    <ClInclude Include="src\definitions\ParticleEmitterDef.h" />
+    <ClInclude Include="src\definitions\ParticleSystemDef.h" />
+    <ClInclude Include="src\definitions\rendering\Blendspace1DDef.h" />
+    <ClInclude Include="src\definitions\rendering\CubemapDef.h" />
+    <ClInclude Include="src\definitions\rendering\TextureDef.h" />
+    <ClInclude Include="src\definitions\RigDef.h" />
+    <ClInclude Include="src\definitions\SkillDef.h" />
+    <ClInclude Include="src\definitions\TileDef.h" />
+    <ClInclude Include="src\definitions\TileDistributionDef.h" />
+    <ClInclude Include="src\definitions\TileGrassDef.h" />
+    <ClInclude Include="src\ecs\business\BusinessComponent.h" />
+    <ClInclude Include="src\ecs\business\BusinessComponentTypes.h" />
+    <ClInclude Include="src\ecs\business\BusinessRepository.h" />
+    <ClInclude Include="src\ecs\cli\CliFullECS.h" />
+    <ClInclude Include="src\ecs\component\DualAttributesComponent.h" />
+    <ClInclude Include="src\ecs\component\CameraAttachComponent.h" />
+    <ClInclude Include="src\ecs\component\CharacterDetailsComponent.h" />
+    <ClInclude Include="src\ecs\component\ComponentDefBase.h" />
+    <ClInclude Include="src\ecs\component\ComponentDefinitionInstance.h" />
+    <ClInclude Include="src\ecs\component\ContractHolderComponent.h" />
+    <ClInclude Include="src\ecs\component\DualComponents.h" />
+    <ClInclude Include="src\ecs\component\DynamicModelComponent.h" />
+    <ClInclude Include="src\ecs\component\EmployeeComponent.h" />
+    <ClInclude Include="src\ecs\component\EntityDetailsComponent.h" />
+    <ClInclude Include="src\ecs\component\EntityUidComponent.h" />
+    <ClInclude Include="src\ecs\component\FishingComponent.h" />
+    <ClInclude Include="src\ecs\component\FullEntityBindingComponent.h" />
+    <ClInclude Include="src\ecs\component\DualInventoryComponent.h" />
+    <ClInclude Include="src\ecs\component\CharacterControlComponent.h" />
+    <ClInclude Include="src\ecs\component\ObjectPickupComponent.h" />
+    <ClInclude Include="src\ecs\component\ThreadSharedComponent.h" />
+    <ClInclude Include="src\ecs\component\TileItemComponent.h" />
+    <ClInclude Include="src\ecs\component\OwnershipComponent.h" />
+    <ClInclude Include="src\ecs\component\FullBrainComponent.h" />
+    <ClInclude Include="src\ecs\component\CombatComponent.h" />
+    <ClInclude Include="src\ecs\component\Components.h" />
+    <ClInclude Include="src\ecs\component\CorpseComponent.h" />
+    <ClInclude Include="src\ecs\component\DynamicLightComponent.h" />
+    <ClInclude Include="src\ecs\component\ComponentType.h" />
+    <ClInclude Include="src\ecs\component\NavigationComponent.h" />
+    <ClInclude Include="src\ecs\component\PersonalityComponent.h" />
+    <ClInclude Include="src\ecs\component\PhysicsComponent.h" />
+    <ClInclude Include="src\ecs\component\PlayerControlComponent.h" />
+    <ClInclude Include="src\ecs\component\PlayerIdComponent.h" />
+    <ClInclude Include="src\ecs\component\PositionComponent.h" />
+    <ClInclude Include="src\ecs\component\ProfessionComponent.h" />
+    <ClInclude Include="src\ecs\component\ProjectileComponent.h" />
+    <ClInclude Include="src\ecs\component\SimEntityTypeComponent.h" />
+    <ClInclude Include="src\ecs\component\SkillsComponent.h" />
+    <ClInclude Include="src\ecs\component\StaticModelComponent.h" />
+    <ClInclude Include="src\ecs\component\StatsComponent.h" />
+    <ClInclude Include="src\ecs\component\TimedTileInteractComponent.h" />
+    <ClInclude Include="src\ecs\component\VelocityComponent.h" />
+    <ClInclude Include="src\ecs\component\SimpleTextNameplateComponent.h" />
+    <ClInclude Include="src\ecs\component\YawPitchComponent.h" />
+    <ClInclude Include="src\ecs\ChunkFullTransitionData.h" />
+    <ClInclude Include="src\ecs\AttachedEntityUpdateHandle.h" />
+    <ClInclude Include="src\ecs\FullECSEvents.h" />
+    <ClInclude Include="src\ecs\IFullECS.h" />
+    <ClInclude Include="src\ecs\EntityRepository.h" />
+    <ClInclude Include="src\ecs\factory\EntityFactory.h" />
+    <ClInclude Include="src\ecs\srv\HostFullECS.h" />
+    <ClInclude Include="src\ecs\system\FullAISystem.h" />
+    <ClInclude Include="src\ecs\AttachedEntityUpdater.h" />
+    <ClInclude Include="src\ecs\system\PlayerInteractSystem.h" />
+    <ClInclude Include="src\editor\BrushRepository.h" />
+    <ClInclude Include="src\editor\EditorResources.h" />
+    <ClInclude Include="src\editor\ImguiViews.hpp" />
+    <ClInclude Include="src\editor\WorldEditorPanel.h" />
+    <ClInclude Include="src\effect\cli\CliEffectContext.h" />
+    <ClInclude Include="src\effect\host\HostEffectContext.h" />
+    <ClInclude Include="src\effect\IEffectContext.h" />
+    <ClInclude Include="src\events\SkillEvent.h" />
+    <ClInclude Include="src\extern\bc7enc\bc7decomp.h" />
+    <ClInclude Include="src\extern\bc7enc\bc7enc.h" />
+    <ClInclude Include="src\extern\bc7enc\dds_defs.h" />
+    <ClInclude Include="src\extern\bc7enc\ert.h" />
+    <ClInclude Include="src\extern\bc7enc\lodepng.h" />
+    <ClInclude Include="src\extern\bc7enc\rdo_bc_encoder.h" />
+    <ClInclude Include="src\extern\bc7enc\rgbcx.h" />
+    <ClInclude Include="src\extern\bc7enc\rgbcx_table4.h" />
+    <ClInclude Include="src\extern\bc7enc\rgbcx_table4_small.h" />
+    <ClInclude Include="src\extern\bc7enc\utils.h" />
+    <ClInclude Include="src\extern\imgui-node-editor\crude_json.h" />
+    <ClInclude Include="src\extern\imgui-node-editor\imgui_bezier_math.h" />
+    <ClInclude Include="src\extern\imgui-node-editor\imgui_canvas.h" />
+    <ClInclude Include="src\extern\imgui-node-editor\imgui_extra_math.h" />
+    <ClInclude Include="src\extern\imgui-node-editor\imgui_node_editor.h" />
+    <ClInclude Include="src\extern\imgui-node-editor\imgui_node_editor_internal.h" />
+    <ClInclude Include="src\faction\CliFactionManager.h" />
+    <ClInclude Include="src\faction\Faction.h" />
+    <ClInclude Include="src\faction\HostFactionManager.h" />
+    <ClInclude Include="src\faction\IFactionManager.h" />
+    <ClInclude Include="src\fbx\ozzFbxToMesh.hpp" />
+    <ClInclude Include="src\FeatureConst.h" />
+    <ClInclude Include="src\filesystem\FileSystem.h" />
+    <ClInclude Include="src\filesystem\FileSystemWatcher.h" />
+    <ClInclude Include="src\gamethread\GameThread.h" />
+    <ClInclude Include="src\gamethread\GameThreadTasks.h" />
+    <ClInclude Include="src\generation\NoiseFunction.hpp" />
+    <ClInclude Include="src\generation\stages\BaseHeightmapAndBiomeGenerationStage.h" />
+    <ClInclude Include="src\generation\stages\HistoryGenerationStage.h" />
+    <ClInclude Include="src\generation\stages\IWorldGenerationStage.h" />
+    <ClInclude Include="src\generation\stages\MarkupGenerationStage.h" />
+    <ClInclude Include="src\generation\stages\RiverGenerationStage.h" />
+    <ClInclude Include="src\generation\TileDistributionPreviewTexture.h" />
+    <ClInclude Include="src\generation\TileDistributionSampler.h" />
+    <ClInclude Include="src\generation\WorldDataGenerator.h" />
+    <ClInclude Include="src\generation\WorldGenerationBlackboard.h" />
+    <ClInclude Include="src\generation\WorldGenerationData.h" />
+    <ClInclude Include="src\generation\ChunkGenerator.h" />
+    <ClInclude Include="src\input\InputDispatcher.h" />
+    <ClInclude Include="src\input\InputDispatcherEventCatcher.h" />
+    <ClInclude Include="src\input\KeyboardEventManager.h" />
+    <ClInclude Include="src\input\MouseEventManager.h" />
+    <ClInclude Include="src\input\WindowEventManager.h" />
+    <ClInclude Include="src\instrumentation\instrumentor.h" />
+    <ClInclude Include="src\interact\SelectedObjectData.h" />
+    <ClInclude Include="src\io\PngLoader.h" />
+    <ClInclude Include="src\item\ArmorItem.h" />
+    <ClInclude Include="src\item\ItemDef.h" />
+    <ClInclude Include="src\item\ItemConst.h" />
+    <ClInclude Include="src\item\ItemRollTable.h" />
+    <ClInclude Include="src\item\ItemMaterial.h" />
+    <ClInclude Include="src\item\ItemRepository.h" />
+    <ClInclude Include="src\item\ItemReservation.h" />
+    <ClInclude Include="src\item\ItemStack.h" />
+    <ClInclude Include="src\item\ItemStockpile.h" />
+    <ClInclude Include="src\item\ItemStockpileEvent.h" />
+    <ClInclude Include="src\item\ItemStockpileRegistry.h" />
+    <ClInclude Include="src\item\ItemTradeManager.h" />
+    <ClInclude Include="src\item\Recipe.h" />
+    <ClInclude Include="src\item\ShieldItem.h" />
+    <ClInclude Include="src\item\SimChunkTileItemReservation.h" />
+    <ClInclude Include="src\item\SimpleItemReservation.h" />
+    <ClInclude Include="src\item\WeaponItem.h" />
+    <ClInclude Include="src\logging\ErrorLogging.h" />
+    <ClInclude Include="src\MainGame.h" />
+    <ClInclude Include="src\math\ConstVectors.h" />
+    <ClInclude Include="src\math\fastPRNG.h" />
+    <ClInclude Include="src\math\Noise.h" />
+    <ClInclude Include="src\math\Random.h" />
+    <ClInclude Include="src\network\cli\CliAdapter.h" />
+    <ClInclude Include="src\network\cli\CliMessage.h" />
+    <ClInclude Include="src\network\Cli\GameClient.h" />
+    <ClInclude Include="src\network\GameConnectionConfig.h" />
+    <ClInclude Include="src\network\Message.h" />
+    <ClInclude Include="src\network\NetworkConst.h" />
+    <ClInclude Include="src\network\NetworkUtil.h" />
+    <ClInclude Include="src\network\srv\GameServerOLD.h" />
+    <ClInclude Include="src\network\srv\SrvAdapter.h" />
+    <ClInclude Include="src\network\srv\SrvMessage.h" />
+    <ClInclude Include="src\network\WorldNetMode.h" />
+    <ClInclude Include="src\options\DebugOptions.h" />
+    <ClInclude Include="src\options\GlobalMovementSettings.h" />
+    <ClInclude Include="src\options\LightingOptions.h" />
+    <ClInclude Include="src\pathfinding\CoarseNavGraph.h" />
+    <ClInclude Include="src\pathfinding\NavThread.h" />
+    <ClInclude Include="src\pathfinding\NavPath.h" />
+    <ClInclude Include="src\pathfinding\NavWorld.h" />
+    <ClInclude Include="src\pathfinding\PathFinder.h" />
+    <ClInclude Include="src\physics\BroadphaseLayers.h" />
+    <ClInclude Include="src\physics\CollisionShapeRepository.h" />
+    <ClInclude Include="src\physics\CollisionShapes.h" />
+    <ClInclude Include="src\physics\ModelColliderShape.h" />
+    <ClInclude Include="src\physics\PhysicsWorld.h" />
+    <ClInclude Include="src\physics\PhysHitResult.h" />
+    <ClInclude Include="src\physics\PhysicsBodyFilters.h" />
+    <ClInclude Include="src\physics\PhysicsBodyUserData.h" />
+    <ClInclude Include="src\physics\PhysicsBroadPhaseLayerFilters.h" />
+    <ClInclude Include="src\physics\PhysicsConst.h" />
+    <ClInclude Include="src\physics\PhysicsDebugRenderer.h" />
+    <ClInclude Include="src\physics\PhysicsJobSystem.h" />
+    <ClInclude Include="src\physics\PhysicsObjectLayer.h" />
+    <ClInclude Include="src\physics\PhysicsObjectLayerFilters.h" />
+    <ClInclude Include="src\physics\PhysicsShapeUserData.h" />
+    <ClInclude Include="src\physics\PhysicsWorldEvents.h" />
+    <ClInclude Include="src\physics\StaticPhysicsMeshBuilder.h" />
+    <ClInclude Include="src\physics\TrackedStaticModelColliderGatherer.h" />
+    <ClInclude Include="src\rendering\animation\AnimMachineInstance.h" />
+    <ClInclude Include="src\rendering\animation\Blendspace1DPlayer.h" />
+    <ClInclude Include="src\rendering\animation\Blendspace1DPlayerNode.h" />
+    <ClInclude Include="src\rendering\BufferBindingPoints.h" />
+    <ClInclude Include="src\rendering\CharacterModel.h" />
+    <ClInclude Include="src\rendering\CharacterRenderer.h" />
+    <ClInclude Include="src\rendering\ChunkGrassQuadtree.h" />
+    <ClInclude Include="src\rendering\CloudRenderer.h" />
+    <ClInclude Include="src\rendering\ECSRenderer.h" />
+    <ClInclude Include="src\rendering\fish\FishRenderer.h" />
+    <ClInclude Include="src\rendering\font\Font.h" />
+    <ClInclude Include="src\rendering\GLExtensions.h" />
+    <ClInclude Include="src\rendering\GlobalRenderData.h" />
+    <ClInclude Include="src\rendering\GlobalUboData.h" />
+    <ClInclude Include="src\rendering\gl\GL.h" />
+    <ClInclude Include="src\rendering\gl\GLAPI.h" />
+    <ClInclude Include="src\rendering\gl\GLAPITrace.h" />
+    <ClInclude Include="src\rendering\gl\GLObjects.h" />
+    <ClInclude Include="src\rendering\gl\GpuStreamingDataBuffer.h" />
+    <ClInclude Include="src\rendering\ItemRenderer.h" />
+    <ClInclude Include="src\rendering\LightData.h" />
+    <ClInclude Include="src\rendering\LightRenderer.h" />
+    <ClInclude Include="src\rendering\LoadScreenRenderer.h" />
+    <ClInclude Include="src\rendering\MaterialShaderDef.h" />
+    <ClInclude Include="src\rendering\MaterialShaderRepository.h" />
+    <ClInclude Include="src\rendering\MaterialRenderer.h" />
+    <ClInclude Include="src\rendering\MaterialUtils.h" />
+    <ClInclude Include="src\rendering\material\BrdfLUT.h" />
+    <ClInclude Include="src\rendering\material\MaterialDef.h" />
+    <ClInclude Include="src\rendering\mesh\AxisAlignedQuadMesh.h" />
+    <ClInclude Include="src\rendering\mesh\GrassBillboardMeshRenderData.h" />
+    <ClInclude Include="src\rendering\mesh\LineMesh.h" />
+    <ClInclude Include="src\rendering\mesh\MeshConst.h" />
+    <ClInclude Include="src\rendering\mesh\MeshDrawer.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\builder\BillboardMeshBuilder.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\builder\ContainerMeshBuilders.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\builder\GrassMeshBuilderMethods.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\builder\MeshBuilderCommon.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\builder\ModelMeshBuilder.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\builder\ProceduralMeshBuilder.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\builder\ProceduralMeshHelpers.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\builder\TerrainMeshBuilder.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\builder\TextMeshBuilder.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\builder\ProceduralTileMeshBuilderMethods.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\BuildingMesher.h" />
+    <ClInclude Include="src\rendering\mesh\mesher\ITileContainerMesher.h" />
+    <ClInclude Include="src\rendering\mesh\MeshIndexType.h" />
+    <ClInclude Include="src\rendering\mesh\MeshLODData.h" />
+    <ClInclude Include="src\rendering\mesh\MeshOperations.h" />
+    <ClInclude Include="src\rendering\mesh\MeshSkeletonData.h" />
+    <ClInclude Include="src\rendering\mesh\PrimitiveShapeMeshes.h" />
+    <ClInclude Include="src\rendering\mesh\FBXRawModel.h" />
+    <ClInclude Include="src\rendering\mesh\GrassMeshManager.h" />
+    <ClInclude Include="src\rendering\mesh\Mesh.h" />
+    <ClInclude Include="src\rendering\mesh\TerrainMeshManager.h" />
+    <ClInclude Include="src\rendering\mesh\TileContainerMeshManager.h" />
+    <ClInclude Include="src\rendering\mesh\TileGrassMeshType.h" />
+    <ClInclude Include="src\rendering\mesh\Vertex.h" />
+    <ClInclude Include="src\rendering\mesh\VertexType.h" />
+    <ClInclude Include="src\rendering\model\AnimationConst.h" />
+    <ClInclude Include="src\rendering\model\InstancedDynamicModelRenderer.h" />
+    <ClInclude Include="src\rendering\model\InstancedStaticModelGatherer.h" />
+    <ClInclude Include="src\rendering\model\InstancedStaticModelManager.h" />
+    <ClInclude Include="src\rendering\model\InstancedStaticModelRenderer.h" />
+    <ClInclude Include="src\rendering\model\ModelBatch.h" />
+    <ClInclude Include="src\rendering\model\ModelImpostorManager.h" />
+    <ClInclude Include="src\rendering\model\ModelImpostorRenderer.h" />
+    <ClInclude Include="src\rendering\model\ModelConst.h" />
+    <ClInclude Include="src\rendering\model\MaterialRenderPassType.h" />
+    <ClInclude Include="src\rendering\model\ModelHighlightRenderer.h" />
+    <ClInclude Include="src\rendering\model\ModelSubmeshData.h" />
+    <ClInclude Include="src\rendering\model\ModelUtil.h" />
+    <ClInclude Include="src\rendering\model\skeletal\AnimTransitionCondition.h" />
+    <ClInclude Include="src\rendering\model\skeletal\AnimTransitionConditionDef.h" />
+    <ClInclude Include="src\rendering\model\skeletal\AnimVariableFloatBinding.h" />
+    <ClInclude Include="src\rendering\model\skeletal\AnimVariables.h" />
+    <ClInclude Include="src\rendering\model\skeletal\SkeletalAnimationSampleContext.h" />
+    <ClInclude Include="src\rendering\model\skeletal\SkeletalAnimator.h" />
+    <ClInclude Include="src\rendering\model\StaticModelInstance.h" />
+    <ClInclude Include="src\rendering\particle\BuiltinCPUParticleEmitterModules.h" />
+    <ClInclude Include="src\rendering\particle\CpuParticleEmitter.h" />
+    <ClInclude Include="src\rendering\particle\CPUParticleEmitterModule.h" />
+    <ClInclude Include="src\rendering\particle\CPUParticleEmitterOperation.h" />
+    <ClInclude Include="src\rendering\particle\CpuParticleEmitterRenderList.h" />
+    <ClInclude Include="src\rendering\particle\CPUParticleSystem.h" />
+    <ClInclude Include="src\rendering\particle\ParticleEmitterVariableName.h" />
+    <ClInclude Include="src\rendering\particle\ParticleEnumTypes.h" />
+    <ClInclude Include="src\rendering\particle\ParticleSystemInputs.h" />
+    <ClInclude Include="src\rendering\particle\ParticleSystemRenderer.h" />
+    <ClInclude Include="src\rendering\particle\ParticleSystemUserParameters.h" />
+    <ClInclude Include="src\rendering\post_process\AmbientOcclusionPostProcess.h" />
+    <ClInclude Include="src\rendering\post_process\DepthOfFieldPostProcess.h" />
+    <ClInclude Include="src\rendering\post_process\ShadowDetail.h" />
+    <ClInclude Include="src\rendering\post_process\ShadowPassShaderData.h" />
+    <ClInclude Include="src\rendering\post_process\ShadowRenderer.h" />
+    <ClInclude Include="src\rendering\GrassBillboardMesh.h" />
+    <ClInclude Include="src\rendering\post_process\SmudgeRenderer.h" />
+    <ClInclude Include="src\rendering\post_process\TonemapRenderer.h" />
+    <ClInclude Include="src\rendering\renderdata\WorldRenderDataManager.h" />
+    <ClInclude Include="src\rendering\renderer\GrassRenderer.h" />
+    <ClInclude Include="src\rendering\renderer\OverlayRenderer.h" />
+    <ClInclude Include="src\rendering\renderer\RoadRenderer.h" />
+    <ClInclude Include="src\rendering\renderer\WorldRenderer.h" />
+    <ClInclude Include="src\rendering\renderstate\CharacterRenderState.h" />
+    <ClInclude Include="src\rendering\renderstate\DynamicModelInstanceState.h" />
+    <ClInclude Include="src\rendering\renderstate\WorldRenderState.h" />
+    <ClInclude Include="src\rendering\renderstate\GameRenderStateManager.h" />
+    <ClInclude Include="src\rendering\renderstate\RenderStateManager.h" />
+    <ClInclude Include="src\rendering\renderstate\WorldTextRenderState.h" />
+    <ClInclude Include="src\rendering\StencilBufferIDs.h" />
+    <ClInclude Include="src\rendering\tasks\MeshTask.inl" />
+    <ClInclude Include="src\rendering\texture\GLTexture.h" />
+    <ClInclude Include="src\rendering\texture\TextureConvert.h" />
+    <ClInclude Include="src\rendering\texture\TextureHelpers.h" />
+    <ClInclude Include="src\rendering\text\WorldTextRenderer.h" />
+    <ClInclude Include="src\rendering\TileContainerMeshData.h" />
+    <ClInclude Include="src\rendering\TileContainerRenderer.h" />
+    <ClInclude Include="src\rendering\RenderCommon.h" />
+    <ClInclude Include="src\rendering\RenderStats.h" />
+    <ClInclude Include="src\rendering\RenderThreadTasks.h" />
+    <ClInclude Include="src\rendering\Skybox.h" />
+    <ClInclude Include="src\rendering\texture\MaterialTextureGenerator.h" />
+    <ClInclude Include="src\rendering\TileVertex.h" />
+    <ClInclude Include="src\rendering\RenderContext.h" />
+    <ClInclude Include="src\rendering\ShaderLoader.h" />
+    <ClInclude Include="src\rendering\TerrainRenderer.h" />
+    <ClInclude Include="src\rendering\UboHelpers.h" />
+    <ClInclude Include="src\resources\AnimationRepository.h" />
+    <ClInclude Include="src\resources\AnimMachineRepository.h" />
+    <ClInclude Include="src\resources\AssetLoader.h" />
+    <ClInclude Include="src\resources\AssetLoadTask.h" />
+    <ClInclude Include="src\resources\asset\AssetHandle.h" />
+    <ClInclude Include="src\resources\asset\AssetHandleBase.h" />
+    <ClInclude Include="src\resources\asset\AssetHandleBundle.h" />
+    <ClInclude Include="src\resources\asset\LiteAssetRef.h" />
+    <ClInclude Include="src\resources\asset\AssetMetadata.h" />
+    <ClInclude Include="src\resources\asset\AssetType.h" />
+    <ClInclude Include="src\resources\asset\VariantAssetRef.h" />
+    <ClInclude Include="src\resources\BiomeRepository.h" />
+    <ClInclude Include="src\resources\Blendspace1DRepository.h" />
+    <ClInclude Include="src\resources\CubemapRepository.h" />
+    <ClInclude Include="src\resources\DataAssetRepository.h" />
+    <ClInclude Include="src\resources\EffectRepository.h" />
+    <ClInclude Include="src\resources\FishRepository.h" />
+    <ClInclude Include="src\resources\FontRepository.h" />
+    <ClInclude Include="src\resources\IAsset.h" />
+    <ClInclude Include="src\resources\IAssetRepository.h" />
+    <ClInclude Include="src\resources\MaterialRepository.h" />
+    <ClInclude Include="src\resources\ModelRepository.h" />
+    <ClInclude Include="src\resources\ParticleSystemRepository.h" />
+    <ClInclude Include="src\resources\ResourceManager.h" />
+    <ClInclude Include="src\resources\ResourceOperations.h" />
+    <ClInclude Include="src\resources\RigRepository.h" />
+    <ClInclude Include="src\resources\SkillRepository.h" />
+    <ClInclude Include="src\resources\TextureRepository.h" />
+    <ClInclude Include="src\resources\TileDistributionRepository.h" />
+    <ClInclude Include="src\resources\TileGrassRepository.h" />
+    <ClInclude Include="src\resources\TileRepository.h" />
+    <ClInclude Include="src\screens\EditorOnlyScreen.h" />
+    <ClInclude Include="src\screens\GameplayScreen.h" />
+    <ClInclude Include="src\screens\MainMenuScreen.h" />
+    <ClInclude Include="src\screens\ScreenState.h" />
+    <ClInclude Include="src\screens\WorldGenScreen.h" />
+    <ClInclude Include="src\serialization\BitseryExt.h" />
+    <ClInclude Include="src\serialization\GameSaveManager.h" />
+    <ClInclude Include="src\serialization\gamesave\WorldSaveContext.h" />
+    <ClInclude Include="src\serialization\gamesave\WorldSaveEventType.h" />
+    <ClInclude Include="src\server\GameServerNew.h" />
+    <ClInclude Include="src\server\ServerConst.h" />
+    <ClInclude Include="src\server\ServerPlayerManagerEvents.h" />
+    <ClInclude Include="src\server\ServerThread.h" />
+    <ClInclude Include="src\terrain\CompressedHeight.h" />
+    <ClInclude Include="src\text\LocText.h" />
+    <ClInclude Include="src\text\NameManager.h" />
+    <ClInclude Include="src\tile\ChunkLiteTileHandle.h" />
+    <ClInclude Include="src\tile\SimTileData.h" />
+    <ClInclude Include="src\tile\SimTileReservation.h" />
+    <ClInclude Include="src\tile\TileContainerLoader.h" />
+    <ClInclude Include="src\tile\TileDamageData.h" />
+    <ClInclude Include="src\tile\MutationDef.h" />
+    <ClInclude Include="src\tile\TileType.h" />
+    <ClInclude Include="src\tile\TileTypeDataVariant.h" />
+    <ClInclude Include="src\ui\debugging\GameplayDebugger.h" />
+    <ClInclude Include="src\ui\debugging\MovementDebugger.h" />
+    <ClInclude Include="src\ui\debugging\PhysicsDebugger.h" />
+    <ClInclude Include="src\ui\editor\AnimMachineEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\Blendspace1DEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\CollisionEditor.h" />
+    <ClInclude Include="src\ui\editor\NodeGraph.h" />
+    <ClInclude Include="src\ui\editor\TileDistributionEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\TileEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\GameUIPanel.h" />
+    <ClInclude Include="src\ui\GameWindow.h" />
+    <ClInclude Include="src\ui\IGameScreen.h" />
+    <ClInclude Include="src\ui\imgui_controls\ObjectVector.h" />
+    <ClInclude Include="src\ui\noesis\code_behind\SackContainerPanel.h" />
+    <ClInclude Include="src\ui\noesis\interactivity\EventTriggerWithModifier.h" />
+    <ClInclude Include="src\ui\noesis\inventory\InventoryItemViewModel.h" />
+    <ClInclude Include="src\ui\noesis\NoesisGLRenderDevice.h" />
+    <ClInclude Include="src\ui\noesis\NoesisGuiContext.h" />
+    <ClInclude Include="src\ui\noesis\NoesisLocalFontProvider.h" />
+    <ClInclude Include="src\ui\noesis\NoesisLocalXamlProvider.h" />
+    <ClInclude Include="src\ui\noesis\NoesisProviderFileWatcher.h" />
+    <ClInclude Include="src\ui\noesis\NoesisTextureProvider.h" />
+    <ClInclude Include="src\ui\noesis\NoesisPanelManager.h" />
+    <ClInclude Include="src\ui\noesis\PanelViewModelBase.h" />
+    <ClInclude Include="src\ui\noesis\vendor\Interactivity\Src\ComparisonLogic.h" />
+    <ClInclude Include="src\ui\noesis\vendor\Interactivity\Src\DataBindingHelper.h" />
+    <ClInclude Include="src\ui\ScreenList.h" />
+    <ClInclude Include="src\util\DitherMatrix.h" />
+    <ClInclude Include="src\util\GridIdUtil.h" />
+    <ClInclude Include="src\util\FixedSizeVector.h" />
+    <ClInclude Include="src\util\RandomQuaternion.h" />
+    <ClInclude Include="src\util\RollTable.h" />
+    <ClInclude Include="src\util\TilingVoronoiMap.h" />
+    <ClInclude Include="src\serialization\CommonSerializable.h" />
+    <ClInclude Include="src\serialization\NetSerialize.h" />
+    <ClInclude Include="src\serialization\VorbSerializableDefs.h" />
+    <ClInclude Include="src\serialization\YmlSerializable.h" />
+    <ClInclude Include="src\serialization\YmlSerializer.h" />
+    <ClInclude Include="src\services\Services.h" />
+    <ClInclude Include="src\skill\SkillSlot.h" />
+    <ClInclude Include="src\stdafx.h" />
+    <ClInclude Include="src\terrain\HeightmapPatch.h" />
+    <ClInclude Include="src\tile\HarvestableSubChunkRegistry.h" />
+    <ClInclude Include="src\tile\TileContainerConst.h" />
+    <ClInclude Include="src\tile\TileContainerRepository.h" />
+    <ClInclude Include="src\tile\TileGrass.h" />
+    <ClInclude Include="src\tile\TileSpatialGrid.h" />
+    <ClInclude Include="src\tile\Stairs.h" />
+    <ClInclude Include="src\tile\Tile.h" />
+    <ClInclude Include="src\tile\TileConst.h" />
+    <ClInclude Include="src\tile\TileContainer.h" />
+    <ClInclude Include="src\tile\TileContainerEvents.h" />
+    <ClInclude Include="src\tile\TileContainerHarvestableRegistry.h" />
+    <ClInclude Include="src\tile\TileFlags.h" />
+    <ClInclude Include="src\tile\TileHandle.h" />
+    <ClInclude Include="src\tile\TileHarvestable.h" />
+    <ClInclude Include="src\tile\TileUtil.h" />
+    <ClInclude Include="src\tile\TileWallContainer.h" />
+    <ClInclude Include="src\time\TimestepManager.h" />
+    <ClInclude Include="src\time\TimeOfDayManager.h" />
+    <ClInclude Include="src\types\IdTypes.h" />
+    <ClInclude Include="src\ui\DebugTweakerPanel.h" />
+    <ClInclude Include="src\ui\editor\AssetEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\AssetEditorViewportPanelBase.h" />
+    <ClInclude Include="src\ui\editor\BiomeEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\ContentBrowserPanel.h" />
+    <ClInclude Include="src\ui\editor\ContentBrowser\ContentBrowserItem.h" />
+    <ClInclude Include="src\ui\editor\EditorCurve.hpp" />
+    <ClInclude Include="src\ui\editor\EditorRoot.h" />
+    <ClInclude Include="src\ui\editor\FishingEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\FoliageEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\IEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\ImguiAssetThumbnails.h" />
+    <ClInclude Include="src\ui\editor\ImguiColors.h" />
+    <ClInclude Include="src\ui\editor\ItemEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\MaterialEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\ModelEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\ParticleSystemEditorViewportPanel.h" />
+    <ClInclude Include="src\ui\editor\Selection\EditorSelectionManager.h" />
+    <ClInclude Include="src\ui\editor\Settings\EditorSettings.h" />
+    <ClInclude Include="src\ui\editor\AssetSelectPanel.h" />
+    <ClInclude Include="src\ui\ImguiUtil.hpp" />
+    <ClInclude Include="src\ui\imgui_controls\EnumCombo.h" />
+    <ClInclude Include="src\ui\minigame\FishingMinigame.h" />
+    <ClInclude Include="src\ui\minigame\ILocalMinigame.h" />
+    <ClInclude Include="src\ui\minigame\LocalMinigameContext.h" />
+    <ClInclude Include="src\ui\PauseMenuPanel.h" />
+    <ClInclude Include="src\ui\TileInspectionPanel.h" />
+    <ClInclude Include="src\ui\UIContext.h" />
+    <ClInclude Include="src\ui\TileInteractPanel.h" />
+    <ClInclude Include="src\ui\UIContextEvents.h" />
+    <ClInclude Include="src\util\AABB.hpp" />
+    <ClInclude Include="src\util\ArbitraryObjectArray.h" />
+    <ClInclude Include="src\util\BitArray.h" />
+    <ClInclude Include="src\util\BitFlags.h" />
+    <ClInclude Include="src\util\Cartesian.h" />
+    <ClInclude Include="src\util\CommonUtil.h" />
+    <ClInclude Include="src\util\ConstexprMap.h" />
+    <ClInclude Include="src\util\CubeFacing.h" />
+    <ClInclude Include="src\util\ExclusiveCacheLine.h" />
+    <ClInclude Include="src\util\GlobalEnumNameMap.h" />
+    <ClInclude Include="src\util\GridEdge.h" />
+    <ClInclude Include="src\util\GridEdgeFinder.h" />
+    <ClInclude Include="src\util\IntersectionHit.h" />
+    <ClInclude Include="src\util\IntersectionUtil.h" />
+    <ClInclude Include="src\util\MathDefines.h" />
+    <ClInclude Include="src\util\MathUtil.hpp" />
+    <ClInclude Include="src\util\NativeFileBrowser.h" />
+    <ClInclude Include="src\util\panic.h" />
+    <ClInclude Include="src\util\RandomPointFromShape.h" />
+    <ClInclude Include="src\util\SpatialGrid2D.h" />
+    <ClInclude Include="src\util\StringHash.h" />
+    <ClInclude Include="src\util\StringUtils.h" />
+    <ClInclude Include="src\util\StrToken.h" />
+    <ClInclude Include="src\util\StrtokenEncodeTable.h" />
+    <ClInclude Include="src\util\TextureUtil.h" />
+    <ClInclude Include="src\util\ThreadIDs.h" />
+    <ClInclude Include="src\util\ThreadSafeDirtySet.h" />
+    <ClInclude Include="src\util\Timing\ThreadUtilizationTimer.h" />
+    <ClInclude Include="src\util\TinyThreadsafeVector.hpp" />
+    <ClInclude Include="src\util\Tweener.h" />
+    <ClInclude Include="src\util\TypeHash.h" />
+    <ClInclude Include="src\util\UniformTriangleSampler3D.h" />
+    <ClInclude Include="src\util\Utils.h" />
+    <ClInclude Include="src\util\UniqueId64.h" />
+    <ClInclude Include="src\util\WindFormulas.h" />
+    <ClInclude Include="src\util\Winding.h" />
+    <ClInclude Include="src\weather\CloudMeshManager.h" />
+    <ClInclude Include="src\weather\WeatherManager.h" />
+    <ClInclude Include="src\world\biome\BiomeGridEvents.h" />
+    <ClInclude Include="src\world\biome\LivingBiomeType.h" />
+    <ClInclude Include="src\world\biome\BiomeGrid.h" />
+    <ClInclude Include="src\world\LocalChunk.h" />
+    <ClInclude Include="src\world\ChunkConst.h" />
+    <ClInclude Include="src\world\ChunkEvents.h" />
+    <ClInclude Include="src\world\ChunkGridEvent.h" />
+    <ClInclude Include="src\world\ChunkState.h" />
+    <ClInclude Include="src\world\chunk\SimChunk.h" />
+    <ClInclude Include="src\world\chunk\SimChunkGrid.h" />
+    <ClInclude Include="src\world\cli\CliHeightmapGrid.h" />
+    <ClInclude Include="src\world\controller\EditorWorldInterfaceController.h" />
+    <ClInclude Include="src\world\controller\IWorldInterfaceController.h" />
+    <ClInclude Include="src\world\CoordinateTypes.h" />
+    <ClInclude Include="src\world\ecosystem\FishEcosystem.h" />
+    <ClInclude Include="src\world\host\HostWorldData.h" />
+    <ClInclude Include="src\world\LocalChunkGrid.h" />
+    <ClInclude Include="src\world\GridID.h" />
+    <ClInclude Include="src\world\IHeightmapGrid.h" />
+    <ClInclude Include="src\world\HeightmapTerrainQuadtree.h" />
+    <ClInclude Include="src\world\markup\WorldMarkupGrid.h" />
+    <ClInclude Include="src\world\ownership\OwnershipGrid.h" />
+    <ClInclude Include="src\world\road\TerrainSurfaceGrid.h" />
+    <ClInclude Include="src\world\road\TerrainSurfaceType.h" />
+    <ClInclude Include="src\world\settlement\SettlementLayoutManager.h" />
+    <ClInclude Include="src\world\settlement\SettlementPlot.h" />
+    <ClInclude Include="src\world\settlement\SettlementPlotManager.h" />
+    <ClInclude Include="src\world\settlement\SettlementRoadNetwork.h" />
+    <ClInclude Include="src\world\settlement\SettlementZone.h" />
+    <ClInclude Include="src\world\simulation\host\CharacterGroupType.h" />
+    <ClInclude Include="src\world\simulation\host\component\CharacterGroupComponents.h" />
+    <ClInclude Include="src\world\simulation\host\component\SimSettlementComponents.h" />
+    <ClInclude Include="src\world\simulation\host\component\SimCharacterComponents.h" />
+    <ClInclude Include="src\world\simulation\host\component\StructureComponents.h" />
+    <ClInclude Include="src\world\simulation\host\HostSimContext.h" />
+    <ClInclude Include="src\world\simulation\host\settlement\SettlementPlanner.h" />
+    <ClInclude Include="src\world\simulation\host\settlement\SimSettlementCharacterInterface.h" />
+    <ClInclude Include="src\world\simulation\host\SimECS.h" />
+    <ClInclude Include="src\world\simulation\host\SimECSEvents.h" />
+    <ClInclude Include="src\world\simulation\host\SimEntityTransitionManager.h" />
+    <ClInclude Include="src\world\simulation\host\SimEntityType.h" />
+    <ClInclude Include="src\world\simulation\host\SimImmigrationManager.h" />
+    <ClInclude Include="src\world\simulation\host\SimThread.h" />
+    <ClInclude Include="src\world\simulation\host\SimWorldAnalytics.h" />
+    <ClInclude Include="src\world\simulation\host\StoryTeller.h" />
+    <ClInclude Include="src\world\simulation\host\storyteller\IStoryTellerEvent.h" />
+    <ClInclude Include="src\world\simulation\host\system\SimAISystem.h" />
+    <ClInclude Include="src\world\simulation\host\settlement\SimSettlementSystem.h" />
+    <ClInclude Include="src\world\simulation\ISimJob.h" />
+    <ClInclude Include="src\world\simulation\ISimTask.h" />
+    <ClInclude Include="src\world\srv\ServerChunkStateEvents.h" />
+    <ClInclude Include="src\world\srv\ServerChunkAuthorityManager.h" />
+    <ClInclude Include="src\server\ServerReportStateManager.h" />
+    <ClInclude Include="src\world\World.h" />
+    <ClInclude Include="src\world\srv\HostHeightmapGrid.h" />
+    <ClInclude Include="src\world\TerrainConstants.h" />
+    <ClInclude Include="src\world\WorldConstants.h" />
+    <ClInclude Include="src\world\WorldContextObject.h" />
+    <ClInclude Include="src\world\WorldDefaults.h" />
+    <ClInclude Include="src\world\WorldDestroyer.h" />
+    <ClInclude Include="src\world\WorldEvents.h" />
+    <ClInclude Include="src\world\WorldObjectQuery.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\extern\imgui-node-editor\imgui_bezier_math.inl" />
+    <None Include="src\extern\imgui-node-editor\imgui_extra_math.inl" />
+    <None Include="src\extern\imgui-node-editor\imgui_node_editor_internal.inl" />
+    <None Include="src\item\ItemReservation" />
+    <None Include="src\rendering\mesh\fbx2raw.inl" />
+    <None Include="src\rendering\mesh\VertexType" />
+    <None Include="src\resources\gliHasAlpha.inl" />
+    <None Include="src\resources\RuntimeModelSerializationContext.inl" />
+    <None Include="src\text\NameStrings.inl" />
+    <None Include="src\ui\noesis\NoesisInputMappings.inl" />
+    <None Include="src\world\settlement\SettlementDebugHelpers.inl" />
+    <None Include="src\world\settlement\SettlementPlot" />
+    <None Include="src\world\srv\ServerChunkStateEvents" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,23 @@
+type: Flora
+harvestable: wood
+materials: []
+texture_method: simple
+destroy_effect: tree_explode
+model: tree_pine
+model_variants:
+  - 0
+max_health: 75
+layer: 1
+shape: model
+path_weight: 0
+nav_mask: 0
+name: ''
+item_drops:
+  rand: []
+  guar:
+    - val: wood_log
+      count: [30,35]
+recipe: []
+transforms:
+  - type: CCorrupt
+    target: tree_pine_c

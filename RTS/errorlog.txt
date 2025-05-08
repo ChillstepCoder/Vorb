@@ -1,0 +1,347 @@
+*ERROR: Failed to load data\materials\color_noise.png texture must be smaller than 2048 
+*ERROR: Failed to load data\textures\character\body\female_back.png texture must be smaller than 2048 
+*ERROR: Failed to load data\textures\character\body\female_front.png texture must be smaller than 2048 
+*ERROR: At TextureAtlas::allocateTexture. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At init render context. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At init render context. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At init render context. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At init render context B. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At Init render context. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Init render context. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Init render context B. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Frame Render. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Frame Render. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Frame Render A. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Frame Render A. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render D. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render D. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render D. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Frame Render B. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At Init render context. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Shadow GBuffer Init. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Shadow GBuffer Init. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Shadow GBuffer Init. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At Shadow GBuffer Init. Error code 1281: GL_INVALID_VALUE 
+*ERROR: Asset import failure - data\models\characterpaladin.fbx - Unable to open file "data\models\characterpaladin.fbx". 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: There's more than one mesh in the file: data\models\character\paladin.model 
+*ERROR: There's more than one mesh in the file: data\models\character\paladin.model 
+*ERROR: Failed to read skinning data: data\models\character\paladin.model 
+*ERROR: Failed to read skinning data: data\models\character\paladin.model 
+*ERROR: Failed to read skinning data: data\models\character\paladin.model 
+*ERROR: Animation import failure - data\characters\rigs\human\sword_shield_turn_2.ozz. sword_shield_walk.ozz 
+*ERROR: Animation import failure - data\characters\rigs\human\sword_shield_walk.ozz 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Blending job error 
+*ERROR: Local to model job error 
+*ERROR: Local to model job error 
+*ERROR: Local to model job error 
+*ERROR: Local to model job error 
+*ERROR: Local to model job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Sampling job error 
+*ERROR: Animation import failure - data\characters\human\animations\human.anim\sheath_sword.ozz 
+*ERROR: Animation import failure - data\characters\human\animations\human.anim\sheath_sword.ozz 
+*ERROR: Anim machine animation falling_idle_1 does not exist in rig. Machine file: data\characters\human\human.machine 
+*ERROR: At WaterMesh::bindVertexAttribs. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At RenderContext::FrameEnd. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At RenderContext::FrameEnd. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At RenderContext::FrameEnd. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At RenderContext::FrameEnd. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At WaterMesh::bindVertexAttribs. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At WaterMesh::bindVertexAttribs. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At WaterMesh::bindVertexAttribs. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At MaterialUtils::uploadLightingUniforms22222. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At TerrainMesh::bindVertexAttribs. Error code 1285: GL_OUT_OF_MEMORY 
+*ERROR: At BuildingMesh::draw. Error code 1285: GL_OUT_OF_MEMORY 
+*ERROR: At BuildingMesh::draw. Error code 1285: GL_OUT_OF_MEMORY 
+*ERROR: At BuildingMesh::draw4. Error code 1285: GL_OUT_OF_MEMORY 
+*ERROR: At BuildingMesh::finishMesh. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At BuildingMesh::draw4. Error code 1285: GL_OUT_OF_MEMORY 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Mesh::draw. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Mesh::draw. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Mesh::draw. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At Mesh::fffff. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At TextureAtlas::allocateTexture. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At TextureRepository::loadTexture. Error code 1281: GL_INVALID_VALUE 
+*ERROR: Failed to find texture - tree_small 
+*ERROR: Failed to load internal normal map generator shader with error 0(2) : error C0000: syntax error, unexpected type identifier, expecting ',' or ';' at token "vec4"
+(0) : error C0000: syntax error, unexpected $end at token "<EOF>"
+ 
+*ERROR: Failed to load internal normal map generator shader with error (0) : error C0000: syntax error, unexpected $end at token "<EOF>"
+ 
+*ERROR: Failed to load internal normal map generator shader with error (0) : error C0000: syntax error, unexpected $end at token "<EOF>"
+ 
+*ERROR: Failed to place stairs! 
+*ERROR: Failed to place stairs! 
+*ERROR: Overflow in AABB, object removed from simulation 
+*ERROR: If you can reproduce this, please email bugs@continuousphysics.com
+ 
+*ERROR: Please include above information, your Platform, version of OS.
+ 
+*ERROR: Thanks.
+ 
+*ERROR: Overflow in AABB, object removed from simulation 
+*ERROR: Need to implement new shape type! 
+*ERROR: Failed to find texture - item_wood 
+*ERROR: Failed to find texture - wood_wall_gothic 
+*ERROR: Skeleton file is not a skeleton - C:\SoA\Vorb\RTS\data\characters\human\paladin_skeleton.ozz 
+*ERROR: No mesh to process in this file: C:\SoA\Vorb\RTS\data\characters\human\paladin.model 
+*ERROR: Failed to import fbx scene: C:\SoA\Vorb\RTS\data\characters\human\sword.model 
+*ERROR: Failed to import fbx scene: C:\SoA\Vorb\RTS\data\models\bush\bush.model 
+*ERROR: Failed to import fbx scene: C:\SoA\Vorb\RTS\data\models\bush\small_bush.model 
+*ERROR: Failed to import fbx scene: C:\SoA\Vorb\RTS\data\models\tree\tree.model 
+*ERROR: Failed to read skinning data: C:\SoA\Vorb\RTS\data\characters\human\paladin_naked.fbx 
+*ERROR: Failed to read skinning data: C:\SoA\Vorb\RTS\data\characters\human\paladin_naked.fbx 
+*ERROR: No mesh to process in this file: C:\SoA\Vorb\RTS\data\models\bush\bush_2.fbx 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At MaterialUtils::uploadLightingUniforms. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At LightRenderer::renderSunlight. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: Failed to find texture - roof 
+*ERROR: At RenderContext::Begin Frame. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At MeshBuilderCommon::initMeshBuffers. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At TextMeshBuilder::uploadMeshData. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At WorldEditor::renderUI(). Error code 1281: GL_INVALID_VALUE 
+*ERROR: At WorldEditor::renderUI(). Error code 1281: GL_INVALID_VALUE 
+*ERROR: At WorldEditor::renderUI(). Error code 1281: GL_INVALID_VALUE 
+*ERROR: At WorldEditor::renderUI(). Error code 1281: GL_INVALID_VALUE 
+*ERROR: At RenderContext::FrameEnd. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At TextureRepository::uploadTexture. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At RenderContext::Begin Frame. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At MeshBuilderCommon::initMeshBuffers. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At MeshBuilderCommon::initMeshBuffers. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At RenderContext::Begin Frame. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At MeshBuilderCommon::initMeshBuffers. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At RenderContext::Begin Frame. Error code 1280: GL_INVALID_ENUM 
+*ERROR: At AAA. Error code 1280: GL_INVALID_ENUM 
+*ERROR: FAILED TO SAVE PARTICLE SYSTEM! 
+*ERROR: At RenderContext::FrameEnd. Error code 1281: GL_INVALID_VALUE 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:215 panic: Asset "item_wood" does not exist in the asset registry
+ 
+*ERROR: At TerrainGenerator::generateBaseHeightmapGPU. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At TerrainGenerator::generateBaseHeightmapGPU. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: C:\SoA\Vorb\RTS\src\generation\TerrainGenerator.cpp:81 panic: terrain_base.comp was not loaded. Make sure it exists and is in assets.preload
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\rendering\GLExtensions.cpp:34 panic: GL_EXT_shader_16bit_storage not supported by this GPU. Try updating drivers
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\generation\WorldDataGPUGenerator.cpp:91 panic: terrain_base.comp was not loaded. Make sure it exists and is in assets.preload
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\generation\WorldDataGPUGenerator.cpp:91 panic: terrain_base.comp was not loaded. Make sure it exists and is in assets.preload
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:215 panic: Asset "hotspring01" does not exist in the asset registry
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:215 panic: Asset "hotspringch01" does not exist in the asset registry
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:215 panic: Asset "hotspringch01" does not exist in the asset registry
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\generation\stages\RiverGenerationStage.cpp:205 panic: River computed attempted to dispatch 2927 groups, but max is -858993460
+ 
+*ERROR: At RenderContext::FrameEnd. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At RenderContext::FrameEnd. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At RenderContext::FrameEnd. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At A. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At A. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: C:\SoA\Vorb\RTS\src\world\cli\CliChunkGrid.cpp:11 panic: Fix CliChunkGrid::updateLoadingChunks, use IChunkGrid and better interface
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\rendering\renderer\WorldRenderer.cpp:481 panic: Missing world in WorldRenderer::getRenderDataManagerForWorld
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\rendering\renderer\WorldRenderer.cpp:481 panic: Missing world in WorldRenderer::getRenderDataManagerForWorld
+ 
+*ERROR: At InstancedStaticModelRenderer::renderModelPass. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At InstancedStaticModelRenderer::renderModelPass. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At InstancedStaticModelRenderer::renderModelPass::Draw. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At InstancedStaticModelRenderer::renderModelPass::Draw. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At InstancedStaticModelRenderer::renderModelPass::Q. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At InstancedStaticModelRenderer::renderModelPass::Q. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At InstancedStaticModelRenderer::renderModelPass::C. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At InstancedStaticModelRenderer::renderModelPass::C. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At InstancedStaticModelRenderer::renderModelPass::C. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\BiomeRepository.cpp:34 panic: Biome C:\SoA\Vorb\RTS\data\biome\forest\forest.biome file name does not match any code enum name
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\BiomeRepository.cpp:34 panic: Biome C:\SoA\Vorb\RTS\data\biome\hotsprings\hotsprings.biome file name does not match any code enum name
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\BiomeRepository.cpp:34 panic: Biome C:\SoA\Vorb\RTS\data\biome\mountains\mountains.biome file name does not match any code enum name
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\BiomeRepository.cpp:34 panic: Biome C:\SoA\Vorb\RTS\data\biome\ocean\ocean.biome file name does not match any code enum name
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\BiomeRepository.cpp:193 panic: Could not write biome_ids.glsl file
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\BiomeRepository.cpp:132 panic: Biome Ocean corruptable but next biome Plains does not match required name Ocean_B
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\BiomeRepository.cpp:193 panic: Could not write biome_ids.glsl file
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\BiomeRepository.cpp:194 panic: Could not resolve data/shaders/biome_ids.glsl
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\BiomeRepository.cpp:194 panic: Could not resolve shaders/biome_ids.glsl
+ 
+*ERROR: At HistoryGenerationStage::growBiomesStep. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: At HistoryGenerationStage::handleCorruptSpawn. Error code 1282: GL_INVALID_OPERATION 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\BiomeRepository.h:13 panic: Cannot save biomes yet
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\BiomeRepository.h:13 panic: Cannot save biomes yet
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\BiomeRepository.h:13 panic: Cannot save biomes yet
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\rendering\renderer\WorldRenderer.cpp:497 panic: Missing world in WorldRenderer::getRenderDataManagerForWorld
+ 
+*ERROR: At InstancedStaticModelRenderer::renderModelPass. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At InstancedStaticModelRenderer::renderModelPass. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At InstancedStaticModelRenderer::renderModelPass::B. Error code 1281: GL_INVALID_VALUE 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\asset\SoftAssetReference.cpp:115 panic: Unhandled asset type 18 in SoftAssetReference::updateAndRenderSoftAssetReference
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\TileRepository.h:32 panic: Cannot save tiles yet
+ 
+*ERROR: At RenderContext::FrameEnd. Error code 1280: GL_INVALID_ENUM 
+*ERROR: C:\SoA\Vorb\RTS\src\ui\editor\ContentBrowserPanel.cpp:282 panic: TODO: Implement import
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:238 panic: Asset "test" does not exist in the asset registry
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:273 panic: Asset name test.tdist at path C:\SoA\Vorb\RTS\data\biome\hotsprings\dist\test.tdist.tdist already registered from path - C:\SoA\Vorb\RTS\data\biome\hotsprings\dist\test.tdist.tdist
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:273 panic: Asset name fu.tdist at path C:\SoA\Vorb\RTS\data\biome\hotsprings\dist\fu.tdist.tdist already registered from path - C:\SoA\Vorb\RTS\data\biome\hotsprings\dist\fu.tdist.tdist
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:273 panic: Asset name weeee.tdist at path C:\SoA\Vorb\RTS\data\biome\hotsprings\dist\weeee.tdist.tdist already registered from path - C:\SoA\Vorb\RTS\data\biome\hotsprings\dist\weeee.tdist.tdist
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\rendering\renderer\WorldRenderer.cpp:497 panic: Missing world in WorldRenderer::getRenderDataManagerForWorld
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\rendering\renderer\WorldRenderer.cpp:505 panic: Missing world in WorldRenderer::getRenderDataManagerForWorld
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\rendering\renderer\WorldRenderer.cpp:505 panic: Missing world in WorldRenderer::getRenderDataManagerForWorld
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\rendering\renderer\WorldRenderer.cpp:505 panic: Missing world in WorldRenderer::getRenderDataManagerForWorld
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\rendering\renderer\WorldRenderer.cpp:505 panic: Missing world in WorldRenderer::getRenderDataManagerForWorld
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:250 panic: Asset "mountainscmap" does not exist in the asset registry
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:250 panic: Asset "hotspringhero" does not exist in the asset registry
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:250 panic: Asset "hotspringhero" does not exist in the asset registry
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:250 panic: Asset "hotspringhero" does not exist in the asset registry
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:250 panic: Asset "tree_a" does not exist in the asset registry
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\serialization\GameSaveManager.cpp:77 panic: ZSTD_decompress failed during template load for C:\SoA\Vorb\RTS\saves\templates\template.dat
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\generation\WorldDataGenerator.cpp:63 panic: Failed to load world template C:\SoA\Vorb\RTS\saves\world\debug_template
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\serialization\gamesave\WorldSaveContext.cpp:91 panic: World save could not open world.desc for write
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\IAssetRepository.h:273 panic: Asset name wagon_01_base_bottom at path C:\SoA\Vorb\RTS\data\models\wagon\wagon_01_base_bottom_textures\wagon_01_base_bottom_ao.png already registered from path - C:\SoA\Vorb\RTS\data\models\wagon\wagon_01_base_bottom_textures\wagon_01_base_bottom.png
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\serialization\CommonSerializable.h:12 panic: Invalid string token length (max 20) 25 wagon_01_base_bot_ao
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\serialization\CommonSerializable.h:12 panic: Invalid string token length (max 20) 23 wgn_01_base_bot_ao
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\serialization\CommonSerializable.h:12 panic: Invalid string token length (max 20) 23 wgn_01_base_bot_ao
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\MaterialRepository.cpp:307 panic: Normal texture wagon_01_top_n for material C:\SoA\Vorb\RTS\data\models\wagon\wagon_01_base_top_textures\wagon_01_top.material doesn't match albedo dims
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\MaterialRepository.cpp:307 panic: Normal texture wagon_01_top_n for material C:\SoA\Vorb\RTS\data\models\wagon\wagon_01_base_top_textures\wagon_01_top.material doesn't match albedo dims
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\serialization\CommonSerializable.h:12 panic: Invalid string token length (max 20) 44 foyer
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\city\BuildingRepository.cpp:18 panic: Invalid public room def foyer on building large_house
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\city\BuildingRepository.cpp:18 panic: Invalid public room def garden on building large_house
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\city\BuildingRepository.cpp:18 panic: Invalid public room def wood_shop on building lumbermill
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\rendering\character\CharacterAnimator.cpp:371 panic: BEGIN JUMP ASSERT FAIL
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\AnimMachineRepository.cpp:39 panic: Anim machine animation swrd_shld_walk does not exist in rig. Machine file: C:\SoA\Vorb\RTS\data\characters\human\human.animmach
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\AnimMachineRepository.cpp:39 panic: Anim machine animation swrd_shld_walk does not exist in rig. Machine file: C:\SoA\Vorb\RTS\data\characters\human\human.animmach
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\io\PngLoader.cpp:119 panic: Texture C:\SoA\Vorb\RTS\data\textures\editor\ic_save.png dimensions <24,24> are not power of two
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\io\PngLoader.cpp:119 panic: Texture C:\SoA\Vorb\RTS\data\textures\editor\ic_restore.png dimensions <24,24> are not power of two
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\AnimMachineRepository.cpp:32 panic: Missing state type on animmachine C:\SoA\Vorb\RTS\data\characters\human\human.animmach state move
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\AnimMachineRepository.cpp:32 panic: Missing state type on animmachine C:\SoA\Vorb\RTS\data\characters\human\human.animmach state move
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\AnimMachineRepository.cpp:32 panic: Missing state type on animmachine C:\SoA\Vorb\RTS\data\characters\human\human.animmach state move
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\ui\editor\AnimMachineEditorViewportPanel.cpp:58 panic: BlendSpace 2d not implemented yet
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\ecs\EntityRepository.cpp:113 panic: AAA
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\ecs\EntityRepository.cpp:114 panic: Invalid component type  in C:\SoA\Vorb\RTS\data\entities\player.ent
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\ecs\EntityRepository.cpp:115 panic: Invalid component type  in C:\SoA\Vorb\RTS\data\entities\villager.ent
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\ecs\EntityRepository.cpp:115 panic: Invalid component type  in C:\SoA\Vorb\RTS\data\entities\player.ent
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\resources\Blendspace1DRepository.cpp:63 panic: Missing binding type
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\rendering\CharacterRenderer.cpp:103 panic: TODO: Implement one shot
+ 
+*ERROR: Sampling job error 
+*ERROR: C:\SoA\Vorb\RTS\src\rendering\animation\AnimMachineInstance.cpp:160 panic: Anim sample fail!
+ 
+*ERROR: Sampling job error 
+*ERROR: C:\SoA\Vorb\RTS\src\rendering\animation\AnimMachineInstance.cpp:160 panic: Anim sample fail!
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\ecs\IEntityComponentSystem.cpp:158 panic: Failed to find entity for enter new chunk, type 1
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\ecs\IEntityComponentSystem.cpp:166 panic: Failed to find entity for enter new chunk, type 1
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\ecs\IEntityComponentSystem.cpp:166 panic: Failed to find entity for enter new chunk, type 1
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\ecs\IEntityComponentSystem.cpp:166 panic: Failed to find entity for enter new chunk, type 1
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\ecs\IEntityComponentSystem.cpp:167 panic: Failed to find entity for enter new chunk, type 1
+ 
+*ERROR: C:\SoA\Vorb\RTS\src\io\PngLoader.cpp:119 panic: Texture C:\SoA\Vorb\RTS\data\materials\farming\dirt_plowed.png dimensions <1054,1056> are not power of two
+ 
+*ERROR: At TerrainMeshBuilder::finishMeshes. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At TerrainMeshBuilder::finishMeshes. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At TerrainMeshBuilder::finishMeshes. Error code 1281: GL_INVALID_VALUE 
+*ERROR: At TerrainMeshBuilder::B. Error code 1281: GL_INVALID_VALUE 

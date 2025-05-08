@@ -1,0 +1,3 @@
+albedo: flower_01_albedo
+normal: flower_01_normal
+sampler_state: LINEAR_WRAP_MIPMAP

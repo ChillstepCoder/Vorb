@@ -1,0 +1,2 @@
+vert: pass_through.vert
+frag: shadow_variance.frag

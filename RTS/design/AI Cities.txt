@@ -1,0 +1,55 @@
+Cities can track their strength with these values
+
+Strength can be a complex calculation, we dont need to update it very often.
+- PERFORM AUDITS TO RECALCULATE THIS
+- AUDITOR ai can do this
+  - 
+
+MILITARY STRENGTH
+- Number of active militia
+- Number guards
+- Number of reserve soldiers
+- Number of active soldiers
+- Number of draft capable civilians
+- Modified by economic strength ("We can quickly purchase an army") (Track what exactly we CAN buy to estimate this)
+
+Adjustments to military strength will be done based on following criteria
+- Number of citizens violently killed recently (More patrols looking for demons)
+- Number of known adjacent cities with stronger military strength
+- Desire from KING to conquer neighbors
+- A response to large wars or conquests elsewhere in the world. ("We might be next!")
+- Known local monster threats
+- Known local bandit/raider threats (Just count these as small cities in logic?)
+
+ECONOMIC STRENGTH
+- Gold reserve
+- Resource reserve
+
+CIVIL STRENGTH
+- Citizen morale
+- Food supplies
+- Death/birth rate
+- 
+- Government policies
+  AUTOCRACY/OLIGARCHY/           (Note, we dont need - MONARCHY/FASCISM)
+    Citizen morale doesnt really reduce civil strenght that much anymore
+  DEMOCRACY/REPUBLIC
+    Citizen morale is very important, leadership can be voted out
+  COMMUNISM/SOCIALIST
+- Government trait
+   - MERCHANT
+   - THEOCRATIC
+   - MILITARY
+   
+   3x3 government matrix
+               AUTOCRATIC   REPUBLIC  SOCIALIST
+   MERCHANT
+   THEOCRATIC
+   MILITARY
+    
+    
+Technology
+ - Instead of technology, in this game there are more like "Ancient secrets" you can unlock, which can provide a limited number
+   of advancements. 
+   They can provide bonuses to any strength category based on what they are, we call these "StrengthModifiers"
+  

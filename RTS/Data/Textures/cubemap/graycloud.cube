@@ -1,0 +1,7 @@
+posx: graycloud_rt.png
+negx: graycloud_lf.png
+posy: graycloud_ft.png
+negy: graycloud_bk.png
+posz: graycloud_up.png
+negz: graycloud_dn.png
+

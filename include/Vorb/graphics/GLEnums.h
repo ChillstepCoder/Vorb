@@ -72,7 +72,6 @@ namespace vorb {
             UNSIGNED_INT_2_10_10_10_REV = GL_UNSIGNED_INT_2_10_10_10_REV,
             UNSIGNED_SHORT = GL_UNSIGNED_SHORT
         };
-
         enum class TextureInternalFormat : VGEnum {
             NONE = 0,
             ALPHA = GL_ALPHA,
@@ -85,6 +84,10 @@ namespace vorb {
             COMPRESSED_RG = GL_COMPRESSED_RG,
             COMPRESSED_RGB = GL_COMPRESSED_RGB,
             COMPRESSED_RGBA = GL_COMPRESSED_RGBA,
+            COMPRESSED_RGB_S3TC_DXT1_EXT = GL_COMPRESSED_RGB_S3TC_DXT1_EXT,
+            COMPRESSED_RGBA_S3TC_DXT1_EXT = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT,
+            COMPRESSED_RGBA_S3TC_DXT3_EXT = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
+            COMPRESSED_RGBA_S3TC_DXT5_EXT = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
             COMPRESSED_RGBA_BPTC_UNORM = GL_COMPRESSED_RGBA_BPTC_UNORM,
             COMPRESSED_RGB_BPTC_SIGNED_FLOAT = GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT,
             COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT = GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT,
@@ -232,7 +235,8 @@ namespace vorb {
             UNSIGNED_SHORT = GL_UNSIGNED_SHORT,
             UNSIGNED_SHORT_4_4_4_4 = GL_UNSIGNED_SHORT_4_4_4_4,
             UNSIGNED_SHORT_5_5_5_1 = GL_UNSIGNED_SHORT_5_5_5_1,
-            UNSIGNED_SHORT_5_6_5 = GL_UNSIGNED_SHORT_5_6_5
+            UNSIGNED_SHORT_5_6_5 = GL_UNSIGNED_SHORT_5_6_5,
+            UNSIGNED_INT_8_8_8_8_REV = GL_UNSIGNED_INT_8_8_8_8_REV
         };
         enum class TextureTarget : VGEnum {
             NONE = 0,
@@ -672,22 +676,6 @@ namespace vorb {
             TRIANGLES_ADJACENCY = GL_TRIANGLES_ADJACENCY,
             TRIANGLE_STRIP = GL_TRIANGLE_STRIP,
             TRIANGLE_STRIP_ADJACENCY = GL_TRIANGLE_STRIP_ADJACENCY
-        };
-
-        enum Semantic : VGSemantic {
-            SEM_INVALID = 0,
-            SEM_COLOR,
-            SEM_POSITION,
-            SEM_TEXCOORD,
-            SEM_NORMAL,
-            SEM_BINORMAL,
-            SEM_TANGENT,
-            SEM_FOG,
-            SEM_BLENDINDICES,
-            SEM_BLENDWEIGHT,
-            SEM_PSIZE,
-            SEM_TESSFACTOR,
-            SEM_NUM_SEMANTICS = SEM_TESSFACTOR
         };
     }
 }

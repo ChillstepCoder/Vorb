@@ -1,0 +1,22 @@
+item: raw_fish
+model: cod
+minigame:
+  max_speed: 265
+  accel: [450,350]
+  drag: 0.03
+  jerk_chance: 0.01
+  jerk_int: 4
+  jerk_cool: [1,2]
+  radius: 0.7
+  steer_int: 1
+  wall_bounce: 0.5
+  gravity: 80
+  center_mag: 50
+  fail_angle: 45
+  particle_mat: 0
+  particle_scale: 0.56
+  stam_deplete: 1
+  stam_rech: 1
+  oos_power: 0.5
+  fish_damage: 1
+  player_damage: 0

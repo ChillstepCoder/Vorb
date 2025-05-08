@@ -1,0 +1,5 @@
+sampler_state: LINEAR_WRAP_MIPMAP
+albedo: wgn_01_base_bot
+normal: wgn_01_base_bot_n
+rough: wgn_01_base_bot_r
+ao: wgn_01_base_bot_ao

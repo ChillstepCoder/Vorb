@@ -27,14 +27,14 @@ size_t vio::Directory::appendEntries(DirectoryEntries& l) const {
     return l.size() - c;
 }
 
-void vio::Directory::forEachEntry(DirectoryEntryCallback* f) const {
+void vio::Directory::forEachEntry(std::function<void(const Path&)> f) const {
     fs::path p(m_path.getString());
 
     fs::directory_iterator entry(p);
     fs::directory_iterator END;
     while (entry != END) {
         const fs::path& e = entry->path();
-        if (fs::exists(e)) f->invoke(this, Path(e.string()));
+        if (fs::exists(e)) f(Path(e.string()));
         entry++;
     }
 }

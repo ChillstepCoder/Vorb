@@ -1,0 +1,69 @@
+#pragma once
+
+#include "input/InputDispatcher.h"
+
+#include <imgui.h>
+
+#include "ui/editor/AssetEditorViewportPanelBase.h"
+
+DECL_VG(class GBuffer);
+class DebugTweakerPanel;
+class WorldEditorPanel;
+class Camera3D;
+class AssetSelectPanel;
+class ModelDef;
+class TileGrassDef;
+class FishDef;
+class ParticleSystemDef;
+class ModelEditorViewportPanel;
+class MaterialEditorViewportPanel;
+class BiomeEditorViewportPanel;
+class ContentBrowserPanel;
+class FoliageEditorViewportPanel;
+class FishingEditorViewportPanel;
+class ParticleSystemEditorViewportPanel;
+class IEditorViewportPanel;
+class World;
+
+class EditorRoot
+{
+public:
+    EditorRoot();
+    ~EditorRoot();
+    void updateEditors(World* world, const Camera3D& camera, const f32v3& mousePickRay);
+    void updateAndRenderUI(const vg::GBuffer* activeGBuffer, f32 elapsedSec, const Camera3D& camera);
+    void renderEditorBrushDecals(const Camera3D& camera);
+
+    bool hasActiveCenterPanel() const { return mActiveCenterPanel != nullptr; }
+    IEditorViewportPanel* getActiveCenterPanel() const { return mActiveCenterPanel; }
+
+    // Returns false if there is no valid editor
+    bool tryOpenAssetForEdit(AssetDescriptor desc);
+
+    void onEditorOpen();
+    void onEditorClose();
+private:
+    void openBiomeForEdit();
+    void setActiveCenterPanel(IEditorViewportPanel* newCenterPanel);
+
+    // Center panel display
+    IEditorViewportPanel* mActiveCenterPanel = nullptr;
+
+    // Subpanels
+    std::unique_ptr<DebugTweakerPanel> mDebugTweakerPanel;
+    std::unique_ptr<WorldEditorPanel> mWorldEditorPanel;
+    std::unique_ptr<AssetSelectPanel> mTileEditorPanel;
+    // Viewport panels
+    std::map<AssetType, std::unique_ptr<AssetEditorViewportPanelBase>> mAssetEditorPanels;
+
+    std::unique_ptr<ContentBrowserPanel> mContentBrowserPanel;
+
+    // Event listeners
+    vui::KeyListeners mKeyListeners;
+    vui::WindowListeners mWindowListeners;
+
+    // Docking
+    bool mRebuildDockspace = true;
+    ImGuiID mDockspaceID;
+};
+

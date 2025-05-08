@@ -1,121 +1,306 @@
 #include "stdafx.h"
 #include "PlayerControlComponent.h"
 
-#include "EntityComponentSystem.h"
+#include "ecs/IFullECS.h"
 
-#include "World.h"
-#include "DebugRenderer.h"
+#include "world/World.h"
+#include "debugging/DebugRenderer.h"
 
-#include <Vorb/ui/InputDispatcher.h>
+#include "resources/ModelRepository.h"
 
-const std::string& PlayerControlComponentTable::NAME = "playercontrol";
+#include "input/InputDispatcher.h"
+#include <glm/gtx/rotate_vector.hpp>
 
-const float BASE_SPEED = 0.15f;
-const float ACCELERATION = 0.015f;
-const float IMPULSE = 0.02f;
+#include "physics/PhysicsWorld.h"
+#include "Physics/PhysicsBodyFilters.h"
+#include "ui/UIContext.h"
 
-const float ATTACK_RADIUS = 5.0f;
-const float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
+#include "options/DebugOptions.h"
 
-void performAttack(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world) {
-	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
-	Combat::meleeAttackArc(entity, ecs.getCombatComponentFromEntity(entity), myPhysCmp.getPosition(), myPhysCmp.mDir, ATTACK_RADIUS, ATTACK_ARC_ANGLE, world, ecs);
-}
+#include "rendering/RenderThreadTasks.h"
+#include "camera/Camera3DGameThreadData.h"
 
-f32v2 getMovementDir(World& world) {
+#include "debugging/DebugRenderer.h"
+
+#include "ecs/component/ThreadSharedComponent.h"
+// TODO: REMOVE
+#include "ecs/factory/EntityFactory.h"
+#include "util/MathUtil.hpp"
+
+constexpr float ATTACK_RADIUS = 5.0f;
+constexpr float ATTACK_ARC_ANGLE = DEG_TO_RAD(120.0f);
+
+//void performAttack(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world) {
+//	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
+//	Combat::meleeAttackArc(entity, ecs.getCombatComponentFromEntity(entity), myPhysCmp.getPosition(), myPhysCmp.mDir, ATTACK_RADIUS, ATTACK_ARC_ANGLE, world, ecs);
+//}
+
+struct PlayerInputs {
+    bool jump = false;
+    bool sprint = false;
+    bool walk = false;
+    bool castFishingRod = false;
+    bool primaryAction = false;
+    bool forward = false;
+    bool left = false;
+    bool right = false;
+    bool back = false;
+    bool interact = false;
+    bool stow = false;
+};
+
+f32v2 getMovementDir(const PlayerInputs& inputs, f32 cameraYaw) {
 	f32v2 moveDir(0.0f);
-	// Movement
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_W)) {
-		moveDir.y = 1.0f;
-	}
-	else if (vui::InputDispatcher::key.isKeyPressed(VKEY_S)) {
-		moveDir.y = -1.0f;
-	}
 
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_A)) {
-		moveDir.x = -1.0f;
-	}
-	else if (vui::InputDispatcher::key.isKeyPressed(VKEY_D)) {
-		moveDir.x = 1.0f;
-	}
+	// WSAD inputs
+    if (inputs.forward) {
+        moveDir.x = 1.0f;
+    }
+    else if (inputs.back) {
+        moveDir.x = -1.0f;
+    }
+
+    if (inputs.left) {
+        moveDir.y = 1.0f;
+    }
+    else if (inputs.right) {
+        moveDir.y = -1.0f;
+    }
 
 	// Normalize or return 0
-	float length = glm::length(moveDir);
-	if (length > FLT_EPSILON) {
-		moveDir /= length;
+	if (moveDir.x == 0.0f && moveDir.y == 0.0f) {
+		return moveDir;
 	}
-	else {
-		return f32v2(0.0f);
-	}
+	
+	moveDir = glm::rotate(moveDir, cameraYaw);
 
 	return glm::normalize(moveDir);
 }
 
-void updateMovement(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world) {
 
-	PhysicsComponent& myPhysCmp = ecs.getPhysicsComponentFromEntity(entity);
+void PlayerControlSystem::updateComponent(entt::entity entity, PlayerControlComponent& playerControlCmp, CharacterControlComponent& characterControlCmp, const Camera3DGameThreadData& cameraData, f32 elapsedSec) {
+    PROFILE_FUNCTION();
 
-	bool isSprinting = cmp.mPlayerControlFlags & enum_cast(PlayerControlFlags::SPRINTING);
-	const f32v2 moveDir = getMovementDir(world);
+    PlayerInputs inputs;
+    if (playerControlCmp.mInputLockCount == 0) {
+        inputs.jump = vui::InputDispatcher::key.isKeyDown(VKEY_SPACE);
+        inputs.sprint = vui::InputDispatcher::key.isKeyDown(VKEY_LSHIFT);
+        inputs.walk = vui::InputDispatcher::key.isKeyDown(VKEY_LCTRL);
+        inputs.castFishingRod = vui::InputDispatcher::key.isKeyDown(VKEY_G);
+        inputs.primaryAction = vui::InputDispatcher::mouse.isButtonPressed(vorb::ui::MouseButton::LEFT);
+        inputs.forward = vui::InputDispatcher::key.isKeyDown(VKEY_W);
+        inputs.left = vui::InputDispatcher::key.isKeyDown(VKEY_A);
+        inputs.right = vui::InputDispatcher::key.isKeyDown(VKEY_D);
+        inputs.back = vui::InputDispatcher::key.isKeyDown(VKEY_S);
+        inputs.interact = vui::InputDispatcher::key.isKeyDown(VKEY_E);
+        inputs.stow = vui::InputDispatcher::key.isKeyDown(VKEY_R);
 
-	if (moveDir.x == 0.0f && moveDir.y == 0.0f) {
-		return;
+        // Inventory toggle
+        if (vui::InputDispatcher::key.isKeyDown(VKEY_I)) {
+            if (!playerControlCmp.mPlayerControlFlags.isBitSet(PlayerControlFlags::InventoryKeyHeld)) {
+                UIContext::getInstance().toggleGameUIPanel(GameUIPanel::Inventory);
+                playerControlCmp.mPlayerControlFlags.setBit(PlayerControlFlags::InventoryKeyHeld);
+            }
+        }
+        else {
+            playerControlCmp.mPlayerControlFlags.clearBit(PlayerControlFlags::InventoryKeyHeld);
+        }
+    }
+
+    // Inputs for states, but only while we are on ground
+    if (!characterControlCmp.isInAirState()) {
+        if (inputs.jump) {
+            characterControlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::BEGIN_JUMP;
+        }
+        else if (inputs.sprint) {
+            characterControlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::SPRINT;
+        }
+        else if (inputs.walk) {
+            characterControlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::WALK;
+        }
+        else {
+            characterControlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::RUN;
+        }
+
+        // Fishing
+        if (inputs.castFishingRod) {
+            mRegistry.get_or_emplace<FishingComponent>(entity).mIsCastInputPressed = true;
+        }
+        else {
+            FishingComponent* component = mRegistry.try_get<FishingComponent>(entity);
+            if (component) {
+                component->mIsCastInputPressed = false;
+            }
+        }
+    }
+	// Update skills
+    if (inputs.primaryAction) {
+        // TODO: Move this to some kind of combat manager/context
+        SkillsComponent& skillsCmp = mRegistry.get<SkillsComponent>(entity);
+        mWorld.getECS().mSkillsSystem.tryActivateSkillSlot(entity, mRegistry, SkillSlot::Primary);
+    }
+
+	//  Update movement
+    characterControlCmp.mMoveDirection = getMovementDir(inputs, cameraData.yaw);
+    characterControlCmp.mFlags.clearBit(CharacterControlComponentFlags::OrientToMovement);
+
+    // Update controller rotation
+    characterControlCmp.mControllerAngleRad = cameraData.yaw;
+
+    if (characterControlCmp.mMoveDirection.x != 0.0f || characterControlCmp.mMoveDirection.y != 0.0f) {
+        // Remove any navigation component if we are applying movement input
+        mRegistry.remove<NavigationComponent>(entity);
 	}
-	// Facing
-	if (isSprinting) {
-		myPhysCmp.mDir = moveDir;
+	else if (!characterControlCmp.isInAirState() && characterControlCmp.mDesiredLocomotionMode != CharacterLocomotionMode::BEGIN_JUMP) {
+        characterControlCmp.mDesiredLocomotionMode = CharacterLocomotionMode::IDLE;
 	}
-	else {
-		const f32v2& mousePos = world.getCurrentWorldMousePos();
-		myPhysCmp.mDir = glm::normalize(mousePos - myPhysCmp.getPosition());
-	}
+    
+    
+    updateSelection(entity, playerControlCmp, cameraData, inputs, elapsedSec);
 
-	float speed = BASE_SPEED;
-	float dotp = glm::dot(moveDir, glm::normalize(myPhysCmp.mDir));
-	dotp = glm::clamp(dotp, -1.0f, 1.0f); // Fix any math rounding errors to prevent NAN acos
-	const float angleOffset = acos(dotp);
-	assert(angleOffset == angleOffset);
-	// nan check
-	// Reduce speed for backstep
-	const float speedLerp = glm::clamp((angleOffset - M_PI_2f) / M_PI_2f, 0.0f, 1.0f);
-	speed *= 1.0f - (speedLerp * 0.5f);
 
-	const f32v2 targetVelocity = moveDir * speed * (isSprinting ? 1.0f : 0.5f) * (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) ? 10000.0f : 1.0f);
-	f32v2 velocityOffset = targetVelocity - myPhysCmp.getLinearVelocity();
-	float velocityDist = glm::length(velocityOffset);
-
-	const float acceleration = ACCELERATION * (vui::InputDispatcher::key.isKeyPressed(VKEY_LCTRL) ? 5.0f : 1.0f);
-
-	if (velocityDist <= acceleration) {
-		myPhysCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(targetVelocity));
-	}
-	else {
-		const f32v2& currentLinearVelocity = reinterpret_cast<const f32v2&>(myPhysCmp.mBody->GetLinearVelocity());
-		velocityOffset = (velocityOffset / velocityDist) * acceleration + currentLinearVelocity;
-		myPhysCmp.mBody->SetLinearVelocity(reinterpret_cast<const b2Vec2&>(velocityOffset));
-	}
+    // Update stow
+    if (inputs.stow) {
+        if (!playerControlCmp.mPlayerControlFlags.isBitSet(PlayerControlFlags::StowKeyHeld)) {
+            playerControlCmp.mPlayerControlFlags.setBit(PlayerControlFlags::StowKeyHeld);
+            const ModelID swordId = ModelRepository::get().getAssetID(CStrToken("sword"));
+            CharacterModelComponent& modelCmp = mRegistry.get<CharacterModelComponent>(entity);
+            modelCmp.toggleLinkedSubmodel(entity, { CStrToken("Weapon.R"), swordId });
+        }
+    }
+    else {
+        playerControlCmp.mPlayerControlFlags.clearBit(PlayerControlFlags::StowKeyHeld);
+    }
 }
 
-inline void updateComponent(vecs::EntityID entity, PlayerControlComponent& cmp, EntityComponentSystem& ecs, World& world) {
-	UNUSED(cmp);
+void PlayerControlSystem::updateSelection(entt::entity entity, PlayerControlComponent& playerControlCmp, const Camera3DGameThreadData& cameraData, const PlayerInputs& inputs, f32 elapsedSec) {
+    // Interact input
+    bool didInteract = false;
+    f32 grabRadius = 0.0f;
+    if (inputs.interact) {
+        if (playerControlCmp.mInteractDurationSec == 0.0f) {
+            didInteract = true;
+        }
+        playerControlCmp.mInteractDurationSec += elapsedSec;
 
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_LSHIFT)) {
-		cmp.mPlayerControlFlags |= enum_cast(PlayerControlFlags::SPRINTING);
-	}
-	else {
-		cmp.mPlayerControlFlags &= ~enum_cast(PlayerControlFlags::SPRINTING);
-	}
+        // Growing cone of interaction
+        constexpr f32 STRENGTH_SPEED = 1.5f;
+        constexpr f32 INITIAL_DELAY = 0.1f;
+        f32 interactStrength = (playerControlCmp.mInteractDurationSec - INITIAL_DELAY) * STRENGTH_SPEED;
+        //PositionComponent& posCmp = mRegistry.get<PositionComponent>(entity);
+        //f32v3 suckDir = result.mPosition - posCmp.mPosition;
+        if (interactStrength > 0.0f) {
+            interactStrength = glm::min(interactStrength, 1.0f);
+            interactStrength = MathUtil::Easing::easeInOutSine(interactStrength);
+            constexpr f32 MAX_GRAB_RADIUS = 5.0f;
+            grabRadius = interactStrength * MAX_GRAB_RADIUS;
+        }
+    }
+    else {
+        playerControlCmp.mInteractDurationSec = 0.0f;
+    }
 
-	updateMovement(entity, cmp, ecs, world);
+    f32v3 grabPosition;
 
-	if (vui::InputDispatcher::key.isKeyPressed(VKEY_SPACE)) {
-		performAttack(entity, cmp, ecs, world);
-	}
+    // Reset so we can select it anew below
+    playerControlCmp.mSelectedObjectData.modelId = INVALID_MODEL_ID;
+
+    // Selection
+    const f32 rayLength = 9.0f;
+    // TODO: Filters?
+    const f32v3 rayTarget = cameraData.worldPos + cameraData.direction * rayLength;
+    PhysHitResult result = mWorld.getPhysicsWorld().raycastFirst(cameraData.worldPos, rayTarget);
+    if (result.didHit()) {
+        grabPosition = result.mPosition;
+        // TODO: Tiles as well?
+        PhysicsBodyUserDataType type = result.mBodyUserData.getType();
+        if (type == PhysicsBodyUserDataType::Entity || type == PhysicsBodyUserDataType::ItemEntity) {
+            entt::entity selected = result.mBodyUserData.getEntity();
+
+            // Interact
+            if (didInteract || grabRadius) {
+                // TODO: ECS interact?
+                if (mRegistry.all_of<TileItemContainerComponent>(selected)) {
+                    ThreadSharedComponentFactory::addItemSackUISharedComponent(mRegistry, selected);
+                } else if (TileItemComponent* itemCmp = mRegistry.try_get<TileItemComponent>(selected)) {
+                    if (mWorld.getECS().pickupTileItem(entity, itemCmp->getTileItemUID(), itemCmp->getItemStack().count) == itemCmp->getItemStack().count) {
+                        // TODO: NOTIFY FULL INVENTORY
+                        LOG_INFO("Full inventory!");
+                    }
+                } else if (mRegistry.all_of<SimpleItemComponent>(selected)) {
+                    mWorld.getECS().pickupDynamicItem(entity, selected, 1);
+                }
+                return;
+            }
+
+            // Selection
+            if (DynamicModelComponent* modelCmp = mRegistry.try_get<DynamicModelComponent>(selected)) {
+                playerControlCmp.mSelectedObjectData.modelId = modelCmp->modelId;
+                playerControlCmp.mSelectedObjectData.scale = modelCmp->scale;
+            } else if (StaticModelComponent* modelCmp = mRegistry.try_get<StaticModelComponent>(selected)) {
+                playerControlCmp.mSelectedObjectData.modelId = modelCmp->modelId;
+                playerControlCmp.mSelectedObjectData.scale = modelCmp->scale;
+            } else {
+                playerControlCmp.mSelectedObjectData.modelId = INVALID_MODEL_ID;
+                // We can only select models
+                return;
+            }
+
+            if (SimpleTextNameplateComponent* nameplateCmp = mRegistry.try_get<SimpleTextNameplateComponent>(selected)) {
+                playerControlCmp.mSelectedObjectData.text = nameplateCmp->text;
+                playerControlCmp.mSelectedObjectData.textColor = nameplateCmp->color;
+                playerControlCmp.mSelectedObjectData.textZOffset = nameplateCmp->zOffset;
+            } else {
+                playerControlCmp.mSelectedObjectData.text.clear();
+            }
+
+            playerControlCmp.mSelectedObjectData.position = mRegistry.get<PositionComponent>(selected).mPosition;
+            if (OrientationComponent* orientationCmp = mRegistry.try_get<OrientationComponent>(selected)) {
+                playerControlCmp.mSelectedObjectData.orientation = orientationCmp->mOrientation;
+            }
+            else {
+                playerControlCmp.mSelectedObjectData.orientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+            }
+        }
+    }
+    else {
+        grabPosition = rayTarget;
+        playerControlCmp.mSelectedObjectData.modelId = INVALID_MODEL_ID;
+    }
+
+    if (grabRadius > 0.0f) {
+        // Query in radius and grab
+        AM::DebugRenderer::drawWireQuadThreadSafe(grabPosition - f32v3(grabRadius * .5f, grabRadius * .5f, 0.0f), f32v2(grabRadius), color::LightGreen, 3);
+
+
+        PhysHitResult results[64];
+        int numResults = mWorld.getPhysicsWorld().collideSphere(grabPosition, grabRadius, results, {}, {}, PhysicsBodyFilterOnlyType(PhysicsBodyUserDataType::ItemEntity));
+        for (int i = 0; i < numResults; i++) {
+            entt::entity selected = results[i].mBodyUserData.getEntity();
+            if (mRegistry.all_of<TileItemComponent>(selected)) {
+                mWorld.getECS().pickupTileItem(entity, mRegistry.get<TileItemComponent>(selected).getTileItemUID(), 1);
+            }
+            else if (mRegistry.all_of<SimpleItemComponent>(selected)) {
+                mWorld.getECS().pickupDynamicItem(entity, selected, 1);
+            }
+        }
+    }
+
 }
 
-void PlayerControlComponentTable::update(EntityComponentSystem& ecs, World& world) {
+PlayerControlSystem::PlayerControlSystem(World& world, entt::registry& registry) : mWorld(world), mRegistry(registry) {
+
+}
+
+void PlayerControlSystem::update(const Camera3DGameThreadData& cameraData, f32 elapsedSec) {
+    ASSERT_GAME_THREAD();
+    // Don't update while in free fly
+    if (sDebugOptions.mCameraMode == CameraMode::FREE_LOOK) { return; }
 	// Update components
-	for (auto&& cmp : *this) {
-		updateComponent(cmp.first, cmp.second, ecs, world);
-	}
+    auto view = mRegistry.view<PlayerControlComponent, CharacterControlComponent>();
+    for (auto entity : view) {
+		PlayerControlComponent& controlCmp = view.get<PlayerControlComponent>(entity);
+		CharacterControlComponent& motionCmp = view.get<CharacterControlComponent>(entity);
+		updateComponent(entity, controlCmp, motionCmp, cameraData, elapsedSec);
+	};
 }

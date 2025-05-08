@@ -1,5 +1,0 @@
-/*! \file $FILE_BASE$.$FILE_EXT$
- * @brief $end$
- * 
- * 
- */

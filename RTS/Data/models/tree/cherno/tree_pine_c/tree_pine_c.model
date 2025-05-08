@@ -1,0 +1,44 @@
+model: tree_pine_c.fbx
+rig: ''
+machine: ''
+submesh_data:
+  - wind: tree_trunk
+scale: 1.48
+scale_range: [0.15,1.2]
+lod_dst_0: 45
+lod_dst_1: 90
+lod_dst_2: 180
+lod_dst_3: 360
+bound_sphere: 10
+shadow_detail: highest
+force_normals_up: 0
+dmg_spline:
+  - [0,0,0]
+  - [0,0,8]
+variants:
+  - name: new_variant
+    submesh_mats:
+      - [tree_pine_c,'','','']
+collider:
+  shapes:
+    - angles: [1.5707964,0,0]
+      offset: [0,0,6.14]
+      shape: capsule
+      dims: [1.477,4.017,0.5]
+    - angles: [0.8036632,0.6686923,-1.9290482]
+      offset: [-1.302,2.233,2.233]
+      shape: capsule
+      dims: [0.5,1.695,0.5]
+    - angles: [2.4109895,-0.8767235,0]
+      offset: [1.674,2.165,1.86]
+      shape: capsule
+      dims: [0.522,1.423,0.5]
+    - angles: [1.5707964,0,0]
+      offset: [0,-0.319,0.186]
+      shape: capsule
+      dims: [2.631,0.564,0.5]
+    - angles: [-2.6301706,-0.073060356,-1.9726279]
+      offset: [-2.047,0.558,2.233]
+      shape: capsule
+      dims: [0.456,1.453,0.5]
+opt_thresh: 0.0003

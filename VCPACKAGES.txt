@@ -1,0 +1,13 @@
+./vcpkg install tinyspline
+./vcpkg install bitsery
+./vcpkg install zstd
+./vcpkg install spdlog
+./vcpkg install joltphysics --overlay-ports=../vcpkg-ports
+./vcpkg install boost-container
+./vcpkg install boost-unordered
+./vcpkg install boost-pool
+./vcpkg install boost-circular-buffer
+./vcpkg install boost-heap
+./vcpkg install boost-geometry
+./vcpkg install boost-foreach
+./vcpkg install boost-graph

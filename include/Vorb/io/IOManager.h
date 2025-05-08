@@ -27,6 +27,15 @@
 #include "FileStream.h"
 #include "Path.h"
 
+namespace YAML {
+    class Node;
+}
+
+namespace keg {
+    class Type;
+    typedef YAML::Node* Node;
+}
+
 namespace vorb {
     namespace io {
         /*! @brief The directory types through which an IOManager searches.
@@ -65,15 +74,16 @@ namespace vorb {
             IOManager();
             /*! @brief Create an IO manager that searches within a specified directory.
              * 
-             * @param path: The path used as the search directory.
+             * @param path: The path used as the local directory.
              */
-            IOManager(const Path& path);
+            IOManager(const Path& localPath);
 
             /*! @brief Change the searching directory for this manager.
              * 
              * @param s: New directory used for first search.
              */
             void setSearchDirectory(const Path& s);
+            void setLocalDirectory(const Path& s);
             /*! @brief Change the current working directory referenced by all managers.
              * 
              * @param s: New current working directory.
@@ -161,11 +171,13 @@ namespace vorb {
             /// @param path: The path to the directory
             /// @return true if directory exists
             bool directoryExists(const Path& path) const;
+
         private:
             static Path m_pathCWD; ///< The global current working directory.
             static Path m_pathExec; ///< The global executable directory.
 
             Path m_pathSearch; ///< The first path used in the searching process.
+            Path m_pathLocal;
         };
     }
 }

@@ -1,5 +1,4 @@
 #pragma once
-#include <Vorb/ecs/ComponentTable.hpp>
 
 #include "item/ArmorItem.h"
 #include "item/WeaponItem.h"
@@ -7,8 +6,7 @@
 
 class PhysicsComponent;
 class SimpleSpriteComponent;
-class World;
-class EntityComponentSystem;
+class IFullECS;
 
 struct CombatComponent {
 	f32v2 mHealthRange = f32v2(100.0f);
@@ -22,13 +20,8 @@ struct CombatComponent {
 	ShieldItem mShield;
 };
 
-class CombatComponentTable : public vecs::ComponentTable<CombatComponent> {
-public:
-	static const std::string& NAME;
-};
-
 namespace Combat {
 	// Return true on defender death
 	bool resolveMeleeAttack(CombatComponent& attacker, CombatComponent& defender, PhysicsComponent& defenderPhysComp, SimpleSpriteComponent& defenderSpriteComp, const f32v2& dir, float flankingAngle);
-	bool meleeAttackArc(vecs::EntityID source, CombatComponent& attacker, const f32v2& pos, const f32v2& dir, float radius, float arcAngle, World& world, EntityComponentSystem& ecs);
+	bool meleeAttackArc(entt::entity source, CombatComponent& attacker, const f32v2& pos, const f32v2& dir, float radius, float arcAngle, IFullECS& ecs);
 };

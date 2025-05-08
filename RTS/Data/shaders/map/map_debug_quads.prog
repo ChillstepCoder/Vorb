@@ -1,0 +1,2 @@
+vert: map_debug_quads.vert
+frag: map_debug_quads.frag

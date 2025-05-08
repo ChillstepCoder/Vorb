@@ -1,0 +1,57 @@
+#include "stdafx.h"
+#include "BuildingRenderer.h"
+
+#include "rendering/QuadMesh.h"
+#include "rendering/TriangleMesh.h"
+
+#include "options/DebugOptions.h"
+
+#include "city/Building.h"
+#include "rendering/MaterialManager.h"
+#include "rendering/MaterialRenderer.h"
+#include "rendering/BuildingMesher.h"
+#include "resources/ResourceManager.h"
+
+#include "camera/Camera3D.h"
+
+#include "debugging/DebugRenderer.h"
+
+BuildingRenderer::BuildingRenderer() {
+    const MaterialManager& materialManager = Services::ResourceManager::ref().getMaterialManager();
+    mRoofMaterial = materialManager.getMaterial("standard_tile");
+    mRoofBaseMaterial = materialManager.getMaterial("standard_tile");
+    mRoofShadowMaterial = materialManager.getMaterial("shadow_mapper");
+}
+
+
+void BuildingRenderer::renderBuildingRoof(const Building& building, const Camera3D& camera)
+{
+
+    if (sDebugOptions.mRoofDebug) {
+        DebugRenderer::drawWireQuad(f32v3(building.mAABB.pos), f32v2(building.mAABB.dims), color4(1.0f, 0.0f, 0.0f, 1.0f));
+    }
+
+    // TODO: Redundant binds here
+    // bindMaterialForRender(material, nullptr);
+    // mesh.draw(material.mProgram);
+    // TODO: Fix invalid meshes
+   /* if (building.mRenderData.mMesh->isValid()) {
+        MaterialRenderer::bindMaterialForRender(*mRoofMaterial);
+        f32v3 offset = f32v3(building.mAABB.pos) - camera.getPosition();
+        glUniform3fv(mRoofMaterial->getUniform("unOffset"), 1, &offset.x);
+        building.mRenderData.mMesh->draw();
+    }*/
+    //if (building.mRenderData.mRoofMesh->isValid()) {
+    //    MaterialRenderer::renderMesh(*building.mRenderData.mRoofMesh, *mRoofBaseMaterial);
+    //}
+}
+
+void BuildingRenderer::renderBuildingShadows(const Building& building, const Camera3D& camera) {
+    // TODO: Fix invalid meshes
+   /* if (building.mRenderData.mMesh->isValid()) {
+        MaterialRenderer::bindMaterialForRender(*mRoofShadowMaterial);
+        f32v3 offset = f32v3(building.mAABB.pos) - camera.getPosition();
+        glUniform3fv(mRoofShadowMaterial->getUniform("unOffset"), 1, &offset.x);
+        building.mRenderData.mMesh->draw();
+    }*/
+}

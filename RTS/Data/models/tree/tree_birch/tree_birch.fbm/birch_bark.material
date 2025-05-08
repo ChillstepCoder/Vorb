@@ -1,0 +1,5 @@
+albedo: birch_bark_albedo
+normal: birch_bark_normal
+rough: birch_bark_rough
+ao: birch_bark_ao
+sampler_state: LINEAR_CLAMP_MIPMAP

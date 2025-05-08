@@ -1,0 +1,24 @@
+TODO LIST:
+
+2. Fix roofs
+- Smaller houses (Thin walls?)
+- Two story buildings
+- Windows?
+- Doors?
+- Chimney?
+- Building art variation
+3. BIOMES
+4. FIX GRASS SQUARES
+5. Snow caps to mountains
+6. Boulders (need assets?)
+
+7. Buildings <- You are here
+8. AI <- You are here
+
+7/6/2022 ===================== PATHFINDING =======================
+1. Switch pathfinding to polling instead of callback method to compress NavigationComponent
+2. Heirarchal building path generator
+
+TALIA WORK
+1. Clouds
+2. Water in its various forms?

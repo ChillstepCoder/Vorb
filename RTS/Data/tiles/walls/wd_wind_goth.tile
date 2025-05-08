@@ -1,0 +1,10 @@
+materials:
+  - wood_wall_gothic
+  - big_beam_0
+  - window
+  - shutter_vrt
+texture_method: vertical
+shape: window
+recipe:
+  - item: wood_log
+    count: 2

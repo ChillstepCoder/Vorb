@@ -4,18 +4,13 @@
 #include "Vorb/io/filesystem.h"
 
 #if defined(VORB_IMPL_FONT_SDL)
-//#if defined(VORB_OS_WINDOWS)
-//#include <TTF/SDL_ttf.h>
-//#else
-#include <SDL_ttf/SDL_ttf.h>
-//#endif
+#include <SDL_ttf.h>
 #endif
 
-#include "Vorb/graphics/GraphicsDevice.h"
-#include "Vorb/graphics/ImageIO.h"
 #include "Vorb/graphics/SpriteBatch.h"
 #include "Vorb/utils.h"
 #include <iostream>
+
 
 // X Offset multipliers for vg::TextAlign
 const f32 X_OFF_MULTS[10] = {
@@ -90,7 +85,7 @@ void vg::SpriteFont::init(const cString font, ui32 size, char cs, char ce) {
         h = closestPow2(h);
 
         // A Texture Must Be Feasible
-        ui32 maxTextureSize = GraphicsDevice::getCurrent()->getProperties().maxTextureSize;
+        constexpr ui32 maxTextureSize = 4096;
         if (w > maxTextureSize || h > maxTextureSize) {
             rows++;
             delete[] gr;
@@ -162,7 +157,6 @@ void vg::SpriteFont::init(const cString font, ui32 size, char cs, char ce) {
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rs, rs, GL_RGBA, GL_UNSIGNED_BYTE, pureWhiteSquare);
     delete[] pureWhiteSquare;
     pureWhiteSquare = nullptr;
-
     // Create SpriteBatch Glyphs
     m_glyphs = new CharGlyph[m_regLength + 1];
     for (i = 0; i < m_regLength; i++) {
@@ -179,15 +173,15 @@ void vg::SpriteFont::init(const cString font, ui32 size, char cs, char ce) {
     m_glyphs[m_regLength].size = m_glyphs[0].size;
     m_glyphs[m_regLength].uvRect = f32v4(0.0f, 0.0f, (f32)rs / (f32)bestWidth, (f32)rs / (f32)bestHeight);
 
-#ifdef DEBUG
-    // Save An Image
-    std::vector<ui8> pixels;
-    pixels.resize(bestWidth * bestHeight * 4);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
-    char buffer[512];
-    sprintf(buffer, "SFont_%s_%s_%d.png", TTF_FontFaceFamilyName(f), TTF_FontFaceStyleName(f), size);
-    vg::ImageIO().save(buffer, pixels.data(), bestWidth, bestHeight, vg::ImageIOFormat::RGBA_UI8);
-#endif // DEBUG
+//#ifdef DEBUG
+//    // Save An Image
+//    std::vector<ui8> pixels;
+//    pixels.resize(bestWidth * bestHeight * 4);
+//    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, &pixels[0]);
+//    char buffer[512];
+//    sprintf(buffer, "SFont_%s_%s_%d.png", TTF_FontFaceFamilyName(f), TTF_FontFaceStyleName(f), size);
+//    vg::ImageIO().save(buffer, pixels.data(), bestWidth, bestHeight, vg::ImageIOFormat::RGBA_UI8);
+//#endif // DEBUG
 
     glBindTexture(GL_TEXTURE_2D, 0);
     delete[] glyphRects;
@@ -245,7 +239,7 @@ void vg::SpriteFont::getInstalledFonts(std::map<nString, nString>& fontFileDicti
         dirIter++;
     }
 #ifdef DEBUG
-    printf("Found %d System Fonts Out Of %d Files\nTime Spent: %d ms\n", fontFileDictionary.size(), searchCount, SDL_GetTicks() - startTime);
+    printf("Found %d System Fonts Out Of %d Files\nTime Spent: %d ms\n", (int)fontFileDictionary.size(), (int)searchCount, int(SDL_GetTicks() - startTime));
 #endif // DEBUG
     return;
 }
@@ -278,6 +272,7 @@ std::vector<ui32>* vg::SpriteFont::createRows(i32v4* rects, ui32 rectsLength, ui
         if (cw[i] > w) w = cw[i];
     }
 
+    delete[] cw;
     return l;
 }
 
@@ -391,7 +386,7 @@ void vg::SpriteFont::draw(SpriteBatch* batch, const cString s, const f32v2& posi
             f32v2 size = m_glyphs[g.gi].size * scaling;
             f32v4 uvRect = m_glyphs[g.gi].uvRect;
             // Clip the glyphs with clipRect
-            computeClipping(clipRect, position, size, uvRect);
+            util::computeClipping(clipRect, position, size, uvRect);
             // Don't draw the glyph if its too small after clipping
             if (size.x > 0.0f && size.y > 0.0f) {
                 batch->draw(m_texID, &uvRect, position, size, tint, depth);

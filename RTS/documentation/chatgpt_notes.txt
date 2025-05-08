@@ -1,0 +1,4 @@
+Prompt Tips:
+
+1. "Please ask any clarifying questions" will allow chatGPT to get info it is missing.
+2. Preframe it to "Act as a Game Developer" or "Act as a Software Engineer" "Act as a Backend Developer" ect.

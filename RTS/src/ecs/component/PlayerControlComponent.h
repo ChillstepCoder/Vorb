@@ -1,21 +1,38 @@
 #pragma once
-#include <Vorb/ecs/Entity.h>
-#include <Vorb/ecs/ComponentTable.hpp>
 
-class EntityComponentSystem;
+#include "interact/SelectedObjectData.h"
+
+struct CharacterControlComponent;
 class World;
 
-enum class PlayerControlFlags : ui16 {
-	SPRINTING = 1 << 0
+struct Camera3DGameThreadData;
+struct PlayerInputs;
+
+enum class PlayerControlFlags : ui8 {
+	InventoryKeyHeld = BIT(0),
+	StowKeyHeld = BIT(1),
+};
+
+struct LocalPlayerComponent {
+	// Empty
 };
 
 struct PlayerControlComponent {
-	ui16 mPlayerControlFlags = 0;
+	BitFlags<PlayerControlFlags> mPlayerControlFlags;
+	ui8 mInputLockCount = 0; // TODO: LockHandle RAII so we never leak locks
+	f32 mInteractDurationSec = 0.0f;
+	SelectedObjectData mSelectedObjectData;
 };
 
-class PlayerControlComponentTable : public vecs::ComponentTable<PlayerControlComponent> {
+class PlayerControlSystem {
 public:
-	static const std::string& NAME;
+	PlayerControlSystem(World& world, entt::registry& registry);
+	void update(const Camera3DGameThreadData& cameraData, f32 elapsedSec);
 
-	void update(EntityComponentSystem& ecs, World& world);
+private:
+	void updateComponent(entt::entity entity, PlayerControlComponent& playerControlCmp, CharacterControlComponent& characterControlCmp, const Camera3DGameThreadData& cameraData, f32 elapsedSec);
+	void updateSelection(entt::entity entity, PlayerControlComponent& playerControlCmp, const Camera3DGameThreadData& cameraData, const PlayerInputs& inputs, f32 elapsedSec);
+
+	World& mWorld;
+	entt::registry& mRegistry;
 };

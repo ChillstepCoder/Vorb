@@ -9,20 +9,13 @@
 #include <sys/stat.h>
 #endif
 
-vio::Path::Path() : Path("") {
-    // Empty
-}
-vio::Path::Path(const cString p) :
-m_path(p) {
-    // Empty
-}
-vio::Path::Path(const nString& p) :
-m_path(p) {
-    // Empty
-}
+vio::Path::Path() : Path("") { }
+vio::Path::Path(const cString p) : m_path(p) { }
+vio::Path::Path(const nString& p) : m_path(p) { }
+vorb::io::Path::Path(nString&& p) : m_path(std::move(p)) { }
 
 bool vio::Path::isNull() const {
-    return m_path.empty() || m_path.length() == 0;
+    return m_path.empty();
 }
 
 /************************************************************************\
@@ -59,6 +52,7 @@ bool isNiceFragment(const nString& fragment) {
     return fragment.size() != 0
             && (fragment == "."
                 || fragment == ".."
+                || fragment ==  "\\"
                 || (isWindowsFragment(fragment)
                     && isPOSIXFragment(fragment)
                     && fragment[0] != '.'
@@ -69,6 +63,7 @@ bool isNiceDirectoryFragment(const nString& fragment)
 {
     return fragment == "."
             || fragment == ".."
+            || fragment.size() > 1 && fragment[1] == ':' // Drive letter
             || (isNiceFragment(fragment)
                 && fragment.find('.') == nString::npos);
 }
@@ -83,6 +78,11 @@ bool isNiceFileFragment(const nString& fragment)
                 || (fragment.find('.', pos + 1) == std::string::npos
                 && (pos + 5) > fragment.length()));
 }
+
+vorb::io::Path::Path(const std::filesystem::path& p) {
+    *this = vio::Path(p.string());
+}
+
 
 /****************************************************************\
  * End adaptation from Boost::Filesystem portability functions. *
@@ -115,6 +115,53 @@ bool vorb::io::Path::isNiceFile() const {
     }
 
     return true;
+}
+
+nString vorb::io::Path::getFileNameNoExtension() const
+{
+    nString leaf = getLeaf();
+    for (int c = leaf.size() - 1; c > 0; --c) {
+        // Trim extension, keep going for multiple extensions
+        if (leaf[c] == '.') {
+            leaf.resize(c);
+        }
+    }
+    return leaf;
+}
+
+nString vorb::io::Path::getFileNameTrimOneExtension() const
+{
+    nString leaf = getLeaf();
+    for (int c = leaf.size() - 1; c > 0; --c) {
+        // Trim extension, keep going for multiple extensions
+        if (leaf[c] == '.') {
+            leaf.resize(c);
+            return leaf;
+        }
+    }
+    return leaf;
+}
+
+nString vorb::io::Path::getExtension() const {
+    nString leaf = getLeaf();
+    for (int c = leaf.size() - 1; c > 0; --c) {
+        if (leaf[c] == '.') {
+            return leaf.substr(c + 1);
+        }
+    }
+    return "";
+}
+
+vio::Path vorb::io::Path::getPathReplaceExtension(const nString& newExtension) const {
+    for (int c = m_path.size() - 1; c > 0; --c) {
+        // Trim extension and replace
+        if (m_path[c] == '.') {
+            nString newPath(m_path);
+            newPath.resize(c + 1);
+            return vio::Path(newPath + newExtension);
+        }
+    } 
+    return vio::Path(m_path + "." + newExtension);
 }
 
 bool vio::Path::isValid() const {

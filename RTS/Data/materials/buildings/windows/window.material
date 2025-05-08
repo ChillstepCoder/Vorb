@@ -1,0 +1,5 @@
+albedo: window_albedo
+disp: window_disp
+ao: window_ao
+normal: window_norm
+rough: window_rough

@@ -3,14 +3,9 @@
 
 #include "Vorb/io/filesystem.h"
 
-#include <enet/enet.h>
 //#include <FreeImage.h>
 #if defined(VORB_IMPL_FONT_SDL)
-//#if defined(VORB_OS_WINDOWS)
-//#include <TTF/SDL_ttf.h>
-//#else
-#include <SDL_ttf/SDL_ttf.h>
-//#endif
+#include <SDL_ttf.h>
 #else
 // TODO: FreeType?
 #endif
@@ -18,10 +13,10 @@
 #include "Vorb/graphics/ConnectedTextures.h"
 #include "Vorb/graphics/SpriteBatch.h"
 #include "Vorb/io/IOManager.h"
-#include "Vorb/sound/SoundEngine.h"
 #include "Vorb/utils.h"
 #include "Vorb/VorbLibs.h"
 #include "Vorb/Event.hpp"
+#include "Vorb/logging/Logger.h"
 
 void doNothing(void*) { 
     // Empty
@@ -65,26 +60,32 @@ namespace vorb {
         // Correctly retrieve initial path
 //        vio::Path path = fs::initial_path().string();
         vio::Path path = fs::current_path().string(); // Only ever called once so it really is just current path.
+        assert(path.isValid());
+
+        vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
 
         // Set the executable directory
-#ifdef VORB_OS_WINDOWS
         {
             nString buf(1024, 0);
             GetModuleFileName(nullptr, &buf[0], 1024 * sizeof(TCHAR));
             path = buf;
             path--;
         }
-#else
-        // TODO: Investigate options
-
-#endif // VORB_OS_WINDOWS
         if (!path.isValid()) path = "."; // No other option
         vio::IOManager::setExecutableDirectory(path.asCanonical());
 
-        // Set the current working directory
-        path = fs::current_path().string();
-        if (!path.isValid()) path = "."; // No other option
-        if (path.isValid()) vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
+        // OLD
+        //if (IsDebuggerPresent()) {
+        //    VORB_LOG_DEBUG("Debugger detected, setting CWD to current_path");
+        //    // Set the current working directory
+        //    path = fs::current_path().string();
+        //    if (!path.isValid()) path = "."; // No other option
+        //    if (path.isValid()) vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
+        //}
+        //else {
+        //    // No debugger means we are running a packaged build, so CWD should be same as exe
+        //    if (path.isValid()) vio::IOManager::setCurrentWorkingDirectory(path.asCanonical());
+        //}
 
 #ifdef DEBUG
         printf("Executable Directory:\n    %s\n", vio::IOManager::getExecutableDirectory().getCString());
@@ -95,27 +96,7 @@ namespace vorb {
 
         return InitParam::IO;
     }
-    InitParam initSound() {
-        // Check for previous initialization
-        if (isSystemInitialized(InitParam::SOUND)) {
-            return InitParam::SOUND;
-        }
-
-        if (!vsound::impl::initSystem()) return InitParam::NONE;
-
-        return InitParam::SOUND;
-    }
-    InitParam initNet() {
-        // Check for previous initialization
-        if (isSystemInitialized(InitParam::NET)) {
-            return InitParam::NET;
-        }
-
-        auto err = enet_initialize();
-        if (err != 0) return InitParam::NONE;
-        return InitParam::NET;
-    }
-    
+   
     /************************************************************************/
     /* Disposers                                                            */
     /************************************************************************/
@@ -143,36 +124,19 @@ namespace vorb {
 
         return InitParam::IO;
     }
-    InitParam disposeSound() {
-        // Check for existence
-        if (!isSystemInitialized(InitParam::SOUND)) {
-            return InitParam::SOUND;
-        }
-        
-        if (!vsound::impl::disposeSystem()) return InitParam::NONE;
-
-        return InitParam::SOUND;
-    }
-    InitParam disposeNet() {
-        // Check for existence
-        if (!isSystemInitialized(InitParam::NET)) {
-            return InitParam::NET;
-        }
-
-        enet_deinitialize();
-
-        return InitParam::NET;
-    }
+  
 }
 
 vorb::InitParam vorb::init(const InitParam& p) {
 #define HAS(v, b) ((v & b) != InitParam::NONE)
 
+    // Initialize logger
+    // TODO: Config logging level
+    vorb::Logger::init(LoggingLevel::Trace);
+
     vorb::InitParam succeeded = InitParam::NONE;
-    if (HAS(p, InitParam::SOUND)) succeeded |= initSound();
     if (HAS(p, InitParam::GRAPHICS)) succeeded |= initGraphics();
     if (HAS(p, InitParam::IO)) succeeded |= initIO();
-    if (HAS(p, InitParam::NET)) succeeded |= initNet();
 
     // Add system flags
     currentSettings |= succeeded;
@@ -185,10 +149,8 @@ vorb::InitParam vorb::dispose(const InitParam& p) {
 #define HAS(v, b) ((v & b) != InitParam::NONE)
 
     vorb::InitParam succeeded = InitParam::NONE;
-    if (HAS(p, InitParam::SOUND)) succeeded |= disposeSound();
     if (HAS(p, InitParam::GRAPHICS)) succeeded |= disposeGraphics();
     if (HAS(p, InitParam::IO)) succeeded |= disposeIO();
-    if (HAS(p, InitParam::NET)) succeeded |= disposeNet();
 
     // Remove system flags
     currentSettings &= (InitParam)(~(ui64)succeeded);

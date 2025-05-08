@@ -1,0 +1,28 @@
+[submodule "RTS/dependencies/entt"]
+	path = RTS/dependencies/entt
+	url = https://github.com/skypjack/entt.git
+[submodule "include/vendor/imgui"]
+	path = include/vendor/imgui
+#	url = https://github.com/ocornut/imgui.git
+    url = https://github.com/thedmd/imgui.git # feature/docking-layout-external
+[submodule "RTS/dependencies/ozz-animation"]
+	path = RTS/dependencies/ozz-animation
+	url = https://github.com/guillaumeblanc/ozz-animation.git
+[submodule "RTS/dependencies/yojimbo"]
+	path = RTS/dependencies/yojimbo
+	url = https://github.com/networkprotocol/yojimbo.git
+[submodule "RTS/dependencies/eventpp"]
+	path = RTS/dependencies/eventpp
+	url = https://github.com/wqking/eventpp.git
+[submodule "RTS/dependencies/spdlog"]
+	path = RTS/dependencies/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "RTS/dependencies/meshoptimizer"]
+	path = RTS/dependencies/meshoptimizer
+	url = https://github.com/zeux/meshoptimizer.git
+[submodule "RTS/dependencies/rapidyaml"]
+	path = RTS/dependencies/rapidyaml
+	url = https://github.com/biojppm/rapidyaml.git
+[submodule "vcpkg"]
+	path = vcpkg
+	url = https://github.com/Microsoft/vcpkg.git

@@ -21,5 +21,6 @@
 #include "DepthState.h"
 #include "RasterizerState.h"
 #include "SamplerState.h"
+#include "BlendState.h"
 
 #endif // !Vorb_GLStates_h__

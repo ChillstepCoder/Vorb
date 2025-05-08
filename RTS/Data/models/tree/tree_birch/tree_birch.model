@@ -1,0 +1,30 @@
+model: tree_birch.fbx
+rig: ''
+machine: ''
+submesh_data:
+  - wind: tree_trunk
+  - wind: tree_leaves
+scale: 0.8
+scale_range: [0.3, 1.2]
+lod_dst_0: 45
+lod_dst_1: 90
+lod_dst_2: 180
+lod_dst_3: 360
+bound_sphere: 10
+shadow_detail: highest
+force_normals_up: 0
+dmg_spline:
+  - [0,0,0]
+  - [0,0,8]
+variants:
+  - name: new_variant
+    submesh_mats:
+      - [birch_bark,'','','']
+      - [birch_leaf,'','','']
+collider:
+  shapes:
+    - angles: [1.6949699,0.12417387,0]
+      offset: [0.198,-0.23,2.246]
+      shape: capsule
+      dims: [0.604,3.014,0.5]
+opt_thresh: 0.0003

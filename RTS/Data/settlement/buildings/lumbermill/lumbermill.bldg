@@ -1,0 +1,19 @@
+width_range: [15, 20]
+public_room_count_range: [4, 4]
+private_room_count_range: [2, 2]
+min_aspect_ratio: 1.0
+public_room_grammars:
+  - bbb
+  - b|0
+public_rooms: 
+  - name: wood_shop
+    count_range: [1, 1]
+  - name: storage
+    count_range: [1, 1]
+  - name: medium_stock
+    count_range: [1, 1]
+private_rooms:
+  - name: lumber_stock
+    count_range: [2, 2]
+function: lumbermill
+employs: [1, 5]

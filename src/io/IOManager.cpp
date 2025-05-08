@@ -4,19 +4,23 @@
 #include "Vorb/io/FileOps.h"
 #include "Vorb/utils.h"
 
-vio::IOManager::IOManager() :
-    m_pathSearch("") {
-    // Search Directory Defaults To CWD
-    setSearchDirectory(m_pathCWD);
+// Parsing
+#include <Vorb/logging/Logger.h>
+
+vio::IOManager::IOManager() {
 }
-vio::IOManager::IOManager(const Path& path) :
-m_pathSearch(path) {
+vio::IOManager::IOManager(const Path& localPath) :
+    m_pathLocal(localPath) {
     // Empty
 }
 
 void vio::IOManager::setSearchDirectory(const Path& s) {
     m_pathSearch = s;
 }
+void vorb::io::IOManager::setLocalDirectory(const Path& s) {
+    m_pathLocal = s;
+}
+
 void vio::IOManager::setCurrentWorkingDirectory(const Path& s) {
     m_pathCWD = s;
 }
@@ -34,9 +38,15 @@ void vio::IOManager::getDirectoryEntries(const Path& dirPath, DirectoryEntries& 
 vio::FileStream vio::IOManager::openFile(const Path& path, const FileOpenFlags& flags) const {
     Path filePath;
     if ((flags & FileOpenFlags::CREATE) != FileOpenFlags::NONE) {
-        if (!assurePath(path, filePath, IOManagerDirectory::SEARCH, true)) return FileStream();
+        if (!assurePath(path, filePath, IOManagerDirectory::SEARCH, true)) {
+            VORB_LOG_WARN("IOManager could not open file for create {}", path.getString());
+            return FileStream();
+        }
     } else {
-        if (!resolvePath(path, filePath)) return FileStream();
+        if (!resolvePath(path, filePath)) {
+            VORB_LOG_WARN("IOManager could not open file {}", path.getString());
+            return FileStream();
+        }
     }
 
     File f;
@@ -76,18 +86,31 @@ bool vio::IOManager::readFileToData(const Path& path, std::vector<ui8>& data) co
 }
 
 bool vio::IOManager::resolvePath(const Path& path, Path& resultAbsolutePath) const {
+    if (path.isNull()) {
+        return false;
+    }
+
     // Special case if the path is already an absolute path
     if (path.isAbsolute()) {
         if (path.isValid()) {
             resultAbsolutePath = path;
             return true;
-        } else {
+        }
+        else {
             return false;
         }
     }
 
     // Search in order
     Path pSearch;
+
+    if (m_pathLocal.isValid()) {
+        pSearch = m_pathLocal / path;
+        if (pSearch.isValid()) {
+            resultAbsolutePath = pSearch;
+            return true;
+        }
+    }
 
     if (m_pathSearch.isValid()) {
         pSearch = m_pathSearch / path;
@@ -136,12 +159,22 @@ bool vio::IOManager::assurePath(const Path& path, OUT Path& resultAbsolutePath, 
                 resultAbsolutePath = path;
                 return true;
             }
+            VORB_LOG_WARN("IOManager could not assure invalid file {}\nCWD {}\nSD{}\nPL{}", path.getString(), m_pathCWD.getString(), m_pathSearch.getString(), m_pathLocal.getString());
             return false;
         }
     }
 
     // Search in order
     Path pSearch;
+
+    if (m_pathLocal.isValid()) {
+        pSearch = m_pathExec / path;
+        if (pSearch.isValid()) {
+            resultAbsolutePath = pSearch;
+            if (wasExisting) *wasExisting = true;
+            return true;
+        }
+    }
 
     if (m_pathSearch.isValid()) {
         pSearch = m_pathSearch / path;
@@ -196,6 +229,7 @@ bool vio::IOManager::assurePath(const Path& path, OUT Path& resultAbsolutePath, 
         return true;
     }
 
+    VORB_LOG_WARN("IOManager could not assure file {}\nCWD {}\nSD{}\nPL{}", path.getString(), m_pathCWD.getString(), m_pathSearch.getString(), m_pathLocal.getString());
     return false;
 }
 
@@ -226,4 +260,3 @@ bool vio::IOManager::directoryExists(const Path& path) const {
 
 vio::Path vio::IOManager::m_pathExec = "";
 vio::Path vio::IOManager::m_pathCWD = "";
-

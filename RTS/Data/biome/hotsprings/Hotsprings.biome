@@ -1,0 +1,28 @@
+name: Hot Springs
+priority: 0
+col_map: hotsprings_cmap
+parent: ''
+corruptable: 1
+dbg_col: [0,128,128]
+categories:
+  - name: Hero
+    tiles:
+      - tile: hotspringhero
+        weight: 1
+        var_sel: Voronoi
+        var_ind:
+          - var: 1
+            weight: 1
+          - var: 2
+            weight: 1
+          - var: 3
+            weight: 1
+          - var: 4
+            weight: 1
+          - var: 5
+            weight: 1
+    dist: hotspring_hero
+    min_h: 0.1
+    max_h: 10000
+    slope_r: [0.25,1]
+    prob: 1

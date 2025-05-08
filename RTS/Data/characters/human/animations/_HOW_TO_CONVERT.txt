@@ -1,0 +1,4 @@
+$ fbx2ozz.exe --file="./animation.fbx"
+Rename animation.ozz to animation.animsrc
+delete extra files and fbx
+add animation.anim for metadata and rig binding

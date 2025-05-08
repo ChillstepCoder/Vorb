@@ -1,0 +1,56 @@
+
+#include "util/cube_sample.glsl"
+#include "util/pi.glsl"
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+// SOURCE:
+//http://alinloghin.com/articles/compute_ibl.html
+//https://github.com/tuxalin/vulkanri/
+
+layout(binding = 0, rgba8) uniform readonly imageCube unEnvironmentMap;
+layout(binding = 1, rgba16f) writeonly uniform imageCube unIrradianceOutput;
+uniform vec2 unInputDims;
+uniform vec2 unOutputDims;
+
+
+const float sampleDelta = 0.025;
+const float totalSamples = (TWO_PI / sampleDelta) * (HALF_PI / sampleDelta); 
+const float invTotalSamples = 1.0 / totalSamples;
+
+void main()
+{
+    ivec3 cubeCoord = ivec3(gl_GlobalInvocationID);
+    vec3 worldPos = cubeCoordToWorld(cubeCoord, unOutputDims);
+    // tangent space from origin point
+    vec3 normal = normalize(worldPos);
+    vec3 up = vec3(0.0, 1.0, 0.001); // 0.001 fixes a visual bug at the poles
+    vec3 right = normalize(cross(up, normal));
+    up = normalize(cross(normal, right));
+
+    vec3 irradiance = vec3(0.0);
+    for(float phi = 0.0; phi < TWO_PI; phi += sampleDelta)
+    {
+        float sinPhi = sin(phi);
+        float cosPhi = cos(phi);
+        
+        for(float theta = 0.0; theta < HALF_PI; theta += sampleDelta)
+        {
+            float sinTheta = sin(theta);
+            float cosTheta = cos(theta);
+
+            // spherical to cartesian, in tangent space
+            vec3 sphereCoord = vec3(sinTheta * cosPhi,  sinTheta * sinPhi, cosTheta);
+            // tangent space to world
+            vec3 sampleVec = sphereCoord.x * right + sphereCoord.y * up + sphereCoord.z * normal; 
+            // world to cube coord
+            ivec3 sampleCoord = texCoordToCube(sampleVec, unInputDims);
+
+            irradiance += imageLoad(unEnvironmentMap, sampleCoord).rgb * cosTheta * sinTheta;
+        }
+    }
+    irradiance *= PI * invTotalSamples;
+
+    vec4 ops = vec4(irradiance, 1.0);
+    imageStore(unIrradianceOutput, cubeCoord, ops);
+}

@@ -22,6 +22,9 @@
 #include "../types.h"
 #endif // !VORB_USING_PCH
 
+// TODO Replace vio::path completely
+#include <filesystem>
+
 namespace vorb {
     namespace io {
         class Directory;
@@ -38,6 +41,15 @@ namespace vorb {
             /// Construct a path from a string
             /// @param p: Path value
             Path(const nString& p);
+            /// Construct a path from a string
+            /// @param p: Path value
+            Path(nString&& p);
+            //  TODO: Delete this entire class
+            Path(const std::filesystem::path& p);
+
+            const std::filesystem::path getStdPath() const {
+                return std::filesystem::path(getString());
+            }
 
             /// @return The path as a string
             const nString& getString() const {
@@ -46,6 +58,10 @@ namespace vorb {
             /// @return The path as a string
             CALLEE_DELETE const cString getCString() const {
                 return m_path.c_str();
+            }
+
+            std::string_view getStringView() const {
+                return std::string_view(m_path.data(), m_path.size());
             }
 
             /// @return True if this path has an empty value
@@ -89,6 +105,12 @@ namespace vorb {
             /// @pre: This path must be valid
             /// @return The last time this path was modified
             time_t getLastModTime() const;
+
+            nString getFileNameNoExtension() const;
+            nString getFileNameTrimOneExtension() const;
+            nString getExtension() const;
+            // NewExtension should not contain the .
+            Path getPathReplaceExtension(const nString& newExtension) const;
 
             /// Add a string to the end of this path's value
             /// @param s: String addition

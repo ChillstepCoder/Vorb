@@ -1,0 +1,2 @@
+vert: model_highlight.vert
+frag: model_highlight.frag

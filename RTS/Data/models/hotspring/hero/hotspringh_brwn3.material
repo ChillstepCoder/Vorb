@@ -1,0 +1,5 @@
+albedo: hotspringh_brwn3
+normal: hotspringhero_n
+rough: hotspringhero_r
+ao: hotspringhero_ao
+sampler_state: LINEAR_CLAMP_MIPMAP

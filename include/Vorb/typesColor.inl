@@ -12,7 +12,7 @@ public:
      * @param g: Green value
      * @param b: Blue value
      */
-    ColorRGB8(ui8 r, ui8 g, ui8 b) :
+    constexpr ColorRGB8(ui8 r, ui8 g, ui8 b) :
         r(r), g(g), b(b) {
         // Empty
     }
@@ -24,7 +24,7 @@ public:
      * @param g: Green value
      * @param b: Blue value
      */
-    explicit ColorRGB8(i32 r, i32 g, i32 b) : ColorRGB8(static_cast<ui8>(r), static_cast<ui8>(g), static_cast<ui8>(b)) {
+    constexpr explicit ColorRGB8(i32 r, i32 g, i32 b) : ColorRGB8(static_cast<ui8>(r), static_cast<ui8>(g), static_cast<ui8>(b)) {
         // Empty
     }
     /*! @brief Construct a color from floating point values
@@ -36,7 +36,7 @@ public:
      * @param g: Green value
      * @param b: Blue value
      */
-    explicit ColorRGB8(f32 r, f32 g, f32 b) : ColorRGB8(
+    constexpr explicit ColorRGB8(f32 r, f32 g, f32 b) : ColorRGB8(
         static_cast<ui8>(r * 255.0f),
         static_cast<ui8>(g * 255.0f),
         static_cast<ui8>(b * 255.0f)) {
@@ -93,6 +93,9 @@ public:
     bool operator==(const ColorRGB8& rhs) const {
         return (r == rhs.r && g == rhs.g && b == rhs.b);
     }
+    bool operator!=(const ColorRGB8& rhs) const {
+        return (r != rhs.r || g != rhs.g || b != rhs.b);
+    }
 
     union {
         struct {
@@ -109,111 +112,104 @@ typedef ColorRGB8 color3; ///< Shortened name for ColorRGB8
  */
 struct ColorRGBA8 {
 public:
-    /*! @brief Construct a color with 8-bit RGB elements.
-     *
-     * @param r: Red value
-     * @param g: Green value
-     * @param b: Blue value
-     * @param a: Alpha value
-     */
-    ColorRGBA8(ui8 r, ui8 g, ui8 b, ui8 a = 0xffu) :
+
+    constexpr ColorRGBA8() : r(0), g(0), b(0), a(255) {
+        // Empty
+    }
+    constexpr ColorRGBA8(ui8 v) :
+        r(v), g(v), b(v), a(0xffu) {
+        // Empty
+    }
+    constexpr ColorRGBA8(ui8 r, ui8 g, ui8 b, ui8 a = 0xffu) :
         r(r), g(g), b(b), a(a) {
         // Empty
     }
-    /*! @brief Construct a color from integer values.
-     *
-     * Values experience a conversion to ui8 elements via static_cast<ui8>(value).
-     *
-     * @param r: Red value
-     * @param g: Green value
-     * @param b: Blue value
-     * @param b: Alpha value
-     */
-    explicit ColorRGBA8(i32 r, i32 g, i32 b, i32 a = 255) : ColorRGBA8((ui8)r, (ui8)g, (ui8)b, (ui8)a) {
+    constexpr explicit ColorRGBA8(i32 r, i32 g, i32 b, i32 a = 255) : ColorRGBA8((ui8)r, (ui8)g, (ui8)b, (ui8)a) {
         // Empty
     }
-    /*! @brief Construct a color from floating point values
-     *
-     * Values experience a conversion to ui8 elements via static_cast<ui8>(value * 255.0f).
-     * It is recommended that floating point values fall within the range [0.0f, 1.0f].
-     *
-     * @param r: Red value
-     * @param g: Green value
-     * @param b: Blue value
-     * @param a: Alpha value
-     */
-    explicit ColorRGBA8(f32 r, f32 g, f32 b, f32 a = 1.0f) : ColorRGBA8(
+    constexpr explicit ColorRGBA8(f32 r, f32 g, f32 b, f32 a = 1.0f) : ColorRGBA8(
         ((ui8)(r * 255.0f)),
         ((ui8)(g * 255.0f)),
         ((ui8)(b * 255.0f)),
         ((ui8)(a * 255.0f))) {
         // Empty
     }
-    /*! @brief Construct a black color
-     *
-     * The RGBA value of the color is (0, 0, 0, 255)
-     */
-    ColorRGBA8() : r(0), g(0), b(0), a(255) {
+
+    constexpr explicit ColorRGBA8(f32v4 inpt) : ColorRGBA8(
+        ((ui8)(inpt.r * 255.0f)),
+        ((ui8)(inpt.g * 255.0f)),
+        ((ui8)(inpt.b * 255.0f)),
+        ((ui8)(inpt.a * 255.0f))) {
         // Empty
     }
 
-    /*! @brief Access a color element by its index
-     *
-     * No range checks are performed on the index argument.
-     *
-     * @param i: Color index in range [0,3]
-     * @return Reference to color element
-     */
+    f32v4 toVec4() const {
+        return { r / 255.0f, g / 255.0f, b / 255.0f, a / 255.0f };
+    }
+
     const ui8& operator[] (const size_t& i) const {
         return data[i];
     }
-    /*! @brief Access a color element by its index
-     *
-     * No range checks are performed on the index argument.
-     *
-     * @param i: Color index in range [0,3]
-     * @return Reference to color element
-     */
+    
     ui8& operator[] (const size_t& i) {
         return data[i];
     }
-
-    /*! @brief Set RGBA values to the linear RGB interpolation of two colors.
-     *
-     * The values are calculated in the following manner:
-     * <code>
-     * this = (1 - ratio) * ca + ratio * cb;
-     * </code>
-     * It is recommended that the ratio is a value between [0.0f, 1.0f].
-     *
-     * @param ca: Starting color
-     * @param cb: Ending color
-     * @param ratio: Ratio of mixing between the start to the end color
-     */
     void lerp(const ColorRGBA8& ca, const ColorRGBA8& cb, f32 ratio) {
         f32 invRatio = 1.0f - ratio;
         r = (ui8)(invRatio * ca.r + ratio * cb.r);
         g = (ui8)(invRatio * ca.g + ratio * cb.g);
         b = (ui8)(invRatio * ca.b + ratio * cb.b);
-        a = (ui8)(invRatio * ca.r + ratio * cb.a);
+        a = (ui8)(invRatio * ca.a + ratio * cb.a);
     }
 
     bool operator==(const ColorRGBA8& rhs) const {
         return (r == rhs.r && g == rhs.g && b == rhs.b && a == rhs.a);
     }
 
+    bool operator<(const ColorRGBA8& other) const {
+        if (r != other.r) return r < other.r;
+        if (g != other.g) return g < other.g;
+        if (b != other.b) return b < other.b;
+        return a < other.a;
+    }
+
     union {
-        struct{
-            ColorRGB8 rgb; ///< RGB value
-            ui8 rgb_padding; ///< RGBA alpha remainder value from RGB padding
-        } color;
         struct {
             ui8 r; ///< Red value
             ui8 g; ///< Green value
             ui8 b; ///< Blue value
             ui8 a; ///< Alpha value
         };
-        ui8 data[4]; ///< RGBA values stored in array
+        ui8 data[4];
     };
 };
 typedef ColorRGBA8 color4; ///< Shortened name for ColorRGBA8
+
+#include <ostream>
+inline std::ostream& operator<<(std::ostream& out, const color4& c) {
+    out << "[" << static_cast<int>(c.r) << ", "
+        << static_cast<int>(c.g) << ", "
+        << static_cast<int>(c.b) << ", "
+        << static_cast<int>(c.a) << "]";
+    return out;
+}
+
+// TODO: Constexpr?
+const color4 COLOR_WHITE = color4((ui8)255u, (ui8)255u, (ui8)255u, (ui8)255u);
+#define COLOR_WHITE_ALPHA(a) color4(1.0f, 1.0f, 1.0f, a)
+const color4 COLOR_RED = color4((ui8)255u, (ui8)0u, (ui8)0u, (ui8)255u);
+#define COLOR_RED_ALPHA(a) color4(1.0f, 0.0f, 0.0f, a)
+const color4 COLOR_GREEN = color4((ui8)0u, (ui8)255u, (ui8)0u, (ui8)255u);
+#define COLOR_GREEN_ALPHA(a) color4(0.0f, 1.0f, 0.0f, a)
+const color4 COLOR_BLUE = color4((ui8)0u, (ui8)0u, (ui8)255u, (ui8)255u);
+#define COLOR_BLUE_ALPHA(a) color4(0.0f, 0.0f, 1.0f, a)
+const color4 COLOR_MAGENTA = color4((ui8)255u, (ui8)0u, (ui8)255u, (ui8)255u);
+#define COLOR_MAGENTA_ALPHA(a) color4(1.0f, 0.0f, 1.0f, a)
+const color4 COLOR_CYAN = color4((ui8)0u, (ui8)255u, (ui8)255u, (ui8)255u);
+#define COLOR_CYAN_ALPHA(a) color4(0.0f, 1.0f, 1.0f, a)
+const color4 COLOR_YELLOW = color4((ui8)255u, (ui8)255u, (ui8)0u, (ui8)255u);
+#define COLOR_YELLOW_ALPHA(a) color4(1.0f, 1.0f, 0.0f, a)
+const color4 COLOR_BLACK = color4((ui8)0u, (ui8)0u, (ui8)0u, (ui8)255u);
+#define COLOR_BLACK_ALPHA(a) color4(0.0f, 0.0f, 0.0f, a)
+const color4 COLOR_GRAY = color4((ui8)128u, (ui8)128u, (ui8)128u, (ui8)255u);
+#define COLOR_GRAY_ALPHA(a) color4(0.5f, 0.5f, 0.5f, a)

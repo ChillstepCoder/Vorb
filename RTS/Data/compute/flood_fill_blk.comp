@@ -1,0 +1,63 @@
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(rgba8, binding = 0) uniform image2D img;
+layout(rgba8, binding = 1) uniform image2D outImg;
+layout(rgba8, binding = 2) uniform image2D imgNorm;
+layout(rgba8, binding = 3) uniform image2D outImgNorm;
+
+void main() {
+    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 imgSize = imageSize(img);
+
+    if (pixelCoords.x >= imgSize.x || pixelCoords.y >= imgSize.y) {
+        return;
+    }
+
+    vec4 pixelColor = imageLoad(img, pixelCoords);
+
+    // Check if the current pixel is transparent
+    if (pixelColor == vec4(0, 0, 0, 0)) {
+        vec3 sum = vec3(0);
+        vec3 normSum = vec3(0);
+        int count = 0;
+
+        // Iterate through nearby pixels
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0) continue;
+
+                ivec2 neighborCoords = pixelCoords + ivec2(dx, dy);
+
+                // Check if neighbor is within image bounds
+                if (neighborCoords.x >= 0 && neighborCoords.x < imgSize.x &&
+                    neighborCoords.y >= 0 && neighborCoords.y < imgSize.y) {
+
+                    vec4 neighborColor = imageLoad(img, neighborCoords);
+
+                    // If neighbor is not transparent, add to sum
+                    if (neighborColor != vec4(0, 0, 0, 0)) {
+                        normSum += imageLoad(imgNorm, neighborCoords).rgb;
+                        sum += neighborColor.rgb;
+                        count++;
+                    }
+                }
+            }
+        }
+
+        // If we found non-transparent neighbors, calculate average and store
+        if (count > 0) {
+            vec4 avgColor;
+            avgColor.rgb = sum / float(count);
+            avgColor.a = 0.0;
+            vec3 avgNorm = normSum / float(count);
+            imageStore(outImg, pixelCoords, avgColor);
+            imageStore(outImgNorm, pixelCoords, vec4(avgNorm, 1.0));
+        } else {
+            imageStore(outImg, pixelCoords, pixelColor);
+            imageStore(outImgNorm, pixelCoords, imageLoad(imgNorm, pixelCoords));
+        }
+    } else {
+        imageStore(outImg, pixelCoords, pixelColor);
+        imageStore(outImgNorm, pixelCoords, imageLoad(imgNorm, pixelCoords));
+    }
+}

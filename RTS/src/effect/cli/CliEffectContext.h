@@ -1,0 +1,77 @@
+#pragma once
+
+#include "effect/IEffectContext.h"
+#include "definitions/EffectDef.h"
+
+#include "rendering/particle/CpuParticleEmitterRenderList.h"
+
+class CPUParticleSystem;
+
+class PendingEffectInstanceData {
+public:
+    PendingEffectInstanceData() = default;
+    PendingEffectInstanceData(f32v3 position, f32q orientation, ParticleSystemInputsPtr inputs, BitFlags<EffectCreateFlags> flags) :
+        position(position),
+        orientation(orientation),
+        inputs(inputs),
+        flags(flags) {}
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(PendingEffectInstanceData);
+
+    f32v3 position;
+    f32q orientation;
+    BitFlags<EffectCreateFlags> flags;
+    ParticleSystemInputsPtr inputs;
+};
+
+class EffectInstance {
+public:
+    EffectInstance(const EffectDef* effectDef, const ParticleSystemDef* systemDef, f32v3 position, f32q orientation, ParticleSystemInputsPtr inputs);
+    ~EffectInstance();
+
+    VORB_NON_COPYABLE_BUT_MOVABLE(EffectInstance);
+
+    const EffectDef* mEffectDef = nullptr;
+    std::unique_ptr<CPUParticleSystem> mSystem;
+};
+
+struct PendingEffectData {
+    AssetHandlePtr<EffectDef> mEffectHandle;
+    std::vector<PendingEffectInstanceData> mPendingInstances;
+};
+
+class CliEffectContext : public IEffectContext {
+    friend class HostEffectContext;
+public:
+    CliEffectContext(World& world) : IEffectContext(world) {}
+
+    void renderEffects(f32 elapsedSec, const Camera3D& camera) override;
+
+    void playParticleEffectAtPoint(
+        EffectAssetRef effectName,
+        f32v3 point,
+        f32q orientation,
+        ParticleSystemInputsPtr inputs,
+        BitFlags<EffectCreateFlags> flags
+    ) override;
+
+    void playMutationEffect(
+        const f32m4& transform,
+        ModelID startModel,
+        ModelID endModel,
+        MutationType mutationType,
+        BitFlags<EffectCreateFlags> flags
+    ) override;
+
+private:
+    void addEffectInstance(AssetID assetId, EffectInstance instance);
+
+    moodycamel::ConcurrentQueue<std::pair<EffectAssetRef, PendingEffectInstanceData>> mRenderThreadQueue;
+
+    FlatMap<EffectAssetRef, PendingEffectData> mPendingAssetLoadEffects;
+    std::vector<EffectInstance> mEffectInstances;
+    FlatMap<const EffectDef*, std::pair<int, AssetHandlePtr<EffectDef>>> mEffectReferences;
+
+    CpuParticleEmitterRenderList mEmitterRenderList;
+};
+

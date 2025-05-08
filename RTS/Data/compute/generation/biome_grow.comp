@@ -1,0 +1,58 @@
+
+#include "const/biome_ids.glsl"
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+layout(r8, binding = 0) uniform writeonly image2D biomeImage;
+layout(std430, binding = 0) restrict buffer BiomeData
+{
+    uint biomeData[];
+};
+
+uniform uint unBiomeMapWidth;
+uniform uint unIsOdd;
+uniform uint unYStart;
+uniform uint unSeed;
+
+
+uint rand_xorshift(uint seed)
+{
+    // Xorshift algorithm from George Marsaglia's paper
+    seed ^= (seed << 13);
+    seed ^= (seed >> 17);
+    seed ^= (seed << 5);
+    return seed;
+}
+
+void main() {
+
+    const int halfWidth = int(unBiomeMapWidth) / 2;
+
+    const int OFFSETS[4] = {
+        1,
+        -1,
+        int(unBiomeMapWidth),
+        -int(unBiomeMapWidth)
+    };
+
+    // +8 for padded border as we dont want to have to bounds check
+    uint idx = (gl_GlobalInvocationID.y + 8 + unYStart) * unBiomeMapWidth + (gl_GlobalInvocationID.x * 2) + 8;
+    
+    // Offset for checkerboard pattern
+    idx += ((gl_GlobalInvocationID.y + unIsOdd) % 2);
+
+    
+    // Spread biome
+    const uint prevBiome = biomeData[idx];
+    const uint randomDir = rand_xorshift(unSeed + idx * 3) % 4;
+    uint spreadingBiome = biomeData[int(idx) + OFFSETS[randomDir]];
+    
+    const uint corruption = BIOME_CORRUPTION[spreadingBiome];
+    const uint newBiome = BIOME_TRANSFORM[prevBiome][corruption];
+
+    biomeData[idx] = newBiome;
+    
+    // Calculate pixel coordinates
+    const ivec2 bxy = ivec2(idx % unBiomeMapWidth, idx / unBiomeMapWidth);
+    imageStore(biomeImage, bxy, vec4(float(newBiome) / 255.0, 0.0, 0.0, 0.0));
+}

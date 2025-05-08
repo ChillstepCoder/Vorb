@@ -1,0 +1,73 @@
+layout(triangles, equal_spacing, ccw) in;
+
+#include "../GlobalUbo.glsl"
+
+#include "../util/wind.glsl"
+
+const float WIND_INTENSITY = 1.0;
+
+uniform vec3 unPlayerPos;
+
+in vec3 tWorldPos[];
+in float tHeight[];
+flat in vec3 tWorldRoot[];
+flat in vec2 tRelXY[];
+flat in int tBiome[];
+in vec2 tUV[];
+flat in int tGrassMaterial[];
+in float tDistance[];
+in vec2 tLean[];
+
+flat out vec2 fRelXY;
+out vec2 fUV;
+flat out int fBiome;
+flat out int fGrassMaterial;
+out float fDistance;
+uniform float unSnowLevel;
+
+float interpolate1D(float v0, float v1, float v2)
+{
+    return gl_TessCoord.x * v0 + gl_TessCoord.y * v1 + gl_TessCoord.z * v2;
+}
+
+vec2 interpolate2D(vec2 v0, vec2 v1, vec2 v2)
+{
+    return vec2(gl_TessCoord.x) * v0 + vec2(gl_TessCoord.y) * v1 + vec2(gl_TessCoord.z) * v2;
+}
+
+vec3 interpolate3D(vec3 v0, vec3 v1, vec3 v2)
+{
+    return vec3(gl_TessCoord.x) * v0 + vec3(gl_TessCoord.y) * v1 + vec3(gl_TessCoord.z) * v2;
+}
+
+void main()
+{
+    // Interpolate the attributes of the output vertex using the barycentric coordinates
+    vec3 worldPos = interpolate3D(tWorldPos[0], tWorldPos[1], tWorldPos[2]);
+    
+    vec2 lean = interpolate2D(tLean[0], tLean[1], tLean[2]);
+    
+    float height = interpolate1D(tHeight[0], tHeight[1], tHeight[2]);
+    fUV = interpolate2D(tUV[0], tUV[1], tUV[2]);
+    fGrassMaterial = tGrassMaterial[0];
+    fDistance = tDistance[0];
+    
+    worldPos.xy += lean * height;
+    
+    // Collision with player
+    vec2 playerWorldOffset = (tWorldRoot[0].xy) - unPlayerPos.xy;
+    float offsetLength = length(playerWorldOffset);
+    float collisionAlpha = max(0.0, 1.0 - offsetLength) * 0.4;
+    vec2 collisionForce = height * collisionAlpha * (playerWorldOffset / offsetLength);
+    
+    // Displace the vertex along the normal
+    float wind = getWindAtPosition(-Time + height, vec4(tWorldRoot[0], 0.0)) * height * WIND_INTENSITY * (1.0 - collisionAlpha);
+    vec3 windOffset = vec3(wind, wind, 0.35 * wind);
+    worldPos.xyz += windOffset * pow(1.0 - unSnowLevel, 4.0);
+    
+    
+    worldPos.xy += collisionForce;
+    fRelXY = tRelXY[0];
+    fBiome = tBiome[0];
+    gl_Position = VP * vec4(worldPos, 1.0);
+}

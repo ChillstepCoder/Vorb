@@ -1,219 +1,174 @@
 #include "stdafx.h"
 #include "PhysicsComponent.h"
 
-#include "World.h"
-#include "EntityComponentSystem.h"
 
-#include <box2d/b2_body.h>
-#include <box2d/b2_circle_shape.h>
-#include <box2d/b2_fixture.h>
+#include "world/World.h"
+#include "world/IHeightmapGrid.h"
+#include "ecs/IFullECS.h"
 
-const std::string& PhysicsComponentTable::NAME = "physics";
+#include "resources/TileRepository.h"
 
-// TODO: Capsule collision
-inline void handleCollision2D(PhysicsComponent& cmp1, PhysicsComponent& cmp2) {
-	//// We add radius since position is the top left corner
-	//const glm::vec2 distVec = cmp2.getPosition() - cmp1.getPosition();
-	//const float dist = glm::length(distVec);
-	//const float totalRadius = cmp1.mCollisionRadius + cmp2.mCollisionRadius;
-	//const float collisionDepth = totalRadius - dist;
-	//// Check for collision
-	//if (collisionDepth > 0) {
-	//	const glm::vec2 distDir = distVec / dist;
+#include "physics/PhysicsWorld.h"
 
-	//	// Push away the balls based on ratio of mMasses
-	//	// TODO: Could/should we encode this in the impulse?
-	//	// TODO: 3D?
-	//	const f32v2 offset = distDir * collisionDepth * 0.5f;
-	//	cmp1.getPosition() -= offset * (cmp2.mMass / cmp1.mMass);
-	//	cmp2.mPosition += offset * (cmp1.mMass / cmp2.mMass);
+#include <Jolt/Physics/Body/BodyLock.h>
+#include <Jolt/Physics/Body/BodyInterface.h>
+#include <Jolt/Physics/Body/BodyLockInterface.h>
 
-	//	// Calculate deflection. http://stackoverflow.com/a/345863
-	//	// Fixed thanks to youtube user Sketchy502
-	//	const float aci = glm::dot(cmp1.mVelocity, distDir);
-	//	const float bci = glm::dot(cmp2.mVelocity, distDir);
+constexpr float MIN_Z_SPEED = -0.24f;
+constexpr float TOP_COLLISION_THRESHOLD = 0.75f;
+constexpr float TOP_COLLISION_DEPTH = 1.0f - TOP_COLLISION_THRESHOLD;
+constexpr float REFILTER_HEIGHT_CHANGE = 0.2f;
+// This prevents tunelling when falling
+static_assert(1.0f + MIN_Z_SPEED > TOP_COLLISION_THRESHOLD);
 
-	//	const float acf = (aci * (cmp1.mMass - cmp2.mMass) + 2 * cmp2.mMass * bci) / (cmp1.mMass + cmp2.mMass);
-	//	const float bcf = (bci * (cmp2.mMass - cmp1.mMass) + 2 * cmp1.mMass * aci) / (cmp1.mMass + cmp2.mMass);
+// TODO: USE A COLLISION TRANSFORM ON THE ITEM
+static const JPH::Quat ROTATE_ZUP = JPH::Quat::sRotation(JPH::Vec3::sAxisZ(), JPH::JPH_PI * 0.5f);
 
-	//	cmp1.mVelocity += (acf - aci) * distDir;
-	//	cmp2.mVelocity += (bcf - bci) * distDir;
-	//}
+f32v3 PhysicsComponent::getBottomPosition() const {
+    const JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterfaceNonLocking(*sGamePhysicsWorld);
+
+    JPH::RVec3 rPos = bodyInterface.GetPosition(JPH::BodyID(mBodyID));
+    return f32v3(rPos.GetX(), rPos.GetY(), rPos.GetZ() - mHalfHeight);
 }
 
-// TODO: Measure perf of this vs non inline vs macro
-inline void updateComponent(World& world, PhysicsComponent& cmp, float deltaTime) {
-	const f32v2& vel = cmp.getLinearVelocity();
-	// TODO: TestBit
-	if ((cmp.mFlags & enum_cast(PhysicsComponentFlag::LOCK_DIR_TO_VELOCITY)) && (glm::abs(vel.x) > 0.0001f || glm::abs(vel.y) >= 0.0001f)) {
-		cmp.mDir = glm::normalize(vel);
-	}
+f32v3 PhysicsComponent::getLinearVelocity() const {
+    const JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterfaceNonLocking(*sGamePhysicsWorld);
 
-	//if (cmp.mPosition.z <= 0.0f) {
-	//}
-	//cmp.mPosition += cmp.mVelocity;
-	//if (cmp.mFrictionEnabled) {
-	//	cmp.mVelocity -= cmp.mVelocity * (1.0f - cmp.mFrictionCoef) * deltaTime; // TODO: Deterministic?
-	//}
-
-	const f32v2& position = cmp.getPosition();
-
-	// TODO: Handle larger colliders
-	const f32v2 cornerPositions[4] = {
-		position + f32v2(-0.5f,-0.5f), // Bottom left
-		position + f32v2( 0.5f,-0.5f), // Bottom right
-		position + f32v2(-0.5f, 0.5f), // Top left
-		position + f32v2( 0.5f, 0.5f), // Top right
-	};
-
-	const float VEL_DAMPING = 0.75f;
-
-	// TODO: This method has issues if large group of units is trying to walk into a wall, probably need impulses instead
-	const float circleRadius = cmp.mCollisionRadius;
-	for (int i = 0; i < 4; ++i) {
-		TileHandle handle = world.getTileHandleAtWorldPos(cornerPositions[i]);
-		// TODO: CollisionMap
-		if (TileRepository::getTileData(handle.tile.groundLayer).collisionBits) {
-			const f32v2 tileCenter(floor(cornerPositions[i].x) + 0.5f, floor(cornerPositions[i].y) + 0.5f);
-			f32v2 offsetToCircle = position - tileCenter;
-            offsetToCircle.x = vmath::clamp(offsetToCircle.x, -0.5f, 0.5f);
-            offsetToCircle.y = vmath::clamp(offsetToCircle.y, -0.5f, 0.5f);
-			const f32v2 closestPoint = tileCenter + offsetToCircle;
-			const f32v2 offsetToWall = closestPoint - position;
-			const float dx2 = offsetToWall.x * offsetToWall.x;
-			const float dy2 = offsetToWall.y * offsetToWall.y;
-			if (dx2 + dy2 < circleRadius * circleRadius) {
-				// Collision!
-                b2Vec2 impulse;
-				b2Vec2 currentVelocity = cmp.mBody->GetLinearVelocity();
-				if (dx2 > dy2) {
-					// X collision
-					if (offsetToWall.x < 0.0f) {
-						// Colliding with left wall
-                        impulse.x = 0.1f;
-                        if (currentVelocity.x < 0.0f) {
-                            currentVelocity.x = -currentVelocity.x * VEL_DAMPING;
-							cmp.mBody->SetLinearVelocity(currentVelocity);
-						}
-						const float collisionDepth = circleRadius + offsetToWall.x;
-						cmp.mBody->SetTransform(b2Vec2(position.x + collisionDepth, position.y), 0.0f);
-					}
-					else {
-						// Colliding with right wall
-						impulse.x = -0.1f;
-                        if (currentVelocity.x > 0.0f) {
-                            currentVelocity.x = -currentVelocity.x * VEL_DAMPING;
-                            cmp.mBody->SetLinearVelocity(currentVelocity);
-                        }
-                        const float collisionDepth = circleRadius - offsetToWall.x;
-                        cmp.mBody->SetTransform(b2Vec2(position.x - collisionDepth, position.y), 0.0f);
-					}
-					impulse.y = 0.0f;
-				}
-				else {
-                    // Y collision
-                    if (offsetToWall.y < 0.0f) {
-                        // Colliding with bottom wall
-                        impulse.y = 0.1f;
-                        if (currentVelocity.y < 0.0f) {
-                            currentVelocity.y = -currentVelocity.y * VEL_DAMPING;
-                            cmp.mBody->SetLinearVelocity(currentVelocity);
-                        }
-                        const float collisionDepth = circleRadius + offsetToWall.y;
-                        cmp.mBody->SetTransform(b2Vec2(position.x, position.y + collisionDepth), 0.0f);
-                    }
-                    else {
-                        // Colliding with top wall
-						impulse.y = -0.1f;
-                        if (currentVelocity.y > 0.0f) {
-                            currentVelocity.y = -currentVelocity.y * VEL_DAMPING;
-                            cmp.mBody->SetLinearVelocity(currentVelocity);
-                        }
-                        const float collisionDepth = circleRadius - offsetToWall.y;
-                        cmp.mBody->SetTransform(b2Vec2(position.x, position.y - collisionDepth), 0.0f);
-                    }
-                    impulse.x = 0.0f;
-				}
-			}
-		}
-	}
+    JPH::Vec3 vel = bodyInterface.GetLinearVelocity(JPH::BodyID(mBodyID));
+    return f32v3(vel.GetX(), vel.GetY(), vel.GetZ());
 }
 
-
-PhysicsComponentTable::PhysicsComponentTable(World& world)
-	: mWorld(world) {
-
+f32 PhysicsComponent::getLinearVelocityZ() const {
+    const JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterfaceNonLocking(*sGamePhysicsWorld);
+    return bodyInterface.GetLinearVelocity(JPH::BodyID(mBodyID)).GetZ();
 }
 
-void PhysicsComponentTable::update(float deltaTime) {
-	if (getComponentListSize() <= 1) {
-		return;
-	}
-
-	// THIS IS NOW HANDLED BY BOX2D
-
-	// Collision
-	// TODO: Spatial Partition
-	// Skip default element
-	/*std::vector<ComponentPairing>::iterator it = _components.begin() + 1;
-	while (it != _components.end()) {
-		if (isValid(*it)) {
-			auto compareIt = it;
-			while (++compareIt != _components.end()) {
-				if (isValid(*compareIt)) {
-					handleCollision2D(it->second, compareIt->second);
-				}
-			}
-		}
-		++it;
-	}*/
-
-	// Update components
-	for (auto&& cmp : *this) {
-		updateComponent(mWorld, cmp.second, deltaTime);
-	}
+glm::quat PhysicsComponent::getMainBodyOrientation() const {
+    const JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterfaceNonLocking(*sGamePhysicsWorld);
+    const JPH::Quat q = bodyInterface.GetRotation(JPH::BodyID(mBodyID));
+    glm::quat gameOrientation = glm::quat(
+        q.GetW(),
+        q.GetX(),
+        q.GetY(),
+        q.GetZ()
+    );
+    return gameOrientation;
 }
 
-void PhysicsComponent::initBody(EntityComponentSystem& parentSystem, const f32v2& centerPosition, bool isStatic) {
-	if (!mBody) {
-		b2BodyDef bodyDef;
-		if (isStatic) {
-			bodyDef.type = b2_staticBody;
-			bodyDef.position.Set(centerPosition.x, centerPosition.y);
-			mBody = parentSystem.mWorld.createPhysBody(&bodyDef);
-		}
-		else {
-			bodyDef.type = b2_dynamicBody;
-			bodyDef.position.Set(centerPosition.x, centerPosition.y);
-			mBody = parentSystem.mWorld.createPhysBody(&bodyDef);
-			mBody->SetLinearDamping(0.1f);
-		}
-	}
+void PhysicsComponent::setLinearVelocity(f32v3 velocity) {
+    ASSERT_GAME_THREAD();
+    assert(mBodyID != INVALID_PHYS_BODY_ID);
+
+    JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterface(*sGamePhysicsWorld);
+    bodyInterface.SetLinearVelocity(JPH::BodyID(mBodyID), JPH::Vec3(velocity.x, velocity.y, velocity.z));
 }
 
-void PhysicsComponent::addCollider(vecs::EntityID entityId, ColliderShapes shape, const float halfWidth) {
+void PhysicsComponent::setLinearVelocityZ(f32 zVelocity) {
+    ASSERT_GAME_THREAD();
+    assert(mBodyID != INVALID_PHYS_BODY_ID);
 
-	// Init physics body
-	
+    f32v3 linearVelocity = getLinearVelocity();
 
-	switch (shape) {
-		case ColliderShapes::SPHERE: {
-			b2CircleShape dynamicCircle;
-			dynamicCircle.m_radius = halfWidth;
-			mCollisionRadius = dynamicCircle.m_radius;
+    JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterface(*sGamePhysicsWorld);
+    bodyInterface.SetLinearVelocity(JPH::BodyID(mBodyID), JPH::Vec3(linearVelocity.x, linearVelocity.y, zVelocity));
+}
 
-			b2FixtureDef fixtureDef;
-			fixtureDef.shape = &dynamicCircle;
-			fixtureDef.density = 1.0f;
-			fixtureDef.userData = (void*)((size_t)entityId); // size_t to shut up the compiler warning
+void PhysicsComponent::clearLinearVelocityZIfNegative() {
+    ASSERT_GAME_THREAD();
+    assert(mBodyID != INVALID_PHYS_BODY_ID);
 
-			mBody->CreateFixture(&fixtureDef);
-			break;
-		}
-		case ColliderShapes::NONE:
-			ASSERT_FAIL; // Invalid collider type
-		default:
-			ASSERT_FAIL; // Need to add collider typev
-	}
+    f32v3 linearVelocity = getLinearVelocity();
+    if (linearVelocity.z < 0.0f) {
+        linearVelocity.z = 0.0f;
+        JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterface(*sGamePhysicsWorld);
+        bodyInterface.SetLinearVelocity(JPH::BodyID(mBodyID), JPH::Vec3(linearVelocity.x, linearVelocity.y, 0.0f));
+    }
+}
 
+void PhysicsComponent::addImpulse(f32v3 impulse) {
+    ASSERT_GAME_THREAD();
+    assert(mBodyID != INVALID_PHYS_BODY_ID);
+
+    JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterface(*sGamePhysicsWorld);
+    bodyInterface.AddImpulse(JPH::BodyID(mBodyID), JPH::Vec3(impulse.x, impulse.y, impulse.z));
+}
+
+void PhysicsComponent::teleportToPoint(f32v3 worldPos) {
+    ASSERT_GAME_THREAD();
+    assert(mBodyID != INVALID_PHYS_BODY_ID);
+
+    JPH::BodyInterface& bodyInterface = PhysicsWorldBodyInterface::getBodyInterface(*sGamePhysicsWorld);
+    bodyInterface.SetPosition(JPH::BodyID(mBodyID), JPH::DVec3((double)worldPos.x, (double)worldPos.y, (double)worldPos.z), JPH::EActivation::Activate);
+}
+
+void PhysicsComponent::teleportBottomToPoint(f32v3 worldPos) {
+    teleportToPoint(f32v3(worldPos.x, worldPos.y, worldPos.z + mHalfHeight));
+}
+
+void PhysicsSystem::update(World& world, entt::registry& registry, f32 elapsedSec) {
+    ASSERT_GAME_THREAD();
+    PROFILE_FUNCTION();
+    const IHeightmapGrid& grid = world.getHeightmapGrid();
+
+    // Update all uncontrolled object positions
+    // Exclude character control because it has its own update.
+    auto view = registry.view<PhysicsComponent, PositionComponent>(entt::exclude<CharacterControlComponent>);
+    for (auto entity : view) {
+        PhysicsComponent& cmp = view.get<PhysicsComponent>(entity);
+        PositionComponent& posCmp = view.get<PositionComponent>(entity);
+        f32v3 pos = cmp.getBottomPosition();
+        const f32v2 xyPosition(pos.x, pos.y);
+        constexpr f32 SNAP_THRESHOLD = 0.1f;
+        const f32 terrainHeight = grid.computeHeightAtPoint<false>(xyPosition);
+
+        if (pos.z + SNAP_THRESHOLD < terrainHeight) {
+            pos.z = terrainHeight;
+            cmp.teleportBottomToPoint(pos);
+            cmp.clearLinearVelocityZIfNegative();
+            cmp.mFlags.setBit(PhysicsComponentFlag::IS_ON_GROUND);
+        }
+        else {
+            cmp.mFlags.clearBit(PhysicsComponentFlag::IS_ON_GROUND);
+        }
+
+        // Copy position to our position component
+        posCmp.mPosition = pos;
+        const ChunkID newChunkID = world.getChunkIDAtWorldPos(pos);
+
+        // Optional orientation tracking
+        if (OrientationComponent* oCmp = registry.try_get<OrientationComponent>(entity)) {
+            if (ColliderInverseTransformComponent* invCmp = registry.try_get<ColliderInverseTransformComponent>(entity)) {
+                // If we have inverse orientation it means we are rotated relative to our model root
+                oCmp->mOrientation = cmp.getMainBodyOrientation() * invCmp->mInverseBaseOrientation;
+                posCmp.mPosition -= oCmp->mOrientation * invCmp->mOffsetToShape;
+            }
+            else {
+                // Update orientation
+                oCmp->mOrientation = cmp.getMainBodyOrientation();
+            }
+        }
+        else if (ColliderInverseTransformComponent* invCmp = registry.try_get<ColliderInverseTransformComponent>(entity)) {
+            posCmp.mPosition -= (cmp.getMainBodyOrientation() * invCmp->mInverseBaseOrientation) * invCmp->mOffsetToShape;
+        }
+
+        if (newChunkID != posCmp.chunkId) [[unlikely]] {
+            const ui32 oldChunkId = posCmp.chunkId;
+            posCmp.chunkId = newChunkID;
+            if (world.getECS().onEntityEnterNewChunk(entity, oldChunkId, newChunkID)) {
+                continue; // Entity deleted
+            }
+        }
+
+    };
+
+    updateAngularVelocity(world, registry, elapsedSec);
+}
+
+void PhysicsSystem::updateAngularVelocity(World& world, entt::registry& registry, f32 elapsedSec) {
+    auto view = registry.view<OrientationComponent, AngularVelocityComponent>();
+    for (auto entity : view) {
+        OrientationComponent& ocmp = view.get<OrientationComponent>(entity);
+        AngularVelocityComponent& acmp = view.get<AngularVelocityComponent>(entity);
+        ocmp.mOrientation = acmp.applyToRotation(elapsedSec, ocmp.mOrientation);
+    }
 }

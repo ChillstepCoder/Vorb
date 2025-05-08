@@ -1,0 +1,63 @@
+#pragma once
+
+#include "Vorb/graphics/SamplerStateType.h"
+
+#include "rendering/model/MaterialRenderPassType.h"
+
+enum MaterialFlags {
+    MaterialFlags_CastShadow = BIT(0),
+    MaterialFlags_ReceiveShadow = BIT(1),
+    MaterialFlags_Transparent = BIT(2),
+};
+
+struct PACKED_STRUCT MaterialGpuData final {
+    f32v4 emissiveColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+    f32v4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+    // UV anisotropic roughness (isotropic lighting models use only the first value). ZW values are ignored
+    f32v4 roughness = { 1.0f, 1.0f, 0.0f, 0.0f };
+
+    f32 transparencyFactor = 1.0f; // UNUSED
+    f32 alphaTest = 0.01f; // UNUSED
+    f32 metallicFactor = 0.0f;
+
+    ui32 flags = MaterialFlags_CastShadow | MaterialFlags_ReceiveShadow;
+    // Albedo (RGB) Alpha (A)
+    TextureHandle albedoMap = INVALID_TEXTURE_HANDLE;
+    // Normal (RGB)
+    TextureHandle normalMap = INVALID_TEXTURE_HANDLE;
+    // Height (R)
+    TextureHandle displacementMap = INVALID_TEXTURE_HANDLE;
+    /// AO (R), Roughness (G), Metallic (B) https://github.com/KhronosGroup/glTF/issues/857
+    TextureHandle aoMetallicRoughnessMap = INVALID_TEXTURE_HANDLE;
+};
+static_assert(sizeof(MaterialGpuData) % 16 == 0, "MaterialData should be padded to 16 bytes for std430");
+
+struct MaterialDesc {
+    MaterialID id = INVALID_MATERIAL_ID;
+    MaterialRenderPassType renderPass = MaterialRenderPassType::Default;
+    // ui8 pad?
+};
+
+class MaterialDef : public IAsset {
+public:
+    DEFAULT_ASSET_CONSTRUCTOR(MaterialDef, AssetType::Material);
+
+    StrToken albedoTexture;
+    StrToken normalTexture;
+    StrToken ambientOcclusionTexture;
+    StrToken displacementTexture;
+    StrToken roughnessTexture;
+    StrToken metalTexture;
+    MaterialRenderPassType renderPass = MaterialRenderPassType::Default;
+    vg::SamplerStateType samplerState = vg::SamplerStateType::LINEAR_WRAP_MIPMAP;
+    f32v4 emissiveColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+    f32v4 albedoColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+    // UV anisotropic roughness (isotropic lighting models use only the first value). ZW values are ignored
+    f32v2 roughness = { 1.0f, 1.0f };
+    f32 transparencyFactor = 1.0f; // UNUSED
+    f32 alphaTest = 0.01f;
+    f32 metallicFactor = 0.0f;
+    bool castsShadow = true;
+    bool receivesShadow = true;
+    bool flipV = false;
+};

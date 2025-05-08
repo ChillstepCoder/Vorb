@@ -1,0 +1,5 @@
+albedo: cod_albedo
+normal: cod_normal
+ao: cod_ao
+sampler_state: LINEAR_CLAMP_MIPMAP
+roughness: [0.2, 0.2]

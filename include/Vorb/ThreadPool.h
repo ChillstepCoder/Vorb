@@ -24,101 +24,98 @@
 #include "Vorb/types.h"
 #endif // !VORB_USING_PCH
 
+#include <functional>
 #include <thread>
-#include <condition_variable>
+#include <semaphore>
 
 #include <Vorb/concurrentqueue.h>
-#include <Vorb/blockingconcurrentqueue.h>
 
 #include "Vorb/IThreadPoolTask.h"
 
-class CAEngine;
-class Chunk;
-class ChunkMesher;
-class FloraGenerator;
-class VoxelLightEngine;
-class LoadData;
-
-enum class RenderTaskType;
+enum class TaskPriority {
+    High,
+    Normal,
+    Low,
+    COUNT
+};
 
 namespace vorb {
     namespace core {
-        template<typename T>
+
         class ThreadPool {
         public:
-            ThreadPool() {};
+            // If we exceed this, we have problems
+            static constexpr ui32 MAX_TASKS = 1048576;
+
+            ThreadPool(ui32 size);
             ~ThreadPool();
-
-            /// Initializes the threadpool
-            /// @param size: The number of worker threads
-            void init(ui32 size);
-
-            /// Frees all resources
-            void destroy();
 
             /// Clears all unprocessed tasks from the task queue
             void clearTasks();
 
             /// Adds a task to the task queue
             /// @param task: The task to add
-            void addTask(IThreadPoolTask<T>* task) {
-                m_tasks.enqueue(task);
-            }
-
-            /// Add an array of tasks to the task queue
-            /// @param tasks: The array of tasks to add
-            /// @param size: The size of the array
-            void addTasks(IThreadPoolTask<T>* tasks[], size_t size) {
-                m_tasks.enqueue_bulk(tasks, size);
+            inline void addTask(std::function<void()> workerProc, TaskPriority priority = TaskPriority::Normal) {
+                mTasks[(int)priority].enqueue(std::move(workerProc));
+                mTaskSemaphore.release();
             }
 
             /// Getters
-            i32 getNumWorkers() const { return m_workers.size(); }
-            size_t getTasksSizeApprox() const { return m_tasks.size_approx(); }
+            i32 getNumWorkers() const { return mWorkers.size(); }
+            size_t getTasksSizeApprox() const { return mTasks[0].size_approx() + mTasks[1].size_approx() + mTasks[2].size_approx(); }
+            size_t getTasksSizeApprox(TaskPriority priority) const { return mTasks[(int)priority].size_approx(); }
+
+            // Adjust number of running threads
+            void setSize(ui32 size);
+            int getSize() const { return mActiveThreads; }
+            int getNumRunningThreads() const { return mRunningThreads; }
+
+            bool isRunning() const { return mRunningThreads || getTasksSizeApprox(); }
+
+            bool tryProcessHighPriorityTask();
         private:
             VORB_NON_COPYABLE(ThreadPool);
-            // Typedef for func ptr
-            typedef void (ThreadPool<T>::*workerFunc)(T*);
 
             /// Class definition for worker thread
             class WorkerThread {
             public:
+                typedef void (ThreadPool::* workerFunc)(WorkerThread*);
                 /// Creates the thread
                 /// @param func: The function the thread should execute
-                WorkerThread(workerFunc func, ThreadPool<T>* threadPool) {
-                    thread = new std::thread(func, threadPool, &data);
+                WorkerThread(workerFunc func, ThreadPool* threadPool) : thread(func, threadPool, this) {
                 }
 
+                ~WorkerThread() {
+                    if (thread.joinable()) {
+                        thread.join();
+                    }
+                }
                 /// Blocks until the worker thread completes
                 void join() {
-                    thread->join();
+                    thread.join();
                 }
 
-                std::thread* thread; ///< The thread handle
-                T data; ///< Worker specific data
+                std::thread thread; ///< The thread handle
+                std::atomic_bool mStop;
+                std::atomic_bool mActive = true;
             };
 
             /// Thread function that processes tasks
             /// @param data: The worker specific data
-            void workerThreadFunc(T* data);
+            void workerThreadFunc(WorkerThread* thisThread);
 
             /// Lock free task queues
-            moodycamel::BlockingConcurrentQueue<IThreadPoolTask<T>*> m_tasks; ///< Holds tasks to execute
+            moodycamel::ConcurrentQueue<std::function<void()>> mTasks[(int)TaskPriority::COUNT]; ///< Holds tasks to execute
+            std::counting_semaphore<MAX_TASKS> mTaskSemaphore = std::counting_semaphore<MAX_TASKS>(0);
            
-            bool m_isInitialized = false; ///< true when the pool has been initialized
-            std::vector<WorkerThread*> m_workers; ///< All the worker threads
+            std::vector<std::unique_ptr<WorkerThread>> mWorkers;
+            std::vector<std::unique_ptr<WorkerThread>> mDeadWorkers; // Workers we have released
+            std::atomic_int mActiveThreads = 0;
+            std::atomic_int mRunningThreads = 0;
         };
 
-        template<typename T>
-        class QuitThreadPoolTask : public IThreadPoolTask<T> {
-            virtual void execute(T* workerData) override {
-                workerData->stop = true;
-            }
-        };
     }
 }
 namespace vcore = vorb::core;
-
-#include "ThreadPool.inl"
 
 #endif // !Vorb_ThreadPool_h__

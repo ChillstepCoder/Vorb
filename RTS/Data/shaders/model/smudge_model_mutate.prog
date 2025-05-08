@@ -1,0 +1,5 @@
+vert: standard_model.vert
+frag: standard_model.frag
+defines:
+  - name: SMUDGE
+  - name: MUTATE

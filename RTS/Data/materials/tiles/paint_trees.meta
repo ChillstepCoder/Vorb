@@ -1,0 +1,7 @@
+textures:
+  - name: tree_small
+    uv_rect: [0.0, 0.0, 0.5, 1.0]
+    rand_flip: true
+  - name: tree_pine
+    uv_rect: [0.5, 0.0, 0.5, 1.0]
+    rand_flip: true

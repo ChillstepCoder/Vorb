@@ -30,9 +30,10 @@ namespace vorb {
         /// Wrapper struct for a texture
         class Texture {
         public:
-            Texture(VGTexture id = 0u,
-                    ui32 w = 0u,
-                    ui32 h = 0u,
+            Texture() : height(0), width(0) {};
+            Texture(VGTexture id,
+                    ui32 w,
+                    ui32 h,
                     vg::TextureTarget target = vg::TextureTarget::TEXTURE_2D) :
                 textureTarget(target),
                 id(id),
@@ -40,13 +41,18 @@ namespace vorb {
                 height(h) {
                 // Empty
             }
-            void bind();
-            void unbind();
+            void bind() const;
+            void unbind() const;
 
             vg::TextureTarget textureTarget;
-            VGTexture id; ///< OpenGL texture ID
-            ui32 width; ///< Texture width in pixels
-            ui32 height; ///< Texture height in pixels
+            VGTexture id = 0; ///< OpenGL texture ID
+            union {
+                struct {
+                    ui32 width; ///< Texture width in pixels
+                    ui32 height; ///< Texture height in pixels
+                };
+                ui32v2 dims;
+            };
         };
     }
 }

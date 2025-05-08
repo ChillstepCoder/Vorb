@@ -1,0 +1,84 @@
+#pragma once
+
+#include "rendering/material/MaterialDef.h"
+
+#include <Vorb/graphics/GLProgram.h>
+#include <Vorb/graphics/ShaderDefine.h>
+
+DECL_VG(class Texture);
+
+enum class MaterialShaderUniform {
+    INVALID,
+    Fbo0,
+    FboDepth,
+    FboNormals,
+    FboRoughness,
+    PrevFbo0,
+    PrevFboDepth,
+    PixelDims,
+    SkyRotMatrix,
+    ScreenResolution,
+    ShadowColor,
+    SSAOTexture,
+    SSAOColor,
+    DebugColor1,
+    DebugColor2,
+    DebugFloat1,
+    DebugFloat2,
+    DebugFloat3,
+    DebugFloat4,
+    COUNT
+};
+
+struct MaterialTextureInputData {
+    StrToken textureName;
+    nString uniformName;
+};
+SERIALIZABLE_SIMPLE(MaterialTextureInputData,
+    make_field(o.textureName, "name"sv),
+    make_field(o.uniformName, "uniform"sv)
+);
+
+struct MaterialTextureInput {
+    VGTexture texture;
+    VGUniform textureUniform;
+};
+
+struct MaterialShaderNames {
+    nString vertex;
+    nString fragment;
+    nString geometry;
+    nString tessControl;
+    nString tessEval;
+    fs::file_time_type vertexWriteTime;
+    fs::file_time_type fragmentWriteTime;
+    fs::file_time_type geometryWriteTime;
+    fs::file_time_type tessControlWriteTime;
+    fs::file_time_type tessEvalWriteTime;
+};
+
+class MaterialShaderDef : public IAsset {
+public:
+    DEFAULT_ASSET_CONSTRUCTOR(MaterialShaderDef, AssetType::MaterialShader);
+
+    void use(OUT ui32& nextAvailableTextureIndex) const;
+    void useCompute() const;
+    static void unuse();
+    // Doesn't dispose program
+    //void dispose();
+
+    VGUniform getUniform(const char* name) const {
+        return mProgram.getUniform(name);
+    }
+    const VGUniform* tryGetUniform(const char* name) const {
+        return mProgram.tryGetUniform(name);
+    }
+
+    std::vector<std::pair<MaterialShaderUniform, VGUniform> > mUniforms;
+    std::vector<MaterialTextureInput> mInputTextures;
+    ShaderDefinesVector mDefines;
+    std::unique_ptr<MaterialShaderNames> mShaderNames;
+
+    mutable vg::GLProgram mProgram; //  TODO: Handle
+    bool mIsCompute = false;
+};

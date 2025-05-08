@@ -28,15 +28,18 @@
 #include "../Vorb.h"
 #include "gtypes.h"
 #include "GLEnums.h"
-#include "ShaderInterface.h"
+
+#include "GLProgramError.h"
+
+typedef eventpp::CallbackList<void(const vg::ProgramError&)> GLProgramErrorCallbackList;
 
 #if defined(VORB_COMPILER_GCC) || defined(VORB_COMPILER_CLANG)
 #undef major
 #undef minor
 #endif//VORB_COMPILER_GCC
 
-#define GL_PROGRAM_DEFAULT_SHADER_VERSION_MAJOR 1
-#define GL_PROGRAM_DEFAULT_SHADER_VERSION_MINOR 3
+#define GL_PROGRAM_DEFAULT_SHADER_VERSION_MAJOR 4
+#define GL_PROGRAM_DEFAULT_SHADER_VERSION_MINOR 6
 #define GL_PROGRAM_DEFAULT_SHADER_VERSION_REVISION 0
 
 namespace vorb {
@@ -66,12 +69,16 @@ namespace vorb {
             std::vector<const cString> sources; ///< Strings of shader source code awaiting concatenation
         };
 
+
+
         // Encapsulates a simple OpenGL program and its shaders
         class GLProgram {
         public:
+            // TODO: IDs instead of strings
             typedef std::pair<nString, VGAttribute> AttributeBinding; ///< Binds attribute names to locations
             typedef std::map<nString, VGAttribute> AttributeMap; ///< Dictionary of attribute locations by name
             typedef std::map<nString, VGUniform> UniformMap; ///< Dictionary of uniform locations by name
+            typedef std::map<nString, VGBinding> SsboMap;
 
             /// Create and possibly initialize program
             /// @param init: True to call init()
@@ -109,24 +116,6 @@ namespace vorb {
             /// @return True on success
             bool addShader(const ShaderType& type, const cString code, const ShaderLanguageVersion& version = DEFAULT_SHADING_LANGUAGE_VERSION);
 
-            /// Sets an attribute before the link step
-            /// @param name: Attribute name
-            /// @param index: Attribute index
-            void setAttribute(nString name, VGAttribute index);
-            /// Sets a list of attributes before the link step
-            /// @param attr: Map of attributes
-            void setAttributes(const std::map<nString, VGAttribute>& attr);
-            /// Sets a list of attributes before the link step
-            /// @param attr: List of attribute bindings
-            void setAttributes(const std::vector<AttributeBinding>& attr);
-            /// Sets a list of attributes before the link step
-            /// @param attr: List of attributes (array index as attribute index)
-            void setAttributes(const std::vector<nString>& attr);
-            /// Sets a list of attributes before the link step
-            /// @param attr: List of attributes (array index as attribute index)
-            /// @param sem: List of semantics (array index as attribute index)
-            void setAttributes(const std::vector<nString>& attr, const std::vector<VGSemantic>& sem);
-
             /// Links the shader program using its currently added shaders
             /// @return True on success
             bool link();
@@ -135,6 +124,8 @@ namespace vorb {
             void initAttributes();
             /// Creates mappings for uniforms
             void initUniforms();
+            // Creates mappings for SSBO bindings
+            void initSsboBindings();
 
             /// Binds fragment shader outputs to color numbers.
             /// @pre program is not yet linked.
@@ -143,18 +134,27 @@ namespace vorb {
             /// Gets an attribute index
             /// @param name: The attribute's name
             /// @return Attribute location
-            const VGAttribute& getAttribute(const nString& name) const {
+            const VGAttribute& getAttribute(const char* name) const {
                 return m_attributes.at(name);
+            }
+            const VGAttribute* tryGetAttribute(const char* name) const {
+                auto&& it = m_attributes.find(name);
+                return it != m_attributes.end() ? &it->second : nullptr;
             }
             /// Gets a uniform index
             /// @param name: The uniform's name
             /// @return Uniform location
-            const VGUniform& getUniform(const nString& name) const {
+            const VGUniform& getUniform(const char* name) const {
                 return m_uniforms.at(name);
             }
 
-            /// Gets the current semantic binding
-            const AttributeSemBinding& getSemanticBinding() const { return m_semanticBinding; }
+            /// Gets a uniform index, if it exists
+            /// @param name: The uniform's name
+            /// @return Uniform location
+            const VGUniform* tryGetUniform(const char* name) const {
+                auto&& it = m_uniforms.find(name);
+                return it != m_uniforms.end() ? &it->second : nullptr;
+            }
 
             /// Enables all vertex attrib arrays used by the program
             void enableVertexAttribArrays() const;
@@ -163,7 +163,7 @@ namespace vorb {
             void disableVertexAttribArrays() const;
 
             /// Tell the GPU to use the program
-            void use();
+            void use() const;
             /// Will unuse whatever program is currently in use
             static void unuse();
 
@@ -172,20 +172,26 @@ namespace vorb {
                 return m_programInUse;
             }
 
-            Event<const nString&> onShaderCompilationError; ///< Event signaled during addShader when an error occurs
-            Event<const nString&> onProgramLinkError; ///< Event signaled during link when an error occurs
+            const UniformMap& getUniforms() const { return m_uniforms; }
+            const SsboMap& getSsboBindings() const { return m_ssboBindings; }
+
+            inline static GLProgramErrorCallbackList onShaderCompilationError; ///< Event signaled during addShader when an error occurs
+            inline static GLProgramErrorCallbackList onProgramLinkError; ///< Event signaled during link when an error occurs
         private:
             void linkError(const nString& s);
 
             VGProgram m_id = 0; ///< Program
             VGShader m_idVS = 0; ///< Vertex shader
             VGShader m_idFS = 0; ///< Fragment shader
+            VGShader m_idGS = 0; ///< Geometry shader
+            VGShader m_idTCS = 0; ///< Tesselation control shader
+            VGShader m_idTES = 0; ///< Tesselation eval shader
 
             bool m_isLinked = false; ///< Keeps track of link status
 
             AttributeMap m_attributes; ///< Dictionary of attributes
             UniformMap m_uniforms; ///< Dictionary of uniforms
-            AttributeSemBinding m_semanticBinding; ///< Dictionary of attributes for semantics
+            SsboMap m_ssboBindings; //< binding indices for named SSBOs
 
             static VGProgram m_programInUse; ///< The current program in use
         };

@@ -1,0 +1,6 @@
+sampler_state: LINEAR_WRAP_MIPMAP
+albedo: shutter_vrt
+#disp: shutter_vrt_disp
+normal: shutter_vrt_norm
+rough: shutter_vrt_rough
+ao: shutter_vrt_ao

@@ -1,0 +1,11 @@
+person_ai:
+character_model:
+  model: erra
+character:
+  speed: 4.0
+physics:
+  shape: capsule
+  half_dims: [0.24, 0.24, 0.55]
+  disable_xy_rot: true
+  mass: 70
+character_details:

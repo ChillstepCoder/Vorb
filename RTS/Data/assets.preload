@@ -1,0 +1,25 @@
+startup:
+  - [integrate_brdf, MaterialShader]
+  - [cubemap_irradiance, MaterialShader]
+  - [prefilter_ggx, MaterialShader]
+  - [terrain_base, MaterialShader]
+  - [river_carve, MaterialShader]
+  - [biome_grow, MaterialShader]
+  - [editor_biome_height, MaterialShader]
+  - [perlin_noise, Texture]
+#TODO: Not entities?
+  - [*, Entity]
+preload:
+#  - [*, Material] #uncomment to force generate all .dds
+  - [*, MaterialShader]
+  - [cloud_color, Material]
+  - [cloud_sil, Material]
+  - [van_gogh_2, Material]
+  - [cell_noise, Material]
+  - [grass_terrain, Material]
+  - [mountain, Material]
+  - [dirt_road, Material]
+#  - [dirt_plowed, Material]
+  - [farm_plot_2, Material]
+  - [seeds_pumkin, Material]
+  - [*, Model] #DEVELOPMENT ONLY?

@@ -10,8 +10,6 @@
 #include "Vorb/graphics/ShaderManager.h"
 #include "Vorb/graphics/SpriteBatchShader.inl"
 
-#include <algorithm>
-
 #define VERTS_PER_QUAD 4
 #define INDICES_PER_QUAD 6
 
@@ -66,7 +64,7 @@ vg::SpriteBatch::~SpriteBatch() {
 
 void vg::SpriteBatch::init() {
     // Create program if it's not cached
-    if (!s_program.isCreated()) s_program = vg::ShaderManager::createProgram(impl::SPRITEBATCH_VS_SRC, impl::SPRITEBATCH_FS_SRC);
+    if (!s_program.isCreated()) s_program = vg::ShaderManager::createProgram(impl::SPRITEBATCH_VS_SRC, impl::SPRITEBATCH_FS_SRC, nullptr);
 
     { // Create VAO
         glGenVertexArrays(1, &m_vao);
@@ -84,8 +82,6 @@ void vg::SpriteBatch::init() {
         glVertexAttribPointer(s_program.getAttribute("vUV"), 2, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, uv));
         glVertexAttribPointer(s_program.getAttribute("vUVRect"), 4, GL_FLOAT, false, sizeof(Vertex), (void*)offsetof(Vertex, uvRect));
 
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
 
     { // Create Pixel Texture
@@ -93,7 +89,7 @@ void vg::SpriteBatch::init() {
         glBindTexture(GL_TEXTURE_2D, m_texPixel);
         ui32 pix = 0xffffffffu;
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &pix);
-        vg::SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D);
+        vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 }
@@ -118,9 +114,10 @@ void vg::SpriteBatch::dispose() {
     }
 }
 
-void vg::SpriteBatch::begin() {
+void vg::SpriteBatch::begin(size_t reserveCount /* = 0 */) {
     m_glyphs.clear();
-    std::vector<Batch>().swap(m_batches);
+    m_batches.clear();
+    m_glyphs.reserve(reserveCount);
 }
 
 void vg::SpriteBatch::draw(VGTexture t, const f32v4* uvRect, const f32v2* uvTiling, const f32v2& position, const f32v2& offset, const f32v2& size, f32 rotation, const color4& tint1, const color4& tint2, GradientType grad, f32 depth /*= 0.0f*/) {
@@ -285,8 +282,9 @@ void vg::SpriteBatch::end(SpriteSortMode ssm /*= SpriteSortMode::Texture*/) {
 void vg::SpriteBatch::render(const f32m4& mWorld, const f32m4& mCamera, /*const BlendState* bs = nullptr,*/ const SamplerState* ss /*= nullptr*/, const DepthState* ds /*= nullptr*/, const RasterizerState* rs /*= nullptr*/, vg::GLProgram* shader /*= nullptr*/) {
     //if (bs == nullptr) bs = BlendState::PremultipliedAlphaBlend;
     if (ds == nullptr) ds = &DepthState::NONE;
-    if (rs == nullptr) rs = &RasterizerState::CULL_NONE;
-    if (ss == nullptr) ss = &SamplerState::LINEAR_WRAP;
+    if (rs == nullptr) rs = &RasterizerState::CULL_CLOCKWISE;
+    // DONT BIND SAMPLER STATE ALWAYS, IT WILL CRASH WITH IMMUTABE (Bindless) TEXTURES
+    //if (ss == nullptr) ss = &vg::sSamplerStates.LINEAR_WRAP;
     if (shader == nullptr) shader = &s_program;
 
     // Make sure we have been initialized
@@ -296,26 +294,28 @@ void vg::SpriteBatch::render(const f32m4& mWorld, const f32m4& mCamera, /*const 
     //bs->set();
     ds->set();
     rs->set();
+    assert(glGetError() == GL_NO_ERROR);
 
     shader->use();
 
     glUniformMatrix4fv(shader->getUniform("World"), 1, false, &mWorld[0][0]);
     glUniformMatrix4fv(shader->getUniform("VP"), 1, false, &mCamera[0][0]);
 
+    assert(glGetError() == GL_NO_ERROR);
     glBindVertexArray(m_vao); // TODO(Ben): This wont work with all custom shaders!
-
+    shader->enableVertexAttribArrays();
     glActiveTexture(GL_TEXTURE0);
     glUniform1i(shader->getUniform("SBTex"), 0);
     // Draw All The Batches
     for (auto& b : m_batches) {
 
         glBindTexture(GL_TEXTURE_2D, b.textureID);
-        ss->set(GL_TEXTURE_2D);
+        if (ss) {
+            ss->setForTarget(GL_TEXTURE_2D);
+        }
 
         glDrawElements(GL_TRIANGLES, b.indices, GL_UNSIGNED_INT, (const GLvoid*)(b.indexOffset * sizeof(ui32)));
     }
-
-    glBindVertexArray(0);
 
     shader->unuse();
 }
@@ -352,6 +352,7 @@ void vg::SpriteBatch::sortGlyphs(SpriteSortMode ssm) {
     }
 }
 void vg::SpriteBatch::generateBatches() {
+    glBindVertexArray(m_vao);
     if (m_glyphPtrs.empty()) {
         glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
         glBufferData(GL_ARRAY_BUFFER, 0, nullptr, m_bufUsage);

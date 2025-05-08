@@ -1,0 +1,4 @@
+albedo: wall_0_albedo
+normal: wall_0_norm
+rough: wall_0_rough
+ao: wall_0_ao

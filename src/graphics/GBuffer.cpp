@@ -1,136 +1,298 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/graphics/GBuffer.h"
 
-#include "Vorb/graphics/SamplerState.h"
-
-vg::GBuffer::GBuffer(ui32 w /*= 0*/, ui32 h /*= 0*/) :
-m_size(w, h) {
-    // Empty
+vg::GBuffer::GBuffer(ui32 w, ui32 h, int layerCount) : mSize(w, h), mLayerCount(layerCount) {
+    glCreateFramebuffers(1, &mFbo);
 }
 
-void vg::GBuffer::initTarget(const ui32v2& _size, const ui32& texID, const vg::GBufferAttachment& attachment) {
-    glBindTexture(GL_TEXTURE_2D, texID);
-    if (glTexStorage2D) {
-        glTexStorage2D(GL_TEXTURE_2D, 1, (VGEnum)attachment.format, _size.x, _size.y);
-    } else {
-        glTexImage2D(GL_TEXTURE_2D, 0, (VGEnum)attachment.format, _size.x, _size.y, 0, (VGEnum)attachment.pixelFormat, (VGEnum)attachment.pixelType, nullptr);
+vg::GBuffer::~GBuffer() {
+    if (mFbo) {
+        glDeleteFramebuffers(1, &mFbo);
+        for (int i = 0; i < (int)GBufferAttachmentIndex::COUNT; ++i) {
+            if (mAttachments[i].mTexture) {
+                glDeleteTextures(1, &mAttachments[i].mTexture);
+            }
+        }
+        if (mTexDepth.mTexture && !mSharedDepth) {
+            glDeleteTextures(1, &mTexDepth.mTexture);
+        }
     }
-    SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachment.number, GL_TEXTURE_2D, texID, 0);
 }
-vg::GBuffer& vg::GBuffer::init(const Array<GBufferAttachment>& attachments, vg::TextureInternalFormat lightFormat) {
-    // Create texture targets
-    m_textures.setData(attachments.size() + 1);
-    glGenTextures((GLsizei)m_textures.size(), &m_textures[0]);
 
-    // Make the framebuffer
-    glGenFramebuffers(1, &m_fboGeom);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
+vg::GBuffer& vg::GBuffer::initAttachment(GBufferAttachmentIndex index, vg::TextureInternalFormat format, const vg::SamplerState& samplerState /*= vg::sSamplerStates.POINT_CLAMP*/, int mipLevels /*= 1*/) {
+    assert(mFbo);
+    GBufferAttachmentTexture& attachment = mAttachments[(int)index];
 
-    // Add the attachments
-    VGEnum* bufs = (VGEnum*)alloca(attachments.size() * sizeof(VGEnum));
-    for (ui32 i = 0; i < attachments.size(); i++) {
-        bufs[i] = GL_COLOR_ATTACHMENT0 + attachments[i].number;
-        initTarget(m_size, m_textures[i], attachments[i]);
-    }
+    initTexture(attachment, (VGEnum)format, samplerState, mipLevels);
 
-    // Set the output location for pixels
-    glDrawBuffers((GLsizei)attachments.size(), bufs);
+    glNamedFramebufferTexture(mFbo, GL_COLOR_ATTACHMENT0 + (VGEnum)index, attachment.mTexture, 0);
 
-    // Make the framebuffer for lighting
-    glGenFramebuffers(1, &m_fboLight);
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
-    initTarget(m_size, m_textures[m_textures.size() - 1], { lightFormat, vg::TextureFormat::RGBA, vg::TexturePixelType::UNSIGNED_BYTE, 0 });
-
-    // Set the output location for pixels
-    glDrawBuffer(GL_COLOR_ATTACHMENT0);
-
-    // Unbind used resources
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // TODO(Cristian): Change The Memory Usage Of The GPU
+    // Mark this as a valid render target
+    mDrawBuffers[(int)index] = GL_COLOR_ATTACHMENT0 + (VGEnum)index;
+    // Just reupload all draw buffers every time for simplicity (glDrawBuffer only allows you to specify a single buffer)
+    glNamedFramebufferDrawBuffers(mFbo, (GLsizei)GBufferAttachmentIndex::COUNT, mDrawBuffers);
+    checkError();
 
     return *this;
 }
-vg::GBuffer& vg::GBuffer::initDepth(TextureInternalFormat depthFormat /*= TextureInternalFormat::DEPTH_COMPONENT32*/) {
-    glGenTextures(1, &m_texDepth);
-    glBindTexture(GL_TEXTURE_2D, m_texDepth);
-    glTexImage2D(GL_TEXTURE_2D, 0, (VGEnum)depthFormat, m_size.x, m_size.y, 0, (VGEnum)vg::TextureFormat::DEPTH_COMPONENT, (VGEnum)vg::TexturePixelType::FLOAT, nullptr);
-    SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_texDepth, 0);
+vg::GBuffer& vg::GBuffer::initDepth(GBufferDepthFormat depthFormat, int mipLevels /*= 1*/) {
+    assert(mFbo);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_texDepth, 0);
+    initTexture(mTexDepth, (VGEnum)depthFormat, vg::sSamplerStates.POINT_CLAMP, mipLevels);
+    glNamedFramebufferTexture(mFbo, GL_DEPTH_ATTACHMENT, mTexDepth.mTexture, 0);
 
-    // Unbind used resources
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // TODO: Change The Memory Usage Of The GPU
-
+    checkError();
     return *this;
 }
-vg::GBuffer& vg::GBuffer::initDepthStencil(TextureInternalFormat depthFormat /*= TextureInternalFormat::DEPTH24_STENCIL8*/) {
-    glGenTextures(1, &m_texDepth);
-    glBindTexture(GL_TEXTURE_2D, m_texDepth);
-    glTexImage2D(GL_TEXTURE_2D, 0, (VGEnum)depthFormat, m_size.x, m_size.y, 0, (VGEnum)vg::TextureFormat::DEPTH_STENCIL, (VGEnum)vg::TexturePixelType::UNSIGNED_INT_24_8, nullptr);
-    SamplerState::POINT_CLAMP.set(GL_TEXTURE_2D);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_texDepth, 0);
+vg::GBuffer& vg::GBuffer::initDepthStencil(GBufferDepthStencilFormat depthFormat, int mipLevels /*= 1*/) {
+    assert(mFbo);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_texDepth, 0);
+    // TODO: SEPARATE DEPTH STENCIL https://www.reddit.com/r/opengl/comments/tzx6gs/how_can_i_read_the_stencil_value_in_a_fragment/
+    // TODO: Should be using GL_DEPTH_COMPONENT[n] and GL_STENCIL_INDEX[8] for the internal formats when creating the textures
+    initTexture(mTexDepth, (VGEnum)depthFormat, vg::sSamplerStates.POINT_CLAMP, mipLevels);
+    glNamedFramebufferTexture(mFbo, GL_DEPTH_STENCIL_ATTACHMENT, mTexDepth.mTexture, 0);
+    mHasStencil = true;
 
-    // Unbind used resources
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    // TODO(Cristian): Change The Memory Usage Of The GPU
-
+    checkError();
     return *this;
 }
-void vg::GBuffer::dispose() {
-    // TODO(Cristian): Change The Memory Usage Of The GPU
 
-    if (m_fboGeom != 0) {
-        glDeleteFramebuffers(1, &m_fboGeom);
-        m_fboGeom = 0;
-    }
-    if (m_fboLight != 0) {
-        glDeleteFramebuffers(1, &m_fboLight);
-        m_fboLight = 0;
-    }
-    if (m_textures.size() != 0) {
-        glDeleteTextures((GLsizei)m_textures.size(), &m_textures[0]);
-        m_textures.setData(0);
-    }
-    if (m_texDepth != 0) {
-        glDeleteTextures(1, &m_texDepth);
-        m_texDepth = 0;
+void vg::GBuffer::setSharedDepthTexture(CALLEE_DELETE VGTexture depthTexture) {
+    // We can set shared multiple times but not if we called initDepth previously
+    assert(mSharedDepth || !mTexDepth.mTexture);
+    assert(depthTexture);
+
+    mSharedDepth = true;
+    if (mTexDepth.mTexture != depthTexture) {
+        mTexDepth.mTexture = depthTexture;
+        glNamedFramebufferTexture(mFbo, GL_DEPTH_ATTACHMENT, depthTexture, 0);
     }
 }
 
-void vg::GBuffer::useGeometry() {
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboGeom);
-    glViewport(0, 0, m_size.x, m_size.y);
+void vg::GBuffer::setSharedDepthStencilTexture(CALLEE_DELETE VGTexture depthStencilTexture) {
+    // We can set shared multiple times but not if we called initDepth previously
+    assert(mSharedDepth || !mTexDepth.mTexture);
+    assert(depthStencilTexture);
+    mHasStencil = true;
+    mSharedDepth = true;
+    if (mTexDepth.mTexture != depthStencilTexture) {
+        mTexDepth.mTexture = depthStencilTexture;
+        glNamedFramebufferTexture(mFbo, GL_DEPTH_STENCIL_ATTACHMENT, depthStencilTexture, 0);
+    }
 }
-void vg::GBuffer::useLight() {
-    glBindFramebuffer(GL_FRAMEBUFFER, m_fboLight);
-    glViewport(0, 0, m_size.x, m_size.y);
+
+
+//vg::GBuffer& vg::GBuffer::initDepthStencil(TextureInternalFormat depthFormat /*= TextureInternalFormat::DEPTH24_STENCIL8*/) {
+//    glCreateTextures(GL_TEXTURE_2D, 1, &mTexDepth);
+//    glTextureStorage2D(mTexDepth, 1, (VGEnum)depthFormat, mSize.x, mSize.y);
+//    vg::sSamplerStates.POINT_CLAMP.setForTarget(GL_TEXTURE_2D);
+//
+//    glNamedFramebufferTexture(mFbo, GL_DEPTH_STENCIL_ATTACHMENT, mTexDepth, 0);
+//
+//    checkError();
+//    return *this;
+//}
+
+void vg::GBuffer::use() const {
+    assert(mFbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, mFbo);
+    glViewport(0, 0, mSize.x, mSize.y);
 }
-void vg::GBuffer::bindGeometryTexture(size_t i, ui32 textureUnit) {
-    glActiveTexture(GL_TEXTURE0 + textureUnit);
-    glBindTexture(GL_TEXTURE_2D, m_textures[i]);
+
+vg::GBuffer::GBuffer(GBuffer&& o) noexcept {
+    memcpy(this, &o, sizeof(vg::GBuffer));
+    o.mFbo = 0;
+}
+
+vg::GBuffer& vg::GBuffer::operator=(GBuffer&& o) noexcept {
+    memcpy(this, &o, sizeof(vg::GBuffer));
+    o.mFbo = 0;
+    return *this;
+}
+
+void vg::GBuffer::clearAttachment(GBufferAttachmentIndex index, f32v4 newColor /*= f32v4(0.0f)*/) {
+    assert(mAttachments[int(index)].mTexture);
+    glClearNamedFramebufferfv(mFbo, GL_COLOR, (GLint)index, &newColor.x);
+}
+
+void vg::GBuffer::clearDepth(f32 newDepth /*= 1.0f*/) {
+    assert(mTexDepth.mTexture);
+    glClearNamedFramebufferfv(mFbo, GL_DEPTH, 0, &newDepth);
+}
+
+void vg::GBuffer::clearDepthStencil(f32 newDepth /*= 1.0f*/, GLint newStencil/* = 0*/) {
+    assert(mHasStencil);
+    assert(mTexDepth.mTexture);
+    glClearNamedFramebufferfi(mFbo, GL_DEPTH_STENCIL, 0, newDepth, newStencil);
+}
+
+void vg::GBuffer::unuse() {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void vg::GBuffer::bindAlbedoTexture(ui32 textureUnit) {
+    VGTexture texture = getAlbedoTexture();
+    assert(texture);
+    glBindTextureUnit(textureUnit, texture);
+}
+void vg::GBuffer::bindNormalTexture(ui32 textureUnit) {
+    VGTexture texture = getNormalTexture();
+    assert(texture);
+    glBindTextureUnit(textureUnit, texture);
 }
 void vg::GBuffer::bindDepthTexture(ui32 textureUnit) {
-    glActiveTexture(GL_TEXTURE0 + textureUnit);
-    glBindTexture(GL_TEXTURE_2D, m_texDepth);
+    VGTexture texture = mTexDepth.mTexture;
+    assert(texture);
+    glBindTextureUnit(textureUnit, texture);
 }
-void vg::GBuffer::bindLightTexture(ui32 textureUnit) {
-    glActiveTexture(GL_TEXTURE0 + textureUnit);
-    glBindTexture(GL_TEXTURE_2D, getLightTexture());
+
+void vg::GBuffer::initTexture(GBufferAttachmentTexture& texture, VGEnum format, const vg::SamplerState& samplerState, int mipLevels) {
+    VGTexture& tex = texture.mTexture;
+    assert(tex == 0);
+    texture.mMipLevels = mipLevels;
+    glCreateTextures(mLayerCount > 1 ? GL_TEXTURE_2D_ARRAY : GL_TEXTURE_2D, 1, &tex);
+
+    if (mLayerCount <= 1) {
+        glTextureStorage2D(tex, mipLevels, (VGEnum)format, mSize.x, mSize.y);
+    }
+    else {
+        glTextureStorage3D(tex, mipLevels, (VGEnum)format, mSize.x, mSize.y, mLayerCount);
+    }
+    samplerState.setForTexture(tex);
+    if (mipLevels > 0) {
+        glGenerateTextureMipmap(tex);
+    }
+}
+
+bool vorb::graphics::GBuffer::checkError() {
+    const int fboStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (fboStatus != GL_FRAMEBUFFER_COMPLETE) {
+        std::string errorString;
+        switch (fboStatus) {
+            case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+                break;
+            case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+                break;
+            case GL_FRAMEBUFFER_UNSUPPORTED:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+                break;
+            case GL_FRAMEBUFFER_UNDEFINED:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+                break;
+            case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER";
+                break;
+            case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER";
+                break;
+            case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE";
+                break;
+            case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
+                errorString = "GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS";
+                break;
+            case GL_INVALID_ENUM:
+                errorString = "No framebuffer bound";
+                break;
+            default:
+                errorString = "UNKNOWN - " + std::to_string(fboStatus);
+                break;
+        }
+        printf("FBO Error: %s %d\n", errorString.c_str(), fboStatus);
+        return true;
+    }
+
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR) {
+        std::string errorString;
+        switch (error) {
+            case GL_INVALID_ENUM:
+                errorString = "Framebuffer init error. Error code 1280: GL_INVALID_ENUM";
+                break;
+            case GL_INVALID_VALUE:
+                errorString = "Framebuffer init error.  Error code 1281: GL_INVALID_VALUE";
+                break;
+            case GL_INVALID_OPERATION:
+                errorString = "Framebuffer init error.  Error code 1282: GL_INVALID_OPERATION";
+                break;
+            case GL_STACK_OVERFLOW:
+                errorString = "Framebuffer init error.  Error code 1283: GL_STACK_OVERFLOW";
+                break;
+            case GL_STACK_UNDERFLOW:
+                errorString = "Framebuffer init error.  Error code 1284: GL_STACK_UNDERFLOW";
+                break;
+            case GL_OUT_OF_MEMORY:
+                errorString = "Framebuffer init error.  Error code 1285: GL_OUT_OF_MEMORY";
+                break;
+            case GL_INVALID_FRAMEBUFFER_OPERATION:
+                errorString = "Framebuffer init error.  Error code 1285: GL_INVALID_FRAMEBUFFER_OPERATION";
+                break;
+            default:
+                errorString = "Framebuffer init error.  Error code " + std::to_string(error) + ": UNKNOWN";
+                break;
+        }
+        printf("FBO Error: %s %d\n", errorString.c_str(), (int)error);
+        return true;
+    }
+    return false;
+}
+
+vg::SwapChain::SwapChain(ui32 w, ui32 h, ui32 gBufferCount, int layerCount /*= 1*/) {
+    // 5 is probably too many
+    assert(gBufferCount > 1 && gBufferCount <= 4);
+    mGBuffers.resize(gBufferCount);
+    for (size_t i = 0; i < mGBuffers.size(); ++i) {
+        mGBuffers[i] = std::make_unique<GBuffer>(w, h, layerCount);
+    }
+}
+
+vg::SwapChain::~SwapChain()
+{
+}
+
+void vg::SwapChain::initAttachment(GBufferAttachmentIndex index, vg::TextureInternalFormat format, const vg::SamplerState& samplerState /*= vg::sSamplerStates.POINT_CLAMP*/, int mipLevels /*= 1*/) {
+    for (auto&& gb : mGBuffers) {
+        gb->initAttachment(index, format, samplerState, mipLevels);
+    }
+}
+
+void vg::SwapChain::initDepth(GBufferDepthFormat depthFormat, int mipLevels /*= 1*/) {
+    for (auto&& gb : mGBuffers) {
+        gb->initDepth(depthFormat, mipLevels);
+    }
+}
+
+vg::GBuffer& vg::SwapChain::get(ui32 index) {
+    return *mGBuffers[index];
+}
+
+vg::GBuffer& vg::SwapChain::getPrev() {
+    if (mCurrent == 0) {
+        return *mGBuffers.back();
+    }
+    return *mGBuffers[mCurrent - 1];
+}
+
+vg::GBuffer& vg::SwapChain::getNext() {
+    return *mGBuffers[(mCurrent + 1) % mGBuffers.size()];
+}
+
+vg::GBuffer& vg::SwapChain::use(ui32 index) {
+    vg::GBuffer& gb = *mGBuffers[index];
+    gb.use();
+    mCurrent = index;
+    return gb;
+}
+
+vg::GBuffer& vg::SwapChain::useNext() {
+    return use((mCurrent + 1) % mGBuffers.size());
+}
+
+const ui32v2& vg::SwapChain::getDims() const {
+    return mGBuffers[0]->getSize();
 }

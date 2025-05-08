@@ -25,126 +25,153 @@
 #include "GLEnums.h"
 #include "gtypes.h"
 
-/************************************************************************/
-/* GBuffer breakdown                                                    */
-/* -----------------------------------------------------------------    */
-/* | Diffuse R     | Diffuse G     | Diffuse B     | Light Model   |    */
-/* -----------------------------------------------------------------    */
-/* | Normal X      | Normal Y      | Normal Z      | Specular Pow  |    */
-/* -----------------------------------------------------------------    */
-/* | Depth                         |                               |    */
-/* -----------------------------------------------------------------    */
-/* | Light R       | Light G       | Light B       |  X X X X X X  |    */
-/* -----------------------------------------------------------------    */
-/************************************************************************/
-#define GBUFFER_INTERNAL_FORMAT_COLOR vg::TextureInternalFormat::RGBA16F
-#define GBUFFER_INTERNAL_FORMAT_NORMAL vg::TextureInternalFormat::RGBA16F
-#define GBUFFER_INTERNAL_FORMAT_DEPTH vg::TextureInternalFormat::RG32F
-#define GBUFFER_INTERNAL_FORMAT_LIGHT vg::TextureInternalFormat::RGB16F
+#include "Vorb/graphics/SamplerState.h"
+#include <vector>
+
+/*********************************************************************************/
+/*           Deferred PBR GBuffer breakdown                                      */
+/*           -----------------------------------------------------------------   */
+/* RGBA8     | Albedo R      | Albedo G      | Albedo B      | AO            |   */
+/*           -----------------------------------------------------------------   */
+/* RGB10_A2  | Normal X      | Normal Y      | Normal Z         | LightModel |   */
+/*           -----------------------------------------------------------------   */
+/* RG8       | Metallic                      | Roughness                     |   */
+/*           -----------------------------------------------------------------   */
+/* D24_S8    | Depth                                     |  Stencil          |   */
+/*           -----------------------------------------------------------------   */
+/*********************************************************************************/
 
 namespace vorb {
     namespace graphics {
          /*! @brief Information that specifies size and location of a texture in the GBuffer
           */
-        struct GBufferAttachment {
-        public:
-            vg::TextureInternalFormat format; ///< Internal format for the attachment (all must be the same size).
-            vg::TextureFormat pixelFormat;
-            vg::TexturePixelType pixelType;
-            ui32 number; ///< Attachment index for the texture [0, MaxAttachments).
+
+        enum class GBufferAttachmentIndex {
+            ALBEDO  = 0,
+            NORMALS  = 1,
+            TERTIARY1 = 2,
+            TERTIARY2 = 3,
+            TERTIARY3 = 4,
+            COUNT
+        };
+
+        enum class GBufferDepthFormat {
+            DEPTH_16 = GL_DEPTH_COMPONENT16,
+            DEPTH_24 = GL_DEPTH_COMPONENT24,
+            DEPTH_32 = GL_DEPTH_COMPONENT32,
+            DEPTH_32F = GL_DEPTH_COMPONENT32F,
+        };
+
+        enum class GBufferDepthStencilFormat {
+            DEPTH_24_STENCIL_8 = GL_DEPTH24_STENCIL8
+        };
+
+        struct GBufferAttachmentTexture {
+            VGTexture mTexture;
+            int mMipLevels;
         };
 
         /// Geometry and light render target for deferred rendering
         class GBuffer {
         public:
+            VORB_NON_COPYABLE(GBuffer);
             /// Set up a GBuffer with a certain size
             /// @param w: Width in pixels of each target
             /// @param h: Height in pixels of each target
-            GBuffer(ui32 w = 0, ui32 h = 0);
+
+            GBuffer(ui32 w, ui32 h, int layerCount = 1);
             /// Set up a GBuffer with a certain size
             /// @param s: Size in pixels of each target
-            GBuffer(ui32v2 s) : GBuffer(s.x, s.y) {
-                // Empty
-            }
+            GBuffer(ui32v2 s, int layerCount = 1) : GBuffer(s.x, s.y, layerCount) {}
+            GBuffer(GBuffer&& o) noexcept;
+            GBuffer& operator=(GBuffer&& o) noexcept;
+            ~GBuffer();
 
-            /// Create the value-based render targets
-            /// @return Self
-            GBuffer& init(const Array<GBufferAttachment>& attachments, vg::TextureInternalFormat lightFormat);
-            /// Attach a depth buffer to this GBuffer
-            /// @param depthFormat: Precision used for depth buffer
-            /// @return Self
-            GBuffer& initDepth(TextureInternalFormat depthFormat = TextureInternalFormat::DEPTH_COMPONENT32);
-            /// Attack a depth and stencil buffer to this GBuffer
-            /// @param depthFormat: Precision used for depth and stencil buffer
-            /// @return Self
-            GBuffer& initDepthStencil(TextureInternalFormat depthFormat = TextureInternalFormat::DEPTH24_STENCIL8);
 
-            void initTarget(const ui32v2& _size, const ui32& texID, const GBufferAttachment& attachment);
-            /// Destroy all render targets
-            void dispose();
+            GBuffer& initAttachment(GBufferAttachmentIndex index, vg::TextureInternalFormat format, const vg::SamplerState& samplerState = vg::sSamplerStates.POINT_CLAMP, int mipLevels = 1);
+            GBuffer& initDepth(GBufferDepthFormat depthFormat, int mipLevels = 1);
+            GBuffer& initDepthStencil(GBufferDepthStencilFormat depthFormat = GBufferDepthStencilFormat::DEPTH_24_STENCIL_8, int mipLevels = 1);
+            // Allows us to share depth with other framebuffers, we will NOT delete this depth texture on destruction
+            void setSharedDepthTexture(CALLEE_DELETE VGTexture depthTexture);
+            void setSharedDepthStencilTexture(CALLEE_DELETE VGTexture depthStencilTexture);
 
-            /// Set up the geometry targets to be active
-            void useGeometry();
-            /// Set up the light target to be active
-            void useLight();
+            void clearAttachment(GBufferAttachmentIndex index, f32v4 newColor = f32v4(0.0f));
+            void clearDepth(f32 newDepth = 1.0f);
+            void clearDepthStencil(f32 newDepth = 1.0f, GLint newStencil = 0);
 
-            /// Bind Geometry Texture
-            /// @param i: Which Geometry texture to bind
-            /// @param textureUnit Position to bind texture
-            void bindGeometryTexture(size_t i, ui32 textureUnit);
+            void use() const;
+            static void unuse();
 
-            /// Bind Depth Texture
-            /// @param textureUnit Position to bind texture
+            void bindAlbedoTexture(ui32 textureUnit);
+            void bindNormalTexture(ui32 textureUnit);
             void bindDepthTexture(ui32 textureUnit);
-            
-            /// Bind Light Texture
-            /// @param textureUnit Position to bind texture
-            void bindLightTexture(ui32 textureUnit);
 
-            /// @return OpenGL texture IDs
-            const VGTexture& getGeometryTexture(size_t i) const {
-                return m_textures[i];
-            }
-            /// @return Light texture
-            const VGTexture& getLightTexture() const {
-                return m_textures[m_textures.size() - 1];
-            }
+            VGTexture getAlbedoTexture() const { return mAttachments[(int)GBufferAttachmentIndex::ALBEDO].mTexture;  }
+            VGTexture getNormalTexture() const { return mAttachments[(int)GBufferAttachmentIndex::NORMALS].mTexture; }
+            VGTexture getTertiaryTexture1() const { return mAttachments[(int)GBufferAttachmentIndex::TERTIARY1].mTexture; }
+            VGTexture getTertiaryTexture2() const { return mAttachments[(int)GBufferAttachmentIndex::TERTIARY2].mTexture; }
+            VGTexture getTertiaryTexture3() const { return mAttachments[(int)GBufferAttachmentIndex::TERTIARY3].mTexture; }
+            VGTexture getDepthTexture() const { return mTexDepth.mTexture; }
+            VGTexture getDepthStencilTexture() const { assert(mHasStencil); return mTexDepth.mTexture; }
 
-            void setSize(ui32 width, ui32 height) {
-                m_size.x = width;
-                m_size.y = height;
-            }
+            const ui32v2& getSize() const { return mSize; }
+            const ui32& getWidth() const { return mSize.x; }
+            const ui32& getHeight() const { return mSize.y; }
+            const ui32& getNumMipLevels(GBufferAttachmentIndex index) const { return mAttachments[(int)GBufferAttachmentIndex::ALBEDO].mMipLevels; }
 
-            void setSize(const ui32v2& size) {
-                m_size = size;
-            }
+            VGFramebuffer getFbo() const { return mFbo; }
+            bool hasStencil() const { return mHasStencil; }
 
-            /// @return Size of the GBuffer in pixels (W,H)
-            const ui32v2& getSize() const {
-                return m_size;
-            }
-            /// @return Width of the GBuffer in pixels
-            const ui32& getWidth() const {
-                return m_size.x;
-            }
-            /// @return Height of the GBuffer in pixels
-            const ui32& getHeight() const {
-                return m_size.y;
-            }
+            // TODO: This is WRONG its a hack for my shitty auto shader uniforms
+            // ~GBuffer() will delete shared textures!!!!
+            void setNormalTexture(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::NORMALS].mTexture = tex; }
+            void setTertiaryTexture1(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::TERTIARY1].mTexture = tex; }
+            void setTertiaryTexture2(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::TERTIARY2].mTexture = tex; }
+            void setTertiaryTexture3(VGTexture tex) { mAttachments[(int)GBufferAttachmentIndex::TERTIARY3].mTexture = tex; }
 
-            const VGFramebuffer& getGeometryID() const {
-                return m_fboGeom;
-            }
-            const VGTexture& getDepthTexture() const {
-                return m_texDepth;
-            }
         private:
-            ui32v2 m_size; ///< The width and height of the GBuffer
+            void initTexture(GBufferAttachmentTexture& texture, VGEnum format, const vg::SamplerState& samplerState, int mipLevels);
+            bool checkError();
 
-            VGFramebuffer m_fboGeom; ///< The rendering target for geometry
-            VGFramebuffer m_fboLight; ///< The rendering target for light
-            Array<VGTexture> m_textures; ///< An array of all the textures
-            VGTexture m_texDepth = 0; ///< Depth texture of GBuffer
+            ui32v2 mSize; ///< The width and height of the GBuffer
+
+            VGFramebuffer mFbo = 0; ///< The rendering target for geometry
+            GBufferAttachmentTexture mAttachments[(int)GBufferAttachmentIndex::COUNT] = {};
+            VGEnum mDrawBuffers[(int)GBufferAttachmentIndex::COUNT] = { GL_NONE, GL_NONE, GL_NONE, GL_NONE, GL_NONE };
+            static_assert((int)GBufferAttachmentIndex::COUNT == 5, "Update brace init");
+            GBufferAttachmentTexture mTexDepth = {}; // Depth texture 
+            int mLayerCount = 1;
+            // TODO: Flags
+            bool mSharedDepth = false;
+            bool mHasStencil = false;
+        };
+
+        // Wrapper that represents a chain of vg::GBuffer
+        class SwapChain {
+        public:
+            VORB_NON_COPYABLE(SwapChain);
+            SwapChain(ui32 w, ui32 h, ui32 gBufferCount, int layerCount = 1);
+            /// Set up a GBuffer with a certain size
+            /// @param s: Size in pixels of each target
+            SwapChain(ui32v2 s, ui32 gBufferCount, int layerCount = 1) : SwapChain(s.x, s.y, gBufferCount, layerCount) {}
+            ~SwapChain();
+
+            void initAttachment(GBufferAttachmentIndex index, vg::TextureInternalFormat format, const vg::SamplerState& samplerState = vg::sSamplerStates.POINT_CLAMP, int mipLevels = 1);
+            void initDepth(GBufferDepthFormat depthFormat, int mipLevels = 1);
+
+            GBuffer& get(ui32 index);
+            GBuffer& getPrev();
+            GBuffer& getNext();
+            GBuffer& use(ui32 index);
+            GBuffer& useNext();
+            GBuffer& useFirst() { return use(0); }
+
+            const ui32v2& getDims() const;
+            ui32 getGBufferCount() const { return mGBuffers.size(); }
+            ui32 getIndexCurrent() const { return mCurrent; }
+        private:
+            std::vector<std::unique_ptr<GBuffer>> mGBuffers;
+            ui32 mCurrent = 0;
         };
     }
 }

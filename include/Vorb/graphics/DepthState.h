@@ -35,6 +35,7 @@ namespace vorb {
 		
 		    // Apply State In The Rendering Pipeline
 		    void set() const;
+			static void restorePrevious();
 		
 		    // Z-Buffer Access
 		    bool shouldRead;
@@ -51,6 +52,11 @@ namespace vorb {
 		    static const DepthState WRITE;
 		    // Only Draw When Depth Is Less Than Z-Buffer And Overwrite The Z-Buffer With New Depth
 		    static const DepthState FULL;
+            // Only Draw When Depth Is Less Than Z-Buffer And Overwrite The Z-Buffer With New Depth
+            static const DepthState FULL_LEQUAL;
+
+            static DepthState CURR;
+			static DepthState PREV;
 		};
 	}
 }

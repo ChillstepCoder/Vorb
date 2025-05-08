@@ -1,7 +1,0 @@
-/*! @brief $end$
- * 
- * 
- * 
- * @param $MethodArgName$: 
- * @return 
- */

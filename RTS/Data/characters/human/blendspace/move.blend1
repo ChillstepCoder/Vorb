@@ -1,0 +1,14 @@
+nodes:
+  - anim: swrd_shld_walk
+    x: 0.15621687
+  - anim: swrd_shld_run_1
+    x: 0.68544114
+  - anim: sprint
+    x: 1
+rig: human
+input:
+  binding: Speed
+  range: [0.01,4.5]
+max_x_speed: 4
+speed_warp_less: 1
+speed_warp_greater: 0

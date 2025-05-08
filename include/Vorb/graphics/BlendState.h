@@ -1,0 +1,88 @@
+//
+// DepthState.h
+// Vorb Engine
+//
+// Created by Benjamin Arnold on 26 Nov 2020
+// Copyright 2020 Regrowth Studios
+// MIT License
+//
+
+/*! \file DepthState.h
+ * @brief Changes GPU blend functionality.
+ */
+
+#pragma once
+
+#ifndef Vorb_BlendState_h__
+ //! @cond DOXY_SHOW_HEADER_GUARDS
+#define Vorb_BlendState_h__
+//! @endcond
+
+#ifndef VORB_USING_PCH
+#include "../types.h"
+#endif // !VORB_USING_PCH
+
+#include "GLEnums.h"
+
+namespace vorb {
+    namespace graphics {
+
+        enum class BlendStateType {
+            ALPHA,
+            ALPHA_PREMULTIPLIED,
+            ADDITIVE,
+            SUBTRACTIVE,
+            REPLACE,
+            MULTIPLY,
+            COUNT
+        };
+
+        class BlendState
+        {
+        public:
+            BlendState(GLenum srcFactor, GLenum dstFactor, GLint blendEquation = GL_FUNC_ADD);
+
+            void set() const;
+            static void set(const BlendStateType state);
+
+            static void restorePrevious();
+
+            GLenum srcFactor;
+            GLenum dstFactor;
+            GLint blendEquation;
+
+            static BlendState CURR;
+            static BlendState PREV;
+            // TODO: glBlendEquation?
+        };
+
+        // SRC_ALPHA, ONE_MINUS_SRC_ALPHA
+        union BlendStates {
+            const vg::BlendState STATE_ARRAY[(int)BlendStateType::COUNT];
+            struct {
+                const vg::BlendState ALPHA;
+
+                // ONE, ONE_MINUS_SRC_ALPHA
+                const vg::BlendState ALPHA_PREMULTIPLIED;
+
+                // SRC_ALPHA, ONE
+                const vg::BlendState ADDITIVE;
+
+                // ONE, ONE + GL_FUNC_REVERSE_SUBTRACT
+                const vg::BlendState SUBTRACTIVE;
+
+                // ONE, ZERO
+                const vg::BlendState REPLACE;
+
+                // ONE, ZERO
+                const vg::BlendState MULTIPLY;
+            };
+        };
+        static_assert((int)vg::BlendStateType::COUNT == 6, "Add new blend states above");
+        extern BlendStates sBlendStates;
+
+    }
+}
+namespace vg = vorb::graphics;
+
+#endif // !Vorb_BlendState_h__

@@ -1,0 +1,11 @@
+anim: swrd_shld_atk_1
+duration: 1.5
+cost: 0.0
+hit_effect: hitfx
+attack_triggers:
+  -  time: 0.65
+     shape: cone
+     angle: 120.0
+     radius: 1.5
+     swing_dir: [0.0, 1.0, 0.0]
+     swing_height: 1.3

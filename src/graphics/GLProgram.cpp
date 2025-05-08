@@ -38,39 +38,57 @@ void vg::GLProgram::dispose() {
 
     // Delete the program
     if (m_id) {
-     
         glDeleteProgram(m_id);
         m_id = 0;
         m_isLinked = false;
     }
     AttributeMap().swap(m_attributes);
     UniformMap().swap(m_uniforms);
-    AttributeSemBinding().swap(m_semanticBinding);
+    SsboMap().swap(m_ssboBindings);
 }
 
 bool vg::GLProgram::addShader(const ShaderSource& data) {
     // Check current state
     if (isLinked() || !isCreated()) {
-        onShaderCompilationError("Cannot add a shader to a fully created or non-existent program");
+        onShaderCompilationError(vg::ProgramError("Cannot add a shader to a fully created or non-existent program", ""));
         return false;
     }
 
     // Check for preexisting stages
     switch (data.stage) {
         case ShaderType::VERTEX_SHADER:
+        case ShaderType::COMPUTE_SHADER:
             if (m_idVS != 0) {
-                onShaderCompilationError("Attempting to add another vertex shader");
+                onShaderCompilationError(vg::ProgramError("Attempting to add another vertex shader", ""));
                 return false;
             }
             break;
         case ShaderType::FRAGMENT_SHADER:
             if (m_idFS != 0) {
-                onShaderCompilationError("Attempting to add another fragment shader");
+                onShaderCompilationError(vg::ProgramError("Attempting to add another fragment shader", ""));
+                return false;
+            }
+            break;
+        case ShaderType::GEOMETRY_SHADER:
+            if (m_idGS != 0) {
+                onShaderCompilationError(vg::ProgramError("Attempting to add another fragment shader", ""));
+                return false;
+            }
+            break;
+        case ShaderType::TESS_CONTROL_SHADER:
+            if (m_idTCS != 0) {
+                onShaderCompilationError(vg::ProgramError("Attempting to add another TCS shader", ""));
+                return false;
+            }
+            break;
+        case ShaderType::TESS_EVALUATION_SHADER:
+            if (m_idTES != 0) {
+                onShaderCompilationError(vg::ProgramError("Attempting to add another TES shader", ""));
                 return false;
             }
             break;
         default:
-            onShaderCompilationError("Shader stage is not supported");
+            onShaderCompilationError(vg::ProgramError("Shader stage is not supported", ""));
             return false;
     }
 
@@ -101,7 +119,7 @@ bool vg::GLProgram::addShader(const ShaderSource& data) {
         glGetShaderiv(idS, GL_INFO_LOG_LENGTH, &infoLogLength);
         std::vector<char> FragmentShaderErrorMessage(infoLogLength);
         glGetShaderInfoLog(idS, infoLogLength, NULL, FragmentShaderErrorMessage.data());
-        onShaderCompilationError(FragmentShaderErrorMessage.data());
+        onShaderCompilationError(vg::ProgramError(FragmentShaderErrorMessage.data(), nString(data.sources[0])));
         glDeleteShader(idS);
         return false;
     }
@@ -109,10 +127,20 @@ bool vg::GLProgram::addShader(const ShaderSource& data) {
     // Add shader to stage
     switch (data.stage) {
         case ShaderType::VERTEX_SHADER:
+        case ShaderType::COMPUTE_SHADER:
             m_idVS = idS;
             break;
         case ShaderType::FRAGMENT_SHADER:
             m_idFS = idS;
+            break;
+        case ShaderType::GEOMETRY_SHADER:
+            m_idGS = idS;
+            break;
+        case ShaderType::TESS_CONTROL_SHADER:
+            m_idTCS = idS;
+            break;
+        case ShaderType::TESS_EVALUATION_SHADER:
+            m_idTES = idS;
             break;
         default:
             break;
@@ -127,55 +155,6 @@ bool vg::GLProgram::addShader(const ShaderType& type, const cString code, const 
     return addShader(src);
 }
 
-void vg::GLProgram::setAttribute(nString name, VGAttribute index) {
-    // Adding attributes to a linked program does nothing
-    if (isLinked() || !isCreated()) return;
-
-    // Set the custom attribute
-    glBindAttribLocation(m_id, index, name.c_str());
-    m_attributes[name] = index;
-}
-void vg::GLProgram::setAttributes(const std::map<nString, VGAttribute>& attr) {
-    // Adding attributes to a linked program does nothing
-    if (isLinked() || !isCreated()) return;
-
-    // Set the custom attributes
-    for (auto& binding : attr) {
-        glBindAttribLocation(m_id, binding.second, binding.first.c_str());
-        m_attributes[binding.first] = binding.second;
-    }
-}
-void vg::GLProgram::setAttributes(const std::vector<AttributeBinding>& attr) {
-    // Adding attributes to a linked program does nothing
-    if (isLinked() || !isCreated()) return;
-
-    // Set the custom attributes
-    for (auto& binding : attr) {
-        glBindAttribLocation(m_id, binding.second, binding.first.c_str());
-        m_attributes[binding.first] = binding.second;
-    }
-}
-void vg::GLProgram::setAttributes(const std::vector<nString>& attr) {
-    // Adding attributes to a linked program does nothing
-    if (isLinked() || !isCreated()) return;
-
-    // Set the custom attributes
-    for (ui32 i = 0; i < attr.size(); i++) {
-        glBindAttribLocation(m_id, i, attr[i].c_str());
-        m_attributes[attr[i]] = i;
-    }
-}
-
-void vg::GLProgram::setAttributes(const std::vector<nString>& attr, const std::vector<VGSemantic>& sem) {
-    setAttributes(attr);
-    for (int i = 0; i < (int)sem.size(); i++) {
-        VGSemantic s = sem[i];
-        if (s != Semantic::SEM_INVALID) {
-            m_semanticBinding[s] = static_cast<VGAttribute>(i);
-        }
-    }
-}
-
 bool vg::GLProgram::link() {
     // Check internal state
     if (isLinked() || !isCreated()) {
@@ -184,23 +163,45 @@ bool vg::GLProgram::link() {
     }
 
     // Check for available shaders
-    if (!m_idVS || !m_idFS) {
+    if (!m_idVS) {
         linkError("Insufficient stages for a program link");
         return false;
     }
 
     // Link The Program
     glAttachShader(m_id, m_idVS);
-    glAttachShader(m_id, m_idFS);
+    if (m_idGS) glAttachShader(m_id, m_idGS);
+    if (m_idTCS) {
+        assert(m_idTES);
+        glAttachShader(m_id, m_idTCS);
+        glAttachShader(m_id, m_idTES);
+    }
+    if (m_idFS) glAttachShader(m_id, m_idFS);
     glLinkProgram(m_id);
 
     // Detach and delete shaders
     glDetachShader(m_id, m_idVS);
-    glDetachShader(m_id, m_idFS);
+    if (m_idGS) {
+        glDetachShader(m_id, m_idGS);
+        glDeleteShader(m_idGS);
+        m_idGS = 0;
+    }
+    if (m_idTCS) {
+        assert(m_idTES);
+        glDetachShader(m_id, m_idTCS);
+        glDeleteShader(m_idTCS);
+        m_idTCS = 0;
+        glDetachShader(m_id, m_idTES);
+        glDeleteShader(m_idTES);
+        m_idTES = 0;
+    }
+    if (m_idFS) {
+        glDetachShader(m_id, m_idFS);
+        glDeleteShader(m_idFS);
+        m_idFS = 0;
+    }
     glDeleteShader(m_idVS);
-    glDeleteShader(m_idFS);
     m_idVS = 0;
-    m_idFS = 0;
 
     // Check the link status
     i32 status;
@@ -215,7 +216,7 @@ bool vg::GLProgram::link() {
 
 void vg::GLProgram::initAttributes() {
     if (!isLinked()) return;
-
+    
     // Obtain attribute count
     i32 count;
     glGetProgramiv(m_id, GL_ACTIVE_ATTRIBUTES, &count);
@@ -266,6 +267,37 @@ void vg::GLProgram::initUniforms() {
     }
 }
 
+void vg::GLProgram::initSsboBindings() {
+    if (!isLinked()) return;
+
+    // Get the number of active SSBOs
+    GLint ssboCount = 0;
+    glGetProgramInterfaceiv(m_id, GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, &ssboCount);
+
+    // Properties to query
+    GLenum properties[] = { GL_NAME_LENGTH, GL_BUFFER_BINDING };
+
+    for (GLint i = 0; i < ssboCount; ++i) {
+
+        // Get the SSBO binding point
+        struct {
+            GLint nameLength = 0;
+            GLint binding = -1;
+        } queryData;
+
+        glGetProgramResourceiv(m_id, GL_SHADER_STORAGE_BLOCK, i, 2, properties, 2, nullptr, &queryData.nameLength);
+
+        // Retrieve the SSBO name
+        nString nameData;
+        nameData.resize(queryData.nameLength);
+        glGetProgramResourceName(m_id, GL_SHADER_STORAGE_BLOCK, i, queryData.nameLength + 1, nullptr, nameData.data());
+
+        assert(queryData.binding != -1);
+        m_ssboBindings[nameData] = queryData.binding;
+    }
+}
+
+
 void vg::GLProgram::bindFragDataLocation(ui32 colorNumber, const char* name) {
     glBindAttribLocation(m_id, colorNumber, name);
 }
@@ -282,7 +314,7 @@ void vg::GLProgram::disableVertexAttribArrays() const {
     }
 }
 
-void vg::GLProgram::use() {
+void vg::GLProgram::use() const {
     if (!isInUse()) {
         m_programInUse = m_id;
         glUseProgram(m_id);
@@ -303,5 +335,5 @@ void vg::GLProgram::linkError(const nString& s) {
     buf[len] = 0;
 
     nString s2 = s + ": " + buf;
-    onProgramLinkError(s2);
+    onProgramLinkError(vg::ProgramError(s2, ""));
 }

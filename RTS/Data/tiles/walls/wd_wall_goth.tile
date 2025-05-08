@@ -1,0 +1,7 @@
+materials:
+  - wood_wall_gothic
+texture_method: vertical
+shape: wall
+recipe:
+  - item: wood_log
+    count: 2

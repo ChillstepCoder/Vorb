@@ -1,9 +1,49 @@
 #pragma once
-#include <Vorb/ecs/ComponentTable.hpp>
-
-DECL_VG(class TextureCache);
 
 #include <Vorb/graphics/Texture.h>
+
+#include "ecs/component/CharacterControlComponent.h"
+#include "rendering/model/ModelConst.h"
+#include "ecs/component/ComponentDefBase.h"
+
+#include <Vorb/Event.hpp>
+
+
+enum class HumanoidSubmeshPart {
+    Feet,
+    Legs,
+    Torso,
+    Arms,
+    Head,
+    EyeL,
+    EyeR,
+    COUNT
+};
+
+struct ModularHumanoidCharacterModel {
+    ModularHumanoidCharacterModel() {
+        for (auto& id : partIds) id = INVALID_SUBMESH_ID;
+    }
+
+    ModelID baseModel = INVALID_MODEL_ID;
+    std::array<SubmeshID, e_count(HumanoidSubmeshPart)> partIds;
+};
+
+struct LinkedSubmodelData {
+    ModelID modelId;
+    ui8 attachBoneIndex;
+
+    auto operator<=>(const LinkedSubmodelData&) const = default;
+};
+
+struct LinkedSubmodelDesc {
+    StrToken attachBone; // TODO: Just bone ID?
+    ModelID modelId = INVALID_MODEL_ID;
+
+    bool operator==(const LinkedSubmodelDesc& other) const {
+        return attachBone == other.attachBone && modelId == other.modelId;
+    }
+};
 
 enum CharacterModelTextureIndex {
 	CHARACTER_MODEL_TEXTURE_FRONT = 0,
@@ -11,25 +51,42 @@ enum CharacterModelTextureIndex {
 	CHARACTER_MODEL_TEXTURE_BACK  = 2
 };
 
-class CharacterModel {
-public:
-	void load(vg::TextureCache& textureCache, const std::string& face, const std::string& body, const std::string& hair);
+enum class CharacterModelEventType {
+    SubmodelAdded,
+    SubmodelRemoved,
+};
+struct CharacterModelEvent {
+    entt::entity owner; // TODO: UID? Reuse could be an issue
+    LinkedSubmodelData submodel;
+};
+EVENT_DISPATCHER_TYPE(CharacterModel, CharacterModelEventType, const CharacterModelEvent&);
 
-	vg::Texture mFaceTextures[3];
-	vg::Texture mHairTextures[3];
-	vg::Texture mBodyTextures[3];
+class CharacterModelEvents {
+public:
+    STATIC_EVENT_LISTENER_FUNCS(CharacterModel, SubmodelAdded, CharacterModelEventType::SubmodelAdded, const CharacterModelEvent&);
+    STATIC_EVENT_LISTENER_FUNCS(CharacterModel, SubmodelRemoved, CharacterModelEventType::SubmodelRemoved, const CharacterModelEvent&);
+    STATIC_EVENT_DISPATCHER_DEF(CharacterModel);
 };
 
-// TODO: File name
 struct CharacterModelComponent {
-	CharacterModel mModel;
-	vecs::ComponentID mPhysicsComponent = 0;
+    CharacterModelComponent(ModularHumanoidCharacterModel model, const std::vector<LinkedSubmodelDesc>* inLinkedSubmodels);
+
+    void addLinkedSubmodel(entt::entity thisEntity, LinkedSubmodelDesc linkedSubmodel);
+    void removeLinkedSubmodel(entt::entity thisEntity, LinkedSubmodelDesc linkedSubmodel);
+    void toggleLinkedSubmodel(entt::entity thisEntity, LinkedSubmodelDesc linkedSubmodel);
+    bool hasLinkedSubmodel(LinkedSubmodelData submodel);
+    ModularHumanoidCharacterModel getModel() { return model; }
+    const std::vector<LinkedSubmodelData>& getLinkedSubmodels() { return linkedSubmodels; }
+
+private:
+    ModularHumanoidCharacterModel model;
+    std::vector<LinkedSubmodelData> linkedSubmodels;
 };
 
-class CharacterModelComponentTable : public vecs::ComponentTable<CharacterModelComponent> {
+class CharacterModelComponentDef : public ComponentDefBase {
 public:
-	static const std::string& NAME;
+    ModelAssetRef model;
 };
-
-
-
+SERIALIZABLE_SIMPLE(CharacterModelComponentDef,
+	make_field(o.model, "model"sv)
+);

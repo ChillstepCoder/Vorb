@@ -1,0 +1,36 @@
+#pragma once
+
+#include "resources/IAssetRepository.h"
+
+#include "definitions/BiomeDef.h"
+
+class BiomeRepository : public IAssetRepository<BiomeDef> {
+public:
+    ASSET_REPOSITORY_COMMON_CODE(BiomeRepository, BiomeDef, AssetType::Biome)
+
+    DEFAULT_ASSET_SAVE_FUNC();
+
+    StrToken getAssetExtension() const override { return CStrToken("biome"); }
+    const char* const getAssetTypeDisplayName() const override { return "Biome"; }
+
+    const BiomeDef& getBiomeFromUniqueID(BiomeUniqueID uniqueId) { return getLoadedOrUnloadedAsset(mUniqueIDMap[e_cast(uniqueId)]); }
+    VGTexture getBiomeColorMapsArrayTexture() const { return mBiomeColorMapsArrayTexture; }
+    VGBuffer getBiomeColorMapsShaderLookupBuffer() const { return mBiomeColorMapsShaderLookupBuffer; }
+
+    void fixupRegisteredAsset(AssetID id) override;
+protected:
+    AssetLoadFunc getAssetLoadFunc() override;
+    void onRegisteredAsset(AssetID id) override;
+    void onAllAssetTypesRegistered() override;
+
+    void linkCorruptedBiomes();
+    void generateBiomesGLSLFile();
+
+    // Allow us to persist biome data consistently by
+    // assigning a static ID per biome
+    // Key = uniqueID, Value = AssetID
+    std::vector<AssetID> mUniqueIDMap;
+    VGTexture mBiomeColorMapsArrayTexture = 0;
+    VGBuffer mBiomeColorMapsShaderLookupBuffer = 0;
+};
+

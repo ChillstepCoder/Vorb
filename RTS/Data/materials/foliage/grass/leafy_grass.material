@@ -1,0 +1,3 @@
+albedo: leafy_grass
+normal: GENERATE
+sampler_state: LINEAR_WRAP_MIPMAP

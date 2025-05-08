@@ -1,0 +1,36 @@
+model: hotspringhero.fbx
+rig: ''
+machine: ''
+scale: 1.6
+lod_dst_0: 45
+lod_dst_1: 90
+lod_dst_2: 180
+lod_dst_3: 360
+bound_sphere: 5
+shadow_detail: highest
+force_normals_up: 0
+variants:
+  - name: new_variant
+    submesh_mats:
+      - [hotspringhero,'','','']
+      - [model_water,'','','']
+  - name: new_variant
+    submesh_mats:
+      - [hotspringh_brwn,'','','']
+      - [model_water,'','','']
+  - name: new_variant
+    submesh_mats:
+      - [hotspringh_brwn2,'','','']
+      - [model_water,'','','']
+  - name: new_variant
+    submesh_mats:
+      - [hotspringh_brwn3,'','','']
+      - [model_water,'','','']
+  - name: new_variant
+    submesh_mats:
+      - [hotspringh_w,'','','']
+      - [model_water,'','','']
+  - name: new_variant
+    submesh_mats:
+      - [hotspringh_g,'','','']
+      - [model_water,'','','']

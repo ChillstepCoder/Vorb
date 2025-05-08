@@ -11,7 +11,7 @@ enum class ArmorTypes : ui8 {
 	COUNT
 };
 
-const float ARMOR_BASE_REDUCTION[enum_cast(ArmorTypes::COUNT)] = {
+const float ARMOR_BASE_REDUCTION[e_cast(ArmorTypes::COUNT)] = {
 	0.0f,
 	5.0f,
 	10.0f,
@@ -31,7 +31,7 @@ enum class BuiltinArmors : ArmorItemID {
 class ArmorRegistry {
 public:
 	static const ArmorItem& getArmor(BuiltinArmors id) {
-		return s_allArmorItems[enum_cast(id)];
+		return s_allArmorItems[e_cast(id)];
 	}
 
 	static const ArmorItem& getArmor(ArmorItemID id) {

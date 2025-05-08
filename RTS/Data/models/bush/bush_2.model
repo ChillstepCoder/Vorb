@@ -1,0 +1,8 @@
+model: bush_2.fbx
+rig: ''
+machine: ''
+scale: 0.888
+shadow_detail: medium
+force_normals_up: 0
+submesh_data:
+  - wind: grass

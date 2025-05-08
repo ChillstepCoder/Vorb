@@ -1,6 +1,24 @@
 #include "Vorb/stdafx.h"
 #include "Vorb/graphics/SamplerState.h"
 
+vg::SamplerStates vg::sSamplerStates = {
+    {
+        vg::SamplerState(vg::TextureMinFilter::NEAREST, vg::TextureMagFilter::NEAREST, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::REPEAT), //POINT_WRAP
+        vg::SamplerState(vg::TextureMinFilter::NEAREST, vg::TextureMagFilter::NEAREST, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE), //POINT_CLAMP
+        vg::SamplerState(vg::TextureMinFilter::LINEAR, vg::TextureMagFilter::LINEAR, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::REPEAT), //LINEAR_WRAP
+        vg::SamplerState(vg::TextureMinFilter::LINEAR, vg::TextureMagFilter::LINEAR, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE), // LINEAR_CLAMP
+        vg::SamplerState(vg::TextureMinFilter::LINEAR, vg::TextureMagFilter::LINEAR, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_BORDER, vg::TextureWrapMode::CLAMP_BORDER), //LINEAR_CLAMP_BORDER
+        vg::SamplerState(vg::TextureMinFilter::NEAREST_MIPMAP_NEAREST, vg::TextureMagFilter::NEAREST, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::REPEAT), //POINT_WRAP_MIPMAP
+        vg::SamplerState(vg::TextureMinFilter::NEAREST_MIPMAP_NEAREST, vg::TextureMagFilter::NEAREST, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE), //POINT_CLAMP_MIPMAP
+        vg::SamplerState(vg::TextureMinFilter::LINEAR_MIPMAP_LINEAR,   vg::TextureMagFilter::LINEAR, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::REPEAT), //LINEAR_WRAP_MIPMAP
+        vg::SamplerState(vg::TextureMinFilter::LINEAR_MIPMAP_LINEAR, vg::TextureMagFilter::LINEAR, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE), // LINEAR_CLAMP_MIPMAP
+        vg::SamplerState(vg::TextureMinFilter::LINEAR, vg::TextureMagFilter::LINEAR, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE), // LINEAR_CLAMPV
+        vg::SamplerState(vg::TextureMinFilter::LINEAR_MIPMAP_LINEAR, vg::TextureMagFilter::LINEAR, vg::TextureWrapMode::REPEAT, vg::TextureWrapMode::CLAMP_EDGE, vg::TextureWrapMode::CLAMP_EDGE), // LINEAR_CLAMPV_MIPMAP
+        vg::SamplerState(vg::TextureMinFilter::LINEAR_MIPMAP_LINEAR, vg::TextureMagFilter::LINEAR, vg::TextureWrapMode::REPEAT_MIRRORED, vg::TextureWrapMode::REPEAT_MIRRORED, vg::TextureWrapMode::REPEAT), // LINEAR_MIRROR
+    }
+};
+static_assert(int(vg::SamplerStateType::COUNT) == 12, "Update with new");
+
 vg::SamplerState::SamplerState(TextureMinFilter texMinFilter, TextureMagFilter texMagFilter, TextureWrapMode texWrapS, 
                                     TextureWrapMode texWrapT, TextureWrapMode texWrapR) :
     m_minFilter(texMinFilter),
@@ -16,58 +34,42 @@ vg::SamplerState::SamplerState(ui32 texMinFilter, ui32 texMagFilter, ui32 texWra
     // Empty
 }
 
-void vg::SamplerState::initObject() {
-    glGenSamplers(1, &m_id);
-    glSamplerParameteri(m_id, GL_TEXTURE_MIN_FILTER, static_cast<GLenum>(m_minFilter));
-    glSamplerParameteri(m_id, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(m_magFilter));
-    glSamplerParameteri(m_id, GL_TEXTURE_WRAP_S,     static_cast<GLenum>(m_wrapS));
-    glSamplerParameteri(m_id, GL_TEXTURE_WRAP_T,     static_cast<GLenum>(m_wrapT));
-    glSamplerParameteri(m_id, GL_TEXTURE_WRAP_R,     static_cast<GLenum>(m_wrapR));
-}
-void vg::SamplerState::initPredefined() {
-    SamplerState::POINT_WRAP.initObject();
-    SamplerState::POINT_CLAMP.initObject();
-    SamplerState::LINEAR_WRAP.initObject();
-    SamplerState::LINEAR_CLAMP.initObject();
-    SamplerState::POINT_WRAP_MIPMAP.initObject();
-    SamplerState::POINT_CLAMP_MIPMAP.initObject();
-    SamplerState::LINEAR_WRAP_MIPMAP.initObject();
-    SamplerState::LINEAR_CLAMP_MIPMAP.initObject();
-}
+//void vg::SamplerState::initObject() {
+//    glGenSamplers(1, &m_id);
+//    glSamplerParameteri(m_id, GL_TEXTURE_MIN_FILTER, static_cast<GLenum>(m_minFilter));
+//    glSamplerParameteri(m_id, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(m_magFilter));
+//    glSamplerParameteri(m_id, GL_TEXTURE_WRAP_S,     static_cast<GLenum>(m_wrapS));
+//    glSamplerParameteri(m_id, GL_TEXTURE_WRAP_T,     static_cast<GLenum>(m_wrapT));
+//    glSamplerParameteri(m_id, GL_TEXTURE_WRAP_R,     static_cast<GLenum>(m_wrapR));
+//}
+//void vg::SamplerState::initPredefined() {
+//    SamplerStates::POINT_WRAP.initObject();
+//    SamplerStates::POINT_CLAMP.initObject();
+//    SamplerStates::LINEAR_WRAP.initObject();
+//    SamplerStates::LINEAR_CLAMP.initObject();
+//    SamplerStates::POINT_WRAP_MIPMAP.initObject();
+//    SamplerStates::POINT_CLAMP_MIPMAP.initObject();
+//    SamplerStates::LINEAR_WRAP_MIPMAP.initObject();
+//    SamplerStates::LINEAR_CLAMP_MIPMAP.initObject();
+//}
 
-void vg::SamplerState::set(ui32 textureTarget) const {
+void vg::SamplerState::setForTarget(ui32 textureTarget) const {
+    assert(glGetError() == GL_NO_ERROR);
     glTexParameteri(textureTarget, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(m_magFilter));
     glTexParameteri(textureTarget, GL_TEXTURE_MIN_FILTER, static_cast<GLenum>(m_minFilter));
     glTexParameteri(textureTarget, GL_TEXTURE_WRAP_S,     static_cast<GLenum>(m_wrapS));
     glTexParameteri(textureTarget, GL_TEXTURE_WRAP_T,     static_cast<GLenum>(m_wrapT));
     glTexParameteri(textureTarget, GL_TEXTURE_WRAP_R,     static_cast<GLenum>(m_wrapR));
 }
+//
+//void vg::SamplerState::setObject(ui32 textureUnit) const {
+//    glBindSampler(textureUnit, m_id);
+//}
 
-void vg::SamplerState::setObject(ui32 textureUnit) const {
-    glBindSampler(textureUnit, m_id);
+void vg::SamplerState::setForTexture(VGTexture texture) const {
+    glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, static_cast<GLenum>(m_magFilter));
+    glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, static_cast<GLenum>(m_minFilter));
+    glTextureParameteri(texture, GL_TEXTURE_WRAP_S, static_cast<GLenum>(m_wrapS));
+    glTextureParameteri(texture, GL_TEXTURE_WRAP_T, static_cast<GLenum>(m_wrapT));
+    glTextureParameteri(texture, GL_TEXTURE_WRAP_R, static_cast<GLenum>(m_wrapR));
 }
-
-vg::SamplerState          vg::SamplerState::POINT_WRAP(TextureMinFilter::NEAREST,                TextureMagFilter::NEAREST, 
-                                                       TextureWrapMode::REPEAT,                  TextureWrapMode::REPEAT,    TextureWrapMode::REPEAT);
-
-vg::SamplerState         vg::SamplerState::POINT_CLAMP(TextureMinFilter::NEAREST,                TextureMagFilter::NEAREST,
-                                                       TextureWrapMode::CLAMP_EDGE,              TextureWrapMode::CLAMP_EDGE, TextureWrapMode::CLAMP_EDGE);
-
-vg::SamplerState         vg::SamplerState::LINEAR_WRAP(TextureMinFilter::LINEAR,                 TextureMagFilter::LINEAR,
-                                                       TextureWrapMode::REPEAT,                  TextureWrapMode::REPEAT,     TextureWrapMode::REPEAT);
-
-vg::SamplerState        vg::SamplerState::LINEAR_CLAMP(TextureMinFilter::LINEAR,                 TextureMagFilter::LINEAR,
-                                                       TextureWrapMode::CLAMP_EDGE,              TextureWrapMode::CLAMP_EDGE,  TextureWrapMode::CLAMP_EDGE);
-
-vg::SamplerState   vg::SamplerState::POINT_WRAP_MIPMAP(TextureMinFilter::NEAREST_MIPMAP_NEAREST, TextureMagFilter::NEAREST,
-                                                       TextureWrapMode::REPEAT,                  TextureWrapMode::REPEAT,      TextureWrapMode::REPEAT);
-
-vg::SamplerState  vg::SamplerState::POINT_CLAMP_MIPMAP(TextureMinFilter::NEAREST_MIPMAP_NEAREST, TextureMagFilter::NEAREST,
-                                                       TextureWrapMode::CLAMP_EDGE,              TextureWrapMode::CLAMP_EDGE,  TextureWrapMode::CLAMP_EDGE);
-
-vg::SamplerState  vg::SamplerState::LINEAR_WRAP_MIPMAP(TextureMinFilter::LINEAR_MIPMAP_LINEAR,   TextureMagFilter::LINEAR,
-                                                       TextureWrapMode::REPEAT,                  TextureWrapMode::REPEAT,      TextureWrapMode::REPEAT);
-
-vg::SamplerState vg::SamplerState::LINEAR_CLAMP_MIPMAP(TextureMinFilter::LINEAR_MIPMAP_LINEAR,   TextureMagFilter::LINEAR,
-                                                       TextureWrapMode::CLAMP_EDGE,              TextureWrapMode::CLAMP_EDGE,  TextureWrapMode::CLAMP_EDGE);
-

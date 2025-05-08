@@ -1,0 +1,664 @@
+#include "stdafx.h"
+#include "Blendspace1DEditorViewportPanel.h"
+
+#include "definitions/ModelDef.h"
+#include "definitions/RigDef.h"
+#include "resources/AnimationRepository.h"
+#include "resources/ModelRepository.h"
+#include "resources/Blendspace1DRepository.h"
+
+#include "rendering/model/skeletal/SkeletalAnimator.h"
+#include "rendering/MaterialShaderRepository.h"
+
+#include <imgui/imgui_internal.h>
+
+namespace ImGui
+{
+    template<int steps>
+    void bezier_table(ImVec2 P[4], ImVec2 results[steps + 1]) {
+        static float C[(steps + 1) * 4], * K = 0;
+        if (!K) {
+            K = C;
+            for (unsigned step = 0; step <= steps; ++step) {
+                float t = (float)step / (float)steps;
+                C[step * 4 + 0] = (1 - t) * (1 - t) * (1 - t);   // * P0
+                C[step * 4 + 1] = 3 * (1 - t) * (1 - t) * t; // * P1
+                C[step * 4 + 2] = 3 * (1 - t) * t * t;     // * P2
+                C[step * 4 + 3] = t * t * t;               // * P3
+            }
+        }
+        for (unsigned step = 0; step <= steps; ++step) {
+            ImVec2 point = {
+                K[step * 4 + 0] * P[0].x + K[step * 4 + 1] * P[1].x + K[step * 4 + 2] * P[2].x + K[step * 4 + 3] * P[3].x,
+                K[step * 4 + 0] * P[0].y + K[step * 4 + 1] * P[1].y + K[step * 4 + 2] * P[2].y + K[step * 4 + 3] * P[3].y
+            };
+            results[step] = point;
+        }
+    }
+
+    float BezierValue(float dt01, float P[4]) {
+        enum { STEPS = 256 };
+        ImVec2 Q[4] = { { 0, 0 }, { P[0], P[1] }, { P[2], P[3] }, { 1, 1 } };
+        ImVec2 results[STEPS + 1];
+        bezier_table<STEPS>(Q, results);
+        return results[(int)((dt01 < 0 ? 0 : dt01 > 1 ? 1 : dt01) * STEPS)].y;
+    }
+
+    int Bezier(const char* label, float P[5]) {
+        // visuals
+        enum { SMOOTHNESS = 64 }; // curve smoothness: the higher number of segments, the smoother curve
+        enum { CURVE_WIDTH = 4 }; // main curved line width
+        enum { LINE_WIDTH = 1 }; // handlers: small lines width
+        enum { GRAB_RADIUS = 8 }; // handlers: circle radius
+        enum { GRAB_BORDER = 2 }; // handlers: circle border width
+        enum { AREA_CONSTRAINED = true }; // should grabbers be constrained to grid area?
+        enum { AREA_WIDTH = 128 }; // area width in pixels. 0 for adaptive size (will use max avail width)
+
+        // curve presets
+        static struct { const char* name; float points[4]; } presets[] = {
+            { "Linear", 0.000f, 0.000f, 1.000f, 1.000f },
+
+            { "In Sine", 0.470f, 0.000f, 0.745f, 0.715f },
+            { "In Quad", 0.550f, 0.085f, 0.680f, 0.530f },
+            { "In Cubic", 0.550f, 0.055f, 0.675f, 0.190f },
+            { "In Quart", 0.895f, 0.030f, 0.685f, 0.220f },
+            { "In Quint", 0.755f, 0.050f, 0.855f, 0.060f },
+            { "In Expo", 0.950f, 0.050f, 0.795f, 0.035f },
+            { "In Circ", 0.600f, 0.040f, 0.980f, 0.335f },
+            { "In Back", 0.600f, -0.28f, 0.735f, 0.045f },
+
+            { "Out Sine", 0.390f, 0.575f, 0.565f, 1.000f },
+            { "Out Quad", 0.250f, 0.460f, 0.450f, 0.940f },
+            { "Out Cubic", 0.215f, 0.610f, 0.355f, 1.000f },
+            { "Out Quart", 0.165f, 0.840f, 0.440f, 1.000f },
+            { "Out Quint", 0.230f, 1.000f, 0.320f, 1.000f },
+            { "Out Expo", 0.190f, 1.000f, 0.220f, 1.000f },
+            { "Out Circ", 0.075f, 0.820f, 0.165f, 1.000f },
+            { "Out Back", 0.175f, 0.885f, 0.320f, 1.275f },
+
+            { "InOut Sine", 0.445f, 0.050f, 0.550f, 0.950f },
+            { "InOut Quad", 0.455f, 0.030f, 0.515f, 0.955f },
+            { "InOut Cubic", 0.645f, 0.045f, 0.355f, 1.000f },
+            { "InOut Quart", 0.770f, 0.000f, 0.175f, 1.000f },
+            { "InOut Quint", 0.860f, 0.000f, 0.070f, 1.000f },
+            { "InOut Expo", 1.000f, 0.000f, 0.000f, 1.000f },
+            { "InOut Circ", 0.785f, 0.135f, 0.150f, 0.860f },
+            { "InOut Back", 0.680f, -0.55f, 0.265f, 1.550f },
+
+            // easeInElastic: not a bezier
+            // easeOutElastic: not a bezier
+            // easeInOutElastic: not a bezier
+            // easeInBounce: not a bezier
+            // easeOutBounce: not a bezier
+            // easeInOutBounce: not a bezier
+        };
+
+
+        // preset selector
+
+        bool reload = 0;
+        ImGui::PushID(label);
+        if (ImGui::ArrowButton("##lt", ImGuiDir_Left)) { // ImGui::ArrowButton(ImGui::GetCurrentWindow()->GetID("##lt"), ImGuiDir_Left, ImVec2(0, 0), 0)
+            if (--P[4] >= 0) reload = 1; else ++P[4];
+        }
+        ImGui::SameLine();
+
+        if (ImGui::Button("Presets")) {
+            ImGui::OpenPopup("!Presets");
+        }
+        if (ImGui::BeginPopup("!Presets")) {
+            for (int i = 0; i < IM_ARRAYSIZE(presets); ++i) {
+                if (i == 1 || i == 9 || i == 17) ImGui::Separator();
+                if (ImGui::MenuItem(presets[i].name, NULL, P[4] == i)) {
+                    P[4] = i;
+                    reload = 1;
+                }
+            }
+            ImGui::EndPopup();
+        }
+        ImGui::SameLine();
+
+        if (ImGui::ArrowButton("##rt", ImGuiDir_Right)) { // ImGui::ArrowButton(ImGui::GetCurrentWindow()->GetID("##rt"), ImGuiDir_Right, ImVec2(0, 0), 0)
+            if (++P[4] < IM_ARRAYSIZE(presets)) reload = 1; else --P[4];
+        }
+        ImGui::SameLine();
+        ImGui::PopID();
+
+        if (reload) {
+            memcpy(P, presets[(int)P[4]].points, sizeof(float) * 4);
+        }
+
+        // bezier widget
+
+        const ImGuiStyle& Style = GetStyle();
+        const ImGuiIO& IO = GetIO();
+        ImDrawList* DrawList = GetWindowDrawList();
+        ImGuiWindow* Window = GetCurrentWindow();
+        if (Window->SkipItems)
+            return false;
+
+        // header and spacing
+        int changed = SliderFloat4(label, P, 0, 1, "%.3f", 1.0f);
+        int hovered = IsItemActive() || IsItemHovered(); // IsItemDragged() ?
+        Dummy(ImVec2(0, 3));
+
+        // prepare canvas
+        const float avail = GetContentRegionAvail().x;
+        const float dim = AREA_WIDTH > 0 ? AREA_WIDTH : avail;
+        ImVec2 Canvas(dim, dim);
+
+        ImRect bb(Window->DC.CursorPos, Window->DC.CursorPos + Canvas);
+        ItemSize(bb);
+        if (!ItemAdd(bb, NULL))
+            return changed;
+
+        const ImGuiID id = Window->GetID(label);
+        hovered |= 0 != ItemHoverable(ImRect(bb.Min, bb.Min + ImVec2(avail, dim)), id, ImGuiItemFlags_None);
+
+        RenderFrame(bb.Min, bb.Max, GetColorU32(ImGuiCol_FrameBg, 1), true, Style.FrameRounding);
+
+        // background grid
+        for (int i = 0; i <= Canvas.x; i += (Canvas.x / 4)) {
+            DrawList->AddLine(
+                ImVec2(bb.Min.x + i, bb.Min.y),
+                ImVec2(bb.Min.x + i, bb.Max.y),
+                GetColorU32(ImGuiCol_TextDisabled));
+        }
+        for (int i = 0; i <= Canvas.y; i += (Canvas.y / 4)) {
+            DrawList->AddLine(
+                ImVec2(bb.Min.x, bb.Min.y + i),
+                ImVec2(bb.Max.x, bb.Min.y + i),
+                GetColorU32(ImGuiCol_TextDisabled));
+        }
+
+        // eval curve
+        ImVec2 Q[4] = { { 0, 0 }, { P[0], P[1] }, { P[2], P[3] }, { 1, 1 } };
+        ImVec2 results[SMOOTHNESS + 1];
+        bezier_table<SMOOTHNESS>(Q, results);
+
+        // control points: 2 lines and 2 circles
+        {
+            // handle grabbers
+            ImVec2 mouse = GetIO().MousePos, pos[2];
+            float distance[2];
+
+            for (int i = 0; i < 2; ++i) {
+                pos[i] = ImVec2(P[i * 2 + 0], 1 - P[i * 2 + 1]) * (bb.Max - bb.Min) + bb.Min;
+                distance[i] = (pos[i].x - mouse.x) * (pos[i].x - mouse.x) + (pos[i].y - mouse.y) * (pos[i].y - mouse.y);
+            }
+
+            int selected = distance[0] < distance[1] ? 0 : 1;
+            if (distance[selected] < (4 * GRAB_RADIUS * 4 * GRAB_RADIUS))
+            {
+                SetTooltip("(%4.3f, %4.3f)", P[selected * 2 + 0], P[selected * 2 + 1]);
+
+                if (/*hovered &&*/ (IsMouseClicked(0) || IsMouseDragging(0))) {
+                    float& px = (P[selected * 2 + 0] += GetIO().MouseDelta.x / Canvas.x);
+                    float& py = (P[selected * 2 + 1] -= GetIO().MouseDelta.y / Canvas.y);
+
+                    if (AREA_CONSTRAINED) {
+                        px = (px < 0 ? 0 : (px > 1 ? 1 : px));
+                        py = (py < 0 ? 0 : (py > 1 ? 1 : py));
+                    }
+
+                    changed = true;
+                }
+            }
+        }
+
+        // if (hovered || changed) DrawList->PushClipRectFullScreen();
+
+        // draw curve
+        {
+            ImColor color(GetStyle().Colors[ImGuiCol_PlotLines]);
+            for (int i = 0; i < SMOOTHNESS; ++i) {
+                ImVec2 p = { results[i + 0].x, 1 - results[i + 0].y };
+                ImVec2 q = { results[i + 1].x, 1 - results[i + 1].y };
+                ImVec2 r(p.x * (bb.Max.x - bb.Min.x) + bb.Min.x, p.y * (bb.Max.y - bb.Min.y) + bb.Min.y);
+                ImVec2 s(q.x * (bb.Max.x - bb.Min.x) + bb.Min.x, q.y * (bb.Max.y - bb.Min.y) + bb.Min.y);
+                DrawList->AddLine(r, s, color, CURVE_WIDTH);
+            }
+        }
+
+        // draw preview (cycles every 1s)
+        static clock_t epoch = clock();
+        ImVec4 white(GetStyle().Colors[ImGuiCol_Text]);
+        for (int i = 0; i < 3; ++i) {
+            double now = ((clock() - epoch) / (double)CLOCKS_PER_SEC);
+            float delta = ((int)(now * 1000) % 1000) / 1000.f; delta += i / 3.f; if (delta > 1) delta -= 1;
+            int idx = (int)(delta * SMOOTHNESS);
+            float evalx = results[idx].x; // 
+            float evaly = results[idx].y; // ImGui::BezierValue( delta, P );
+            ImVec2 p0 = ImVec2(evalx, 1 - 0) * (bb.Max - bb.Min) + bb.Min;
+            ImVec2 p1 = ImVec2(0, 1 - evaly) * (bb.Max - bb.Min) + bb.Min;
+            ImVec2 p2 = ImVec2(evalx, 1 - evaly) * (bb.Max - bb.Min) + bb.Min;
+            DrawList->AddCircleFilled(p0, GRAB_RADIUS / 2, ImColor(white));
+            DrawList->AddCircleFilled(p1, GRAB_RADIUS / 2, ImColor(white));
+            DrawList->AddCircleFilled(p2, GRAB_RADIUS / 2, ImColor(white));
+        }
+
+        // draw lines and grabbers
+        float luma = IsItemActive() || IsItemHovered() ? 0.5f : 1.0f;
+        ImVec4 pink(1.00f, 0.00f, 0.75f, luma), cyan(0.00f, 0.75f, 1.00f, luma);
+        ImVec2 p1 = ImVec2(P[0], 1 - P[1]) * (bb.Max - bb.Min) + bb.Min;
+        ImVec2 p2 = ImVec2(P[2], 1 - P[3]) * (bb.Max - bb.Min) + bb.Min;
+        DrawList->AddLine(ImVec2(bb.Min.x, bb.Max.y), p1, ImColor(white), LINE_WIDTH);
+        DrawList->AddLine(ImVec2(bb.Max.x, bb.Min.y), p2, ImColor(white), LINE_WIDTH);
+        DrawList->AddCircleFilled(p1, GRAB_RADIUS, ImColor(white));
+        DrawList->AddCircleFilled(p1, GRAB_RADIUS - GRAB_BORDER, ImColor(pink));
+        DrawList->AddCircleFilled(p2, GRAB_RADIUS, ImColor(white));
+        DrawList->AddCircleFilled(p2, GRAB_RADIUS - GRAB_BORDER, ImColor(cyan));
+
+        // if (hovered || changed) DrawList->PopClipRect();
+
+        return changed;
+    }
+
+    void ShowBezierDemo() {
+        { static float v[5] = { 0.950f, 0.050f, 0.795f, 0.035f }; Bezier("easeInExpo", v); }
+    }
+}
+
+static const char* BottomControlsName = "Blendspace1D Controls";
+
+Blendspace1DEditorViewportPanel::Blendspace1DEditorViewportPanel() {
+    mSkeletalAnimator = std::make_unique<SkeletalAnimator>();
+}
+
+Blendspace1DEditorViewportPanel::~Blendspace1DEditorViewportPanel() = default;
+
+void Blendspace1DEditorViewportPanel::updateAndRenderPrimaryControls(f32 ySize) {
+    ImGui::Spacing();
+    if (mAssetData) {
+        ImGui::Text(mAssetData->getName().toString().c_str());
+        updateAndRenderSaveButton();
+    }
+    else {
+        ImGui::Text("NO ASSET");
+    }
+    ImGui::SeparatorText("Preview");
+    ImguiUtil::updateAndRenderVariantAssetReference("Model", mPreviewModel, [this](AssetID id) {
+        // Make sure this model has our rig
+        if (!mAssetData || !mAssetData->rigDef.isValid()) return false;
+        const ModelDef& def = ModelRepository::get().getLoadedOrUnloadedAsset(id);
+        return def.mRig && (def.mRig->getID() == mAssetData->rigDef.getAssetID());
+    });
+
+    ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
+    ImGui::SeparatorText("How To Use?");
+    ImGui::BulletText("Double click line to add a node");
+    ImGui::BulletText("Right click node to delete it");
+    ImGui::BulletText("Click or hover node to highlight its entry in the table");
+    ImGui::BulletText("Use table to select animations");
+}
+
+bool Blendspace1DEditorViewportPanel::updateAndRenderSecondaryControls(f32 ySize) {
+    if (!mAssetData) {
+        return false;
+    }
+    ImGui::BeginChild("Blendspace 1D Table", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings/* | ImGuiWindowFlags_NoScrollbar*/);
+
+    constexpr ImGuiTableFlags TABLE_FLAGS =
+        ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable
+        | ImGuiTableFlags_Sortable
+        | ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders | ImGuiTableFlags_NoBordersInBody
+        | ImGuiTableFlags_ScrollY
+        | ImGuiTableFlags_SizingFixedFit;
+
+    bool changed = false;
+
+    if (mAssetData->rigDef.updateAndRenderImgui("Rig")) {
+        mAssetData->nodes.clear();
+        mPreviewModel.invalidate();
+        changed = true;
+    }
+    changed |= ImGui::SliderFloat("Max Change Speed", &mAssetData->maxXChangeSpeed, 0.0f, 20.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+    changed |= ImGui::SliderFloat("Speed Warp Less", &mAssetData->speedWarpFactorLess, 0.0f, 1.0f);
+    changed |= ImGui::SliderFloat("Speed Warp Greater", &mAssetData->speedWarpFactorGreater, 0.0f, 1.0f);
+
+    ImGui::Separator();
+    if (mAssetData->rigDef.isValid()) {
+        int colCount = 3;
+        ImVec4 te = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+        if (ImGui::BeginTable("1DNodeTable", colCount, TABLE_FLAGS, ImVec2(0, 0), 0.0f)) {
+
+            //constexpr f32 FIXED_WIDTH = 75.0f;
+            ImGui::TableSetupColumn("I", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed, 20.0f);
+            ImGui::TableSetupColumn("Val", ImGuiTableColumnFlags_DefaultSort | ImGuiTableColumnFlags_WidthFixed, 30.0f);
+            ImGui::TableSetupColumn("Anim", ImGuiTableColumnFlags_WidthStretch, 0);
+
+            ImGui::TableSetupScrollFreeze(1, 1);
+            ImGui::TableHeadersRow();
+
+            for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
+                ImGui::PushID(i + 66);
+                ImGui::TableNextRow(ImGuiTableRowFlags_None, 0);
+
+                // ID
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%d", i);
+                // Val
+                ImGui::TableSetColumnIndex(1);
+                if (ImGui::InputFloat("", &mAssetData->nodes[i].x)) {
+                    changed = true;
+                    mAssetData->nodes[i].x = glm::clamp(mAssetData->nodes[i].x, 0.0f, 1.0f);
+                }
+                // Anim
+                ImGui::TableSetColumnIndex(2);
+                changed |= mAssetData->nodes[i].animation.updateAndRenderImgui("Anim", [this](AssetID id) {
+                    // Make sure this anim has our rig
+                    if (!mAssetData || !mAssetData->rigDef.isValid()) return false;
+                    const AnimationDef& def = AnimationRepository::get().getLoadedOrUnloadedAsset(id);
+                    return def.rigDef.isValid() && (def.rigDef.getAssetID() == mAssetData->rigDef.getAssetID());
+                });
+
+                if ((i == mSelectedIndex) || (i == mHoverIndex)) {
+                    // https://github.com/ocornut/imgui/discussions/3966
+                    ImGuiTable* table = ImGui::GetCurrentContext()->CurrentTable;
+                    table->RowBgColor[1] = ImGui::GetColorU32(ImGuiCol_Border, i == mSelectedIndex ? 0.8f : 0.6f);
+                }
+
+                ImGui::PopID();
+            }
+          
+            ImGui::EndTable();
+        }
+    }
+
+    if (changed) {
+        onChanged();
+    }
+
+    ImGui::EndChild();
+    return true;
+}
+
+bool Blendspace1DEditorViewportPanel::updateAndRenderTertiaryControls(f32 ySize)
+{
+    if (!mAssetData) {
+        return true;
+    }
+    ImGui::BeginChild("Bone Hierarchy", ImVec2(0.0f, ySize), true, ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoCollapse/* | ImGuiWindowFlags_NoScrollbar*/);
+    const RigDef& rig = mAssetData->rigDef.getAssetHandle<RigDef>()->getLoadedAsset();
+    rig.imguiRenderSkeletonHierarchy();
+
+    ImGui::EndChild();
+    return true;
+}
+
+// TODO: Curve editor https://github.com/ocornut/imgui/issues/786
+void Blendspace1DEditorViewportPanel::updateAndRenderBottomControls() {
+
+    enum { AREA_WIDTH = 16 };
+    enum { GRAB_RADIUS = 10 };
+    enum { GRAB_BORDER = 2 };
+
+    ImGui::Begin(BottomControlsName, nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNavFocus);
+
+    if (mAssetData) {
+        if (mAssetData->rigDef.isValid()) {
+            ImGui::Text(mAssetData->getName().toString().c_str());
+        }
+        else {
+            ImGui::Text("NO RIG SELECTED");
+            ImGui::End();
+            return;
+        }
+    }
+    else {
+        ImGui::Text("NO BLENDSPACE SELECTED");
+        ImGui::End();
+        return;
+    }
+    if (!mPreviewModel.isValid()) {
+        ImGui::Text("NO PREVIEW MODEL SELECTED");
+    }
+    ImGui::Separator();
+    
+    ImGui::PushItemWidth(150.f);
+    if (ImGui::DragFloat("Preview X", &mPreviewX, 0.001f, 0.0f, 1.0f)) {
+        mPreviewX = glm::clamp(mPreviewX, 0.0f, 1.0f);
+    }
+    ImGui::PopItemWidth();
+    ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
+
+    if (mDidJustEnter) {
+        ImGui::SetWindowFocus(BottomControlsName);
+
+        if (mAssetData && !mPreviewModel.isValid()) {
+            if (mAssetData->rigDef.isValid()) {
+                // Find a valid preview model to start with
+                for (const AssetMetadata& data : ModelRepository::get().getAssetRegistry()) {
+                    const ModelDef& def = ModelRepository::get().getLoadedOrUnloadedAsset(data.getId());
+                    if (def.mRigRef == mAssetData->rigDef) {
+                        mPreviewModel.name = data.mName;
+                        break;
+                    }
+                }
+            }
+        }
+
+        rebuildBlendspacePlayer();
+        mDidJustEnter = false;
+    }
+
+    if (!ImGui::IsMouseDown(0)) {
+        mDragIndex = -1;
+        mDraggingPreview = false;
+    }
+
+    //ImGui::ShowBezierDemo();
+
+    const ImGuiStyle& Style = ImGui::GetStyle();
+    const ImGuiIO& IO = ImGui::GetIO();
+    ImGuiWindow* Window = ImGui::GetCurrentWindow();
+    ImDrawList& drawList = Window->DrawListInst;
+    if (Window->SkipItems) {
+        ImGui::End();
+        return;
+    }
+    // header and spacing
+    bool changed = false;
+
+    // prepare canvas
+    const ImVec2 avail = ImGui::GetContentRegionAvail();
+    const float dim = avail.x;
+    constexpr f32 PADDING = 10.0f;
+    ImVec2 Canvas(dim, AREA_WIDTH);
+    ImRect bb(Window->DC.CursorPos + ImVec2(PADDING, 0.0f), Window->DC.CursorPos + Canvas - ImVec2(PADDING, 0.0f));
+    ImGui::ItemSize(bb);
+    if (!ImGui::ItemAdd(bb, NULL))
+        return;
+
+    const bool lineHovered = ImGui::ItemHoverable(bb, Window->GetID("LineHover"), ImGuiItemFlags_None);
+    if (lineHovered && ImGui::IsMouseDoubleClicked(0)) {
+        f32 posX = (IO.MousePos.x - bb.Min.x) / (bb.Max.x - bb.Min.x);
+        posX = glm::clamp(posX, 0.0f, 1.0f);
+        Blendpsace1DDefNode& newNode = mAssetData->nodes.emplace_back();
+        newNode.x = posX;
+        newNode.editorIndex = mAssetData->nodes.size() - 1;
+    }
+
+    ImGui::RenderFrame(bb.Min, bb.Max, ImGui::GetColorU32(ImGuiCol_FrameBg, 1), true, Style.FrameRounding);
+
+    ImVec2 start = bb.GetCenter() - ImVec2(bb.GetWidth() * 0.5f, 0.0f);
+
+    ImVec2 mouse = IO.MousePos;
+    mHoverIndex = -1;
+    f32 closestDistanceSQ = FLT_MAX;
+    for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
+        const Blendpsace1DDefNode& node = mAssetData->nodes[i];
+        const ImVec2 pos = start + ImVec2(node.x * bb.GetWidth(), 0.0f);
+        const f32 distanceSQ = (pos.x - mouse.x) * (pos.x - mouse.x) + (pos.y - mouse.y) * (pos.y - mouse.y);
+        if (distanceSQ < closestDistanceSQ && distanceSQ <= SQ(GRAB_RADIUS + 1.0f)) {
+            closestDistanceSQ = distanceSQ;
+            mHoverIndex = i;
+        }
+    }
+
+    if (mHoverIndex != -1 ) {
+        if (ImGui::IsMouseClicked(0)) {
+            mSelectedIndex = mDragIndex = mHoverIndex;
+        }
+        else if (ImGui::IsMouseClicked(1)) {
+            // Right click destroy
+            mAssetData->nodes.erase(mAssetData->nodes.begin() + mHoverIndex);
+            mSelectedIndex = mDragIndex = mHoverIndex = -1;
+            changed = true;
+        }
+    }
+    if (mDragIndex != -1) {
+        ImGui::SetTooltip("Slot %d (%1.3f)\n %s", mDragIndex, mAssetData->nodes[mDragIndex].x, mAssetData->nodes[mDragIndex].animation.toString().c_str());
+    } else if (mHoverIndex != -1) {
+        ImGui::SetTooltip("Slot %d (%1.3f)\n %s", mHoverIndex, mAssetData->nodes[mHoverIndex].x, mAssetData->nodes[mHoverIndex].animation.toString().c_str());
+    }
+
+    if (mDragIndex != -1) {
+        float& px = (mAssetData->nodes[mDragIndex].x += IO.MouseDelta.x / Canvas.x);
+        px = glm::clamp(px, 0.0f, 1.0f);
+        changed = true;
+    }
+    // Draw main line
+    const ImVec4 white(ImGui::GetStyle().Colors[ImGuiCol_Text]);
+    const ImVec2 linePos[2] = { start, start + ImVec2(bb.GetWidth(), 0.0f) };
+    drawList.AddLine(linePos[0], linePos[1], ImColor(white), 2);
+    // Draw points
+    const ImVec4 cyan(0.00f, 0.75f, 1.00f, 1.0f);
+    const ImVec4 red(0.90f, 0.00f, 0.00f, 1.0f);
+    for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
+        const Blendpsace1DDefNode& node = mAssetData->nodes[i];
+        const ImVec2 pos = start + ImVec2(node.x * bb.GetWidth(), 0.0f);
+        ImVec4 color = mAssetData->nodes[i].animation.isValid() ? ImVec4(0.00f, 0.80f, 0.2f, 1.0f) : red;
+        if (i == mDragIndex) {
+            if (mAssetData->nodes[i].animation.isValid()) color = cyan;
+            color.w = 0.4f; // luma
+        }
+        else if (i == mSelectedIndex) {
+            if (mAssetData->nodes[i].animation.isValid()) color = cyan;
+            color.w = 0.55f; // luma
+        }
+        drawList.AddCircleFilled(pos, GRAB_RADIUS, ImColor(white));
+        drawList.AddCircleFilled(pos, GRAB_RADIUS - GRAB_BORDER, ImColor(color));
+    }
+
+    // Draw preview drag
+
+    const ImVec2 pos = start + ImVec2(mPreviewX * bb.GetWidth(), -bb.GetHeight() * 2.0);
+    const f32 distanceSQ = (pos.x - mouse.x) * (pos.x - mouse.x) + (pos.y - mouse.y) * (pos.y - mouse.y);
+    const bool isHoverPreview = distanceSQ <= SQ(GRAB_RADIUS + 1.0f);
+    if (ImGui::IsMouseClicked(0) && isHoverPreview) {
+        mDraggingPreview = true;
+    }
+
+    if (mDraggingPreview) {
+        float& px = (mPreviewX = ((IO.MousePos.x - bb.Min.x) / Canvas.x));
+        px = glm::clamp(px, 0.0f, 1.0f);
+    }
+    if (mDraggingPreview || isHoverPreview) {
+        ImGui::SetTooltip("X: %f", mPreviewX);
+    }
+    const ImVec4 color = mDraggingPreview ? ImVec4(0.90f, 0.90f, 0.90f, 1.0f) : ImVec4(0.60f, 0.60f, 0.6f, 1.0f);
+    drawList.AddLine(pos, pos + ImVec2(0.0f, bb.GetHeight() * 3), ImColor(color), 2);
+    drawList.AddCircleFilled(pos, GRAB_RADIUS, ImColor(white));
+    if (mDraggingPreview) {
+        drawList.AddCircleFilled(pos, GRAB_RADIUS - GRAB_BORDER, ImColor(color));
+    }
+    else {
+        drawList.AddCircleFilled(pos, GRAB_RADIUS - GRAB_BORDER, ImColor(color));
+    }
+
+    if (changed) {
+        onChanged();
+    }
+
+    ImGui::End();
+
+}
+
+const MaterialShaderDef* Blendspace1DEditorViewportPanel::getShader() {
+    return MaterialShaderRepository::get().getAssetHandle(CStrToken("editor_model_skel"))->tryGetLoadedAsset();
+}
+
+void Blendspace1DEditorViewportPanel::renderMesh() {
+    if (!mAssetData || !mPreviewModel.isValid() || !mBlendspacePlayer.isValid()) {
+        return;
+    }
+
+    /*  const float numIntervals = mBlendspacePlayer.numNodes - 1;
+      const float interval = 1.f / kNumIntervals;
+      for (int i = 0; i < mBlendspacePlayer.numNodes; ++i) {
+          const float med = i * kInterval;
+          const float x = mPreviewX - med;
+          const float y = ((x < 0.f ? x : -x) + kInterval) * kNumIntervals;
+          samplers_[i].weight = ozz::math::Max(0.f, y);
+      }*/
+
+    if (const ModelDef* modelDef = mPreviewModel.getAssetHandle<ModelDef>()->tryGetLoadedAsset()) {
+        AnimSampleBlendDataPair blendData = mBlendspacePlayer.updateAndGetBlendData(mPreviewX, mCurrentElapsedSec);
+        // Account for max speed
+        mPreviewX = mBlendspacePlayer.getX();
+        renderMeshSkeletalBlended(modelDef, 0, 0, blendData.toSpan());
+
+        // Store our sync (footstep) time accurately in case loop time changes wildly
+    }
+    // Based on unreal sync groups (But more efficient)
+    // https://dev.epicgames.com/documentation/en-us/unreal-engine/animation-sync-groups-in-unreal-engine?application_version=5.3
+
+}
+
+void Blendspace1DEditorViewportPanel::onChanged() {
+    // Make sure no points share x values by randomly jittering equal values apart
+    if (mAssetData->nodes.size() > 1) {
+        bool wasEqual;
+        do {
+            wasEqual = false;
+            for (size_t i = 0; i < mAssetData->nodes.size() - 1; ++i) {
+                Blendpsace1DDefNode& nodeA = mAssetData->nodes[i];
+                for (size_t j = i + 1; j < mAssetData->nodes.size(); ++j) {
+                    Blendpsace1DDefNode& nodeB = mAssetData->nodes[j];
+                    if (nodeA.x == nodeB.x) [[unlikely]] {
+                        nodeA.x -= (rand() / (f32)RAND_MAX) * 0.001f;
+                        nodeB.x += (rand() / (f32)RAND_MAX) * 0.001f;
+                        nodeA.x = glm::clamp(nodeA.x, 0.0f, 1.0f);
+                        nodeB.x = glm::clamp(nodeB.x, 0.0f, 1.0f);
+                        wasEqual = true;
+                    }
+                }
+            }
+        } while (wasEqual);
+    }
+
+    // Sort all points
+    std::sort(mAssetData->nodes.begin(), mAssetData->nodes.end(), [](const Blendpsace1DDefNode& a, const Blendpsace1DDefNode& b) {
+        return a.x < b.x;
+    });
+    // Restore indices
+    mHoverIndex = -1;
+    const int prevSelectedIndex = mSelectedIndex;
+    const int prevDragIndex = mDragIndex;
+    for (size_t i = 0; i < mAssetData->nodes.size(); ++i) {
+        if (prevSelectedIndex != -1 && mAssetData->nodes[i].editorIndex == prevSelectedIndex) {
+            mSelectedIndex = i;
+        }
+        if (prevDragIndex != -1 && mAssetData->nodes[i].editorIndex == prevDragIndex) {
+            mDragIndex = i;
+        }
+        mAssetData->nodes[i].editorIndex = i;
+    }
+
+    Blendspace1DRepository::get().onAssetChangedByEditor(mAssetData->getID());
+
+    rebuildBlendspacePlayer();
+}
+
+void Blendspace1DEditorViewportPanel::rebuildBlendspacePlayer() {
+    if (mAssetData) {
+        f32 prevAlpha = mBlendspacePlayer.mSyncAlpha;
+        mBlendspacePlayer = Blendspace1DPlayer(*mAssetData);
+        mBlendspacePlayer.mX = mPreviewX;
+        mBlendspacePlayer.mSyncAlpha = prevAlpha;
+    }
+    else {
+        mBlendspacePlayer = Blendspace1DPlayer();
+    }
+}
